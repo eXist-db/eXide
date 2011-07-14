@@ -287,8 +287,8 @@ eXide.namespace("eXide.util.Dialog");
 eXide.util.Dialog = (function () {
 	
 	var messageDialog;
-	var warnIcon = "images/error.png";
-	var infoIcon = "images/information.png";
+	var warnIcon = "resources/images/error.png";
+	var infoIcon = "resources/images/information.png";
 	
 	var callback = null;
 	
