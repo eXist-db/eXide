@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<meta xmlns="http://exist-db.org/xquery/repo">
+    <description>eXide - a web based XQuery IDE</description>
+    <author>Wolfgang Meier</author>
+    <website/>
+    <status>beta</status>
+    <license>GNU-LGPL</license>
+    <copyright>true</copyright>
+    <type>application</type>
+    <target>/db/eXide</target>
+    <prepare>pre-install.xql</prepare>
+    <finish/>
+    <permissions user="eXide" password="eXide" group="dba" mode="0775"/>
+</meta>
