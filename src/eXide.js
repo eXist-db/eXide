@@ -571,10 +571,16 @@ eXide.app = (function() {
 					eXide.edit.commands.help($("#keyboard-help"));
 				}
 			});
-			$("#help-shortcuts").click(function (ev) {
-				ev.preventDefault();
-				$("#keyboard-help").dialog("open");
-			});
+            $("#about-dialog").dialog({
+                title: "About",
+                modal: false,
+                autoOpen: false,
+                height: 300,
+                width: 450,
+                buttons: {
+    				"Close": function () { $(this).dialog("close"); }
+				}
+            });
 			// initialize buttons and menu events
 			var button = $("#open").button({
 				icons: {
@@ -645,6 +651,14 @@ eXide.app = (function() {
 			
 			$("#menu-deploy-run").click(eXide.app.openApp);
 			
+            $("#menu-help-keyboard").click(function (ev) {
+    			ev.preventDefault();
+				$("#keyboard-help").dialog("open");
+			});
+            $("#menu-help-about").click(function (ev) {
+        		ev.preventDefault();
+				$("#about-dialog").dialog("open");
+			});
 			// syntax drop down
 			$("#syntax").change(function () {
 				editor.setMode($(this).val());
