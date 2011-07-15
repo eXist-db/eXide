@@ -44,7 +44,7 @@
             classpath="${tools}/compiler.jar"/>
     </target>
     
-	<target name="all" depends="compress,ace"/>
+	<target name="all" depends="compress,ace,xar"/>
 	
 	<target name="ace">
 		<mkdir dir="${ace}"/>

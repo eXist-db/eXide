@@ -34,16 +34,55 @@ declare namespace sandbox="http://exist-db.org/xquery/sandbox";
 declare option exist:serialize "method=xml media-type=text/xml omit-xml-declaration=no indent=no";
 
 (:~
+ :  Check which namespace declarations have to be output.
+ :)
+declare function sandbox:namespace-decls($elem as element(), $namespaces as xs:string*) {
+    for $node in ($elem, $elem/@*)
+    let $name := node-name($node)
+    let $ns := namespace-uri-from-QName($name)
+    let $prefix := prefix-from-QName($name)
+    return
+        if ($ns and empty(index-of($namespaces, $ns))) then
+            <ns prefix="{$prefix}" uri="{$ns}"/>
+        else
+            ()
+};
+
+(:~
 	Pretty print an XML fragment. Returns HTML to highlight the XML syntax.
 :)
-declare function sandbox:pretty-print($node as item()) {
+declare function sandbox:pretty-print($node as item(), $namespaces as xs:string*) {
 	typeswitch ($node)
 		case $elem as element(exist:match) return
 			<span class="xml-match">{$elem/node()}</span>
 		case $elem as element() return
+            let $nsDecls := sandbox:namespace-decls($elem, $namespaces)
+            let $newNamespaces := 
+                if (empty($nsDecls)) then
+                    $namespaces
+                else
+                    ($namespaces, $nsDecls/@uri/string())
+            return
 			<div class="xml-element">
 				<span class="xml-element-tag">&lt;</span>
 				<span class="xml-element-name">{node-name($elem)}</span>
+                {
+                    for $nsDecl in $nsDecls
+                    return (
+                        ' ', 
+                        <span class="xml-attr-name">
+                        {
+                            if ($nsDecl/@prefix != '') then 
+                                concat("xmlns:", $nsDecl/@prefix/string())
+                            else
+                                "xmlns"
+                                
+                        }
+                        </span>, '="',
+                        <span class="xml-attr-value">{$nsDecl/@uri/string()}</span>,
+                        '"'
+                    )
+                }
 				{
 					for $attr in $elem/@*
 					return (
@@ -58,7 +97,7 @@ declare function sandbox:pretty-print($node as item()) {
 							<span class="xml-element-tag">&gt;</span>,
 							for $child in $children
 							return
-								sandbox:pretty-print($child),
+								sandbox:pretty-print($child, $newNamespaces),
 							<span class="xml-element-tag">&lt;/</span>,
 							<span class="xml-element-name">{node-name($elem)}</span>,
 							<span class="xml-element-tag">&gt;</span>
@@ -97,7 +136,7 @@ declare function sandbox:retrieve($num as xs:integer) as element() {
             }
             </div>
             <div class="item">
-            { sandbox:pretty-print($item) }
+            { sandbox:pretty-print($item, ()) }
             </div>
         </div>
 };
