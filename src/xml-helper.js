@@ -37,7 +37,7 @@ eXide.edit.XMLModeHelper = (function () {
 		var $this = this;
 		$.ajax({
 			type: "POST",
-			url: "validate-xml.xql",
+			url: "modules/validate-xml.xql",
 			data: { xml: text },
 			dataType: "json",
 			success: function (data) {
@@ -60,7 +60,7 @@ eXide.edit.XMLModeHelper = (function () {
 		var $this = this;
 		$.ajax({
 			type: "POST",
-			url: "validate-xml.xql",
+			url: "modules/validate-xml.xql",
 			data: { xml: code },
 			dataType: "json",
 			success: function (data) {

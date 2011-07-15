@@ -100,7 +100,7 @@ else if ($exist:resource eq 'execute') then
             <view>
             <!-- Post process the result: store it into the HTTP session
                and return the number of hits only. -->
-            <forward url="session.xql">
+            <forward url="modules/session.xql">
                <clear-attribute name="xquery.source"/>
                <clear-attribute name="xquery.attribute"/>
                <set-attribute name="elapsed" 
@@ -114,7 +114,7 @@ else if ($exist:resource eq 'execute') then
  : item in the result set :)
 else if (starts-with($exist:path, '/results/')) then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward url="../session.xql">
+        <forward url="../modules/session.xql">
             {local:set-user()}
             <add-parameter name="num" value="{$exist:resource}"/>
         </forward>

@@ -43,7 +43,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		var $this = this;
 		$.ajax({
 			type: "POST",
-			url: "compile.xql",
+			url: "modules/compile.xql",
 			data: {q: text, base: basePath},
 			dataType: "json",
 			success: function (data) {
@@ -69,7 +69,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		
 		$.ajax({
 			type: "POST",
-			url: "compile.xql",
+			url: "modules/compile.xql",
 			data: {q: code, base: basePath},
 			dataType: "json",
 			success: function (data) {
@@ -179,7 +179,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		var $this = this;
 		// Call docs.xql to retrieve declared functions and variables
 		$.ajax({
-			url: "docs.xql",
+			url: "modules/docs.xql",
 			dataType: "text",
 			type: "POST",
 			data: { prefix: prefix},
