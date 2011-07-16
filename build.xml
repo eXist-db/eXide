@@ -14,32 +14,21 @@
     <property name="closure.compiler.url"
         value="http://closure-compiler.googlecode.com/files/compiler-latest.zip"/>
 
-    <path id="classpath.core">
-        <fileset dir="${top.dir}/tools/ant/lib">
-            <include name="*.jar"/>
-        </fileset>
-        <pathelement path="${tools}/compiler.jar"/>
-        <pathelement path="${java.class.path}"/>
-    </path>
+	<available property="closure.available" file="${tools}/compiler.jar"/>
 
-    <!-- 
-        existdb-contrib fetch task import used for downloading and extracting jar/class from zip
-    -->
-    <taskdef name="fetch" classname="nl.ow.dilemma.ant.fetch.FetchTask"
-        classpathref="classpath.core"/>
-
-    <target name="prepare">
+    <target name="get-closure" unless="closure.available">
         <mkdir dir="${tools}"/>
 		
-        <fetch classpathref="classpath.core" dest="${tools}" url="${closure.compiler.url}"
-            classname="com.google.javascript.jscomp.CommandLineRunner"/>
+		<get src="${closure.compiler.url}" dest="${tools}"/>
         <unzip dest="${tools}">
             <fileset dir="${tools}">
                 <include name="*.zip"/>
             </fileset>
         </unzip>
         <delete file="${tools}/compiler-latest.zip"/>
+	</target>
 
+	<target name="prepare" depends="get-closure">
         <taskdef name="jscomp" classname="com.google.javascript.jscomp.ant.CompileTask"
             classpath="${tools}/compiler.jar"/>
     </target>
