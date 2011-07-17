@@ -107,6 +107,14 @@ eXide.edit.commands = (function () {
 		    		editor.exec("gotoDefinition");
 		    	}
 		    });
+            canon.addCommand({
+    	    	name: "findModule",
+		    	bindKey: bindKey("F4", "F4"),
+		    	exec: function(env, args, request) {
+                    var doc = editor.getActiveDocument();
+		    		eXide.find.Modules.select(doc.syntax);
+		    	}
+		    });
 		    canon.addCommand({
 		    	name: "indentOrParam",
 		    	bindKey: bindKey("Tab", "Tab"),

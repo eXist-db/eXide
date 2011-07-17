@@ -172,7 +172,24 @@ eXide.edit.Editor = (function () {
 	    		$this.editor.gotoLine(parseInt(line) + 1);
 	    	}
 	    });
-	    
+
+        $("#tab-next").button({
+            icons: {
+				primary: "ui-icon-triangle-1-e"
+			},
+            text: false
+        }).click(function (ev) {
+            $this.nextTab();
+        });
+        $("#tab-prev").button({
+            icons: {
+    			primary: "ui-icon-triangle-1-w"
+			},
+            text: false
+        }).click(function (ev) {
+            $this.previousTab();
+        });
+        
 	    this.lastChangeEvent = new Date().getTime();
 		this.validateTimeout = null;
 		
@@ -194,6 +211,8 @@ eXide.edit.Editor = (function () {
 			if (this.activeDoc.getModeHelper()) {
 				var args = Array.prototype.slice.call(arguments, 1);
 				this.activeDoc.getModeHelper().exec(arguments[0], this.activeDoc, args);
+			} else {
+    		    eXide.util.message("Not supported in this mode.");
 			}
 		},
 		
@@ -444,7 +463,7 @@ eXide.edit.Editor = (function () {
 			tab.title = doc.path;
 			li.appendChild(tab);
 			$("#tabs").append(li);
-			
+            
 			$(tab).click(function (ev) {
 				ev.preventDefault();
 				$this.switchTo(doc);
@@ -453,6 +472,7 @@ eXide.edit.Editor = (function () {
 			$this.activeDoc = doc;
 			$this.documents.push(doc);
 			$this.$triggerEvent("activate", [doc]);
+            $this.scrollToTab($(tab));
 		},
 		
 		nextTab: function() {
@@ -493,11 +513,15 @@ eXide.edit.Editor = (function () {
 			this.editor.setSession(doc.$session);
 			this.editor.resize();
 			this.activeDoc = doc;
+            var $this = this;
 			$("#tabs a").each(function () {
-				if (this.title == doc.path)
-					$(this).addClass("active");
-				else
-					$(this).removeClass("active");
+                var current = $(this);
+				if (this.title == doc.path) {
+					current.addClass("active");
+                    $this.scrollToTab(current);
+				} else {
+					current.removeClass("active");
+				}
 			});
 			this.updateStatus("");
 			this.$triggerEvent("activate", [doc]);
@@ -512,6 +536,24 @@ eXide.edit.Editor = (function () {
 			$("#tabs a[title=" + oldPath + "]").attr("title", doc.path).text(label);
 		},
 		
+        scrollToTab: function (current) {
+            var offset = current.offset().left;
+            var offsetRight = offset + current.outerWidth();
+            var width = $("#tabs").innerWidth();
+            var scrollLeft = $("#tabs").scrollLeft();
+            if (offsetRight > width) {
+                $("#tab-next").show();
+                $("#tab-prev").show();
+                $("#tabs").scrollLeft(offsetRight - width);
+            } else if (offset < scrollLeft) {
+                if (offset < width)
+                    $("#tabs").scrollLeft(0);
+                else
+                    $("#tabs").scrollLeft(offset);
+            }
+            $.log("Scrolling to %d %d", offset, $("#tabs").scrollLeft());
+        },
+        
 		setTheme: function(theme) {
 			$.log("Changing theme to %s", theme);
 			this.editor.setTheme(theme);

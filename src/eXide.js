@@ -74,8 +74,15 @@ eXide.app = (function() {
 			$(window).unload(function () {
 				eXide.app.saveState();
 			});
+            
+            eXide.find.Modules.addEventListener("open", null, function (module) {
+                eXide.app.findDocument(module.path);
+            });
+            eXide.find.Modules.addEventListener("import", null, function (module) {
+                editor.exec("importModule", module.prefix, module.uri, module.at);
+            });
 		},
-		
+
 		resize: function() {
 			var panel = $("#editor");
 			var header = $(".header");
@@ -206,6 +213,10 @@ eXide.app = (function() {
 			}
 		},
 
+        exec: function() {
+            editor.exec(arguments);
+        },
+        
 		download: function() {
 			var doc = editor.getActiveDocument();
 			if (doc.getPath().match("^__new__") || !doc.isSaved()) {
@@ -471,8 +482,7 @@ eXide.app = (function() {
 				enableCursorHotkey: false,
 				north__size: 78,
 				north__resizable: false,
-				north__closable: false,
-				north__spacing_open: 0,
+				north__closable: true,
 				south__minSize: 200,
 				south__initClosed: true,
 				west__size: 200,
@@ -484,9 +494,9 @@ eXide.app = (function() {
 			});
 			
 			$(".menu ul li").hover(function () {
-				$("ul", this).slideDown(200);
+				$("ul", this).show();
 			}, function () {
-				$("ul", this).slideUp(200);
+				$("ul", this).hide();
 			});
 			
 			$("#open-dialog").dialog({
@@ -648,7 +658,16 @@ eXide.app = (function() {
 				editor.editor.redo();
 			});
 			$("#menu-edit-preferences").click(eXide.app.preferences);
-			
+            
+            $("#menu-navigate-definition").click(function (ev) {
+                ev.preventDefault();
+                eXide.app.exec("gotoDefinition");
+            });
+            $("#menu-navigate-modules").click(function (ev) {
+                ev.preventDefault();
+                var doc = editor.getActiveDocument();
+	    		eXide.find.Modules.select(doc.syntax);
+            });
 			$("#menu-deploy-run").click(eXide.app.openApp);
 			
             $("#menu-help-keyboard").click(function (ev) {

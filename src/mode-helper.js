@@ -54,7 +54,9 @@ eXide.edit.ModeHelper = (function () {
 				}
 				$.log("Calling command %s ...", command);
 				this.commands[command].apply(this, nargs);
-			}
+			} else {
+                eXide.util.message("Not supported in this mode.")
+            }
 		}
 	};
 	

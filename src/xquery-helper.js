@@ -33,6 +33,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		this.addCommand("gotoDefinition", this.gotoDefinition);
 		this.addCommand("locate", this.locate);
 		this.addCommand("closeTag", this.closeTag);
+        this.addCommand("importModule", this.importModule);
 	}
 	
 	// extends ModeHelper
@@ -372,6 +373,18 @@ eXide.edit.XQueryModeHelper = (function () {
 		return null;
 	}
 	
+    Constr.prototype.importModule = function (doc, prefix, uri, location) {
+        $.log("location = %s path = %s", location, doc.path);
+        var base = doc.getBasePath();
+        if (location.lastIndexOf(base, 0) === 0) {
+            location = location.substring(base.length + 1);
+        } else {
+            location = "xmldb:exist://" + location;
+        }
+        var code = "import module namespace " + prefix + "=\"" + uri + "\" at \"" + location + "\";\n";
+        this.editor.insert(code);
+    }
+    
 	var COMPILE_MSG_RE = /.*line:?\s(\d+)/i;
 	
 	function parseErrMsg(error) {

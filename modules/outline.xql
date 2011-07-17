@@ -35,7 +35,7 @@ declare option exist:serialize "method=json indent=yes";
     return
             util:catch("*",
 				let $log := util:log("DEBUG", ("Importing module ", $source))
-				let $tempPrefix := concat("pfx", $i)
+				let $tempPrefix := concat("temp", $i)
                 let $import := util:import-module($uri, $tempPrefix, $source)
                 let $prefix := $prefixes[$i]
                 return

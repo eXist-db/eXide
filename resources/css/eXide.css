@@ -102,15 +102,15 @@ a:link,a:visited {
 	box-shadow: 10px 10px 5px #888;
 }
 
-/*.menu ul li:hover ul {
+.menu ul li:hover ul {
     visibility: visible;
 }
+/*
 Sub level menu list items (undo style from Top level List Items)
-*/
 .menu ul li ul li {
 	display: block;
 	float: none;
-}
+}*/
 
 /* Sub level menu links style */
 .menu ul li ul li a {
@@ -152,10 +152,15 @@ Sub level menu list items (undo style from Top level List Items)
 	padding-right: 4px;
 }
 
+#tabs-container {
+    position: relative;
+}
+
 #tabs {
 	list-style: none;
 	margin: 4px 4px 0 4px;
 	padding: 4px 0;
+    overflow: hidden;
 }
 
 #tabs li {
@@ -165,6 +170,8 @@ Sub level menu list items (undo style from Top level List Items)
 #tabs .tab {
 	font: normal 12px "Courier New", Courier, monospace;
 	font-style: normal;
+    white-space: nowrap;
+    overflow: hidden;
 	color: #6e6e6e;
 	background: #C8C8C8;
 	border: 1px solid #bbb;
@@ -186,6 +193,36 @@ Sub level menu list items (undo style from Top level List Items)
 	color: #6e6e6e;
 }
 
+#tabs-container .nextTab {
+    position: absolute;
+    z-index: 1000;
+    bottom: 6px;
+    height: 20px;
+    right: 0;
+}
+
+#tab-next { 
+    margin: 0;
+    position: absolute;
+    z-index: 1000;
+    height: 100%;
+    width: 15px;
+    right: 4px;
+    bottom: 0;
+    display: none;
+}
+
+#tab-prev {
+    margin: 0;
+    position: absolute;
+    z-index: 1000;
+    height: 100%;
+    width: 15px;
+    left: 4px;
+    bottom: 0;
+    display: none;
+}
+
 #open-dialog {
 	height: 100%;
 }
@@ -193,6 +230,15 @@ Sub level menu list items (undo style from Top level List Items)
 #eXide-dialog-message img, #eXide-dialog-input img {
 	float: left;
 	margin: 0 10px 4px 0;
+}
+
+#module-list {
+    height: 300px;
+    width: 100%;
+}
+
+#module-list .selected {
+    background-color: #C0C0C0;
 }
 
 .eXide-browse-collections {
