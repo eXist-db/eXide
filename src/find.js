@@ -27,7 +27,7 @@ eXide.find.Modules = (function () {
     	grid.setSelectionModel(selectionModel);
         grid.onDblClick.subscribe(function (e, args) {
     		var cell = grid.getCellFromEvent(e);
-            eXide.find.Modules.$triggerEvent("open", [ moduleData[cell.row].at ]);
+            eXide.find.Modules.$triggerEvent("open", [ moduleData[cell.row] ]);
 		});
         $("#select-module-dialog").dialog({
     		modal: false,

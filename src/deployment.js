@@ -26,13 +26,7 @@ eXide.edit.PackageEditor = (function () {
 	Constr = function () {
 		var $this = this;
 		this.directory = null;
-		this.container = $("#sandbox_dialog_deploy");
-		if (this.container.length == 0) {
-			var div = document.createElement("div");
-			div.id = "sandbox_dialog_deploy";
-			document.body.appendChild(div);
-			this.container = $(div);
-		}
+		this.container = $("#dialog-deploy");
 		this.container.dialog({
 			title: "Deployment Editor",
 			modal: true,

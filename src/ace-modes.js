@@ -25,8 +25,8 @@ var TextHighlightRules = require("ace/mode/text_highlight_rules").TextHighlightR
 var XQueryHighlightRules = function() {
 
 	var keywords = lang.arrayToMap(
-		("return|for|let|declare|function|xquery|version|option|namespace|import|module|" +
-		 "if|then|else|as|and|or|typeswitch|case").split("|")
+		("return|for|let|where|order|by|declare|function|variable|xquery|version|option|namespace|import|module|" +
+		 "if|then|else|as|and|or|typeswitch|case|ascending|descending|empty|in").split("|")
     );
 
     // regexp must not have capturing parentheses
@@ -67,6 +67,18 @@ var XQueryHighlightRules = function() {
         }, {
             token : "text",
             regex : "\\s+"
+        }, {
+            token: "support.function",
+            regex: "\\w[\\w+_\\-:]+(?=\\()"
+        }, {
+            token: "keyword.operator",
+            regex: "\\*|=|<|>|\\-|\\+|and|or|eq|ne|lt|gt"
+        }, {
+            token: "lparen",
+            regex: "[[({]"
+        }, {
+            token: "rparen",
+            regex: "[\\])}]"
         }, {
 			token : function(value) {
 		        if (keywords[value])
@@ -278,7 +290,7 @@ define("eXide/mode/behaviour/xml", function(require, exports, module) {
 					var lines = session.doc.getAllLines();
 					lines[cursor.row] = line;
 					// call mode helper to close the tag if possible
-					parent.exec("closeTag", lines.join(session.doc.getNewLineCharacter()), cursor.row);
+                    parent.exec("closeTag", lines.join(session.doc.getNewLineCharacter()), cursor.row);
 				}
 	    	}
 			return false;
@@ -304,6 +316,28 @@ define("eXide/mode/xml", function(require, exports, module) {
 	};
 
 	oop.inherits(Mode, XmlMode);
+
+	(function() {
+	}).call(Mode.prototype);
+
+	exports.Mode = Mode;
+});
+
+define("eXide/mode/html", function(require, exports, module) {
+
+    var oop = require("pilot/oop");
+	var HtmlMode = require("ace/mode/html").Mode;
+	var Tokenizer = require("ace/tokenizer").Tokenizer;
+	var HtmlHighlightRules = require("ace/mode/html_highlight_rules").HtmlHighlightRules;
+	var XMLBehaviour = require("eXide/mode/behaviour/xml").XMLBehaviour;
+	var Range = require("ace/range").Range;
+
+	var Mode = function(parent) {
+	    this.$tokenizer = new Tokenizer(new HtmlHighlightRules().getRules());
+	    this.$behaviour = new XMLBehaviour(parent);
+	};
+
+	oop.inherits(Mode, HtmlMode);
 
 	(function() {
 	}).call(Mode.prototype);

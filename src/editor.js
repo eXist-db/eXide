@@ -196,7 +196,8 @@ eXide.edit.Editor = (function () {
 		// register mode helpers
 		$this.modes = {
 			"xquery": new eXide.edit.XQueryModeHelper($this),
-			"xml": new eXide.edit.XMLModeHelper($this)
+			"xml": new eXide.edit.XMLModeHelper($this),
+            "html": new eXide.edit.XMLModeHelper($this)
 		};
 	};
 	
@@ -314,8 +315,8 @@ eXide.edit.Editor = (function () {
 					doc.mime = "application/xml";
 				break;
 			case "html":
-				var HtmlMode = require("ace/mode/html").Mode;
-				doc.$session.setMode(new HtmlMode());
+				var HtmlMode = require("eXide/mode/html").Mode;
+				doc.$session.setMode(new HtmlMode(this));
 				if (setMime)
 					doc.mime = "text/html";
 				break;

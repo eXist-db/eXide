@@ -137,7 +137,7 @@ declare function local:get-template($name as xs:string) {
                 util:base64-decode($response/httpclient:body/string())
 };
 
-declare function local:store-templates($collection as xs:string?) {
+(:declare function local:store-templates($collection as xs:string?) {
     let $colConfig := concat("/db/system/config", $collection)
     let $modulesCol := concat($collection, "/modules")
     let $resourcesCol := concat($collection, "/resources")
@@ -152,6 +152,71 @@ declare function local:store-templates($collection as xs:string?) {
         xmldb:store($collection, "pre-install.xql", local:get-template("pre-install.xql.tmpl"), "application/xquery"),
         xmldb:store($collection, "controller.xql", local:get-template("controller.xql.tmpl"), "application/xquery")
     )
+};:)
+
+declare function local:get-templates-dir($templateName as xs:string) {
+    let $home := system:get-exist-home()
+    let $pathSep := util:system-property("file.separator")
+    let $webapp := 
+        if (doc-available(concat("file:///", $home, "/webapp/index.xml"))) then
+            concat($home, $pathSep, "webapp")
+        else if(ends-with($home, "WEB-INF")) then
+            substring-before($home, "WEB-INF")
+        else
+            concat($home, $pathSep, "webapp")
+    return
+        string-join(($webapp, "eXide", "templates", $templateName), $pathSep)
+};
+
+declare function local:copy-templates($target as xs:string, $source as xs:string) {
+    let $relPath := substring-after($source, "/templates/basic")
+    let $targetColl := if ($relPath eq "") then $target else concat($target, $relPath)
+    let $null := local:mkcol($targetColl)
+    return (
+        for $resource in xmldb:get-child-resources($source)
+        return
+            xmldb:copy($source, $targetColl, $resource),
+        for $childColl in xmldb:get-child-collections($source)
+        return
+            local:copy-templates($target, concat($source, "/", $childColl))
+    )
+};
+
+declare function local:store-templates-from-db($target as xs:string, $base as xs:string) {
+    let $templateColl := concat($base, "/templates/basic")
+    return
+        local:copy-templates($target, $templateColl)
+};
+
+declare function local:chmod-xqueries($collection as xs:string, $permissions as xs:int) {
+    (
+        for $resource in xmldb:get-child-resources($collection)
+        let $path := concat($collection, "/", $resource)
+        where xmldb:get-mime-type($path) eq "application/xquery"
+        return
+            xmldb:chmod-resource($collection, $resource, $permissions),
+        for $child in xmldb:get-child-collections($collection)
+        return
+            local:chmod-xqueries(concat($collection, "/", $child), $permissions)
+    )
+};
+
+declare function local:store-templates-from-fs($target as xs:string, $base as xs:string) {
+    let $pathSep := util:system-property("file.separator")
+    let $templatesDir := concat($base, $pathSep, "templates", $pathSep, "basic")
+    return (
+        xmldb:store-files-from-pattern($target, $templatesDir, "**/*", (), true()),
+        local:chmod-xqueries($target, util:base-to-integer(0775, 8))
+    )
+};
+
+declare function local:store-templates($target as xs:string) {
+    let $base := substring-before(system:get-module-load-path(), "/modules")
+    return
+        if (starts-with($base, "xmldb:exist://")) then
+            local:store-templates-from-db($target, $base)
+        else
+            local:store-templates-from-fs($target, $base)
 };
 
 declare function local:store($collection as xs:string?, $expathConf as element()?, $repoConf as element()?) {
@@ -159,11 +224,15 @@ declare function local:store($collection as xs:string?, $expathConf as element()
         error(QName("http://exist-db.org/xquery/sandbox", "missing-collection"), "collection parameter missing")
     else
         let $create := local:create-collection($collection)
-        return
+        let $null :=
             (local:store-expath($collection), local:store-repo($collection),local:store-templates($collection))
+        return
+            <ok/>
 };
 
 declare function local:view($collection as xs:string?, $expathConf as element()?, $repoConf as element()?) {
+    let $null := util:declare-option("exist:serialize", "method=html media-type=text/html")
+    return
         <form>
             {
                 if ($collection) then (
@@ -330,7 +399,7 @@ declare function local:deploy($collection as xs:string, $expathConf as element()
 declare function local:get-info-from-descriptor($collection as xs:string) {
     let $expathConf := doc(concat($collection, "/expath-pkg.xml"))/expath:package
     let $repoConf := doc(concat($collection, "/repo.xml"))/repo:meta
-    let $user := request:get-attribute("xquery.user")
+    let $user := xmldb:get-current-user()
     let $auth := if ($user) then xmldb:is-admin-user($user) else false()
     return
         <info xmlns:json="http://json.org" root="{$collection}" abbrev="{$expathConf/@abbrev}">

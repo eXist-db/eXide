@@ -14,8 +14,8 @@ declare function local:credentials-from-session() as xs:string* {
 declare function local:set-credentials($user as xs:string, $password as xs:string?) as element()+ {
     session:set-attribute("myapp.user", $user), 
     session:set-attribute("myapp.password", $password),
-    <set-attribute name="xquery.user" value="{$user}"/>,
-    <set-attribute name="xquery.password" value="{$password}"/>
+    <set-attribute xmlns="http://exist.sourceforge.net/NS/exist" name="xquery.user" value="{$user}"/>,
+    <set-attribute xmlns="http://exist.sourceforge.net/NS/exist" name="xquery.password" value="{$password}"/>
 };
 
 (:~

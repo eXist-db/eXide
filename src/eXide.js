@@ -76,7 +76,7 @@ eXide.app = (function() {
 			});
             
             eXide.find.Modules.addEventListener("open", null, function (module) {
-                eXide.app.findDocument(module.path);
+                eXide.app.findDocument(module.at);
             });
             eXide.find.Modules.addEventListener("import", null, function (module) {
                 editor.exec("importModule", module.prefix, module.uri, module.at);
