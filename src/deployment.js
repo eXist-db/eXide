@@ -29,7 +29,7 @@ eXide.edit.PackageEditor = (function () {
 		this.container = $("#dialog-deploy");
 		this.container.dialog({
 			title: "Deployment Editor",
-			modal: true,
+			modal: false,
 			autoOpen: false,
 			width: 520,
 			height: 600
@@ -38,7 +38,7 @@ eXide.edit.PackageEditor = (function () {
 		this.syncDialog = $("#synchronize-dialog");
 		this.syncDialog.dialog({
 			title: "Synchronize to Directory",
-			modal: true,
+			modal: false,
 			autoOpen: false,
 			width: 500,
 			height: 400,

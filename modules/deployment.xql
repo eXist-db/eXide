@@ -22,215 +22,242 @@ xquery version "3.0";
     Edit the expath and repo app descriptors.
     Functions to read, update the descriptors and deploy an app.
 :)
-    
+declare namespace deploy="http://exist-db.org/eXide/deploy";
 declare namespace expath="http://expath.org/ns/pkg";
 declare namespace repo="http://exist-db.org/xquery/repo";
 
 declare variable $app-root := request:get-attribute("app-root");
 
-declare function local:select-option($value as xs:string, $current as xs:string?, $label as xs:string) {
+declare function deploy:select-option($value as xs:string, $current as xs:string?, $label as xs:string) {
     <option value="{$value}">
     { if (exists($current) and $value eq $current) then attribute selected { "selected" } else (), $label }
     </option>
 };
 
-declare function local:get-app-root($collection as xs:string) {
+declare function deploy:get-app-root($collection as xs:string) {
     if (doc(concat($collection, "/expath-pkg.xml"))) then
         $collection
     else if ($collection ne "/db") then
         let $parent := replace($collection, "^(.*)/[^/]+$", "$1")
         return
-            local:get-app-root($parent)
+            deploy:get-app-root($parent)
     else
         ()
 };
 
-declare function local:store-expath($collection as xs:string?) {
+declare function deploy:store-expath($collection as xs:string?, $userData as xs:string*, $permissions as xs:int?) {
     let $descriptor :=
         <package xmlns="http://expath.org/ns/pkg"
             name="{request:get-parameter('name', ())}" abbrev="{request:get-parameter('abbrev', ())}"
             version="{request:get-parameter('version', ())}" spec="1.0">
             <title>{request:get-parameter("title", ())}</title>
         </package>
-    return
-        xmldb:store($collection, "expath-pkg.xml", $descriptor, "text/xml")
+    return (
+        xmldb:store($collection, "expath-pkg.xml", $descriptor, "text/xml"),
+        xmldb:set-resource-permissions($collection, "expath-pkg.xml", $userData[1], $userData[2], $permissions)
+    )
 };
 
-declare function local:store-repo($collection as xs:string?) {
-    let $descriptor :=
-        <meta xmlns="http://exist-db.org/xquery/repo">
-            <description>
-            {
-                let $desc := request:get-parameter("description", ())
-                return
-                    if ($desc) then $desc else request:get-parameter("title", ())
-            }
-            </description>
-            {
-                for $author in request:get-parameter("author", ())
-                return
-                    <author>{$author}</author>
-            }
-            <website>{request:get-parameter("website", ())}</website>
-            <status>{request:get-parameter("status", ())}</status>
-            <license>GNU-LGPL</license>
-            <copyright>true</copyright>
-            <type>application</type>
-            <target>{request:get-parameter("target", ())}</target>
-            <prepare>{request:get-parameter("prepare", ())}</prepare>
-            <finish>{request:get-parameter("finish", ())}</finish>
-            {
-                if (request:get-parameter("owner", ())) then
-                    <permissions user="{request:get-parameter('owner', ())}" 
-                        password="{request:get-parameter('password', ())}" 
-                        group="{request:get-parameter('group', ())}" 
-                        mode="{request:get-parameter('mode', ())}"/>
-                else
-                    ()
-            }
-        </meta>
-    return
-        xmldb:store($collection, "repo.xml", $descriptor, "text/xml")
+declare function deploy:repo-descriptor() {
+    <meta xmlns="http://exist-db.org/xquery/repo">
+        <description>
+        {
+            let $desc := request:get-parameter("description", ())
+            return
+                if ($desc) then $desc else request:get-parameter("title", ())
+        }
+        </description>
+        {
+            for $author in request:get-parameter("author", ())
+            return
+                <author>{$author}</author>
+        }
+        <website>{request:get-parameter("website", ())}</website>
+        <status>{request:get-parameter("status", ())}</status>
+        <license>GNU-LGPL</license>
+        <copyright>true</copyright>
+        <type>application</type>
+        <target>{request:get-parameter("target", ())}</target>
+        <prepare>{request:get-parameter("prepare", ())}</prepare>
+        <finish>{request:get-parameter("finish", ())}</finish>
+        {
+            if (request:get-parameter("owner", ())) then
+                <permissions user="{request:get-parameter('owner', ())}" 
+                    password="{request:get-parameter('password', ())}" 
+                    group="{request:get-parameter('group', ())}" 
+                    mode="{request:get-parameter('mode', ())}"/>
+            else
+                ()
+        }
+    </meta>
 };
 
-declare function local:mkcol-recursive($collection, $components) {
+declare function deploy:store-repo($descriptor as element(), $collection as xs:string?, $userData as xs:string*, $permissions as xs:int?) {
+    (
+        xmldb:store($collection, "repo.xml", $descriptor, "text/xml"),
+        xmldb:set-resource-permissions($collection, "repo.xml", $userData[1], $userData[2], $permissions)
+    )
+};
+
+declare function deploy:mkcol-recursive($collection, $components, $userData as xs:string*, $permissions as xs:int?) {
     if (exists($components)) then
         let $newColl := concat($collection, "/", $components[1])
         return (
             xmldb:create-collection($collection, $components[1]),
-            local:mkcol-recursive($newColl, subsequence($components, 2))
+            if (exists($userData)) then
+                xmldb:set-collection-permissions($newColl, $userData[1], $userData[2], $permissions)
+            else
+                (),
+            deploy:mkcol-recursive($newColl, subsequence($components, 2), $userData, $permissions)
         )
     else
         ()
 };
 
-declare function local:mkcol($path) {
+declare function deploy:mkcol($path, $userData as xs:string*, $permissions as xs:int?) {
     let $path := if (starts-with($path, "/db/")) then substring-after($path, "/db/") else $path
     return
-        local:mkcol-recursive("/db", tokenize($path, "/"))
+        deploy:mkcol-recursive("/db", tokenize($path, "/"), $userData, $permissions)
 };
 
-declare function local:create-collection($collection as xs:string) {
+declare function deploy:create-collection($collection as xs:string, $userData as xs:string+, $permissions as xs:int) {
     let $target := collection($collection)
     return
         if ($target) then
             $target
         else
-            local:mkcol($collection)
+            deploy:mkcol($collection, $userData, $permissions)
 };
 
-declare function local:get-template($name as xs:string) {
-    if (starts-with($app-root, "xmldb:")) then
-        doc(concat($app-root, "/templates/", $name))
+declare function deploy:check-group($group as xs:string) {
+    if (xmldb:group-exists($group)) then
+        ()
     else
-        let $url := request:get-url()
-        let $base := replace($url, "^(.*/)[^/]+$", "$1")
-        let $templateURI := concat($base, "templates/", $name)
-        let $log := util:log("DEBUG", ("Retrieving template: ", $templateURI))
-        let $response :=
-            httpclient:get(xs:anyURI($templateURI), false(), ())
-        let $log := util:log("DEBUG", ("DATA: ", $response))
-        return
-            if ($response/httpclient:body/@type = "xml") then
-                $response/httpclient:body/*
-            else
-                util:base64-decode($response/httpclient:body/string())
+        xmldb:create-group($group)
 };
 
-(:declare function local:store-templates($collection as xs:string?) {
-    let $colConfig := concat("/db/system/config", $collection)
-    let $modulesCol := concat($collection, "/modules")
-    let $resourcesCol := concat($collection, "/resources")
-    return (
-        xmldb:store($collection, "collection.xconf", local:get-template("collection.xconf.tmpl"), "application/xml"),
-        local:mkcol($modulesCol),
-        xmldb:store($modulesCol, "view.xql", local:get-template("view.xql.tmpl"), "application/xquery"),
-        xmldb:store($modulesCol, "config.xqm", local:get-template("config.xqm.tmpl"), "application/xquery"),
-        local:mkcol(concat($collection, "/resources")),
-        xmldb:store($resourcesCol, "style.css", local:get-template("style.css.tmpl"), "text/css"),
-        xmldb:store($collection, "index.html", local:get-template("index.html.tmpl"), "text/html"),
-        xmldb:store($collection, "pre-install.xql", local:get-template("pre-install.xql.tmpl"), "application/xquery"),
-        xmldb:store($collection, "controller.xql", local:get-template("controller.xql.tmpl"), "application/xquery")
-    )
-};:)
-
-declare function local:get-templates-dir($templateName as xs:string) {
-    let $home := system:get-exist-home()
-    let $pathSep := util:system-property("file.separator")
-    let $webapp := 
-        if (doc-available(concat("file:///", $home, "/webapp/index.xml"))) then
-            concat($home, $pathSep, "webapp")
-        else if(ends-with($home, "WEB-INF")) then
-            substring-before($home, "WEB-INF")
-        else
-            concat($home, $pathSep, "webapp")
+declare function deploy:check-user($repoConf as element()) as xs:string+ {
+    let $perms := $repoConf/repo:permissions
+    let $user := if ($perms/@user) then $perms/@user/string() else xmldb:get-current-user()
+    let $group := if ($perms/@group) then $perms/@group/string() else xmldb:get-user-groups($user)[1]
+    let $create :=
+        if (xmldb:exists-user($user)) then
+            if (index-of(xmldb:get-user-groups($user), $group)) then
+                ()
+            else (
+                deploy:check-group($group),
+                xmldb:add-user-to-group($user, $group)
+            )
+        else (
+            deploy:check-group($group),
+            xmldb:create-user($user, $perms/@password, $group, ())
+        )
     return
-        string-join(($webapp, "eXide", "templates", $templateName), $pathSep)
+        ($user, $group)
 };
 
-declare function local:copy-templates($target as xs:string, $source as xs:string) {
-    let $relPath := substring-after($source, "/templates/basic")
-    let $targetColl := if ($relPath eq "") then $target else concat($target, $relPath)
-    let $null := local:mkcol($targetColl)
+declare function deploy:target-permissions($repoConf as element()) as xs:int {
+    let $permissions := $repoConf/repo:permissions/@mode/string()
+    return
+        if ($permissions) then
+            util:base-to-integer(xs:int($permissions), 8)
+        else
+            util:base-to-integer(0775, 8)
+};
+
+declare function deploy:set-execute-bit($resource as xs:string) {
+    let $mode :=
+        sm:get-permissions($resource)/sm:permission/@mode
+    return
+        replace($mode, "(..).(..).(..).", "$1u$2u$3u")
+};
+
+declare function deploy:copy-templates($target as xs:string, $source as xs:string, $userData as xs:string+, $permissions as xs:int) {
+    let $null := deploy:mkcol($target, $userData, $permissions)
     return (
         for $resource in xmldb:get-child-resources($source)
-        return
-            xmldb:copy($source, $targetColl, $resource),
+        let $targetPath := xs:anyURI(concat($target, "/", $resource))
+        return (
+            xmldb:copy($source, $target, $resource),
+            let $mime := xmldb:get-mime-type($targetPath)
+            let $perms := 
+                if ($mime eq "application/xquery") then
+                    xmldb:string-to-permissions(deploy:set-execute-bit($targetPath))
+                else $permissions
+            return
+                xmldb:set-resource-permissions($target, $resource, $userData[1], $userData[2], $perms)
+        ),
         for $childColl in xmldb:get-child-collections($source)
         return
-            local:copy-templates($target, concat($source, "/", $childColl))
+            deploy:copy-templates(concat($target, "/", $childColl), concat($source, "/", $childColl), $userData, $permissions)
     )
 };
 
-declare function local:store-templates-from-db($target as xs:string, $base as xs:string) {
-    let $templateColl := concat($base, "/templates/basic")
+declare function deploy:store-templates-from-db($target as xs:string, $base as xs:string, $userData as xs:string+, $permissions as xs:int) {
+    let $template := request:get-parameter("template", "basic")
+    let $templateColl := concat($base, "/templates/", $template)
     return
-        local:copy-templates($target, $templateColl)
+        deploy:copy-templates($target, $templateColl, $userData, $permissions)
 };
 
-declare function local:chmod-xqueries($collection as xs:string, $permissions as xs:int) {
+declare function deploy:chmod($collection as xs:string, $userData as xs:string+, $permissions as xs:int) {
     (
         for $resource in xmldb:get-child-resources($collection)
         let $path := concat($collection, "/", $resource)
-        where xmldb:get-mime-type($path) eq "application/xquery"
+        let $mime := xmldb:get-mime-type($path)
+        let $perms := 
+            if ($mime eq "application/xquery") then
+                xmldb:string-to-permissions(deploy:set-execute-bit($path))
+            else $permissions
         return
-            xmldb:chmod-resource($collection, $resource, $permissions),
+            xmldb:set-resource-permissions($collection, $resource, $userData[1], $userData[2], $perms),
         for $child in xmldb:get-child-collections($collection)
         return
-            local:chmod-xqueries(concat($collection, "/", $child), $permissions)
+            deploy:chmod(concat($collection, "/", $child), $userData, $permissions)
     )
 };
 
-declare function local:store-templates-from-fs($target as xs:string, $base as xs:string) {
+declare function deploy:store-templates-from-fs($target as xs:string, $base as xs:string, $userData as xs:string+, $permissions as xs:int) {
     let $pathSep := util:system-property("file.separator")
-    let $templatesDir := concat($base, $pathSep, "templates", $pathSep, "basic")
+    let $template := request:get-parameter("template", "basic")
+    let $templatesDir := concat($base, $pathSep, "templates", $pathSep, $template)
     return (
         xmldb:store-files-from-pattern($target, $templatesDir, "**/*", (), true()),
-        local:chmod-xqueries($target, util:base-to-integer(0775, 8))
+        deploy:chmod($target, $userData, $permissions)
     )
 };
 
-declare function local:store-templates($target as xs:string) {
+declare function deploy:store-templates($target as xs:string, $userData as xs:string+, $permissions as xs:int) {
     let $base := substring-before(system:get-module-load-path(), "/modules")
     return
         if (starts-with($base, "xmldb:exist://")) then
-            local:store-templates-from-db($target, $base)
+            deploy:store-templates-from-db($target, $base, $userData, $permissions)
         else
-            local:store-templates-from-fs($target, $base)
+            deploy:store-templates-from-fs($target, $base, $userData, $permissions)
 };
 
-declare function local:store($collection as xs:string?, $expathConf as element()?, $repoConf as element()?) {
-    if (not($collection)) then
-        error(QName("http://exist-db.org/xquery/sandbox", "missing-collection"), "collection parameter missing")
-    else
-        let $create := local:create-collection($collection)
-        let $null :=
-            (local:store-expath($collection), local:store-repo($collection),local:store-templates($collection))
-        return
-            <ok/>
+declare function deploy:store($collection as xs:string?, $expathConf as element()?) {
+    let $repoConf := deploy:repo-descriptor()
+    let $permissions := deploy:target-permissions($repoConf)
+    let $userData := deploy:check-user($repoConf)
+    return
+        if (not($collection)) then
+            error(QName("http://exist-db.org/xquery/sandbox", "missing-collection"), "collection parameter missing")
+        else
+            let $create := deploy:create-collection($collection, $userData, $permissions)
+            let $null := (
+                deploy:store-expath($collection, $userData, $permissions), 
+                deploy:store-repo($repoConf, $collection, $userData, $permissions),
+                if (empty($expathConf)) then
+                    deploy:store-templates($collection, $userData, $permissions)
+                else
+                    ()
+            )
+            return
+                <ok/>
 };
 
-declare function local:view($collection as xs:string?, $expathConf as element()?, $repoConf as element()?) {
+declare function deploy:view($collection as xs:string?, $expathConf as element()?, $repoConf as element()?) {
     let $null := util:declare-option("exist:serialize", "method=html media-type=text/html")
     return
         <form>
@@ -244,6 +271,19 @@ declare function local:view($collection as xs:string?, $expathConf as element()?
             <fieldset>
                 <legend>Application Properties</legend>
                 <ol>
+                    {
+                        if (empty($repoConf)) then
+                            <li>
+                                <div class="hint">The template to use for generating the basic app structure.</div>
+                                <select name="template">
+                                    <option value="basic">Basic</option>
+                                    <option value="templating">HTML Templates</option>
+                                </select>
+                                <label for="template">Template:</label>
+                            </li>
+                        else
+                            ()
+                    }
                     {
                         if (not($collection)) then
                             <li>
@@ -287,9 +327,9 @@ declare function local:view($collection as xs:string?, $expathConf as element()?
                         let $status := $repoConf/repo:status/string()
                         return
                             <select name="status">
-                                { local:select-option("alpha", $status, "Alpha") }
-                                { local:select-option("beta", $status, "Beta") }
-                                { local:select-option("stable", $status, "Stable") }
+                                { deploy:select-option("alpha", $status, "Alpha") }
+                                { deploy:select-option("beta", $status, "Beta") }
+                                { deploy:select-option("stable", $status, "Stable") }
                             </select>
                     }
                         <label for="status">Status:</label>
@@ -364,7 +404,7 @@ declare function local:view($collection as xs:string?, $expathConf as element()?
                                 <label for="owner">Group:</label>
                             </li>
                             <li>
-                                <input type="text" name="mode" value="{if ($mode) then $mode else '0444'}" size="4"/>
+                                <input type="text" name="mode" value="{if ($mode) then $mode else '0744'}" size="4"/>
                                 <label for="mode">Mode:</label>
                             </li>
                         </ol>
@@ -373,19 +413,19 @@ declare function local:view($collection as xs:string?, $expathConf as element()?
         </form>
 };
 
-declare function local:package($collection as xs:string, $expathConf as element()) {
+declare function deploy:package($collection as xs:string, $expathConf as element()) {
     let $name := concat($expathConf/@abbrev, "-", $expathConf/@version, ".xar")
     let $xar := compression:zip(xs:anyURI($collection), true(), $collection)
-    let $mkcol := local:mkcol("/db/system/repo")
+    let $mkcol := deploy:mkcol("/db/system/repo", (), ())
     return
         xmldb:store("/db/system/repo", $name, $xar, "application/zip")
 };
 
-declare function local:deploy($collection as xs:string, $expathConf as element(),
+declare function deploy:deploy($collection as xs:string, $expathConf as element(),
     $repoConf as element()) {
     let $null := util:declare-option("exist:serialize", "method=json media-type=application/json")
     let $port := request:get-server-port()
-    let $pkg := local:package($collection, $expathConf)
+    let $pkg := deploy:package($collection, $expathConf)
     let $url := concat('http://localhost:',$port,'/exist/rest',$pkg)
     let $null := (
         repo:remove($expathConf/@name),
@@ -396,7 +436,7 @@ declare function local:deploy($collection as xs:string, $expathConf as element()
         <info>{substring-after($repoConf/repo:target, "/db/")}</info>
 };
 
-declare function local:get-info-from-descriptor($collection as xs:string) {
+declare function deploy:get-info-from-descriptor($collection as xs:string) {
     let $expathConf := doc(concat($collection, "/expath-pkg.xml"))/expath:package
     let $repoConf := doc(concat($collection, "/repo.xml"))/repo:meta
     let $user := xmldb:get-current-user()
@@ -409,12 +449,12 @@ declare function local:get-info-from-descriptor($collection as xs:string) {
         </info>
 };
 
-declare function local:get-info($collection as xs:string) {
+declare function deploy:get-info($collection as xs:string) {
     let $null := util:declare-option("exist:serialize", "method=json media-type=application/json")
-    let $root := local:get-app-root($collection)
+    let $root := deploy:get-app-root($collection)
     return
         if ($root) then
-            local:get-info-from-descriptor($root)
+            deploy:get-info-from-descriptor($root)
         else
             <info/>
 };
@@ -422,26 +462,26 @@ declare function local:get-info($collection as xs:string) {
 let $collectionParam := request:get-parameter("collection", ())
 let $collection :=
     if ($collectionParam) then
-        let $root := local:get-app-root($collectionParam)
+        let $root := deploy:get-app-root($collectionParam)
         return
             if ($root) then $root else $collectionParam
     else
         ()
 let $info := request:get-parameter("info", ())
 let $deploy := request:get-parameter("deploy", ())
-let $expathConf := if ($collection) then collection($collection)/expath:package else ()
-let $repoConf := if ($collection) then collection($collection)/repo:meta else ()
+let $expathConf := if ($collection) then xcollection($collection)/expath:package else ()
+let $repoConf := if ($collection) then xcollection($collection)/repo:meta else ()
 let $abbrev := request:get-parameter("abbrev", ())
 return
     try {
         if ($info) then
-            local:get-info($info)
+            deploy:get-info($info)
         else if ($deploy) then
-            local:deploy($collection, $expathConf, $repoConf)
+            deploy:deploy($collection, $expathConf, $repoConf)
         else if ($abbrev) then
-            local:store($collection, $expathConf, $repoConf)
+            deploy:store($collection, $expathConf)
         else
-            local:view($collection, $expathConf, $repoConf)
+            deploy:view($collection, $expathConf, $repoConf)
     } catch exerr:EXXQDY0003 {
         response:set-status-code(403),
         <span>You don't have permissions to access or write the application archive.
