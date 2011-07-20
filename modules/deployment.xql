@@ -202,6 +202,7 @@ declare function deploy:store-templates-from-db($target as xs:string, $base as x
 
 declare function deploy:chmod($collection as xs:string, $userData as xs:string+, $permissions as xs:int) {
     (
+        xmldb:set-collection-permissions($collection, $userData[1], $userData[2], $permissions),
         for $resource in xmldb:get-child-resources($collection)
         let $path := concat($collection, "/", $resource)
         let $mime := xmldb:get-mime-type($path)
