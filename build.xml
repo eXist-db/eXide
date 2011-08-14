@@ -59,6 +59,7 @@
                 <file name="deployment.js"/>
                 <file name="templates.js"/>
                 <file name="resources.js"/>
+				<file name="find.js"/>
             </sources>
         </jscomp>
         <jscomp compilationLevel="simple" debug="false" output="${scripts}/jquery/jquery.plugins.min.js">
@@ -88,6 +89,7 @@
     			<include name="modules/**"/>
     			<include name="resources/**"/>
     			<include name="templates/**"/>
+				<include name="src/**"/>
 				<exclude name=".git*"/>
     		</fileset>
     	</zip>
