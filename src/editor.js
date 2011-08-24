@@ -338,7 +338,7 @@ eXide.edit.Editor = (function () {
 		
 		closeDocument: function() {
 			this.$triggerEvent("close", [this.activeDoc]);
-			$("#tabs a[title=" + this.activeDoc.path + "]").parent().remove();
+			$("#tabs a[title=\"" + this.activeDoc.path + "\"]").parent().remove();
 			for (var i = 0; i < this.documents.length; i++) {
 				if (this.documents[i].path == this.activeDoc.path) {
 					this.documents.splice(i, 1);
@@ -348,7 +348,7 @@ eXide.edit.Editor = (function () {
 				this.newDocument();
 			else {
 				this.activeDoc = this.documents[this.documents.length - 1];
-				$("#tabs a[title=" + this.activeDoc.path + "]").addClass("active");
+				$("#tabs a[title=\"" + this.activeDoc.path + "\"]").addClass("active");
 				this.editor.setSession(this.activeDoc.$session);
 				this.editor.resize();
 				this.$triggerEvent("activate", [this.activeDoc]);
@@ -534,7 +534,7 @@ eXide.edit.Editor = (function () {
 				label = doc.name + "*";
 			else
 				label = doc.name;
-			$("#tabs a[title=" + oldPath + "]").attr("title", doc.path).text(label);
+			$("#tabs a[title=\"" + oldPath + "\"]").attr("title", doc.path).text(label);
 		},
 		
         scrollToTab: function (current) {

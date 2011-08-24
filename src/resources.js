@@ -390,7 +390,7 @@ eXide.browse.Upload = (function () {
 	
 	Constr.prototype = {
 		update: function(collection) {
-			$("input[name=collection]", this.container).val(collection);
+			$("input[name=\"collection\"]", this.container).val(collection);
 		},
 		
 		addEventListener: function (name, obj, callback) {

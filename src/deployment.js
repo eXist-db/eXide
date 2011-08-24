@@ -44,7 +44,7 @@ eXide.edit.PackageEditor = (function () {
 			height: 400,
 			buttons: {
 				"Synchronize": function () {
-					var dir = $this.syncDialog.find("input[name=dir]").val();
+					var dir = $this.syncDialog.find("input[name=\"dir\"]").val();
 					if (!dir || dir.length == 0) {
 						$("#synchronize-report").text("No output directory specified!");
 						return;
@@ -52,7 +52,7 @@ eXide.edit.PackageEditor = (function () {
 					$("#synchronize-report").text("Synchronization in progress ...");
 					$("#synchronize-report").load("modules/synchronize.xql", {
 						collection: $this.collection,
-						start: $this.syncDialog.find("input[name=date]").val(),
+						start: $this.syncDialog.find("input[name=\"date\"]").val(),
 						dir: dir
 					});
 					this.directory = dir;
@@ -61,7 +61,7 @@ eXide.edit.PackageEditor = (function () {
 			}
 		});
 		if (this.directory) {
-			this.syncDialog.find("input[name=dir]").val(this.directory);
+			this.syncDialog.find("input[name=\"dir\"]").val(this.directory);
 		}
 	};
 	
@@ -155,7 +155,7 @@ eXide.edit.PackageEditor = (function () {
 							return;
 						}
 						$this.collection = data.root;
-						$this.syncDialog.find("input[name=date]").val(data.deployed);
+						$this.syncDialog.find("input[name=\"date\"]").val(data.deployed);
 						$this.syncDialog.dialog("open");
 					}
 				});

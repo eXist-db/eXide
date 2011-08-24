@@ -387,10 +387,10 @@ eXide.app = (function() {
 		
 		preferences: function () {
 			var form = $("#preferences-dialog form");
-			$("select[name=theme]", form).val(preferences.theme);
-			$("select[name=font-size]", form).val(preferences.fontSize);
-			$("input[name=show-invisibles]", form).attr("checked", preferences.showInvisibles);
-			$("input[name=print-margin]", form).attr("checked", preferences.showPrintMargin);
+			$("select[name=\"theme\"]", form).val(preferences.theme);
+			$("select[name=\"font-size\"]", form).val(preferences.fontSize);
+			$("input[name=\"show-invisibles\"]", form).attr("checked", preferences.showInvisibles);
+			$("input[name=\"print-margin\"]", form).attr("checked", preferences.showPrintMargin);
 			$("#preferences-dialog").dialog("open");
 		},
 		
@@ -518,10 +518,10 @@ eXide.app = (function() {
 					"Cancel": function () { $(this).dialog("close"); editor.focus(); },
 					"Save": function () {
 						var form = $("form", this);
-						preferences.theme = $("select[name=theme]", form).val();
-						preferences.fontSize = $("select[name=font-size]", form).val();
-						preferences.showInvisibles = $("input[name=show-invisibles]", form).is(":checked");
-						preferences.showPrintMargin = $("input[name=print-margin]", form).is(":checked");
+						preferences.theme = $("select[name=\"theme\"]", form).val();
+						preferences.fontSize = $("select[name=\"font-size\"]", form).val();
+						preferences.showInvisibles = $("input[name=\"show-invisibles\"]", form).is(":checked");
+						preferences.showPrintMargin = $("input[name=\"print-margin\"]", form).is(":checked");
 						eXide.app.applyPreferences();
 						
 						$(this).dialog("close");
@@ -539,7 +539,7 @@ eXide.app = (function() {
 							url: "login",
 							data: $("#login-form").serialize(),
 							success: function (data) {
-								eXide.app.login = $("#login-form input[name=user]").val();
+								eXide.app.login = $("#login-form input[name=\"user\"]").val();
 								$.log("Logged in as %s", eXide.app.login);
 								$("#login-dialog").dialog("close");
 								$("#user").text("Logged in as " + eXide.app.login + ". ");
