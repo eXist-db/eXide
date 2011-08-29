@@ -151,6 +151,11 @@ eXide.app = (function() {
 
 		$doOpenDocument: function(resource, callback) {
 			resource.path = eXide.util.normalizePath(resource.path);
+            var doc = editor.getDocument(resource.path);
+            if (doc) {
+                editor.switchTo(doc);
+                return;
+            }
 			$.ajax({
 				url: "modules/load.xql?path=" + resource.path,
 				dataType: 'text',
