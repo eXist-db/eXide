@@ -365,7 +365,7 @@ eXide.app = (function() {
 			var path = editor.getActiveDocument().getPath();
 			var collection = /^(.*)\/[^\/]+$/.exec(path);
 			if (!collection) {
-				eXide.util.error("The file open in the editor does not belong to an application package!")
+				eXide.util.error("The file open in the editor does not belong to an application package!");
 				return false;
 			}
 			eXide.app.$checkLogin();
@@ -377,16 +377,31 @@ eXide.app = (function() {
 		synchronize: function() {
 			var path = editor.getActiveDocument().getPath();
 			var collection = /^(.*)\/[^\/]+$/.exec(path);
-			if (!collection)
+			if (!collection) {
+                eXide.util.error("The file open in the editor does not belong to an application package!");
 				return;
+			}
 			deploymentEditor.synchronize(collection[1]);
 		},
 		
+        downloadApp: function () {
+            var path = editor.getActiveDocument().getPath();
+    		var collection = /^(.*)\/[^\/]+$/.exec(path);
+            $.log("downloading %s", collection);
+			if (!collection) {
+                eXide.util.error("The file open in the editor does not belong to an application package!");
+				return;
+			}
+			deploymentEditor.download(collection[1]);
+        },
+        
 		openApp: function () {
 			var path = editor.getActiveDocument().getPath();
 			var collection = /^(.*)\/[^\/]+$/.exec(path);
-			if (!collection)
+			if (!collection) {
+                eXide.util.error("The file open in the editor does not belong to an application package!");
 				return;
+			}
 			deploymentEditor.runApp(collection[1]);
 		},
 		
@@ -654,6 +669,7 @@ eXide.app = (function() {
 			$("#menu-deploy-edit").click(eXide.app.deploymentSettings);
 			$("#menu-deploy-deploy").click(eXide.app.deploy);
 			$("#menu-deploy-sync").click(eXide.app.synchronize);
+            $("#menu-deploy-download").click(eXide.app.downloadApp);
 			$("#menu-edit-undo").click(function (ev) {
 				ev.preventDefault();
 				editor.editor.undo();

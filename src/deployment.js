@@ -138,7 +138,11 @@ eXide.edit.PackageEditor = (function () {
 					}
 				});
 			},
-			
+
+            download: function (collection) {
+                window.location.href = "modules/deployment.xql?download=true&collection=" + encodeURIComponent(collection);
+            },
+            
 			/**
 			 * Synchronize current application package to file system directory.
 			 */
