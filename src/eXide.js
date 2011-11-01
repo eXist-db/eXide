@@ -261,7 +261,7 @@ eXide.app = (function() {
 						endOffset = startOffset + 10 - 1;
 						if (hitCount < endOffset)
 							endOffset = hitCount;
-						eXide.util.message("Found " + hitCount + " in " + elem.getAttribute("elapsed"));
+						eXide.util.message("Found " + hitCount + " in " + elem.getAttribute("elapsed") + "s");
 						eXide.app.retrieveNext();
 					}
 				},

@@ -8,6 +8,8 @@ declare option exist:serialize "method=html5 media-type=text/html";
 
 declare function t:transform($node as node()) {
     typeswitch ($node)
+	case document-node() return
+		t:transform($node/*)
     case element() return
         switch ($node/@id)
             case "app-info" return

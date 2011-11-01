@@ -10,7 +10,7 @@ return
         <p>The request to the server failed, maybe due to missing permissions? The server's message is shown below:</p>
         
         {
-            typeswitch($input)
+            typeswitch($input/*)
             case element() return
                 $input//div[@class = 'description']
             default return
