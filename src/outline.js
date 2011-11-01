@@ -31,11 +31,7 @@ eXide.edit.Outline = (function () {
 	var TYPE_VARIABLE = "variable";
 	var TYPE_TEMPLATE = "template";
 	
-	Constr = function(editor) {
-		editor.addEventListener("activate", this, this.updateOutline);
-		editor.addEventListener("validate", this, this.updateOutline);
-		editor.addEventListener("close", this, this.clearOutline);
-		
+	Constr = function() {
 		// pre-compile regexp needed by this class
 		this.funcDefRe = /declare\s+function\s+([^\(]+)\(/g;
 		this.varDefRe = /declare\s+variable\s+\$[^\s;]+/gm;

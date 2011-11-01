@@ -435,6 +435,16 @@ eXide.util.oop.inherit = (function() {
 	}
 }());
 
+eXide.util.oop.extend = (function() {
+  return function(destination, source) {
+      for (var k in source) {
+        if (source.hasOwnProperty(k)) {
+          destination[k] = source[k];
+        }
+      }
+  }
+}());
+
 /* Debug and logging functions */
 (function($) {
     $.log = function() {
