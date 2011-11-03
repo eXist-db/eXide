@@ -47,6 +47,7 @@ a:link,a:visited {
 }
 
 #editor {
+    font-family: 'Ubuntu Mono', 'Monaco','Menlo','Droid Sans Mono','Courier New',monospace;
 	height: 200px;
 	margin: 0 4px;
 	background-color: #E8E8E8;
