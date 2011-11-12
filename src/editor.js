@@ -139,6 +139,7 @@ eXide.edit.Editor = (function () {
 		$this.tabCounter = 0;
 		$this.newDocCounter = 0;
 		$this.pendingCheck = false;
+        $this.themes = {};
 		
 	    var renderer = new Renderer($this.container, "ace/theme/eclipse");
 	    renderer.setShowGutter(true);
@@ -551,9 +552,30 @@ eXide.edit.Editor = (function () {
     
 	Constr.prototype.setTheme = function(theme) {
 		$.log("Changing theme to %s", theme);
-		this.editor.setTheme(theme);
+        var $this = this;
+        $this.loadTheme(theme, function() {
+		    $this.editor.setTheme("ace/theme/" + theme);
+        });
 	};
 	
+    Constr.prototype.loadTheme = function(name, callback) {
+        if (this.themes[name])
+            return callback();
+        
+        var net = require("ace/lib/net");
+        this.themes[name] = 1;
+        var base = name.split("/").pop();
+        var fileName = "resources/scripts/ace/theme-" + base + ".js";
+        
+        var head = document.getElementsByTagName('head')[0];
+        var s = document.createElement('script');
+
+        s.src = fileName;
+        head.appendChild(s);
+
+        s.onload = callback;
+    };
+
 	/**
 	 * Update the status bar.
 	 */
