@@ -23,8 +23,7 @@ eXide.namespace("eXide.edit.commands");
  */
 eXide.edit.commands = (function () {
 
-	var canon = require("pilot/canon");
-	var useragent = require("pilot/useragent");
+	var useragent = require("ace/lib/useragent");
 	
 	function bindKey(win, mac) {
 	    return {
@@ -37,77 +36,79 @@ eXide.edit.commands = (function () {
 	return {
 		
 		init: function (editor) {
-		    canon.addCommand({
+            var commands = editor.editor.commands;
+            $.log("commands: %o", commands);
+		    commands.addCommand({
 		    	name: "saveDocument",
 		    	bindKey: bindKey("Ctrl-Shift-S", "Command-Shift-S"),
 		    	exec: function (env, args, request) {
 		    		eXide.app.saveDocument();
 		    	}
 		    });
-		    canon.addCommand({
+		    commands.addCommand({
 		    	name: "runQuery",
 		    	bindKey: bindKey("Ctrl-Return", "Command-Return"),
 		    	exec: function (env, args, request) {
 		    		eXide.app.runQuery();
 		    	}
 		    });
-		    canon.addCommand({
+		    commands.addCommand({
 		    	name: "openDocument",
 		    	bindKey: bindKey("Ctrl-Shift-O", "Command-Shift-O"),
 		    	exec: function (env, args, request) {
 		    		eXide.app.openDocument();
 		    	}
 		    });
-		    canon.addCommand({
+		    commands.addCommand({
 		    	name: "newDocument",
 		    	bindKey: bindKey("Ctrl-Shift-N", "Command-Shift-N"),
 		    	exec: function (env, args, request) {
 		    		eXide.app.newDocument();
 		    	}
 		    });
-		    canon.addCommand({
+		    commands.addCommand({
 		    	name: "closeDocument",
 		    	bindKey: bindKey("Ctrl-Shift-W", "Command-Shift-W"),
 		    	exec: function (env, args, request) {
 		    		eXide.app.closeDocument();
 		    	}
 		    });
-		    canon.addCommand({
+		    commands.addCommand({
 		    	name: "autocomplete",
 		    	bindKey: bindKey("Ctrl-Space", "Ctrl-Space"),
 		    	exec: function(env, args, request) {
 		    		editor.autocomplete();
 		    	}
 		    });
-		    canon.addCommand({
+		    commands.addCommand({
 		    	name: "nextTab",
 		    	bindKey: bindKey("Ctrl-Shift-PageDown", "Command-Shift-PageDown"),
 		    	exec: function(env, args, request) {
 		    		editor.nextTab();
 		    	}
 		    });
-		    canon.addCommand({
+		    commands.addCommand({
 		    	name: "previousTab",
 		    	bindKey: bindKey("Ctrl-Shift-PageUp", "Command-Shift-PageUp"),
 		    	exec: function(env, args, request) {
 		    		editor.previousTab();
 		    	}
 		    });
-		    canon.addCommand({
+		    commands.addCommand({
 		    	name: "functionDoc",
 		    	bindKey: bindKey("F1", "F1"),
 		    	exec: function(env, args, request) {
 		    		editor.exec("showFunctionDoc");
 		    	}
 		    });
-		    canon.addCommand({
+		    commands.addCommand({
 		    	name: "gotoDefinition",
 		    	bindKey: bindKey("F3", "F3"),
 		    	exec: function(env, args, request) {
 		    		editor.exec("gotoDefinition");
 		    	}
 		    });
-            canon.addCommand({
+            commands.addCommand({
     	    	name: "findModule",
 		    	bindKey: bindKey("F4", "F4"),
 		    	exec: function(env, args, request) {
@@ -115,7 +116,7 @@ eXide.edit.commands = (function () {
 		    		eXide.find.Modules.select(doc.syntax);
 		    	}
 		    });
-		    canon.addCommand({
+		    commands.addCommand({
 		    	name: "indentOrParam",
 		    	bindKey: bindKey("Tab", "Tab"),
 		    	exec: function(env, args, request) {
@@ -123,20 +124,20 @@ eXide.edit.commands = (function () {
 		    		// cycle through the template's params. Otherwise, it calls indent.
 		    		var doc = editor.getActiveDocument();
 		    		if (!(doc.template && doc.template.nextParam())) {
-		    			env.editor.indent();
+		    			editor.editor.indent();
 		    		}
 		    	}
 		    });
-		    canon.addCommand({
+		    commands.addCommand({
 		    	name: "escape",
 		    	bindKey: bindKey("Esc", "Esc"),
 		    	exec: function(env, args, request) {
 		    		var doc = editor.getActiveDocument();
 		    		doc.template = null;
-		    		env.editor.clearSelection();
+		    		editor.editor.clearSelection();
 		    	}
 		    });
-		    canon.addCommand({
+		    commands.addCommand({
 		    	name: "dbManager",
 		    	bindKey: bindKey("Ctrl-Shift-M", "Command-Shift-M"),
 		    	exec: function (env, args, request) {
@@ -145,24 +146,26 @@ eXide.edit.commands = (function () {
 		    })
 		},
 		
-		help: function (container) {
+		help: function (container, editor) {
 			$(container).find("table").each(function () {
 				this.innerHTML = "";
-				var names = canon.getCommandNames();
-				for (var i = 0; i < names.length; i++) {
-					var cmd = canon.getCommand(names[i]);
-					var tr = document.createElement("tr");
+                var commands = editor.editor.commands;
+                for (key in commands.commands)  {
+                    var command = commands.commands[key];
+    				var tr = document.createElement("tr");
 					var td = document.createElement("td");
-					td.appendChild(document.createTextNode(names[i]));
+					td.appendChild(document.createTextNode(command.name));
 					tr.appendChild(td);
 					td = document.createElement("td");
-					if (useragent.isMac)
-						td.appendChild(document.createTextNode(cmd.bindKey.mac));
-					else
-						td.appendChild(document.createTextNode(cmd.bindKey.win));
+                    if (command.bindKey) {
+    					if (useragent.isMac)
+    						td.appendChild(document.createTextNode(command.bindKey.mac));
+    					else
+    						td.appendChild(document.createTextNode(command.bindKey.win));
+                    }
 					tr.appendChild(td);
 					this.appendChild(tr);
-				}
+                }
 			});
 		}
 	};

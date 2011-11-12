@@ -140,16 +140,13 @@ eXide.edit.Editor = (function () {
 		$this.newDocCounter = 0;
 		$this.pendingCheck = false;
 		
-		eXide.edit.commands.init($this);
-		
-		var catalog = require("pilot/plugin_manager").catalog;
-	    catalog.registerPlugins([ "pilot/index" ]);
-	    
 	    var renderer = new Renderer($this.container, "ace/theme/eclipse");
 	    renderer.setShowGutter(true);
 	    
 		this.editor = new Editor(renderer);
 		this.editor.setBehavioursEnabled(true);
+		
+        eXide.edit.commands.init($this);
 		
 	    this.outline = new eXide.edit.Outline();
 	    this.addEventListener("activate", this.outline, this.outline.updateOutline);

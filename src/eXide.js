@@ -598,7 +598,7 @@ eXide.app = (function() {
 					"Close": function () { $(this).dialog("close"); }
 				},
 				open: function () {
-					eXide.edit.commands.help($("#keyboard-help"));
+					eXide.edit.commands.help($("#keyboard-help"), editor);
 				}
 			});
             $("#about-dialog").dialog({

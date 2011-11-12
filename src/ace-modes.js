@@ -18,8 +18,8 @@
  */
 define("eXide/mode/xquery_highlight_rules", function(require, exports, module) {
 
-var oop = require("pilot/oop");
-var lang = require("pilot/lang");
+var oop = require("ace/lib/oop");
+var lang = require("ace/lib/lang");
 var TextHighlightRules = require("ace/mode/text_highlight_rules").TextHighlightRules;
 
 var XQueryHighlightRules = function() {
@@ -141,7 +141,7 @@ exports.XQueryHighlightRules = XQueryHighlightRules;
 
 define("eXide/mode/behaviour/xquery", function(require, exports, module) {
 
-	var oop = require("pilot/oop");
+	var oop = require("ace/lib/oop");
 	var Behaviour = require('ace/mode/behaviour').Behaviour;
 	var CstyleBehaviour = require('ace/mode/behaviour/cstyle').CstyleBehaviour;
 
@@ -191,7 +191,7 @@ define("eXide/mode/behaviour/xquery", function(require, exports, module) {
 
 define("eXide/mode/xquery", function(require, exports, module) {
 
-var oop = require("pilot/oop");
+var oop = require("ace/lib/oop");
 var TextMode = require("ace/mode/text").Mode;
 var Tokenizer = require("ace/tokenizer").Tokenizer;
 var XQueryHighlightRules = require("eXide/mode/xquery_highlight_rules").XQueryHighlightRules;
@@ -245,6 +245,29 @@ oop.inherits(Mode, TextMode);
 
         return "";
     };
+    
+    this.toggleCommentLines = function(state, doc, startRow, endRow) {
+        var i, line;
+        var outdent = true;
+        var re = /^\s*\(:(.*):\)/;
+
+        for (i=startRow; i<= endRow; i++) {
+            if (!re.test(doc.getLine(i))) {
+                outdent = false;
+                break;
+            }
+        }
+
+        var range = new Range(0, 0, 0, 0);
+        for (i=startRow; i<= endRow; i++) {
+            line = doc.getLine(i);
+            range.start.row  = i;
+            range.end.row    = i;
+            range.end.column = line.length;
+
+            doc.replace(range, outdent ? line.match(re)[1] : "(:" + line + ":)");
+        }
+    };
 }).call(Mode.prototype);
 
 exports.Mode = Mode;
@@ -252,7 +275,7 @@ exports.Mode = Mode;
 
 define("eXide/mode/behaviour/xml", function(require, exports, module) {
 
-	var oop = require("pilot/oop");
+	var oop = require("ace/lib/oop");
 	var Behaviour = require('ace/mode/behaviour').Behaviour;
 	var CstyleBehaviour = require('ace/mode/behaviour/cstyle').CstyleBehaviour;
 	var XQueryBehaviour = require('eXide/mode/behaviour/xquery').XQueryBehaviour;
@@ -303,7 +326,7 @@ define("eXide/mode/behaviour/xml", function(require, exports, module) {
 
 define("eXide/mode/xml", function(require, exports, module) {
 
-	var oop = require("pilot/oop");
+	var oop = require("ace/lib/oop");
 	var XmlMode = require("ace/mode/xml").Mode;
 	var Tokenizer = require("ace/tokenizer").Tokenizer;
 	var XmlHighlightRules = require("ace/mode/xml_highlight_rules").XmlHighlightRules;
@@ -325,7 +348,7 @@ define("eXide/mode/xml", function(require, exports, module) {
 
 define("eXide/mode/html", function(require, exports, module) {
 
-    var oop = require("pilot/oop");
+    var oop = require("ace/lib/oop");
 	var HtmlMode = require("ace/mode/html").Mode;
 	var Tokenizer = require("ace/tokenizer").Tokenizer;
 	var HtmlHighlightRules = require("ace/mode/html_highlight_rules").HtmlHighlightRules;
