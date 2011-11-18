@@ -341,6 +341,30 @@ define("eXide/mode/xml", function(require, exports, module) {
 	oop.inherits(Mode, XmlMode);
 
 	(function() {
+        
+        this.toggleCommentLines = function(state, doc, startRow, endRow) {
+            var i, line;
+            var outdent = true;
+            var re = /^\s*<!--(.*)-->/;
+    
+            for (i=startRow; i<= endRow; i++) {
+                if (!re.test(doc.getLine(i))) {
+                    outdent = false;
+                    break;
+                }
+            }
+    
+            var range = new Range(0, 0, 0, 0);
+            for (i=startRow; i<= endRow; i++) {
+                line = doc.getLine(i);
+                range.start.row  = i;
+                range.end.row    = i;
+                range.end.column = line.length;
+    
+                doc.replace(range, outdent ? line.match(re)[1] : "<!--" + line + "-->");
+            }
+        };
+        
 	}).call(Mode.prototype);
 
 	exports.Mode = Mode;
@@ -363,6 +387,29 @@ define("eXide/mode/html", function(require, exports, module) {
 	oop.inherits(Mode, HtmlMode);
 
 	(function() {
+        
+        this.toggleCommentLines = function(state, doc, startRow, endRow) {
+            var i, line;
+            var outdent = true;
+            var re = /^\s*<!--(.*)-->/;
+    
+            for (i=startRow; i<= endRow; i++) {
+                if (!re.test(doc.getLine(i))) {
+                    outdent = false;
+                    break;
+                }
+            }
+    
+            var range = new Range(0, 0, 0, 0);
+            for (i=startRow; i<= endRow; i++) {
+                line = doc.getLine(i);
+                range.start.row  = i;
+                range.end.row    = i;
+                range.end.column = line.length;
+    
+                doc.replace(range, outdent ? line.match(re)[1] : "<!--" + line + "-->");
+            }
+        };
 	}).call(Mode.prototype);
 
 	exports.Mode = Mode;
