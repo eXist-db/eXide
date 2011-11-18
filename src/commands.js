@@ -109,6 +109,13 @@ eXide.edit.commands = (function () {
 		    	}
 		    });
             commands.addCommand({
+    	    	name: "searchIncremental",
+		    	bindKey: bindKey("Ctrl-F", "Command-F"),
+		    	exec: function(env, args, request) {
+		    		editor.quicksearch.start();
+		    	}
+		    });
+            commands.addCommand({
     	    	name: "findModule",
 		    	bindKey: bindKey("F4", "F4"),
 		    	exec: function(env, args, request) {

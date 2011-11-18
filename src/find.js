@@ -1,3 +1,52 @@
+eXide.namespace("eXide.find.IncrementalSearch");
+
+eXide.find.IncrementalSearch = (function () {
+    
+    Constr = function (input, editor) {
+        var $this = this;
+        $this.input = $(input);
+        $this.input.hide();
+        $this.input.keyup(function (ev) {
+            switch (ev) {
+                case 27:
+                case 13:
+                    // ESC or Return pressed
+                    $this.input.hide();
+                    $this.editor.focus();
+                    break;
+                case 40:
+                    // Down
+                    ev.preventDefault();
+                    $this.editor.findNext();
+                    break;
+                case 38:
+                    // Up
+                    ev.preventDefault();
+                    $this.editor.findPrevious();
+                    break;
+                default:
+                    $this.onChange();
+            }
+        });
+        $this.editor = editor;
+    };
+    
+    Constr.prototype.start = function () {
+        var sel = this.editor.getSession().getSelection();
+    	var lead = sel.getSelectionLead();
+		this.currentLine = lead.row;
+        this.input.val("");
+        this.input.show().focus();
+    };
+    
+    Constr.prototype.onChange = function () {
+        this.editor.gotoLine(this.currentLine);
+        var search = this.input.val();
+        this.editor.find(search);
+    };
+    return Constr;
+}());
+
 eXide.namespace("eXide.find.Modules");
 
 /**

@@ -195,27 +195,29 @@ eXide.app = (function() {
 		},
 		
 		saveDocument: function() {
-			if (editor.getActiveDocument().getPath().match('^__new__')) {
-				dbBrowser.reload(["reload", "create"], true);
-				$("#open-dialog").dialog("option", "title", "Save Document");
-				$("#open-dialog").dialog("option", "buttons", { 
-					"Cancel": function() { $(this).dialog("close"); },
-					"Save": function() {
-						editor.saveDocument(dbBrowser.getSelection(), function () {
-							$("#open-dialog").dialog("close");
-						}, function (msg) {
-							eXide.util.Dialog.warning("Failed to Save Document", msg);
-						});
-					}
-				});
-				$("#open-dialog").dialog("open");
-			} else {
-				editor.saveDocument(null, function () {
-					eXide.util.message(editor.getActiveDocument().getName() + " stored.");
-				}, function (msg) {
-					eXide.util.Dialog.warning("Failed to Save Document", msg);
-				});
-			}
+            eXide.app.requireLogin(function () {
+                if (editor.getActiveDocument().getPath().match('^__new__')) {
+        			dbBrowser.reload(["reload", "create"], true);
+    				$("#open-dialog").dialog("option", "title", "Save Document");
+    				$("#open-dialog").dialog("option", "buttons", { 
+    					"Cancel": function() { $(this).dialog("close"); },
+    					"Save": function() {
+    						editor.saveDocument(dbBrowser.getSelection(), function () {
+    							$("#open-dialog").dialog("close");
+    						}, function (msg) {
+    							eXide.util.Dialog.warning("Failed to Save Document", msg);
+    						});
+    					}
+    				});
+    				$("#open-dialog").dialog("open");
+    			} else {
+    				editor.saveDocument(null, function () {
+    					eXide.util.message(editor.getActiveDocument().getName() + " stored.");
+    				}, function (msg) {
+    					eXide.util.Dialog.warning("Failed to Save Document", msg);
+    				});
+    			}
+            });
 		},
 
         exec: function() {
@@ -333,14 +335,14 @@ eXide.app = (function() {
 		},
 		
 		manage: function() {
-			if (!eXide.app.$checkLogin())
-				return;
-			dbBrowser.reload(["reload", "create", "upload", "open"], false);
-			$("#open-dialog").dialog("option", "title", "DB Manager");
-			$("#open-dialog").dialog("option", "buttons", { 
-				"Close": function() { $(this).dialog("close"); }
+			eXide.app.requireLogin(function() {
+                dbBrowser.reload(["reload", "create", "upload", "open"], false);
+                $("#open-dialog").dialog("option", "title", "DB Manager");
+                $("#open-dialog").dialog("option", "buttons", { 
+                    "Close": function() { $(this).dialog("close"); }
+                });
+                $("#open-dialog").dialog("open");
 			});
-			$("#open-dialog").dialog("open");
 		},
 		
 		/** Open deployment settings for current app */
@@ -375,13 +377,15 @@ eXide.app = (function() {
 		},
 		
 		synchronize: function() {
-			var path = editor.getActiveDocument().getPath();
-			var collection = /^(.*)\/[^\/]+$/.exec(path);
-			if (!collection) {
-                eXide.util.error("The file open in the editor does not belong to an application package!");
-				return;
-			}
-			deploymentEditor.synchronize(collection[1]);
+            eXide.app.requireLogin(function () {
+                var path = editor.getActiveDocument().getPath();
+        		var collection = /^(.*)\/[^\/]+$/.exec(path);
+    			if (!collection) {
+                    eXide.util.error("The file open in the editor does not belong to an application package!");
+    				return;
+    			}
+    			deploymentEditor.synchronize(collection[1]);
+            });
 		},
 		
         downloadApp: function () {
@@ -497,6 +501,20 @@ eXide.app = (function() {
 			return false;
 		},
 		
+        requireLogin: function(callback) {
+            if (!eXide.app.login) {
+                $("#login-dialog").dialog("option", "close", function () {
+                    if (eXide.app.login) {
+                        callback();
+                    } else {
+                        eXide.util.error("Warning: you are not logged in!");
+                    }
+                });
+                $("#login-dialog").dialog("open");
+            } else
+                callback();
+        },
+        
 		initGUI: function() {
 			$("body").layout({
 				enableCursorHotkey: false,

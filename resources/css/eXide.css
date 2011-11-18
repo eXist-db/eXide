@@ -146,6 +146,11 @@ Sub level menu list items (undo style from Top level List Items)
 	color: red;
 }
 
+#search-box {
+    width: 100%;
+    background: #D8D8D8;
+}
+
 #toolbar .options {
 	float: right;
 	font-size: 75%;

@@ -167,6 +167,9 @@ eXide.edit.Editor = (function () {
 	    	}
 	    });
 
+        // incremental search box
+        this.quicksearch = new eXide.find.IncrementalSearch($("#search-box"), this.editor);
+        
         $("#tab-next").button({
             icons: {
 				primary: "ui-icon-triangle-1-e"
