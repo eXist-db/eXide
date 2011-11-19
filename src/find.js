@@ -7,7 +7,7 @@ eXide.find.IncrementalSearch = (function () {
         $this.input = $(input);
         $this.input.hide();
         $this.input.keyup(function (ev) {
-            switch (ev) {
+            switch (ev.which) {
                 case 27:
                 case 13:
                     // ESC or Return pressed
@@ -26,6 +26,7 @@ eXide.find.IncrementalSearch = (function () {
                     break;
                 default:
                     $this.onChange();
+                    break;
             }
         });
         $this.editor = editor;
@@ -59,9 +60,9 @@ eXide.find.Modules = (function () {
 	};
     
     var columns = [
-        {id:"prefix", name:"Prefix", field:"prefix", width: 100},
-		{id:"uri", name:"URI", field:"uri", width: 240},
-		{id:"at", name:"Location", field:"at", width: 200}
+        {id:"prefix", name:"Prefix", field:"prefix", minWidth: 100, sortable: true, resizable: true},
+		{id:"uri", name:"URI", field:"uri", minWidth: 240, sortable: true, resizable: true},
+		{id:"at", name:"Location", field:"at", minWidth: 200, sortable: true, resizable: true}
 	];
     var options = {
 		editable: false,

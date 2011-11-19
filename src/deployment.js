@@ -16,6 +16,76 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+eXide.namespace("eXide.edit.Projects");
+
+eXide.edit.Projects = (function() {
+    
+    Constr = function() {
+        this.projects = {};
+    };
+    
+    Constr.prototype.getProject = function (collection, callback) {
+        var $this = this;
+        $.getJSON("modules/deployment.xql", { info: collection }, function (data) {
+            if (!data) {
+                eXide.util.error("Application not found: The document currently opened in the editor " +
+                    "should belong to an application package.");
+            } else {
+                var project = $this.projects[data.abbrev];
+                if (project) {
+                    eXide.util.oop.extend(project, data);
+                } else {
+                    project = data;
+                    $this.projects[data.abbrev] = project;
+                }
+                callback(project);
+            }
+        });
+    };
+
+    Constr.prototype.getProjectFor = function (collection) {
+        var re = new RegExp("^" + collection);
+        for (k in this.projects) {
+            var project = this.projects[k];
+            $.log("collection: %s -> root: %s", collection.substring(0, project.root.length), project.root);
+            if (collection.substring(0, project.root.length) === project.root) {
+                return project;
+            }
+        }
+        return null;
+    };
+    
+    Constr.prototype.saveState = function () {
+        var i = 0;
+        for (k in this.projects) {
+            var project = this.projects[k];
+            for (n in project) {
+                localStorage["eXide.projects." + i + "." + n] = project[n];
+            }
+            i++;
+        }
+        localStorage["eXide.projects"] = i;
+	};
+			
+	Constr.prototype.restoreState = function() {
+		var count = localStorage["eXide.projects"];
+        if (!count)
+            count = 0;
+        this.projects = {};
+        for (var i = 0; i < count; i++) {
+            var abbrev = localStorage["eXide.projects." + i + ".abbrev"];
+            this.projects[abbrev] = {
+                abbrev: abbrev,
+                root: localStorage["eXide.projects." + i + ".root"],
+                dir: localStorage["eXide.projects." + i + ".dir"],
+                autoSync: localStorage["eXide.projects." + i + ".autoSync"]
+            };
+        }
+	};
+    
+    return Constr;
+}());
+
 eXide.namespace("eXide.edit.PackageEditor");
 
 /**
@@ -25,7 +95,8 @@ eXide.edit.PackageEditor = (function () {
 	
 	Constr = function () {
 		var $this = this;
-		this.directory = null;
+        this.projects = new eXide.edit.Projects();
+        this.currentProject = null;
 		this.container = $("#dialog-deploy");
 		this.container.dialog({
 			title: "Deployment Editor",
@@ -43,26 +114,27 @@ eXide.edit.PackageEditor = (function () {
 			width: 500,
 			height: 400,
 			buttons: {
-				"Synchronize": function () {
+            "Synchronize": function () {
 					var dir = $this.syncDialog.find("input[name=\"dir\"]").val();
 					if (!dir || dir.length == 0) {
 						$("#synchronize-report").text("No output directory specified!");
 						return;
 					}
+                    $this.currentProject.dir = dir;
+                    
+                    var params = $this.syncDialog.find("form").serialize();
 					$("#synchronize-report").text("Synchronization in progress ...");
-					$("#synchronize-report").load("modules/synchronize.xql", {
-						collection: $this.collection,
-						start: $this.syncDialog.find("input[name=\"date\"]").val(),
-						dir: dir
-					});
-					this.directory = dir;
+					$("#synchronize-report").load("modules/synchronize.xql", params);
 				},
 				"Close": function () { $(this).dialog("close"); }
 			}
 		});
-		if (this.directory) {
-			this.syncDialog.find("input[name=\"dir\"]").val(this.directory);
-		}
+        $this.syncDialog.find("input[name=\"auto\"]").click(function (ev) {
+            if (!$this.currentProject) {
+                return;
+            }
+            $this.currentProject.autoSync = $(this).is(':checked');
+        });
 	};
 	
 	Constr.prototype = {
@@ -71,7 +143,7 @@ eXide.edit.PackageEditor = (function () {
 			 * Open the deployment editor wizard
 			 */
 			open: function(collection) {
-				var $this = this;
+    			var $this = this;
 				var params = null;
 				if (collection)
 					params = { "collection": collection };
@@ -148,44 +220,59 @@ eXide.edit.PackageEditor = (function () {
 			 */
 			synchronize: function (collection) {
 				var $this = this;
-				$.getJSON("modules/deployment.xql", { info: collection }, function (data) {
-					if (!data) {
-						eXide.util.error("Application not found: The document currently opened in the editor " +
-									"should belong to an application package.");
-					} else {
-						if (!data.isAdmin) {
-							eXide.util.error("You need to be logged in as an admin user with dba role " +
-									"to use this feature.");
-							return;
-						}
-						$this.collection = data.root;
-						$this.syncDialog.find("input[name=\"date\"]").val(data.deployed);
-						$this.syncDialog.dialog("open");
+                $this.projects.getProject(collection, function (project) {
+					if (!project.isAdmin) {
+						eXide.util.error("You need to be logged in as an admin user with dba role " +
+								"to use this feature.");
+						return;
 					}
-				});
+                    $this.currentProject = project;
+                    $this.syncDialog.find(".project-name").text(project.abbrev);
+					$this.syncDialog.find("input[name=\"start\"]").val(project.deployed);
+                    if (project.dir) {
+                        $this.syncDialog.find("input[name=\"dir\"]").val(project.dir);
+                    }
+                    $this.syncDialog.find("input[name=\"collection\"]").val(project.root);
+                    $this.syncDialog.find("input[name=\"auto\"]").val(project.autoSync ? "on" : "off");
+					$this.syncDialog.dialog("open");
+                });
 			},
 			
+             autoSync: function (collection) {
+                 var project = this.projects.getProjectFor(collection);
+                 if (project && project.autoSync) {
+                     var params = {
+                         collection: project.root,
+                         start: project.deployed,
+                         dir: project.dir
+                     };
+                     $.ajax({
+                        url: "modules/synchronize.xql",
+                        type: "GET",
+                        data: params,
+                        success: function(data) {
+                            eXide.util.message("Synchronized directory");
+                        }
+                     });
+                 }
+             },
+             
 			runApp: function (collection) {
 				var $this = this;
-				$.getJSON("modules/deployment.xql", { info: collection }, function (data) {
-					if (!data) {
-						eXide.util.error("Application not found: The document currently opened in the editor " +
-									"should belong to an application package.");
-					} else {
-						var link = "/exist/apps/" + data.root.replace(/^\/db\//, "") + "/";
-						eXide.util.Dialog.message("Run Application", "<p>Click on the following link to open your application:</p>" +
-							"<center><a href=\"" + link + "\" target=\"_new\">" + link + "</a></center>");
-					}
-				});
+                $this.projects.getProject(collection, function (project) {
+    				var link = "/exist/apps/" + project.root.replace(/^\/db\//, "") + "/";
+    				eXide.util.Dialog.message("Run Application " + project.abbrev, "<p>Click on the following link to open your application:</p>" +
+    					"<center><a href=\"" + link + "\" target=\"_new\">" + link + "</a></center>");
+                });
 			},
-			
-			saveState: function () {
-				localStorage["eXide.synchronize.dir"] = this.directory;
-			},
-			
-			restoreState: function() {
-				this.directory = localStorage["eXide.synchronize.dir"];
-			}
+            
+            saveState: function () {
+                this.projects.saveState();
+            },
+            
+            restoreState: function () {
+                this.projects.restoreState();
+            }
 	};
 	
 	return Constr;

@@ -204,6 +204,7 @@ eXide.app = (function() {
     					"Save": function() {
     						editor.saveDocument(dbBrowser.getSelection(), function () {
     							$("#open-dialog").dialog("close");
+                                deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
     						}, function (msg) {
     							eXide.util.Dialog.warning("Failed to Save Document", msg);
     						});
@@ -213,6 +214,7 @@ eXide.app = (function() {
     			} else {
     				editor.saveDocument(null, function () {
     					eXide.util.message(editor.getActiveDocument().getName() + " stored.");
+                        deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
     				}, function (msg) {
     					eXide.util.Dialog.warning("Failed to Save Document", msg);
     				});
@@ -351,28 +353,29 @@ eXide.app = (function() {
 			var collection = /^(.*)\/[^\/]+$/.exec(path);
 			if (!collection)
 				return;
-			if (!eXide.app.$checkLogin())
-				return;
-			$.log("Editing deployment settings for collection: %s", collection[1]);
-			deploymentEditor.open(collection[1]);
+			eXide.app.requireLogin(function() {
+                $.log("Editing deployment settings for collection: %s", collection[1]);
+    		    deploymentEditor.open(collection[1]);
+			});
 		},
 		
 		newDeployment: function() {
-			if (!eXide.app.$checkLogin())
-				return;
-			deploymentEditor.open();
+			eXide.app.requireLogin(function() {
+    			deploymentEditor.open();
+			});
 		},
 		
 		deploy: function() {
-			var path = editor.getActiveDocument().getPath();
-			var collection = /^(.*)\/[^\/]+$/.exec(path);
-			if (!collection) {
-				eXide.util.error("The file open in the editor does not belong to an application package!");
-				return false;
-			}
-			eXide.app.$checkLogin();
-			$.log("Deploying application from collection: %s", collection[1]);
-			deploymentEditor.deploy(collection[1]);
+            eXide.app.requireLogin(function() {
+    			var path = editor.getActiveDocument().getPath();
+    			var collection = /^(.*)\/[^\/]+$/.exec(path);
+    			if (!collection) {
+    				eXide.util.error("The file open in the editor does not belong to an application package!");
+    				return false;
+    			}
+    			$.log("Deploying application from collection: %s", collection[1]);
+    			deploymentEditor.deploy(collection[1]);
+            });
 			return false;
 		},
 		
@@ -389,14 +392,16 @@ eXide.app = (function() {
 		},
 		
         downloadApp: function () {
-            var path = editor.getActiveDocument().getPath();
-    		var collection = /^(.*)\/[^\/]+$/.exec(path);
-            $.log("downloading %s", collection);
-			if (!collection) {
-                eXide.util.error("The file open in the editor does not belong to an application package!");
-				return;
-			}
-			deploymentEditor.download(collection[1]);
+            eXide.app.requireLogin(function() {
+                var path = editor.getActiveDocument().getPath();
+            	var collection = /^(.*)\/[^\/]+$/.exec(path);
+                $.log("downloading %s", collection);
+    			if (!collection) {
+                    eXide.util.error("The file open in the editor does not belong to an application package!");
+    				return;
+    			}
+    			deploymentEditor.download(collection[1]);
+            });
         },
         
 		openApp: function () {
@@ -696,6 +701,10 @@ eXide.app = (function() {
 				ev.preventDefault();
 				editor.editor.redo();
 			});
+            $("#menu-edit-toggle-comment").click(function (ev) {
+                ev.preventDefault();
+                editor.editor.toggleCommentLines();
+            });
 			$("#menu-edit-preferences").click(eXide.app.preferences);
             
             $("#menu-navigate-definition").click(function (ev) {
