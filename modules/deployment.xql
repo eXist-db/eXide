@@ -18,6 +18,8 @@
  :)
 xquery version "3.0";
 
+import module namespace tmpl="http://exist-db.org/xquery/template" at "tmpl.xql";
+
 (:~ 
     Edit the expath and repo app descriptors.
     Functions to read, update the descriptors and deploy an app.
@@ -28,6 +30,15 @@ declare namespace repo="http://exist-db.org/xquery/repo";
 
 declare variable $app-root := request:get-attribute("app-root");
 
+declare variable $deploy:ANT_FILE :=
+    <project default="xar" name="$$app$$">
+        <property name="build.dir" value="build"/>
+        <target name="xar">
+            <mkdir dir="${{build.dir}}"/>
+            <zip basedir="." destfile="${{build.dir}}/$$app$$-$$version$$.xar" excludes="${{build.dir}}/*"/>
+        </target>
+    </project>;
+    
 declare function deploy:select-option($value as xs:string, $current as xs:string?, $label as xs:string) {
     <option value="{$value}">
     { if (exists($current) and $value eq $current) then attribute selected { "selected" } else (), $label }
@@ -218,6 +229,19 @@ declare function deploy:chmod($collection as xs:string, $userData as xs:string+,
     )
 };
 
+declare function deploy:store-ant($target as xs:string, $permissions as xs:int) {
+    let $abbrev := request:get-parameter("abbrev", "")
+    let $version := request:get-parameter("version", "1.0")
+    let $parameters :=
+        <parameters>
+            <param name="app" value="{$abbrev}"/>
+            <param name="version" value="{$version}"/>
+        </parameters>
+    let $antXML := tmpl:expand-template($deploy:ANT_FILE, $parameters)
+    return
+        xmldb:store($target, "build.xml", $antXML)
+};
+
 declare function deploy:store-templates-from-fs($target as xs:string, $base as xs:string, $userData as xs:string+, $permissions as xs:int) {
     let $pathSep := util:system-property("file.separator")
     let $template := request:get-parameter("template", "basic")
@@ -249,9 +273,10 @@ declare function deploy:store($collection as xs:string?, $expathConf as element(
             let $null := (
                 deploy:store-expath($collection, $userData, $permissions), 
                 deploy:store-repo($repoConf, $collection, $userData, $permissions),
-                if (empty($expathConf)) then
-                    deploy:store-templates($collection, $userData, $permissions)
-                else
+                if (empty($expathConf)) then (
+                    deploy:store-templates($collection, $userData, $permissions),
+                    deploy:store-ant($collection, $permissions)
+                ) else
                     ()
             )
             return

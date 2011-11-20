@@ -26,6 +26,7 @@ var XQueryHighlightRules = function() {
 
 	var keywords = lang.arrayToMap(
 		("return|for|let|where|order|by|declare|function|variable|xquery|version|option|namespace|import|module|" +
+		 "switch|default|" +
 		 "if|then|else|as|and|or|typeswitch|case|ascending|descending|empty|in").split("|")
     );
 
