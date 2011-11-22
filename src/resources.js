@@ -160,7 +160,7 @@ eXide.browse.ResourceBrowser = (function () {
 	               {id: "group", name: "Group", field: "group", width: 70},
 	               {id: "lastMod", name: "Last Modified", field: "last-modified", width: 115}
 	              ];
-	
+    
 	var gridOptionsOpen = {
 			editable: false,
 			multiSelect: false
@@ -178,6 +178,7 @@ eXide.browse.ResourceBrowser = (function () {
 			"activateCollection": [],
 			"activateParent": []
 		};
+        this.mode = "save";
 		this.collection = null;
 		this.data = [];
 		this.grid = new Slick.Grid(this.container, this.data, columns, gridOptionsManage);
@@ -242,6 +243,7 @@ eXide.browse.ResourceBrowser = (function () {
 	Constr.prototype = {
 		
 		setMode: function(value) {
+            this.mode = value;
 			if (value == "manage") {
 				this.grid.setOptions(gridOptionsManage);
 			} else {
@@ -281,9 +283,11 @@ eXide.browse.ResourceBrowser = (function () {
 				$this.grid.updateRowCount();
 				$this.grid.render();
 				if (start == 0) {
-					$this.grid.setActiveCell(0, 0);
-					$this.grid.setSelectedRows([0]);
-					$this.container.find(".grid-canvas").focus();
+                    if ($this.mode != "save") {
+    					$this.grid.setActiveCell(0, 0);
+    					$this.grid.setSelectedRows([0]);
+					    $this.container.find(".grid-canvas").focus();
+                    }
 				}
 			});
 		},
@@ -556,19 +560,18 @@ eXide.browse.Browser = (function () {
 			}
 		},
 		
-		reload: function(buttons, open) {
+		reload: function(buttons, mode) {
 			if (buttons) {
 				$(".eXide-browse-toolbar button", this.container).hide();
 				for (var i = 0; i < buttons.length; i++) {
 					$("#eXide-browse-toolbar-" + buttons[i]).show();
 				}
 			}
-			if (open) {
+            this.resources.setMode(mode);
+			if (mode === "open" || mode === "save") {
 				$(".eXide-browse-form", this.container).show();
-				this.resources.setMode("open");
 			} else {
 				$(".eXide-browse-form", this.container).hide();
-				this.resources.setMode("manage");
 			}
 			if (this.layout != null) {
 				this.resize();

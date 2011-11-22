@@ -131,7 +131,7 @@ eXide.app = (function() {
 		},
 		
 		openDocument: function() {
-			dbBrowser.reload(["reload"], true);
+			dbBrowser.reload(["reload"], "open");
 			$("#open-dialog").dialog("option", "title", "Open Document");
 			$("#open-dialog").dialog("option", "buttons", { 
 				"cancel": function() { $(this).dialog("close"); editor.focus(); },
@@ -197,10 +197,12 @@ eXide.app = (function() {
 		saveDocument: function() {
             eXide.app.requireLogin(function () {
                 if (editor.getActiveDocument().getPath().match('^__new__')) {
-        			dbBrowser.reload(["reload", "create"], true);
+        			dbBrowser.reload(["reload", "create"], "save");
     				$("#open-dialog").dialog("option", "title", "Save Document");
     				$("#open-dialog").dialog("option", "buttons", { 
-    					"Cancel": function() { $(this).dialog("close"); },
+    					"Cancel": function() {
+                            $(this).dialog("close");
+        				},
     					"Save": function() {
     						editor.saveDocument(dbBrowser.getSelection(), function () {
     							$("#open-dialog").dialog("close");
@@ -222,6 +224,28 @@ eXide.app = (function() {
             });
 		},
 
+        saveDocumentAs: function() {
+            eXide.app.requireLogin(function () {
+                dbBrowser.reload(["reload", "create"], "save");
+    			$("#open-dialog").dialog("option", "title", "Save Document As ...");
+    			$("#open-dialog").dialog("option", "buttons", { 
+    				"Cancel": function() {
+                        // restore old path
+                        $(this).dialog("close");
+    				},
+    				"Save": function() {
+    					editor.saveDocument(dbBrowser.getSelection(), function () {
+    						$("#open-dialog").dialog("close");
+                            deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
+    					}, function (msg) {
+    						eXide.util.Dialog.warning("Failed to Save Document", msg);
+    					});
+    				}
+    			});
+    			$("#open-dialog").dialog("open");
+            });
+        },
+        
         exec: function() {
             editor.exec(arguments);
         },
@@ -338,7 +362,7 @@ eXide.app = (function() {
 		
 		manage: function() {
 			eXide.app.requireLogin(function() {
-                dbBrowser.reload(["reload", "create", "upload", "open"], false);
+                dbBrowser.reload(["reload", "create", "upload", "open"], "manage");
                 $("#open-dialog").dialog("option", "title", "DB Manager");
                 $("#open-dialog").dialog("option", "buttons", { 
                     "Close": function() { $(this).dialog("close"); }
@@ -678,6 +702,7 @@ eXide.app = (function() {
 			});
 			button.click(eXide.app.saveDocument);
 			$("#menu-file-save").click(eXide.app.saveDocument);
+            $("#menu-file-save-as").click(eXide.app.saveDocumentAs);
 			
 			button = $("#download").button({
 				icons: {

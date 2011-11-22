@@ -49,6 +49,10 @@ eXide.edit.Document = (function() {
 		return this.path;
 	};
 	
+    Constr.prototype.setPath = function(path) {
+    	this.path = path;
+	};
+    
 	Constr.prototype.getBasePath = function() {
 		return this.path.replace(/(^.+)\/[^\/]*$/, "$1");
 	};
