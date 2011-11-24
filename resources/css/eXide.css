@@ -103,9 +103,10 @@ a:link,a:visited {
 	box-shadow: 10px 10px 5px #888;
 }
 
-.menu ul li:hover ul {
+/*.menu ul li:hover ul {
     visibility: visible;
-}
+}*/
+
 /*
 Sub level menu list items (undo style from Top level List Items)
 .menu ul li ul li {
