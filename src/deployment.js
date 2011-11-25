@@ -92,7 +92,7 @@ eXide.namespace("eXide.edit.PackageEditor");
  * Edit deployment descriptors.
  */
 eXide.edit.PackageEditor = (function () {
-	
+    
 	Constr = function () {
 		var $this = this;
         this.projects = new eXide.edit.Projects();
@@ -153,6 +153,11 @@ eXide.edit.PackageEditor = (function () {
 					data: params,
 					success: function (data) {
 						$this.container.html(data);
+                        $this.container.find("input[name='collection']").change(function () {
+                            var target = $this.container.find("input[name='target']");
+                            if (target.val() === "")
+                                target.val($(this).val());
+                        });
 						$this.container.form({
 							done: function () {
 								var params = $this.container.find("form").serialize();
