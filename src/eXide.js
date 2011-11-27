@@ -561,9 +561,9 @@ eXide.app = (function() {
 			});
 			
 			$(".menu ul li").hover(function () {
-				$("ul", this).animate({ opacity: 1.0, height: "toggle" }, 500);
+				$("ul", this).stop().fadeIn(300);
 			}, function () {
-				$("ul", this).animate({ opacity: 0.0, height: "toggle" }, 100);
+				$("ul", this).delay(200).fadeOut(100);
 			});
 			
 			$("#open-dialog").dialog({
