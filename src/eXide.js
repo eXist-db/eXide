@@ -559,11 +559,10 @@ eXide.app = (function() {
 				center__onresize: eXide.app.resize,
 				center__contentSelector: ".content"
 			});
-			
 			$(".menu ul li").hover(function () {
-				$("ul", this).stop().fadeIn(300);
+                $("ul", this).css({visibility: "visible",display: "none"}).show(400);
 			}, function () {
-				$("ul", this).delay(200).fadeOut(100);
+                $("ul", this).css({visibility: "hidden"});
 			});
 			
 			$("#open-dialog").dialog({
