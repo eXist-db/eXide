@@ -25,9 +25,12 @@ eXide consists of two parts:
 Building
 --------
 
-The latest version of eXide is included with eXist-db. To build eXide from scratch,
-you should first get eXist-db from SVN and build it (build.sh/build.bat). Next, change
-into the webapp directory of your eXist install and clone eXide into a sub-directory, e.g.:
+The latest version of eXide is included with eXist-db, though this might not be the newest version.
+You can install a newer or second version of eXide by deploying it directly into the database. This is
+also how development on eXide is done.
+
+To build eXide from scratch,
+you should first get eXist-db from SVN and build it (build.sh/build.bat). Next, clone eXide into a sub-directory, e.g.:
 
      git clone git://github.com/wolfgangmm/eXide.git eXideDev
      cd eXideDev
@@ -35,8 +38,15 @@ into the webapp directory of your eXist install and clone eXide into a sub-direc
 
 Next, call ant on the build.xml file in eXideDev:
 
-      ./build.sh -f webapp/eXideDev/build.xml
+      ant
 
-After launching eXist, you should now be able to access eXide:
+You should now find a .xar file in the build directory:
+     
+     build/eXide-1.0.xar
 
-      http://localhost:8080/exist/eXideDev/
+You can install this into any eXist instance using the application repository manager. In a web browser, open the 
+admin web page of your eXist instance and select "Package Repository". Switch to the "Upload" tab and select the .xar
+file for upload, then click "Upload Package". After installation has finished, your new version of eXide (now stored
+inside the database) should be accessible at:
+
+     http://localhost:8080/exist/apps/eXide
