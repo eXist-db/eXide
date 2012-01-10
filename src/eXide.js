@@ -550,6 +550,7 @@ eXide.app = (function() {
 				north__size: 70,
 				north__resizable: false,
 				north__closable: true,
+                north__showOverflowOnHover: true,
 				south__minSize: 200,
 				south__initClosed: true,
 				west__size: 200,

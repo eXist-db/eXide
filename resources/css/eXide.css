@@ -15,21 +15,12 @@ a:link,a:visited {
 	padding: 0;
 	background-color: #F3F3F3;
 	height: 75px;
+    overflow: hidden;
 }
 
 .ui-layout-center {
 	padding: 0;
 	border: 0;
-}
-
-#header {
-	position: relative;
-	height: 75px;
-	margin: 0 0 0 8px;
-	text-align: right;
-	background-image: url("../images/logo.png");
-	background-repeat: no-repeat;
-	background-position: center left;
 }
 
 #login-info {
@@ -66,7 +57,7 @@ a:link,a:visited {
 .menu {
 	height: 24px;
 	padding-bottom: 4px;
-    padding-left: 180px;
+    padding-left: 200px;
 }
 
 .menu ul {
@@ -138,7 +129,7 @@ Sub level menu list items (undo style from Top level List Items)
 
 #toolbar {
 	padding: 6px 4px;
-	margin: 0 0 0 180px;
+	margin: 0 0 0 200px;
 }
 
 #status-bar {
