@@ -547,7 +547,7 @@ eXide.app = (function() {
 		initGUI: function() {
 			$("body").layout({
 				enableCursorHotkey: false,
-				north__size: 78,
+				north__size: 70,
 				north__resizable: false,
 				north__closable: true,
 				south__minSize: 200,
