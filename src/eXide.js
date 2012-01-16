@@ -51,7 +51,8 @@ eXide.app = (function() {
 			fontSize: "12px",
 			showInvisibles: false,
 			showPrintMargin: true,
-			showHScroll: false
+			showHScroll: false,
+            softWrap: true
 	};
 	
 	return {
@@ -444,6 +445,7 @@ eXide.app = (function() {
 			$("select[name=\"font-size\"]", form).val(preferences.fontSize);
 			$("input[name=\"show-invisibles\"]", form).attr("checked", preferences.showInvisibles);
 			$("input[name=\"print-margin\"]", form).attr("checked", preferences.showPrintMargin);
+            $("input[name=\"soft-wrap\"]", form).attr("checked", preferences.softWrap);
 			$("#preferences-dialog").dialog("open");
 		},
 		
@@ -452,11 +454,18 @@ eXide.app = (function() {
 			editor.setTheme(preferences.theme);
 			editor.editor.setShowInvisibles(preferences.showInvisibles);
 			editor.editor.renderer.setShowPrintMargin(preferences.showPrintMargin);
+            editor.forEachDocument(function (doc) {
+                doc.getSession().setUseWrapMode(preferences.softWrap);
+            });
 //			editor.editor.renderer.setHScrollBarAlwaysVisible(preferences.showHScroll);
 			$("#editor").css("font-size", preferences.fontSize);
 			editor.resize();
 		},
 		
+        getPreferences: function() {
+            return preferences;
+        },
+        
 		restoreState: function() {
 			if (!eXide.util.supportsHtml5Storage)
 				return false;
@@ -589,6 +598,7 @@ eXide.app = (function() {
 						preferences.fontSize = $("select[name=\"font-size\"]", form).val();
 						preferences.showInvisibles = $("input[name=\"show-invisibles\"]", form).is(":checked");
 						preferences.showPrintMargin = $("input[name=\"print-margin\"]", form).is(":checked");
+                        preferences.softWrap = $("input[name=\"soft-wrap\"]", form).is(":checked");
 						eXide.app.applyPreferences();
 						
 						$(this).dialog("close");

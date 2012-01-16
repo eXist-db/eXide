@@ -35,6 +35,7 @@ eXide.edit.Document = (function() {
 		this.helper = null;
 		this.history = [];
 		this.$session = session;
+        this.$session.setUseWrapMode(eXide.app.getPreferences().softWrap);
 	};
 	
 	Constr.prototype.getText = function() {
@@ -449,6 +450,12 @@ eXide.edit.Editor = (function () {
 		this.editor.getSession().clearAnnotations();
 	};
 	
+    Constr.prototype.forEachDocument = function(callback) {
+        for (var i = 0; i < this.documents.length; i++) {
+    		callback(this.documents[i]);
+        }
+    };
+    
 	Constr.prototype.addTab = function(doc) {
 		var $this = this;
 		var tabId = "t" + $this.tabCounter++;
