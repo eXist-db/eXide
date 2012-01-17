@@ -35,7 +35,13 @@ eXide.edit.Document = (function() {
 		this.helper = null;
 		this.history = [];
 		this.$session = session;
-        this.$session.setUseWrapMode(eXide.app.getPreferences().softWrap);
+        var wrap = eXide.app.getPreferences().softWrap;
+        this.$session.setUseWrapMode(wrap != 0);
+        if (wrap > 0) {
+            this.$session.setWrapLimitRange(wrap, wrap);
+        } else if (wrap < 0) {
+            this.$session.setWrapLimitRange(null, null);
+        }
 	};
 	
 	Constr.prototype.getText = function() {

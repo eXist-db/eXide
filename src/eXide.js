@@ -52,7 +52,7 @@ eXide.app = (function() {
 			showInvisibles: false,
 			showPrintMargin: true,
 			showHScroll: false,
-            softWrap: true
+            softWrap: "free"
 	};
 	
 	return {
@@ -445,7 +445,13 @@ eXide.app = (function() {
 			$("select[name=\"font-size\"]", form).val(preferences.fontSize);
 			$("input[name=\"show-invisibles\"]", form).attr("checked", preferences.showInvisibles);
 			$("input[name=\"print-margin\"]", form).attr("checked", preferences.showPrintMargin);
-            $("input[name=\"soft-wrap\"]", form).attr("checked", preferences.softWrap);
+            var wrap = preferences.softWrap;
+            if (wrap == 0) {
+                wrap = "off";
+            } else if (wrap === -1) {
+                wrap = "free";
+            }
+            $("input[name=\"soft-wrap\"]", form).val(wrap);
 			$("#preferences-dialog").dialog("open");
 		},
 		
@@ -455,7 +461,12 @@ eXide.app = (function() {
 			editor.editor.setShowInvisibles(preferences.showInvisibles);
 			editor.editor.renderer.setShowPrintMargin(preferences.showPrintMargin);
             editor.forEachDocument(function (doc) {
-                doc.getSession().setUseWrapMode(preferences.softWrap);
+                if (preferences.softWrap > 0) {
+                    doc.getSession().setWrapLimitRange(preferences.softWrap, preferences.softWrap);
+                } else if (preferences.softWrap < 0) {
+                    doc.getSession().setWrapLimitRange(null, null);
+                }
+                doc.getSession().setUseWrapMode(preferences.softWrap != 0);
             });
 //			editor.editor.renderer.setHScrollBarAlwaysVisible(preferences.showHScroll);
 			$("#editor").css("font-size", preferences.fontSize);
@@ -598,7 +609,13 @@ eXide.app = (function() {
 						preferences.fontSize = $("select[name=\"font-size\"]", form).val();
 						preferences.showInvisibles = $("input[name=\"show-invisibles\"]", form).is(":checked");
 						preferences.showPrintMargin = $("input[name=\"print-margin\"]", form).is(":checked");
-                        preferences.softWrap = $("input[name=\"soft-wrap\"]", form).is(":checked");
+                        var wrap = $("select[name=\"soft-wrap\"]", form).val();
+                        if (wrap === "free") {
+                            wrap = -1;
+                        } else if (wrap === "off") {
+                            wrap = 0;
+                        }
+                        preferences.softWrap = parseInt(wrap);
 						eXide.app.applyPreferences();
 						
 						$(this).dialog("close");
