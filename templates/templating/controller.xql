@@ -2,6 +2,9 @@ xquery version "1.0";
 
 declare variable $exist:path external;
 declare variable $exist:resource external;
+declare variable $exist:controller external;
+declare variable $exist:prefix external;
+declare variable $exist:root external;
 
 if ($exist:path eq "/") then
     (: forward root path to index.xql :)
@@ -14,6 +17,10 @@ else if (ends-with($exist:resource, ".html")) then
         <view>
             <forward url="modules/view.xql"/>
         </view>
+		<error-handler>
+			<forward url="{$exist:controller}/error-page.html" method="get"/>
+			<forward url="{$exist:controller}/modules/view.xql"/>
+		</error-handler>
     </dispatch>
 else
     (: everything else is passed through :)

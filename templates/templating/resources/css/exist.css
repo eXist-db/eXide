@@ -129,6 +129,14 @@ blockquote p { padding: 0 0 10px; }
 .code { font: 13px/20px bold "Courier New", Courier, monospace; }
 
 /* ---------------------------------------- Local styles ----------------------------------- */
+.error {
+    font-family: "Ubuntu Mono", "Consolas", monospace;
+    font-size: 112%;
+    white-space: pre-wrap;
+    width: 100%;
+    overflow: auto;
+}
+
 form { margin: 20px 0; }
 .item { 
     background: #FFFFFF;
