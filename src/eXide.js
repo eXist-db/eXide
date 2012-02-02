@@ -795,9 +795,9 @@ eXide.app = (function() {
 					$("#user").empty();
 					$("#login").text("Login");
 					eXide.app.login = null;
-				} else {
-					$("#login-dialog").dialog("open");
-				}
+                 } else {
+                     eXide.app.requireLogin(function () {});
+                 }
 			});
 			$('#results-container .next').click(eXide.app.browseNext);
 			$('#results-container .previous').click(eXide.app.browsePrevious);
