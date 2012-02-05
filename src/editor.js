@@ -279,7 +279,7 @@ eXide.edit.Editor = (function () {
 			var sel = doc.$session.getSelection();
 			sel.clearSelection();
 			sel.moveCursorTo(resource.line, 1);
-			doc.$session.setScrollTopRow(resource.line);
+		    doc.$session.setScrollTop(resource.line);
 		}
 		$.log("opening %s, mime: %s, syntax: %s, line: %i", resource.name, doc.mime, doc.syntax, resource.line);
 		this.$initDocument(doc);
@@ -663,7 +663,7 @@ eXide.edit.Editor = (function () {
 				text: msg,
 				type: "error"
 		}];
-		this.status.innerHTML = msg;
+        this.updateStatus(msg);
 		this.editor.getSession().setAnnotations(annotation);
 	};
 	
