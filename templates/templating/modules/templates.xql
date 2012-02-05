@@ -277,3 +277,14 @@ declare function templates:fix-links($node as node(), $prefix as xs:string) {
         default return
             $node
 };
+
+(:~
+ : Determine the absolute path to the application root and output it as an 
+ : HTML <base> tag.
+ :)
+declare function templates:base($node as node(), $params as element(parameters)?, $model as item()*) {
+	    let $context := request:get-context-path()
+		    let $app-root := substring-after($config:app-root, "/db/")
+			    return
+				        <base href="{$context}/apps/{$app-root}/"/>
+};
