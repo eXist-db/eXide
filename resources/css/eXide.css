@@ -146,6 +146,16 @@ Sub level menu list items (undo style from Top level List Items)
 	color: red;
 }
 
+#status-bar:hover {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10000;
+    height: auto;
+    overflow: visible;
+}
+
 #search-box {
     width: 100%;
     background: #D8D8D8;
