@@ -234,7 +234,7 @@ eXide.edit.Editor = (function () {
 		return this.activeDoc.getText();
 	};
 	
-	Constr.prototype.newDocument = function() {
+	Constr.prototype.newDocument = function(data) {
 		var $this = this;
 		var newDocId = 0;
 		for (var i = 0; i < $this.documents.length; i++) {
@@ -244,8 +244,14 @@ eXide.edit.Editor = (function () {
 			}
 		}
 		newDocId++;
+        var session;
+        if (typeof data == "string") {
+            session = new EditSession(data);
+        } else {
+            session = new EditSession("xquery version \"1.0\";\n");
+        }
 		var newDocument = new eXide.edit.Document("new-document " + newDocId,
-				"__new__" + newDocId, new EditSession("xquery version \"1.0\";\n"));
+				"__new__" + newDocId, session);
 		this.$initDocument(newDocument);
 	};
 	

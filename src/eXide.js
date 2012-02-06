@@ -19,12 +19,29 @@
 
 // main entry point
 $(document).ready(function() {
-	eXide.app.init();
-	
-	if (/^\?open=/.test(window.location.search)) {
-		$.log("parameters: %s", window.location.search);
-		eXide.app.findDocument(window.location.search.substring(6));
-	}
+    // parse query parameters passed in by URL:
+    var qs = (function(a) {
+        if (a == "") return {};
+        var b = {};
+        for (var i = 0; i < a.length; ++i)
+        {
+            var p=a[i].split('=');
+            if (p.length != 2) continue;
+            b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
+        }
+        return b;
+    })(window.location.search.substr(1).split('&'));
+    
+    // check parameters passed in GET request
+    eXide.app.init(function (restored) {
+        var openDoc = qs["open"];
+        var snippet = qs["snip"];
+        if (openDoc && !restored[openDoc]) {
+            eXide.app.findDocument(qs["open"]);
+        } else if (snippet) {
+            eXide.app.newDocument(snippet);
+        }
+    });
 });
 
 eXide.namespace("eXide.app");
@@ -57,14 +74,15 @@ eXide.app = (function() {
 	
 	return {
 
-		init: function() {
+		init: function(afterInitCallback) {
 			editor = new eXide.edit.Editor(document.getElementById("editor"));
 			deploymentEditor = new eXide.edit.PackageEditor(document.getElementById("deployment-editor"));
 			dbBrowser = new eXide.browse.Browser(document.getElementById("open-dialog"));
 			
 			eXide.app.initGUI();
 			
-			eXide.app.restoreState();
+            // save restored paths for later
+			var restored = eXide.app.restoreState();
 		    
 		    editor.init();
 		    editor.addEventListener("outlineChange", eXide.app.onOutlineChange);
@@ -82,6 +100,10 @@ eXide.app = (function() {
             eXide.find.Modules.addEventListener("import", null, function (module) {
                 editor.exec("importModule", module.prefix, module.uri, module.at);
             });
+            
+            if (afterInitCallback) {
+                afterInitCallback(restored);
+            }
 		},
 
 		resize: function() {
@@ -93,8 +115,8 @@ eXide.app = (function() {
 			editor.resize();
 		},
 
-		newDocument: function() {
-			editor.newDocument();
+		newDocument: function(data) {
+			editor.newDocument(data);
 		},
 
 		findDocument: function(path) {
@@ -493,6 +515,8 @@ eXide.app = (function() {
 			}
 			eXide.app.applyPreferences();
 			
+            var restoring = {};
+            
 			var docCount = localStorage["eXide.documents"];
 			if (!docCount)
 				docCount = 0;
@@ -503,16 +527,17 @@ eXide.app = (function() {
 						writable: (localStorage["eXide." + i + ".writable"] == "true"),
 						line: parseInt(localStorage["eXide." + i + ".last-line"])
 				};
-				$.log("doc.line = %i", doc.line);
+				$.log("Restoring doc %s, going to line = %i", doc.path, doc.line);
 				var data = localStorage["eXide." + i + ".data"];
 				if (data) {
 					editor.newDocumentWithText(data, localStorage["eXide." + i + ".mime"], doc);
 				} else {
 					eXide.app.$doOpenDocument(doc);
 				}
+                restoring[doc.path] = doc;
 			}
 			deploymentEditor.restoreState();
-			return true;
+			return restoring;
 		},
 		
 		saveState: function() {
@@ -795,9 +820,9 @@ eXide.app = (function() {
 					$("#user").empty();
 					$("#login").text("Login");
 					eXide.app.login = null;
-                 } else {
-                     eXide.app.requireLogin(function () {});
-                 }
+				} else {
+					$("#login-dialog").dialog("open");
+				}
 			});
 			$('#results-container .next').click(eXide.app.browseNext);
 			$('#results-container .previous').click(eXide.app.browsePrevious);
