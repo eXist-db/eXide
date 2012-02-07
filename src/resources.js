@@ -282,7 +282,7 @@ eXide.browse.ResourceBrowser = (function () {
 				}
 				$this.grid.updateRowCount();
 				$this.grid.render();
-				if (start == 0) {
+				if (start == 0 && $this.data.length > 0) {
 					$this.grid.setActiveCell(0, 0);
 					$this.grid.setSelectedRows([0]);
 				    $this.container.find(".grid-canvas").focus();
