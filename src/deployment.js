@@ -153,11 +153,11 @@ eXide.edit.PackageEditor = (function () {
 					data: params,
 					success: function (data) {
 						$this.container.html(data);
-                        $this.container.find("input[name='collection']").change(function () {
-                            var target = $this.container.find("input[name='target']");
-                            if (target.val() === "")
-                                target.val($(this).val());
-                        });
+//                        $this.container.find("input[name='collection']").change(function () {
+//                            var target = $this.container.find("input[name='target']");
+//                            if (target.val() === "")
+//                                target.val($(this).val());
+//                        });
 						$this.container.form({
 							done: function () {
 								var params = $this.container.find("form").serialize();
@@ -193,27 +193,37 @@ eXide.edit.PackageEditor = (function () {
 			 */
 			deploy: function(collection) {
 				var $this = this;
-				$.ajax({
-					url: "modules/deployment.xql",
-					type: "POST",
-					dataType: "json",
-					data: { "collection": collection, "deploy": "true" },
-					success: function (data) {
-						var url = location.protocol + "//" + location.hostname + ":" + location.port + "/exist/apps/" + data + "/";
-						eXide.util.Dialog.message("Application Deployed", "<p>The application has been deployed. On a standard " +
-								"installation the following link should open it:</p>" +
-								"<center><a href=\"" + url + "\" target=\"_new\">" + url + "</a></center>");
-					},
-					error: function (xhr, status) {
-						if (xhr.status == 404) {
-							eXide.util.error("Deployment failed. The document currently opened in the editor " +
-									"should belong to an application package.");
-						} else {
-							eXide.util.Dialog.warning("Deployment Error", "<p>An error has been reported by the database:</p>" +
-								"<p>" + xhr.responseText + "</p>");
-						}
-					}
-				});
+                var msg =
+                    "<p>Note: target has to be different from the source package or it will be overwritten!</p>" +
+                    "<p><label for=\"target\">Target collection:</label>" +
+                    "<input id=\"deployment-target\" type=\"text\" name=\"target\" value=\"" + collection + 
+                        "-test\"size=\"30\"/></p>";
+                eXide.util.Dialog.input("Deploy", msg, function() {
+                    var target = $("#deployment-target").val();
+                    if (target === "")
+                        target = collection;
+        			$.ajax({
+    					url: "modules/deployment.xql",
+    					type: "POST",
+    					dataType: "json",
+    					data: { "collection": collection, "target": target, "deploy": "true" },
+    					success: function (data) {
+    						var url = location.protocol + "//" + location.hostname + ":" + location.port + "/exist/apps/" + data + "/";
+    						eXide.util.Dialog.message("Application Deployed", "<p>The application has been deployed. On a standard " +
+    								"installation the following link should open it:</p>" +
+    								"<center><a href=\"" + url + "\" target=\"_new\">" + url + "</a></center>");
+    					},
+    					error: function (xhr, status) {
+    						if (xhr.status == 404) {
+    							eXide.util.error("Deployment failed. The document currently opened in the editor " +
+    									"should belong to an application package.");
+    						} else {
+    							eXide.util.Dialog.warning("Deployment Error", "<p>An error has been reported by the database:</p>" +
+    								"<p>" + xhr.responseText + "</p>");
+    						}
+    					}
+    				});
+                });
 			},
 
             download: function (collection) {
