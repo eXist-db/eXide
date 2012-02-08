@@ -38,6 +38,22 @@ eXide.edit.commands = (function () {
 		init: function (editor) {
             var commands = editor.editor.commands;
             $.log("commands: %o", commands);
+			commands.addCommand({
+				name: "fold",
+			    bindKey: bindKey("Alt-L", "Alt-F"),
+			    exec: function(env, args, request) { 
+					env.editor.session.toggleFold(false);
+				},
+			    readOnly: true
+			});
+			commands.addCommand({
+				name: "unfold",
+			    bindKey: bindKey("Alt-Shift-L", "Alt-Shift-F"),
+			    exec: function(env, args, request) { 
+					env.editor.session.toggleFold(true);
+				},
+			    readOnly: true
+			});
 		    commands.addCommand({
 		    	name: "saveDocument",
 		    	bindKey: bindKey("Ctrl-Shift-S", "Command-Shift-S"),
