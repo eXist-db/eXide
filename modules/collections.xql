@@ -16,7 +16,7 @@
  :  You should have received a copy of the GNU General Public License
  :  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  :)
-xquery version "1.0";
+xquery version "3.0";
 
 declare namespace json="http://www.json.org";
 
@@ -231,6 +231,24 @@ declare function local:delete-resource($collection as xs:string, $resources as x
         </response>
 };
 
+declare function local:delete($collection as xs:string, $selection as xs:string+, $user as xs:string) {
+    for $docOrColl in $selection
+    let $path :=
+        if (starts-with($docOrColl, "/")) then
+            $docOrColl
+        else
+            $collection || "/" || $docOrColl
+    let $isCollection := xmldb:collection-available($path)
+    let $response :=
+        if (exists($isCollection)) then
+            local:delete-collection($path, $user)
+        else
+            local:delete-resource($collection, $docOrColl, $user)
+    where $response/@status = "ok"
+    return
+        $response
+};
+
 let $deleteCollection := request:get-parameter("remove", ())
 let $deleteResource := request:get-parameter("remove[]", ())
 let $createCollection := request:get-parameter("create", ())
@@ -239,10 +257,8 @@ let $collection := request:get-parameter("root", "/db")
 let $collName := replace($collection, "^.*/([^/]+$)", "$1")
 let $user := if (session:get-attribute('myapp.user')) then session:get-attribute('myapp.user') else "guest"
 return
-    if ($deleteCollection) then
-        local:delete-collection(xmldb:encode-uri($deleteCollection), $user)
-    else if (exists($deleteResource)) then
-        local:delete-resource(xmldb:encode-uri($collection), xmldb:encode-uri($deleteResource), $user)
+    if (exists($deleteResource)) then
+        local:delete(xmldb:encode-uri($collection), $deleteResource, $user)
     else if ($createCollection) then
         local:create-collection(xmldb:encode-uri($createCollection), $user)
     else if ($view eq "c") then

@@ -60,13 +60,20 @@ eXide.browse.CollectionBrowser = (function () {
             	dbNode.expand(true);
             }
         });
-	}
+	};
 	
 	Constr.prototype = {
 		getSelection: function () {
 			return this.selected;
 		},
 		
+        getSelected: function() {
+            return {
+                isCollection: false,
+                name: this.selected
+            };
+        },
+        
 		reload: function () {
 			$.log("Reloading tree...");
 			var tree = this.container.dynatree("getTree");
@@ -102,10 +109,9 @@ eXide.browse.CollectionBrowser = (function () {
 			eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete collection " + $this.selected + "?",
 					function () {
 						$.getJSON("modules/collections.xql", { 
-							remove: $this.selected 
+							remove: $this.selected
 						},
 						function (data) {
-							$.log(data.status);
 							if (data.status == "fail") {
 								eXide.util.Dialog.warning("Delete Collection Error", data.message);
 							} else {
@@ -114,7 +120,6 @@ eXide.browse.CollectionBrowser = (function () {
 						}
 					);
 			});
-			
 		},
 		
 		addEventListener: function (name, obj, callback) {
@@ -282,7 +287,7 @@ eXide.browse.ResourceBrowser = (function () {
 				}
 				$this.grid.updateRowCount();
 				$this.grid.render();
-				if (start == 0 && $this.data.length > 0) {
+				if (start == 0) {
 					$this.grid.setActiveCell(0, 0);
 					$this.grid.setSelectedRows([0]);
 				    $this.container.find(".grid-canvas").focus();
@@ -295,6 +300,19 @@ eXide.browse.ResourceBrowser = (function () {
 			return rows && rows.length > 0;
 		},
 		
+        getSelected: function() {
+            var selected = this.grid.getSelectionModel().getSelectedRows();
+    		if (selected.length == 0) {
+				return null;
+			}
+            var items = [];
+            for (var i = 0; i < selected.length; i++) {
+                var item = this.collection + "/" + this.data[selected[i]].name;
+                items.push(item);
+            }
+            return items;
+        },
+        
 		deleteResource: function() {
 			var selected = this.grid.getSelectionModel().getSelectedRows();
 			if (selected.length == 0) {
@@ -443,19 +461,6 @@ eXide.browse.Browser = (function () {
 		});
 		toolbar.append(button);
 		
-		this.btnDeleteCollection = document.createElement("button");
-		this.btnDeleteCollection.title = "Delete Collection";
-		this.btnDeleteCollection.id = "eXide-browse-toolbar-delete-collection";
-		this.btnDeleteCollection.tabindex = 2;
-		img = document.createElement("img");
-		img.src = "resources/images/folder_delete.png";
-		this.btnDeleteCollection.appendChild(img);
-		$(this.btnDeleteCollection).click(function (ev) {
-			ev.preventDefault();
-			$this.collections.deleteCollection();
-		});
-		toolbar.append(this.btnDeleteCollection);
-		
 		this.btnCreateCollection = document.createElement("button");
 		this.btnCreateCollection.title = "Create Collection";
 		this.btnCreateCollection.id = "eXide-browse-toolbar-create";
@@ -487,7 +492,7 @@ eXide.browse.Browser = (function () {
 		this.btnDeleteResource.title = "Delete Resource";
 		this.btnDeleteResource.id = "eXide-browse-toolbar-delete-resource";
 		img = document.createElement("img");
-		img.src = "resources/images/page_delete.png";
+		img.src = "resources/images/bin.png";
 		this.btnDeleteResource.appendChild(img);
 		$(this.btnDeleteResource).click(function (ev) {
 			ev.preventDefault();
@@ -586,6 +591,33 @@ eXide.browse.Browser = (function () {
 			this.layout.resizeAll();
 		},
 		
+        deleteSelected: function () {
+            var selected = this.resources.getSelected();
+            if (selected == null) {
+                selected = this.collections.getSelected();
+            }
+            for (var i = 0; i < selected.length; i++) {
+                $.log("Selected: %o", selected[i]);
+            }
+            var $this = this;
+    		eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete the selected resources?",
+					function () {
+						$.log("Deleting resources %o", selected);
+						$.getJSON("modules/collections.xql", { 
+							remove: selected
+						},
+						function (data) {
+							$.log(data.status);
+							if (data.status == "fail") {
+								eXide.util.Dialog.warning("Delete Error", data.message);
+							} else {
+								$this.reload();
+							}
+						}
+					);
+			});
+        },
+        
 		getSelection: function () {
 			var name = $(this.selection).val();
 			if (name == null || name == '')
@@ -604,9 +636,9 @@ eXide.browse.Browser = (function () {
 				$(this.selection).val("");
 			}
 			if (writable) {
-				$(this.btnDeleteCollection).css("display", "");
+				$(this.btnDeleteResource).css("display", "");
 			} else {
-				$(this.btnDeleteCollection).css("display", "none");
+				$(this.btnDeleteResource).css("display", "none");
 			}
 		},
 		
@@ -614,12 +646,10 @@ eXide.browse.Browser = (function () {
 			if (writable) {
 				$(this.btnCreateCollection).css("display", "");
 				$(this.btnUpload).css("display", "");
-				$(this.btnDeleteCollection).css("display", "");
 				$(this.btnDeleteResource).css("display", "");
 			} else {
 				$(this.btnCreateCollection).css("display", "none");
 				$(this.btnUpload).css("display", "none");
-				$(this.btnDeleteCollection).css("display", "none");
 				$(this.btnDeleteResource).css("display", "none");
 			}
 				
