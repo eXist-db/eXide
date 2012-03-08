@@ -249,15 +249,44 @@ declare function local:delete($collection as xs:string, $selection as xs:string+
         $response
 };
 
+declare function local:copy($target as xs:string, $sources as xs:string+, $user as xs:string) {
+    if (local:canWrite($target, $user)) then
+        for $source in $sources
+        let $isCollection := xmldb:collection-available($source)
+        return
+            try {
+                if ($isCollection) then
+                    let $null := xmldb:copy($source, $target)
+                    return
+                        <response status="ok"/>
+                else
+                    let $split := text:groups($source, "^(.*)/([^/]+)$")
+                    let $null := xmldb:copy($split[2], $target, $split[3])
+                    return
+                        <response status="ok"/>
+            } catch * {
+                <response status="fail">
+                    <message>{ $err:description }</message>
+                </response>
+            }
+    else
+        <response status="fail">
+            <message>You are not allowed to copy into collection {xmldb:decode-uri(xs:anyURI($target))}</message>
+        </response>
+};
+
 let $deleteCollection := request:get-parameter("remove", ())
 let $deleteResource := request:get-parameter("remove[]", ())
+let $copy := request:get-parameter("copy[]", ())
 let $createCollection := request:get-parameter("create", ())
 let $view := request:get-parameter("view", "c")
 let $collection := request:get-parameter("root", "/db")
 let $collName := replace($collection, "^.*/([^/]+$)", "$1")
 let $user := if (session:get-attribute('myapp.user')) then session:get-attribute('myapp.user') else "guest"
 return
-    if (exists($deleteResource)) then
+    if (exists($copy)) then
+        local:copy(xmldb:encode-uri($collection), $copy, $user)
+    else if (exists($deleteResource)) then
         local:delete(xmldb:encode-uri($collection), $deleteResource, $user)
     else if ($createCollection) then
         local:create-collection(xmldb:encode-uri($createCollection), $user)

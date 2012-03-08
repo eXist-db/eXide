@@ -178,6 +178,7 @@ eXide.browse.ResourceBrowser = (function () {
 	Constr = function(container) {
 		var $this = this;
 		this.container = $(container);
+        this.clipboard = [];
 		this.events = {
 			"activate": [],
 			"activateCollection": [],
@@ -327,21 +328,52 @@ eXide.browse.ResourceBrowser = (function () {
 					function () {
 						$.log("Deleting resources %o", resources);
 						$.getJSON("modules/collections.xql", { 
-							remove: resources,
-							root: $this.collection
-						},
-						function (data) {
-							$.log(data.status);
-							if (data.status == "fail") {
-								eXide.util.Dialog.warning("Delete Resource Error", data.message);
-							} else {
-								$this.reload();
-							}
-						}
-					);
+    							remove: resources,
+    							root: $this.collection
+    						},
+    						function (data) {
+    							$.log(data.status);
+    							if (data.status == "fail") {
+    								eXide.util.Dialog.warning("Delete Resource Error", data.message);
+    							} else {
+    								$this.reload();
+    							}
+    						}
+					    );
 			});
 		},
 		
+        copy: function() {
+            var selected = this.grid.getSelectionModel().getSelectedRows();
+            this.clipboard = [];
+    		for (var i = 0; i < selected.length; i++) {
+                var path = this.data[selected[i]].name;
+                if (path.substr(0, 1) != "/") {
+                    path = this.collection + "/" + path;
+                }
+				this.clipboard.push(path);
+			}
+            $.log("Clipboard: %o", this.clipboard);
+        },
+        
+        paste: function() {
+            var $this = this;
+            $.log("Copying resources %o to %s", this.clipboard, this.collection);
+			$.getJSON("modules/collections.xql", { 
+					copy: this.clipboard,
+					root: this.collection
+				},
+				function (data) {
+					$.log(data.status);
+					if (data.status == "fail") {
+						eXide.util.Dialog.warning("Delete Resource Error", data.message);
+					} else {
+						$this.reload();
+					}
+				}
+		    );
+        },
+        
 		reload: function() {
 			this.update(this.collection);
 		},
@@ -444,75 +476,56 @@ eXide.namespace("eXide.browse.Browser");
  * panel.
  */
 eXide.browse.Browser = (function () {
-	
+
+    function createButton(toolbar, title, id, index, imgPath) {
+        var button = document.createElement("button");
+    	button.title = title;
+		button.id = "eXide-browse-toolbar-" + id;
+		button.tabindex = index;
+		var img = document.createElement("img");
+		img.src = "resources/images/" + imgPath;
+		button.appendChild(img);
+		toolbar.append(button);
+        return button;
+    }
+    
 	Constr = function (container) {
 		var $this = this;
 		var toolbar = $(".eXide-browse-toolbar", container);
 		
-		var button = document.createElement("button");
-		button.title = "Reload";
-		button.id = "eXide-browse-toolbar-reload";
-		button.tabindex = 1;
-		var img = document.createElement("img");
-		img.src = "resources/images/arrow_refresh.png";
-		button.appendChild(img);
+		var button = createButton(toolbar, "Reload", "reload", 1, "arrow_refresh.png");
 		$(button).click(function (ev) {
 			$this.collections.reload();
 		});
-		toolbar.append(button);
 		
-		this.btnCreateCollection = document.createElement("button");
-		this.btnCreateCollection.title = "Create Collection";
-		this.btnCreateCollection.id = "eXide-browse-toolbar-create";
-		this.btnCreateCollection.tabindex = 3;
-		img = document.createElement("img");
-		img.src = "resources/images/folder_add.png";
-		this.btnCreateCollection.appendChild(img);
+        this.btnCreateCollection = createButton(toolbar, "Create Collection", "create", 3, "folder_add.png");
 		$(this.btnCreateCollection).click(function (ev) {
 			ev.preventDefault();
 			$this.collections.createCollection();
 		});
-		toolbar.append(this.btnCreateCollection);
 		
-		this.btnUpload = document.createElement("button");
-		this.btnUpload.title = "Upload Files";
-		this.btnUpload.id = "eXide-browse-toolbar-upload";
-		this.btnUpload.tabindex = 4;
-		img = document.createElement("img");
-		img.src = "resources/images/database_add.png";
-		this.btnUpload.appendChild(img);
+		this.btnUpload = createButton(toolbar, "Upload Files", "upload", 4, "database_add.png");
 		$(this.btnUpload).click(function (ev) {
 			ev.preventDefault();
 			$(".eXide-browse-resources", container).hide();
 			$(".eXide-browse-upload", container).show();
 		});
-		toolbar.append(this.btnUpload);
 		
-		this.btnDeleteResource = document.createElement("button");
-		this.btnDeleteResource.title = "Delete Resource";
-		this.btnDeleteResource.id = "eXide-browse-toolbar-delete-resource";
-		img = document.createElement("img");
-		img.src = "resources/images/bin.png";
-		this.btnDeleteResource.appendChild(img);
+		this.btnDeleteResource = createButton(toolbar, "Delete", "delete-resource", 5, "bin.png")
 		$(this.btnDeleteResource).click(function (ev) {
 			ev.preventDefault();
 			$this.resources.deleteResource();
 		});
-		toolbar.append(this.btnDeleteResource);
 		
-		button = document.createElement("button");
-		button.title = "Open Selected";
-		button.id = "eXide-browse-toolbar-open";
-		button.tabindex = 5;
-		img = document.createElement("img");
-		img.src = "resources/images/page_edit.png";
-		button.appendChild(img);
+		button = createButton(toolbar, "Open Selected", "open", 6, "page_edit.png");
 		$(button).click(function (ev) {
 			ev.preventDefault();
 			eXide.app.openSelectedDocument(false);
 		});
-		toolbar.append(button);
 		
+        button = createButton(toolbar, "Copy", "copy", 7, "page_copy.png");
+        button = createButton(toolbar, "Paste", "paste", 8, "page_paste.png");
+        
 		this.selection = $(".eXide-browse-form input", container);
 		this.container = container;
 		this.resources = new eXide.browse.ResourceBrowser($(".eXide-browse-resources", container));
@@ -529,6 +542,15 @@ eXide.browse.Browser = (function () {
 			$(".eXide-browse-resources", container).show();
 			$(".eXide-browse-upload", container).hide();
 			this.reload();
+		});
+        
+        $("#eXide-browse-toolbar-copy").click(function (ev) {
+    		ev.preventDefault();
+			$this.resources.copy();
+		});
+        $("#eXide-browse-toolbar-paste").click(function (ev) {
+        	ev.preventDefault();
+			$this.resources.paste();
 		});
 	}
 	
