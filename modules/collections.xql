@@ -282,7 +282,7 @@ declare function local:copyOrMove($operation as xs:string, $target as xs:string,
             }
     else
         <response status="fail">
-            <message>You are not allowed to copy into collection {xmldb:decode-uri(xs:anyURI($target))}</message>
+            <message>You are not allowed to write to collection {xmldb:decode-uri(xs:anyURI($target))}</message>
         </response>
 };
 

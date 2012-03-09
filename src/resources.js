@@ -531,9 +531,9 @@ eXide.browse.Browser = (function () {
 			eXide.app.openSelectedDocument(false);
 		});
 		
-        button = createButton(toolbar, "Copy", "copy", 7, "page_copy.png");
-        button = createButton(toolbar, "Cut", "cut", 8, "cut.png");
-        button = createButton(toolbar, "Paste", "paste", 9, "page_paste.png");
+        this.btnCopy = createButton(toolbar, "Copy", "copy", 7, "page_copy.png");
+        this.btnCut = createButton(toolbar, "Cut", "cut", 8, "cut.png");
+        this.btnPaste = createButton(toolbar, "Paste", "paste", 9, "page_paste.png");
         
 		this.selection = $(".eXide-browse-form input", container);
 		this.container = container;
@@ -553,15 +553,15 @@ eXide.browse.Browser = (function () {
 			this.reload();
 		});
         
-        $("#eXide-browse-toolbar-copy").click(function (ev) {
+        $(this.btnCopy).click(function (ev) {
     		ev.preventDefault();
 			$this.resources.copy();
 		});
-        $("#eXide-browse-toolbar-cut").click(function (ev) {
+        $(this.btnCut).click(function (ev) {
         	ev.preventDefault();
 			$this.resources.cut();
 		});
-        $("#eXide-browse-toolbar-paste").click(function (ev) {
+        $(this.btnPaste).click(function (ev) {
         	ev.preventDefault();
 			$this.resources.paste();
 		});
@@ -682,10 +682,14 @@ eXide.browse.Browser = (function () {
 				$(this.btnCreateCollection).css("display", "");
 				$(this.btnUpload).css("display", "");
 				$(this.btnDeleteResource).css("display", "");
+                $(this.btnCut).css("display", "");
+                $(this.btnPaste).css("display", "");
 			} else {
 				$(this.btnCreateCollection).css("display", "none");
 				$(this.btnUpload).css("display", "none");
 				$(this.btnDeleteResource).css("display", "none");
+                $(this.btnCut).css("display", "none");
+                $(this.btnPaste).css("display", "none");
 			}
 				
 			this.resources.update(key, writable);
