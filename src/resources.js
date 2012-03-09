@@ -179,6 +179,7 @@ eXide.browse.ResourceBrowser = (function () {
 		var $this = this;
 		this.container = $(container);
         this.clipboard = [];
+        this.clipboardMode = "copy";
 		this.events = {
 			"activate": [],
 			"activateCollection": [],
@@ -192,9 +193,12 @@ eXide.browse.ResourceBrowser = (function () {
 		this.grid.setSelectionModel(selectionModel);
 		selectionModel.onSelectedRangesChanged.subscribe(function(e, args) {
 			var rows = selectionModel.getSelectedRows();
+            if ($this.data.length == 0) {
+                return;
+            }
 			var enableWrite = true;
 			for (var i = 0; i < rows.length; i++) {
-				if (!$this.data[rows[i]].writable) {
+				if ($this.data.length > rows[i] && !$this.data[rows[i]].writable) {
 					enableWrite = false;
 					break;
 				}
@@ -343,6 +347,11 @@ eXide.browse.ResourceBrowser = (function () {
 			});
 		},
 		
+        cut: function() {
+            this.clipboardMode = "move";
+            this.copy();
+        },
+        
         copy: function() {
             var selected = this.grid.getSelectionModel().getSelectedRows();
             this.clipboard = [];
@@ -359,10 +368,9 @@ eXide.browse.ResourceBrowser = (function () {
         paste: function() {
             var $this = this;
             $.log("Copying resources %o to %s", this.clipboard, this.collection);
-			$.getJSON("modules/collections.xql", { 
-					copy: this.clipboard,
-					root: this.collection
-				},
+            var params = { root: this.collection };
+            params[this.clipboardMode] = this.clipboard;
+			$.getJSON("modules/collections.xql", params,
 				function (data) {
 					$.log(data.status);
 					if (data.status == "fail") {
@@ -524,7 +532,8 @@ eXide.browse.Browser = (function () {
 		});
 		
         button = createButton(toolbar, "Copy", "copy", 7, "page_copy.png");
-        button = createButton(toolbar, "Paste", "paste", 8, "page_paste.png");
+        button = createButton(toolbar, "Cut", "cut", 8, "cut.png");
+        button = createButton(toolbar, "Paste", "paste", 9, "page_paste.png");
         
 		this.selection = $(".eXide-browse-form input", container);
 		this.container = container;
@@ -547,6 +556,10 @@ eXide.browse.Browser = (function () {
         $("#eXide-browse-toolbar-copy").click(function (ev) {
     		ev.preventDefault();
 			$this.resources.copy();
+		});
+        $("#eXide-browse-toolbar-cut").click(function (ev) {
+        	ev.preventDefault();
+			$this.resources.cut();
 		});
         $("#eXide-browse-toolbar-paste").click(function (ev) {
         	ev.preventDefault();
