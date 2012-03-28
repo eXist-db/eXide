@@ -60,13 +60,14 @@ eXide.find.Modules = (function () {
 	};
     
     var columns = [
-        {id:"prefix", name:"Prefix", field:"prefix", minWidth: 100, sortable: true, resizable: true},
-		{id:"uri", name:"URI", field:"uri", minWidth: 240, sortable: true, resizable: true},
-		{id:"at", name:"Location", field:"at", minWidth: 200, sortable: true, resizable: true}
+        {id:"prefix", name:"Prefix", field:"prefix", sortable: true, resizable: true, maxWidth: 100, minWidth: 60},
+		{id:"uri", name:"URI", field:"uri", sortable: true, resizable: true, minWidth: 100},
+		{id:"at", name:"Location", field:"at", sortable: true, resizable: true}
 	];
     var options = {
 		editable: false,
-        multiSelect: false
+        multiSelect: false,
+        forceFitColumns: true
 	};
     var moduleData = [];
     var grid;
@@ -79,6 +80,21 @@ eXide.find.Modules = (function () {
     		var cell = grid.getCellFromEvent(e);
             eXide.find.Modules.$triggerEvent("open", [ moduleData[cell.row] ]);
 		});
+        grid.onSort.subscribe(function (e, col) {
+            $.log("sorting on field: %s", col.sortCol.field);
+            moduleData.sort(function (m1, m2) {
+                var field = col.sortCol.field;
+                var sign = col.sortAsc ? 1 : -1;
+                var value1 = m1[field], value2 = m2[field];
+                var result = (value1 == value2 ? 0 : (value1 > value2 ? 1 : -1)) * sign;
+                if (result != 0) {
+                    return result;
+                }
+                return 0;
+            });
+            grid.invalidate();
+            grid.render();
+        });
         $("#select-module-dialog").dialog({
     		modal: false,
     		autoOpen: false,
