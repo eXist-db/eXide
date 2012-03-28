@@ -605,12 +605,9 @@ eXide.app = (function() {
 				center__onresize: eXide.app.resize,
 				center__contentSelector: ".content"
 			});
-			$(".menu ul li").hover(function () {
-                $("ul", this).css({visibility: "visible",display: "none"}).show(400);
-			}, function () {
-                $("ul", this).css({visibility: "hidden"});
-			});
 			
+            var menu = new eXide.util.Menubar($(".menu"));
+            
 			$("#open-dialog").dialog({
 				title: "Open File",
 				modal: false,
@@ -717,7 +714,7 @@ eXide.app = (function() {
 				}
 			});
 			button.click(eXide.app.openDocument);
-			$("#menu-file-open").click(eXide.app.openDocument);
+            menu.click("#menu-file-open", eXide.app.openDocument);
 			
 			button = $("#close").button({
 				icons: {
@@ -725,7 +722,7 @@ eXide.app = (function() {
 				}
 			});
 			button.click(eXide.app.closeDocument);
-			$("#menu-file-close").click(eXide.app.closeDocument);
+			menu.click("#menu-file-close", eXide.app.closeDocument);
 			
 			button = $("#new").button({
 				icons: {
@@ -733,7 +730,7 @@ eXide.app = (function() {
 				}
 			});
 			button.click(eXide.app.newDocument);
-			$("#menu-file-new").click(eXide.app.newDocument);
+			menu.click("#menu-file-new", eXide.app.newDocument);
 			
 			button = $("#run").button({
 				icons: {
@@ -753,8 +750,8 @@ eXide.app = (function() {
 				}
 			});
 			button.click(eXide.app.saveDocument);
-			$("#menu-file-save").click(eXide.app.saveDocument);
-            $("#menu-file-save-as").click(eXide.app.saveDocumentAs);
+			menu.click("#menu-file-save", eXide.app.saveDocument);
+            menu.click("#menu-file-save-as", eXide.app.saveDocumentAs);
 			
 			button = $("#download").button({
 				icons: {
@@ -762,45 +759,38 @@ eXide.app = (function() {
 				}
 			});
 			button.click(eXide.app.download);
-			$("#menu-file-download").click(eXide.app.download);
-			$("#menu-file-manager").click(eXide.app.manage);
+			menu.click("#menu-file-download", eXide.app.download);
+			menu.click("#menu-file-manager", eXide.app.manage);
 			// menu-only events
-			$("#menu-deploy-new").click(eXide.app.newDeployment);
-			$("#menu-deploy-edit").click(eXide.app.deploymentSettings);
-			$("#menu-deploy-deploy").click(eXide.app.deploy);
-			$("#menu-deploy-sync").click(eXide.app.synchronize);
-            $("#menu-deploy-download").click(eXide.app.downloadApp);
-			$("#menu-edit-undo").click(function (ev) {
-				ev.preventDefault();
+			menu.click("#menu-deploy-new", eXide.app.newDeployment);
+			menu.click("#menu-deploy-edit", eXide.app.deploymentSettings);
+			menu.click("#menu-deploy-deploy", eXide.app.deploy);
+			menu.click("#menu-deploy-sync", eXide.app.synchronize);
+            menu.click("#menu-deploy-download", eXide.app.downloadApp);
+			menu.click("#menu-edit-undo", function () {
 				editor.editor.undo();
 			});
-			$("#menu-edit-redo").click(function (ev) {
-				ev.preventDefault();
+			menu.click("#menu-edit-redo", function () {
 				editor.editor.redo();
 			});
-            $("#menu-edit-toggle-comment").click(function (ev) {
-                ev.preventDefault();
+            menu.click("#menu-edit-toggle-comment", function () {
                 editor.editor.toggleCommentLines();
             });
-			$("#menu-edit-preferences").click(eXide.app.preferences);
+			menu.click("#menu-edit-preferences", eXide.app.preferences);
             
-            $("#menu-navigate-definition").click(function (ev) {
-                ev.preventDefault();
-                eXide.app.exec("gotoDefinition");
+            menu.click("#menu-navigate-definition", function () {
+                editor.exec("gotoDefinition");
             });
-            $("#menu-navigate-modules").click(function (ev) {
-                ev.preventDefault();
+            menu.click("#menu-navigate-modules", function () {
                 var doc = editor.getActiveDocument();
 	    		eXide.find.Modules.select(doc.syntax);
             });
-			$("#menu-deploy-run").click(eXide.app.openApp);
+			menu.click("#menu-deploy-run", eXide.app.openApp);
 			
-            $("#menu-help-keyboard").click(function (ev) {
-    			ev.preventDefault();
+            menu.click("#menu-help-keyboard", function (ev) {
 				$("#keyboard-help").dialog("open");
 			});
-            $("#menu-help-about").click(function (ev) {
-        		ev.preventDefault();
+            menu.click("#menu-help-about", function (ev) {
 				$("#about-dialog").dialog("open");
 			});
 			// syntax drop down
