@@ -51,6 +51,7 @@
                 <file name="templates.js"/>
                 <file name="resources.js"/>
                 <file name="find.js"/>
+				<file name="menu.js"/>
             </sources>
         </jscomp>
         <jscomp compilationLevel="simple" debug="false" output="${scripts}/jquery/jquery.plugins.min.js">
