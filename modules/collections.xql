@@ -237,7 +237,7 @@ declare function local:delete($collection as xs:string, $selection as xs:string+
         if (starts-with($docOrColl, "/")) then
             $docOrColl
         else
-            $collection || "/" || $docOrColl
+            $collection || "/" || xmldb:encode($docOrColl)
     let $isCollection := xmldb:collection-available($path)
     let $response :=
         if ($isCollection) then
