@@ -56,30 +56,14 @@ eXide.edit.Projects = (function() {
     };
     
     Constr.prototype.saveState = function () {
-        var i = 0;
-        for (k in this.projects) {
-            var project = this.projects[k];
-            for (n in project) {
-                localStorage["eXide.projects." + i + "." + n] = project[n];
-            }
-            i++;
-        }
-        localStorage["eXide.projects"] = i;
+        localStorage["eXide.projects"] = JSON.stringify(this.projects);
 	};
 			
 	Constr.prototype.restoreState = function() {
-		var count = localStorage["eXide.projects"];
-        if (!count)
-            count = 0;
-        this.projects = {};
-        for (var i = 0; i < count; i++) {
-            var abbrev = localStorage["eXide.projects." + i + ".abbrev"];
-            this.projects[abbrev] = {
-                abbrev: abbrev,
-                root: localStorage["eXide.projects." + i + ".root"],
-                dir: localStorage["eXide.projects." + i + ".dir"],
-                autoSync: localStorage["eXide.projects." + i + ".autoSync"]
-            };
+        if (localStorage["eXide.projects"]) {
+            this.projects = JSON.parse(localStorage["eXide.projects"]);
+            if (typeof this.projects != 'object')
+                this.projects = {};
         }
 	};
     
@@ -114,7 +98,15 @@ eXide.edit.PackageEditor = (function () {
 			width: 500,
 			height: 400,
 			buttons: {
-            "Synchronize": function () {
+                "Apply": function() {
+                    var dir = $this.syncDialog.find("input[name=\"dir\"]").val();
+                    if (dir && dir.length > 0) {
+                        $this.currentProject.dir = dir;
+                    }
+                    $this.currentProject.autoSync = $this.syncDialog.find("input[name=\"auto\"]").is(':checked');
+                    $(this).dialog("close");
+                },
+                "Synchronize": function () {
 					var dir = $this.syncDialog.find("input[name=\"dir\"]").val();
 					if (!dir || dir.length == 0) {
 						$("#synchronize-report").text("No output directory specified!");
@@ -129,12 +121,6 @@ eXide.edit.PackageEditor = (function () {
 				"Close": function () { $(this).dialog("close"); }
 			}
 		});
-        $this.syncDialog.find("input[name=\"auto\"]").click(function (ev) {
-            if (!$this.currentProject) {
-                return;
-            }
-            $this.currentProject.autoSync = $(this).is(':checked');
-        });
 	};
 	
 	Constr.prototype = {
@@ -248,7 +234,7 @@ eXide.edit.PackageEditor = (function () {
                         $this.syncDialog.find("input[name=\"dir\"]").val(project.dir);
                     }
                     $this.syncDialog.find("input[name=\"collection\"]").val(project.root);
-                    $this.syncDialog.find("input[name=\"auto\"]").val(project.autoSync ? "on" : "off");
+                    $this.syncDialog.find("input[name=\"auto\"]").attr("checked", project.autoSync);
 					$this.syncDialog.dialog("open");
                 });
 			},
