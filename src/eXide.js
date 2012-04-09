@@ -70,6 +70,10 @@ eXide.app = (function() {
 			editor = new eXide.edit.Editor(document.getElementById("editor"));
 			deploymentEditor = new eXide.edit.PackageEditor(document.getElementById("deployment-editor"));
 			dbBrowser = new eXide.browse.Browser(document.getElementById("open-dialog"));
+            deploymentEditor.addEventListener("change", null, function() {
+                dbBrowser.onChange();
+                eXide.app.openDocument();
+            });
 			preferences = new eXide.util.Preferences(editor);
             
 			eXide.app.initGUI();

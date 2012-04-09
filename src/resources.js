@@ -700,7 +700,12 @@ eXide.browse.Browser = (function () {
 			this.collections.selected = path;
 			this.collections.reload();
 			this.resources.update(this.collections.getSelection());
-		}
+		},
+        
+        onChange: function() {
+            $.log("Reloading db manager views");
+            this.collections.reload();
+        }
 	};
 	
 	return Constr;
