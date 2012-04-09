@@ -35,7 +35,7 @@ eXide.edit.Document = (function() {
 		this.helper = null;
 		this.history = [];
 		this.$session = session;
-        var wrap = eXide.app.getPreferences().softWrap;
+        var wrap = eXide.app.getPreference("softWrap");
         this.$session.setUseWrapMode(wrap != 0);
         if (wrap > 0) {
             this.$session.setWrapLimitRange(wrap, wrap);

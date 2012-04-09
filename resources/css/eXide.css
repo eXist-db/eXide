@@ -468,6 +468,12 @@ ul.dynatree-container {
 	margin: 0px 0px 8px 0px;
 }
 
+.help img {
+    float: right;
+    width: 260px;
+    padding: 0 8px 8px 8px;
+}
+
 .ui-pnotify.stack-bottomright {
 	/* These are just CSS default values to reset the pnotify CSS. */
 	right: auto;

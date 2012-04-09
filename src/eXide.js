@@ -55,7 +55,8 @@ eXide.app = (function() {
 
 	var deploymentEditor;
 	var dbBrowser;
-	
+	var preferences;
+    
 	var hitCount = 0;
 	var startOffset = 0;
 	var currentOffset = 0;
@@ -63,22 +64,14 @@ eXide.app = (function() {
 	
 	var login = null;
 	
-	var preferences = {
-			theme: "ace/theme/dawn",
-			fontSize: "12px",
-			showInvisibles: false,
-			showPrintMargin: true,
-			showHScroll: false,
-            softWrap: "free"
-	};
-	
 	return {
 
 		init: function(afterInitCallback) {
 			editor = new eXide.edit.Editor(document.getElementById("editor"));
 			deploymentEditor = new eXide.edit.PackageEditor(document.getElementById("deployment-editor"));
 			dbBrowser = new eXide.browse.Browser(document.getElementById("open-dialog"));
-			
+			preferences = new eXide.util.Preferences(editor);
+            
 			eXide.app.initGUI();
 			
             // save restored paths for later
@@ -460,60 +453,11 @@ eXide.app = (function() {
 			}
 			deploymentEditor.runApp(collection[1]);
 		},
-		
-		preferences: function () {
-			var form = $("#preferences-dialog form");
-			$("select[name=\"theme\"]", form).val(preferences.theme);
-			$("select[name=\"font-size\"]", form).val(preferences.fontSize);
-			$("input[name=\"show-invisibles\"]", form).attr("checked", preferences.showInvisibles);
-			$("input[name=\"print-margin\"]", form).attr("checked", preferences.showPrintMargin);
-            var wrap = preferences.softWrap;
-            if (wrap == 0) {
-                wrap = "off";
-            } else if (wrap === -1) {
-                wrap = "free";
-            }
-            $("input[name=\"soft-wrap\"]", form).val(wrap);
-			$("#preferences-dialog").dialog("open");
-		},
-		
-		applyPreferences: function () {
-			$.log("preferences: %o", preferences);
-			editor.setTheme(preferences.theme);
-			editor.editor.setShowInvisibles(preferences.showInvisibles);
-			editor.editor.renderer.setShowPrintMargin(preferences.showPrintMargin);
-            editor.forEachDocument(function (doc) {
-                if (preferences.softWrap > 0) {
-                    doc.getSession().setWrapLimitRange(preferences.softWrap, preferences.softWrap);
-                } else if (preferences.softWrap < 0) {
-                    doc.getSession().setWrapLimitRange(null, null);
-                }
-                doc.getSession().setUseWrapMode(preferences.softWrap != 0);
-            });
-//			editor.editor.renderer.setHScrollBarAlwaysVisible(preferences.showHScroll);
-			$("#editor").css("font-size", preferences.fontSize);
-			editor.resize();
-		},
-		
-        getPreferences: function() {
-            return preferences;
-        },
         
 		restoreState: function() {
 			if (!eXide.util.supportsHtml5Storage)
 				return false;
-			for (conf in preferences) {
-				var key = "eXide.preferences." + conf;
-				if (localStorage[key]) {
-					if (localStorage[key] == "true")
-						preferences[conf] = true;
-					else if (localStorage[key] == "false")
-						preferences[conf] = false;
-					else
-						preferences[conf] = localStorage[key];
-				}
-			}
-			eXide.app.applyPreferences();
+			preferences.read();
 			
             var restoring = {};
             
@@ -544,9 +488,7 @@ eXide.app = (function() {
 			if (!eXide.util.supportsHtml5Storage)
 				return;
 			localStorage.clear();
-			for (conf in preferences) {
-				localStorage["eXide.preferences." + conf] = preferences[conf];
-			}
+			preferences.save();
 			
 			editor.saveState();
 			deploymentEditor.saveState();
@@ -589,6 +531,10 @@ eXide.app = (function() {
                 callback();
         },
         
+        getPreference: function(key) {
+            return preferences.get(key);
+        },
+        
 		initGUI: function() {
 			$("body").layout({
 				enableCursorHotkey: false,
@@ -616,34 +562,6 @@ eXide.app = (function() {
 		        width: 700,
 				open: function() { dbBrowser.init(); },
 				resize: function() { dbBrowser.resize(); }
-			});
-			$("#preferences-dialog").dialog({
-				title: "Preferences",
-				modal: true,
-				autoOpen: false,
-				height: 400,
-				width: 600,
-				buttons: {
-					"Cancel": function () { $(this).dialog("close"); editor.focus(); },
-					"Save": function () {
-						var form = $("form", this);
-						preferences.theme = $("select[name=\"theme\"]", form).val();
-						preferences.fontSize = $("select[name=\"font-size\"]", form).val();
-						preferences.showInvisibles = $("input[name=\"show-invisibles\"]", form).is(":checked");
-						preferences.showPrintMargin = $("input[name=\"print-margin\"]", form).is(":checked");
-                        var wrap = $("select[name=\"soft-wrap\"]", form).val();
-                        if (wrap === "free") {
-                            wrap = -1;
-                        } else if (wrap === "off") {
-                            wrap = 0;
-                        }
-                        preferences.softWrap = parseInt(wrap);
-						eXide.app.applyPreferences();
-						
-						$(this).dialog("close");
-						editor.focus();
-					}
-				}
 			});
 			$("#login-dialog").dialog({
 				title: "Login",
@@ -776,7 +694,9 @@ eXide.app = (function() {
             menu.click("#menu-edit-toggle-comment", function () {
                 editor.editor.toggleCommentLines();
             });
-			menu.click("#menu-edit-preferences", eXide.app.preferences);
+			menu.click("#menu-edit-preferences", function() {
+                preferences.show(); 		
+			});
             
             menu.click("#menu-navigate-definition", function () {
                 editor.exec("gotoDefinition");
@@ -793,6 +713,9 @@ eXide.app = (function() {
             menu.click("#menu-help-about", function (ev) {
 				$("#about-dialog").dialog("open");
 			});
+            menu.click("#menu-help-hints", function(ev) {
+                eXide.util.Help.show();
+            });
 			// syntax drop down
 			$("#syntax").change(function () {
 				editor.setMode($(this).val());
