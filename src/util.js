@@ -378,7 +378,7 @@ eXide.namespace("eXide.util.mimeTypes");
 eXide.util.mimeTypes = (function () {
 	
     var TYPES = {
-        'xml': ['text/xml', 'application/xml', 'application/xhtml+xml'],
+        'xml': ['text/xml', 'application/xml', 'application/xhtml+xml', 'application/atom+xml'],
         'xquery': ['application/xquery'],
         'css': ['text/css'],
         'html': ['text/html'],
