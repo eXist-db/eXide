@@ -24,6 +24,9 @@ eXide.namespace("eXide.util.Help");
  */
 eXide.util.Help = (function () {
     
+    var sections = null;
+    var currentPage = -1;
+    
     $(document).ready(function() {
     	$(document.body).append(
 				"<div id=\"eXide-dialog-help\">" +
@@ -33,25 +36,64 @@ eXide.util.Help = (function () {
 		helpDialog = $("#eXide-dialog-help");
 		
 		helpDialog.dialog({
-			modal: true,
+			modal: false,
+            title: "Quick Start",
 			autoOpen: false,
             width: 600,
-    		height: 400,
+            height: 400,
 			buttons: {
-				"OK": function () { $(this).dialog("close"); }
+                "OK" : function() { $(this).dialog("close"); },
+                "Next": function () { eXide.util.Help.next(); },
+                "Previous": function () { eXide.util.Help.previous(); }
 			}
 		});
+        
+        eXide.util.Help.showFirstTime();
     });
     
     return {
     	
 		show: function () {
-			helpDialog.dialog("option", "title", "Quick Start");
+			helpDialog.dialog("open");
+            if (!sections) {
+                eXide.util.Help.load();
+            } else {
+                eXide.util.Help.next();
+            }
+		},
+        
+        next: function() {
+            if (currentPage + 1 < sections.length) {
+                currentPage++;
+                $("#eXide-dialog-help-body").html(sections[currentPage]);
+            }
+        },
+        
+        previous: function() {
+            if (currentPage > 0) {
+                currentPage--;
+                $("#eXide-dialog-help-body").html(sections[currentPage]);
+            }
+        },
+        
+        showFirstTime: function() {
+            if (!eXide.util.supportsHtml5Storage)
+			    return;
+            // if local storage contains eXide properties, the app has already
+            // been started before and we do not show the help dialog on startup
+            var firstTime = localStorage["eXide.documents"];
+            if (firstTime)
+                return;
+            eXide.util.Help.show();
+        },
+        
+        load: function() {
             $.ajax({
-				url: "help.html",
+    			url: "help.html",
 				type: "GET",
 				success: function (data) {
-					$("#eXide-dialog-help-body").html(data);
+                    sections = $("section", data);
+                    eXide.util.Help.show();
 				},
 				error: function (xhr, status) {
 					if (xhr.status == 404) {
@@ -63,7 +105,6 @@ eXide.util.Help = (function () {
                     helpDialog.dialog("close");
 				}
 			});
-			helpDialog.dialog("open");
-		}
+        }
     }
 }());

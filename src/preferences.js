@@ -26,7 +26,7 @@ eXide.util.Preferences = (function () {
 
     var defaultPreferences = {
         theme: "dawn",
-		fontSize: "12px",
+		fontSize: "14px",
 		showInvisibles: false,
 		showPrintMargin: true,
 		showHScroll: false,
