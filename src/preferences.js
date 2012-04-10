@@ -116,13 +116,14 @@ eXide.util.Preferences = (function () {
     
     Constr.prototype.read = function() {
         if (localStorage["eXide.preferences"]) {
-            this.preferences = JSON.parse(localStorage["eXide.preferences"]);
+            this.preferences = JSON.parse(localStorage.getItem("eXide.preferences"));
         }
 		this.applyPreferences();
     };
     
     Constr.prototype.save = function() {
-        localStorage["eXide.preferences"] = JSON.stringify(this.preferences);
+        localStorage.setItem("eXide.preferences", JSON.stringify(this.preferences));
+        localStorage.setItem("eXide.hints", 0);
     };
     
     return Constr;

@@ -81,10 +81,10 @@ eXide.util.Help = (function () {
 			    return;
             // if local storage contains eXide properties, the app has already
             // been started before and we do not show the help dialog on startup
-            var firstTime = localStorage["eXide.documents"];
-            if (firstTime)
-                return;
-            eXide.util.Help.show();
+            var showHints = localStorage.getItem("eXide.hints");
+            if (!showHints || showHints == 1) {
+                eXide.util.Help.show();
+            }
         },
         
         load: function() {
