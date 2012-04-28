@@ -181,8 +181,7 @@ eXide.browse.ResourceBrowser = (function () {
     
 	var gridOptionsOpen = {
 			editable: false,
-			multiSelect: false,
-            enableCellNavigation: true
+			multiSelect: false
 	};
 	var gridOptionsManage = {
 			editable: true,
@@ -320,7 +319,8 @@ eXide.browse.ResourceBrowser = (function () {
 			this.collection = collection;
 			this.grid.invalidate();
 			this.data.length = 0;
-			this.grid.getSelectionModel().setSelectedRanges([]);
+            this.grid.setSelectedRows([]);
+			this.grid.setActiveCell(0, 0);
 			this.grid.onViewportChanged.notify();
 		},
 		
@@ -425,6 +425,10 @@ eXide.browse.ResourceBrowser = (function () {
 					}
 				}
 		    );
+        },
+        
+        focus: function() {
+            this.container.find(".grid-canvas").focus();
         },
         
 		reload: function() {
@@ -544,6 +548,7 @@ eXide.browse.Browser = (function () {
     
 	Constr = function (container) {
 		var $this = this;
+        this.mode = "open";
 		var toolbar = $(".eXide-browse-toolbar", container);
 		
 		var button = createButton(toolbar, "Reload", "reload", 1, "arrow_refresh.png");
@@ -650,9 +655,10 @@ eXide.browse.Browser = (function () {
 					$("#eXide-browse-toolbar-" + buttons[i]).show();
 				}
 			}
+            this.mode = mode;
             this.resources.setMode(mode);
-			if (mode === "open" || mode === "save") {
-				$(".eXide-browse-form", this.container).show();
+			if (mode === "save") {
+				$(".eXide-browse-form", this.container).show().focus();
 			} else {
 				$(".eXide-browse-form", this.container).hide();
 			}
@@ -712,7 +718,7 @@ eXide.browse.Browser = (function () {
 			} else {
 				$(this.selection).val("");
 			}
-			if (writable) {
+			if (this.mode != "open" && writable) {
 				$(this.btnDeleteResource).css("display", "");
 			} else {
 				$(this.btnDeleteResource).css("display", "none");
@@ -720,7 +726,7 @@ eXide.browse.Browser = (function () {
 		},
 		
 		onActivateCollection: function (key, writable) {
-			if (writable) {
+			if (this.mode != "open" && writable) {
 				$(this.btnCreateCollection).css("display", "");
 				$(this.btnUpload).css("display", "");
 				$(this.btnDeleteResource).css("display", "");
