@@ -25,7 +25,7 @@ eXide.namespace("eXide.util.Preferences");
 eXide.util.Preferences = (function () {
 
     var defaultPreferences = {
-        theme: "dawn",
+        theme: "tomorrow",
 		fontSize: "14px",
 		showInvisibles: false,
 		showPrintMargin: true,
