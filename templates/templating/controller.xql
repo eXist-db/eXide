@@ -22,6 +22,11 @@ else if (ends-with($exist:resource, ".html")) then
 			<forward url="{$exist:controller}/modules/view.xql"/>
 		</error-handler>
     </dispatch>
+(: Requests for javascript libraries are resolved to the file system :)
+else if (contains($exist:path, "/libs/")) then
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="/{substring-after($exist:path, '/libs/')}" absolute="yes"/>
+    </dispatch>
 else
     (: everything else is passed through :)
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
