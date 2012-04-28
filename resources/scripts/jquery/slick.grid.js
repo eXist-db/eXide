@@ -112,6 +112,7 @@ if (typeof Slick === "undefined") {
     var $container;
     var uid = "slickgrid_" + Math.round(1000000 * Math.random());
     var self = this;
+    var $focusSink;
     var $headerScroller;
     var $headers;
     var $headerRow, $headerRowScroller;
@@ -120,7 +121,7 @@ if (typeof Slick === "undefined") {
     var $viewport;
     var $canvas;
     var $style;
-    var stylesheet, columnCssRulesL = [], columnCssRulesR = [];
+    var stylesheet, columnCssRulesL, columnCssRulesR;
     var viewportH, viewportW;
     var canvasWidth;
     var viewportHasHScroll, viewportHasVScroll;
@@ -196,8 +197,6 @@ if (typeof Slick === "undefined") {
 
       $container
           .empty()
-          .attr("tabIndex", 0)
-          .attr("hideFocus", true)
           .css("overflow", "hidden")
           .css("outline", 0)
           .addClass(uid)
@@ -207,6 +206,8 @@ if (typeof Slick === "undefined") {
       if (!/relative|absolute|fixed/.test($container.css("position"))) {
         $container.css("position", "relative");
       }
+
+      $focusSink = $("<div tabIndex='0' hideFocus style='position:fixed;width:0;height:0;top:0;left:0;outline:0;'></div>").appendTo($container);
 
       $headerScroller = $("<div class='slick-header ui-state-default' style='overflow:hidden;position:relative;' />").appendTo($container);
       $headers = $("<div class='slick-header-columns' style='width:10000px; left:-1000px' />").appendTo($headerScroller);
@@ -225,10 +226,10 @@ if (typeof Slick === "undefined") {
         $headerRowScroller.hide();
       }
 
-      $viewport = $("<div class='slick-viewport' tabIndex='0' hideFocus style='width:100%;overflow:auto;outline:0;position:relative;;'>").appendTo($container);
+      $viewport = $("<div class='slick-viewport' style='width:100%;overflow:auto;outline:0;position:relative;;'>").appendTo($container);
       $viewport.css("overflow-y", options.autoHeight ? "hidden" : "auto");
 
-      $canvas = $("<div class='grid-canvas' tabIndex='0' hideFocus />").appendTo($viewport);
+      $canvas = $("<div class='grid-canvas' />").appendTo($viewport);
 
       if (!options.explicitInitialization) {
         finishInitialization();
@@ -273,6 +274,8 @@ if (typeof Slick === "undefined") {
         $headerScroller
             .bind("contextmenu.slickgrid", handleHeaderContextMenu)
             .bind("click.slickgrid", handleHeaderClick);
+        $focusSink
+            .bind("keydown.slickgrid", handleKeyDown);
         $canvas
             .bind("keydown.slickgrid", handleKeyDown)
             .bind("click.slickgrid", handleClick)
@@ -812,32 +815,48 @@ if (typeof Slick === "undefined") {
       } else {
         $style[0].appendChild(document.createTextNode(rules.join(" ")));
       }
+    }
 
-      var sheets = document.styleSheets;
-      for (var i = 0; i < sheets.length; i++) {
-        if ((sheets[i].ownerNode || sheets[i].owningElement) == $style[0]) {
-          stylesheet = sheets[i];
-          break;
+    function getColumnCssRules(idx) {
+      if (!stylesheet) {
+        var sheets = document.styleSheets;
+        for (var i = 0; i < sheets.length; i++) {
+          if ((sheets[i].ownerNode || sheets[i].owningElement) == $style[0]) {
+            stylesheet = sheets[i];
+            break;
+          }
+        }
+
+        if (!stylesheet) {
+          throw new Error("Cannot find stylesheet.");
+        }
+
+        // find and cache column CSS rules
+        columnCssRulesL = [];
+        columnCssRulesR = [];
+        var cssRules = (stylesheet.cssRules || stylesheet.rules);
+        var matches, columnIdx;
+        for (var i = 0; i < cssRules.length; i++) {
+          var selector = cssRules[i].selectorText;
+          if (matches = /\.l\d+/.exec(selector)) {
+            columnIdx = parseInt(matches[0].substr(2, matches[0].length - 2), 10);
+            columnCssRulesL[columnIdx] = cssRules[i];
+          } else if (matches = /\.r\d+/.exec(selector)) {
+            columnIdx = parseInt(matches[0].substr(2, matches[0].length - 2), 10);
+            columnCssRulesR[columnIdx] = cssRules[i];
+          }
         }
       }
 
-      // find and cache column CSS rules
-      columnCssRulesL = [], columnCssRulesR = [];
-      var cssRules = (stylesheet.cssRules || stylesheet.rules);
-      var matches, columnIdx;
-      for (var i = 0; i < cssRules.length; i++) {
-        if (matches = /\.l\d+/.exec(cssRules[i].selectorText)) {
-          columnIdx = parseInt(matches[0].substr(2, matches[0].length - 2), 10);
-          columnCssRulesL[columnIdx] = cssRules[i];
-        } else if (matches = /\.r\d+/.exec(cssRules[i].selectorText)) {
-          columnIdx = parseInt(matches[0].substr(2, matches[0].length - 2), 10);
-          columnCssRulesR[columnIdx] = cssRules[i];
-        }
-      }
+      return {
+        "left": columnCssRulesL[idx],
+        "right": columnCssRulesR[idx]
+      };
     }
 
     function removeCssRules() {
       $style.remove();
+      stylesheet = null;
     }
 
     function destroy() {
@@ -975,11 +994,9 @@ if (typeof Slick === "undefined") {
       for (var i = 0; i < columns.length; i++) {
         w = columns[i].width;
 
-        rule = columnCssRulesL[i];
-        rule.style.left = x + "px";
-
-        rule = columnCssRulesR[i];
-        rule.style.right = (canvasWidth - x - w) + "px";
+        rule = getColumnCssRules(i);
+        rule.left.style.left = x + "px";
+        rule.right.style.right = (canvasWidth - x - w) + "px";
 
         x += columns[i].width;
       }
@@ -1077,8 +1094,9 @@ if (typeof Slick === "undefined") {
     }
 
     function setData(newData, scrollToTop) {
-      invalidateAllRows();
       data = newData;
+      invalidateAllRows();
+      updateRowCount();
       if (scrollToTop) {
         scrollTo(0);
       }
@@ -1321,15 +1339,18 @@ if (typeof Slick === "undefined") {
         return;
       }
 
+      var columnIndex = 0
       $(rowsCache[row]).children().each(function (i) {
-        var m = columns[i], d = getDataItem(row);
+        var m = columns[columnIndex], d = getDataItem(row);
         if (row === activeRow && i === activeCell && currentEditor) {
           currentEditor.loadValue(getDataItem(activeRow));
         } else if (d) {
-          this.innerHTML = getFormatter(row, m)(row, i, getDataItemValueForColumn(d, m), m, getDataItem(row));
+          this.innerHTML = getFormatter(row, m)(row, columnIndex, getDataItemValueForColumn(d, m), m, getDataItem(row));
         } else {
           this.innerHTML = "";
         }
+
+        columnIndex += getColspan(row, i);
       });
 
       invalidatePostProcessingResults(row);
@@ -1791,6 +1812,10 @@ if (typeof Slick === "undefined") {
     }
 
     function handleClick(e) {
+      if (!currentEditor) {
+        setFocus();
+      }
+
       var cell = getCellFromEvent(e);
       if (!cell || (currentEditor !== null && activeRow == cell.row && activeCell == cell.cell)) {
         return;
@@ -1848,7 +1873,9 @@ if (typeof Slick === "undefined") {
     function handleHeaderClick(e) {
       var $header = $(e.target).closest(".slick-header-column", ".slick-header-columns");
       var column = $header && columns[self.getColumnIndex($header.data("fieldId"))];
-      trigger(self.onHeaderClick, {column: column}, e);
+      if (column) {
+        trigger(self.onHeaderClick, {column: column}, e);
+      }
     }
 
     function handleMouseEnter(e) {
@@ -1930,13 +1957,7 @@ if (typeof Slick === "undefined") {
     }
 
     function setFocus() {
-      // IE tries to scroll the viewport so that the item being focused is aligned to the left border
-      // IE-specific .setActive() sets the focus, but doesn't scroll
-      if ($.browser.msie) {
-        $canvas[0].setActive();
-      } else {
-        $canvas[0].focus();
-      }
+      $focusSink[0].focus();
     }
 
     function scrollActiveCellIntoView() {
@@ -2429,6 +2450,7 @@ if (typeof Slick === "undefined") {
       if (!getEditorLock().commitCurrentEdit()) {
         return;
       }
+      setFocus();
 
       var stepFunctions = {
         "up": gotoUp,
@@ -2751,6 +2773,7 @@ if (typeof Slick === "undefined") {
       "updateRowCount": updateRowCount,
       "scrollRowIntoView": scrollRowIntoView,
       "getCanvasNode": getCanvasNode,
+      "focus": setFocus,
 
       "getCellFromPoint": getCellFromPoint,
       "getCellFromEvent": getCellFromEvent,

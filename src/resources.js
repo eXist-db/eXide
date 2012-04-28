@@ -49,15 +49,7 @@ eXide.browse.CollectionBrowser = (function () {
                 $this.$triggerEvent("activate", [key, dtnode.data.writable]);
             },
             onPostInit: function(isReloading, isError) {
-            	var dbNode = null;
-            	if ($this.selected) {
-            		dbNode = this.getNodeByKey($this.selected);
-            	}
-            	if (dbNode == null) {
-            		dbNode = this.getNodeByKey("/db");
-            	}
-            	dbNode.activate();
-            	dbNode.expand(true);
+            	$this.select($this.selected);
             }
         });
 	};
@@ -74,13 +66,34 @@ eXide.browse.CollectionBrowser = (function () {
             };
         },
         
+        select: function (key) {
+            var tree = this.container.dynatree("getTree");
+            var dbNode = null;
+            if (key) {
+        		dbNode = tree.getNodeByKey(key);
+                if (dbNode == null) {
+                    var key = key.substring(0, key.lastIndexOf('/'));
+                    $.log("Activating parent collection %s", key);
+                    dbNode = tree.getNodeByKey(key);
+                }
+        	}
+        	if (dbNode == null) {
+                key = "/db";
+        		dbNode = tree.getNodeByKey(key);
+        	}
+            if (dbNode != null)
+                this.selected = key;
+        	dbNode.activate();
+        	dbNode.expand(true);
+        },
+        
 		reload: function () {
 			$.log("Reloading tree...");
 			var tree = this.container.dynatree("getTree");
 			tree.reload();
 		},
 		
-		createCollection: function () {
+	    createCollection: function () {
 			var $this = this;
 			if (!eXide.app.$checkLogin())
 				return;
@@ -159,7 +172,7 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 	
 	var columns = [
-	               {id: "name", name:"Name", field: "name", width: 120, formatter: nameFormatter},
+	               {id: "name", name:"Name", field: "name", width: 120, formatter: nameFormatter, editor: Slick.Editors.Text},
 	               {id: "permissions", name: "Permissions", field: "permissions", width: 80},
 	               {id: "owner", name: "Owner", field: "owner", width: 70},
 	               {id: "group", name: "Group", field: "group", width: 70},
@@ -168,11 +181,14 @@ eXide.browse.ResourceBrowser = (function () {
     
 	var gridOptionsOpen = {
 			editable: false,
-			multiSelect: false
+			multiSelect: false,
+            enableCellNavigation: true
 	};
 	var gridOptionsManage = {
-			editable: false,
-			multiSelect: true
+			editable: true,
+            autoEdit: true,
+			multiSelect: true,
+            enableCellNavigation: true
 	};
 	
 	Constr = function(container) {
@@ -186,10 +202,11 @@ eXide.browse.ResourceBrowser = (function () {
 			"activateParent": []
 		};
         this.mode = "save";
+        this.inEditor = false;
 		this.collection = null;
 		this.data = [];
 		this.grid = new Slick.Grid(this.container, this.data, columns, gridOptionsManage);
-		var selectionModel = new Slick.RowSelectionModel({selectActiveRow: true});
+		var selectionModel = new Slick.RowSelectionModel();
 		this.grid.setSelectionModel(selectionModel);
 		selectionModel.onSelectedRangesChanged.subscribe(function(e, args) {
 			var rows = selectionModel.getSelectedRows();
@@ -215,6 +232,8 @@ eXide.browse.ResourceBrowser = (function () {
 			}
 		});
 		this.grid.onKeyDown.subscribe(function (e) {
+            if ($this.inEditor)
+                return;
 			if (!e.shiftKey && !e.altKey && !e.ctrlKey) {
 				if (e.which == 13) {
 					e.stopPropagation();
@@ -244,6 +263,34 @@ eXide.browse.ResourceBrowser = (function () {
 				}
 			}
 		});
+        this.grid.onBeforeEditCell.subscribe(function(e, args) {
+            $this.inEditor = true;
+            // save old value before editing
+            $this.oldValue = $this.data[args.row].name;
+        });
+        this.grid.onBeforeCellEditorDestroy.subscribe(function(e, args) {
+            $this.inEditor = false;
+        });
+        this.grid.onCellChange.subscribe(function(e, args) {
+            if (!$this.oldValue) {
+                return;
+            }
+            $.getJSON("modules/collections.xql", { 
+					target: $this.data[args.row].name,
+                    rename: $this.oldValue,
+					root: $this.collection
+				},
+				function (data) {
+					$this.reload();
+                    if ($this.data[args.row].isCollection) {
+                        $this.$triggerEvent("activateCollection", [ $this.data[args.row].name ]);
+                    }
+					if (data.status == "fail") {
+						eXide.util.Dialog.warning("Rename Error", data.message);
+					}
+				}
+		    );
+        });
 		this.grid.onViewportChanged.subscribe(function(e,args) {
             var vp = $this.grid.getViewport();
             $this.load(vp.top, vp.bottom);
@@ -267,7 +314,9 @@ eXide.browse.ResourceBrowser = (function () {
 		},
 		
 		update: function(collection) {
-			$.log("Opening collection %s", collection);
+            if (collection === this.collection)
+                return;
+			$.log("Opening resources for %s", collection);
 			this.collection = collection;
 			this.grid.invalidate();
 			this.data.length = 0;
@@ -293,8 +342,6 @@ eXide.browse.ResourceBrowser = (function () {
 				$this.grid.updateRowCount();
 				$this.grid.render();
 				if (start == 0) {
-					$this.grid.setActiveCell(0, 0);
-					$this.grid.setSelectedRows([0]);
 				    $this.container.find(".grid-canvas").focus();
 				}
 			});
@@ -336,11 +383,9 @@ eXide.browse.ResourceBrowser = (function () {
     							root: $this.collection
     						},
     						function (data) {
-    							$.log(data.status);
+								$this.reload();
     							if (data.status == "fail") {
     								eXide.util.Dialog.warning("Delete Resource Error", data.message);
-    							} else {
-    								$this.reload();
     							}
     						}
 					    );
@@ -522,7 +567,7 @@ eXide.browse.Browser = (function () {
 		this.btnDeleteResource = createButton(toolbar, "Delete", "delete-resource", 5, "bin.png")
 		$(this.btnDeleteResource).click(function (ev) {
 			ev.preventDefault();
-			$this.resources.deleteResource();
+			$this.deleteSelected();
 		});
 		
 		button = createButton(toolbar, "Open Selected", "open", 6, "page_edit.png");
@@ -630,27 +675,24 @@ eXide.browse.Browser = (function () {
             var selected = this.resources.getSelected();
             if (selected == null) {
                 selected = this.collections.getSelected();
-            }
-            for (var i = 0; i < selected.length; i++) {
-                $.log("Selected: %o", selected[i]);
-            }
-            var $this = this;
-    		eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete the selected resources?",
+    			var $this = this;
+    			eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete the selected collections?",
 					function () {
-						$.log("Deleting resources %o", selected);
+						$.log("Deleting collection %o", selected);
 						$.getJSON("modules/collections.xql", { 
-							remove: selected
-						},
-						function (data) {
-							$.log(data.status);
-							if (data.status == "fail") {
-								eXide.util.Dialog.warning("Delete Error", data.message);
-							} else {
+    							remove: [ selected.name ]
+    						},
+    						function (data) {
 								$this.reload();
-							}
-						}
-					);
-			});
+    							if (data.status == "fail") {
+    								eXide.util.Dialog.warning("Delete Collection Error", data.message);
+    							}
+    						}
+					    );
+    			});
+            } else {
+                this.resources.deleteResource();
+            }
         },
         
 		getSelection: function () {
@@ -697,7 +739,7 @@ eXide.browse.Browser = (function () {
 		},
 		
 		onChangeCollection: function (path) {
-			this.collections.selected = path;
+			this.collections.select(path);
 			this.collections.reload();
 			this.resources.update(this.collections.getSelection());
 		},
