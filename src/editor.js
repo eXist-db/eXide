@@ -347,6 +347,11 @@ eXide.edit.Editor = (function () {
 			if (setMime)
 				doc.mime = "text/css";
 			break;
+        case "text":
+            var TextMode = require("ace/mode/text").Mode;
+            doc.$session.setMode(new TextMode());
+            if (setMime)
+    			doc.mime = "text/text";
 		}
 		doc.setModeHelper(this.modes[doc.getSyntax()]);
 	};
