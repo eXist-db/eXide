@@ -65,6 +65,10 @@
                 <file name="slick.core.js"/>
                 <file name="slick.rowselectionmodel.js"/>
                 <file name="slick.grid.js"/>
+                <file name="slick.editors.js"/>
+				<file name="slick.formatters.js"/>
+				<file name="slick.cellselectionmodel.js"/>
+				<file name="slick.cellrangeselector.js"/>	
             </sources>
         </jscomp>
     </target>
@@ -81,7 +85,7 @@
                 <include name="modules/**"/>
                 <include name="resources/**"/>
                 <include name="templates/**"/>
-                <exclude name="src/**"/>
+                <include name="src/**"/>
                 <exclude name=".git*"/>
             </fileset>
         </zip>
