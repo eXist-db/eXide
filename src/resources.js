@@ -418,7 +418,7 @@ eXide.browse.ResourceBrowser = (function () {
     };
     
 	Constr.prototype.reload = function() {
-		this.update(this.collection);
+		this.update(this.collection, true);
 	};
 	
 	return Constr;
