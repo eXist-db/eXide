@@ -49,112 +49,96 @@ eXide.browse.CollectionBrowser = (function () {
                 $this.$triggerEvent("activate", [key, dtnode.data.writable]);
             },
             onPostInit: function(isReloading, isError) {
+                $.log("Reloading: %s", isReloading);
             	$this.select($this.selected);
             }
         });
 	};
 	
-	Constr.prototype = {
-		getSelection: function () {
-			return this.selected;
-		},
-		
-        getSelected: function() {
-            return {
-                isCollection: false,
-                name: this.selected
-            };
-        },
-        
-        select: function (key) {
-            var tree = this.container.dynatree("getTree");
-            var dbNode = null;
-            if (key) {
-        		dbNode = tree.getNodeByKey(key);
-                if (dbNode == null) {
-                    var key = key.substring(0, key.lastIndexOf('/'));
-                    $.log("Activating parent collection %s", key);
-                    dbNode = tree.getNodeByKey(key);
-                }
-        	}
-        	if (dbNode == null) {
-                key = "/db";
-        		dbNode = tree.getNodeByKey(key);
-        	}
-            if (dbNode != null)
-                this.selected = key;
-        	dbNode.activate();
-        	dbNode.expand(true);
-        },
-        
-		reload: function () {
-			$.log("Reloading tree...");
-			var tree = this.container.dynatree("getTree");
-			tree.reload();
-		},
-		
-	    createCollection: function () {
-			var $this = this;
-			if (!eXide.app.$checkLogin())
-				return;
-			eXide.util.Dialog.input("Create Collection", 
-					"<label for=\"collection\">Name: </label>" +
-					"<input type=\"text\" name=\"collection\" id=\"eXide-browse-collection-name\"/>",
-					function () {
-						$.getJSON("modules/collections.xql", { 
-								create: $("#eXide-browse-collection-name").val(), 
-								collection: $this.selected
-							},
-							function (data) {
-								if (data.status == "fail") {
-									eXide.util.Dialog.warning("Create Collection Error", data.message);
-								} else {
-									$this.reload();
-								}
-							}
-						);
-					}
-			);
-		},
-		
-		deleteCollection: function () {
-			var $this = this;
-			eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete collection " + $this.selected + "?",
-					function () {
-						$.getJSON("modules/collections.xql", { 
-							remove: $this.selected
+    // Extend eXide.events.Sender for event support
+    eXide.util.oop.inherit(Constr, eXide.events.Sender);
+    
+	Constr.prototype.getSelection = function () {
+		return this.selected;
+	};
+	
+    Constr.prototype.getSelected = function() {
+        return {
+            isCollection: false,
+            name: this.selected
+        };
+    };
+    
+    Constr.prototype.select = function (key) {
+        var tree = this.container.dynatree("getTree");
+        var dbNode = null;
+        if (key) {
+    		dbNode = tree.getNodeByKey(key);
+            if (dbNode == null) {
+                var key = key.substring(0, key.lastIndexOf('/'));
+                $.log("Activating parent collection %s", key);
+                dbNode = tree.getNodeByKey(key);
+            }
+    	}
+    	if (dbNode == null) {
+            key = "/db";
+    		dbNode = tree.getNodeByKey(key);
+    	}
+        if (dbNode != null)
+            this.selected = key;
+    	dbNode.activate();
+    	dbNode.expand(true);
+    };
+    
+	Constr.prototype.reload = function () {
+		$.log("Reloading tree...");
+		var tree = this.container.dynatree("getTree");
+		tree.reload();
+	};
+	
+    Constr.prototype.createCollection = function () {
+		var $this = this;
+		if (!eXide.app.$checkLogin())
+			return;
+		eXide.util.Dialog.input("Create Collection", 
+				"<label for=\"collection\">Name: </label>" +
+				"<input type=\"text\" name=\"collection\" id=\"eXide-browse-collection-name\"/>",
+				function () {
+					$.getJSON("modules/collections.xql", { 
+							create: $("#eXide-browse-collection-name").val(), 
+							collection: $this.selected
 						},
 						function (data) {
 							if (data.status == "fail") {
-								eXide.util.Dialog.warning("Delete Collection Error", data.message);
+								eXide.util.Dialog.warning("Create Collection Error", data.message);
 							} else {
 								$this.reload();
 							}
 						}
 					);
-			});
-		},
-		
-		addEventListener: function (name, obj, callback) {
-			var event = this.events[name];
-			if (event) {
-				event.push({
-					obj: obj,
-					callback: callback
-				});
-			}
-		},
-		
-		$triggerEvent: function (name, args) {
-			var event = this.events[name];
-			if (event) {
-				for (var i = 0; i < event.length; i++) {
-					event[i].callback.apply(event[i].obj, args);
 				}
-			}
-		}
+		);
 	};
-	return Constr;
+	
+	Constr.prototype.deleteCollection = function () {
+		var $this = this;
+		eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete collection " + $this.selected + "?",
+				function () {
+					$.getJSON("modules/collections.xql", { 
+						remove: $this.selected
+					},
+					function (data) {
+						if (data.status == "fail") {
+							eXide.util.Dialog.warning("Delete Collection Error", data.message);
+						} else {
+							$this.reload();
+						}
+					}
+				);
+		});
+	};
+
+    return Constr;
 }());
 
 eXide.namespace("eXide.browse.ResourceBrowser");
@@ -214,7 +198,7 @@ eXide.browse.ResourceBrowser = (function () {
             }
 			var enableWrite = true;
 			for (var i = 0; i < rows.length; i++) {
-				if ($this.data.length > rows[i] && !$this.data[rows[i]].writable) {
+				if (rows[i] < $this.data.length && !$this.data[rows[i]].writable) {
 					enableWrite = false;
 					break;
 				}
@@ -294,165 +278,147 @@ eXide.browse.ResourceBrowser = (function () {
             var vp = $this.grid.getViewport();
             $this.load(vp.top, vp.bottom);
         });
-	}
-	
-	Constr.prototype = {
-		
-		setMode: function(value) {
-            this.mode = value;
-			if (value == "manage") {
-				this.grid.setOptions(gridOptionsManage);
-			} else {
-				this.grid.setOptions(gridOptionsOpen);
-			}
-		},
-		
-		resize: function () {
-			this.grid.resizeCanvas();
-			this.container.find(".grid-canvas").focus();
-		},
-		
-		update: function(collection) {
-            if (collection === this.collection)
-                return;
-			$.log("Opening resources for %s", collection);
-			this.collection = collection;
-			this.grid.invalidate();
-			this.data.length = 0;
-            this.grid.setSelectedRows([]);
-			this.grid.setActiveCell(0, 0);
-			this.grid.onViewportChanged.notify();
-		},
-		
-		load: function (start, end) {
-			var $this = this;
-			var params = { root: this.collection, view: "r", start: start, end: end };
-			$.getJSON("modules/collections.xql", params, function (data) {
-				for (var i = start; i <= end; i++) {
-					$this.grid.invalidateRow(i);
-				}
-				if (data && data.items) {
-					$this.data.length = data.total;
-					for (var i = 0; i < data.items.length; i++) {
-						$this.data[start + i] = data.items[i];
-					}
-				} else {
-					$this.data.length = 0;
-				}
-				$this.grid.updateRowCount();
-				$this.grid.render();
-				if (start == 0) {
-				    $this.container.find(".grid-canvas").focus();
-				}
-			});
-		},
-		
-		hasSelection: function () {
-			var rows = this.grid.getSelectionModel().getSelectedRows();
-			return rows && rows.length > 0;
-		},
-		
-        getSelected: function() {
-            var selected = this.grid.getSelectionModel().getSelectedRows();
-    		if (selected.length == 0) {
-				return null;
-			}
-            var items = [];
-            for (var i = 0; i < selected.length; i++) {
-                var item = this.collection + "/" + this.data[selected[i]].name;
-                items.push(item);
-            }
-            return items;
-        },
-        
-		deleteResource: function() {
-			var selected = this.grid.getSelectionModel().getSelectedRows();
-			if (selected.length == 0) {
-				return;
-			}
-			var resources = [];
-			for (var i = 0; i < selected.length; i++) {
-				resources.push(this.data[selected[i]].name);
-			}
-			var $this = this;
-			eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete the selected resources?",
-					function () {
-						$.log("Deleting resources %o", resources);
-						$.getJSON("modules/collections.xql", { 
-    							remove: resources,
-    							root: $this.collection
-    						},
-    						function (data) {
-								$this.reload();
-    							if (data.status == "fail") {
-    								eXide.util.Dialog.warning("Delete Resource Error", data.message);
-    							}
-    						}
-					    );
-			});
-		},
-		
-        cut: function() {
-            this.clipboardMode = "move";
-            this.copy();
-        },
-        
-        copy: function() {
-            var selected = this.grid.getSelectionModel().getSelectedRows();
-            this.clipboard = [];
-    		for (var i = 0; i < selected.length; i++) {
-                var path = this.data[selected[i]].name;
-                if (path.substr(0, 1) != "/") {
-                    path = this.collection + "/" + path;
-                }
-				this.clipboard.push(path);
-			}
-            $.log("Clipboard: %o", this.clipboard);
-        },
-        
-        paste: function() {
-            var $this = this;
-            $.log("Copying resources %o to %s", this.clipboard, this.collection);
-            var params = { root: this.collection };
-            params[this.clipboardMode] = this.clipboard;
-			$.getJSON("modules/collections.xql", params,
-				function (data) {
-					$.log(data.status);
-					if (data.status == "fail") {
-						eXide.util.Dialog.warning("Delete Resource Error", data.message);
-					} else {
-						$this.reload();
-					}
-				}
-		    );
-        },
-        
-        focus: function() {
-            this.container.find(".grid-canvas").focus();
-        },
-        
-		reload: function() {
-			this.update(this.collection);
-		},
-		
-		addEventListener: function (name, obj, callback) {
-			var event = this.events[name];
-			if (event) {
-				event.push({
-					obj: obj,
-					callback: callback
-				});
-			}
-		},
-		
-		$triggerEvent: function (name, args) {
-			var event = this.events[name];
-			if (event) {
-				for (var i = 0; i < event.length; i++) {
-					event[i].callback.apply(event[i].obj, args);
-				}
-			}
+	};
+
+    // Extend eXide.events.Sender for event support
+    eXide.util.oop.inherit(Constr, eXide.events.Sender);
+    
+	Constr.prototype.setMode = function(value) {
+        this.mode = value;
+		if (value == "manage") {
+			this.grid.setOptions(gridOptionsManage);
+		} else {
+			this.grid.setOptions(gridOptionsOpen);
 		}
+	};
+	
+	Constr.prototype.resize = function () {
+		this.grid.resizeCanvas();
+		this.container.find(".grid-canvas").focus();
+	};
+	
+	Constr.prototype.update = function(collection, reload) {
+        if (!reload && collection === this.collection)
+            return;
+		$.log("Opening resources for %s", collection);
+		this.collection = collection;
+		this.grid.invalidate();
+		this.data.length = 0;
+		this.grid.resetActiveCell();
+        this.grid.setSelectedRows([]);
+		this.grid.onViewportChanged.notify();
+	};
+	
+	Constr.prototype.load = function (start, end) {
+		var $this = this;
+		var params = { root: this.collection, view: "r", start: start, end: end };
+		$.getJSON("modules/collections.xql", params, function (data) {
+			for (var i = start; i <= end; i++) {
+				$this.grid.invalidateRow(i);
+			}
+			if (data && data.items) {
+				$this.data.length = data.total;
+				for (var i = 0; i < data.items.length; i++) {
+					$this.data[start + i] = data.items[i];
+				}
+			} else {
+				$this.data.length = 0;
+			}
+			$this.grid.updateRowCount();
+			$this.grid.render();
+			if (start == 0) {
+                $this.grid.setActiveCell(0, 1);
+			    $this.container.find(".grid-canvas").focus();
+			}
+		});
+	};
+	
+	Constr.prototype.hasSelection = function () {
+		var rows = this.grid.getSelectionModel().getSelectedRows();
+		return rows && rows.length > 0;
+	};
+	
+    Constr.prototype.getSelected = function() {
+        var selected = this.grid.getSelectionModel().getSelectedRows();
+		if (selected.length == 0) {
+			return null;
+		}
+        var items = [];
+        for (var i = 0; i < selected.length; i++) {
+            var item = this.collection + "/" + this.data[selected[i]].name;
+            items.push(item);
+        }
+        return items;
+    };
+    
+	Constr.prototype.deleteResource = function() {
+		var selected = this.grid.getSelectionModel().getSelectedRows();
+		if (selected.length == 0) {
+			return;
+		}
+		var resources = [];
+		for (var i = 0; i < selected.length; i++) {
+			resources.push(this.data[selected[i]].name);
+		}
+		var $this = this;
+		eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete the selected resources?",
+				function () {
+					$.log("Deleting resources %o", resources);
+					$.getJSON("modules/collections.xql", { 
+							remove: resources,
+							root: $this.collection
+						},
+						function (data) {
+							$this.reload();
+							if (data.status == "fail") {
+								eXide.util.Dialog.warning("Delete Resource Error", data.message);
+							}
+						}
+				    );
+		});
+	};
+	
+    Constr.prototype.cut = function() {
+        this.clipboardMode = "move";
+        this.copy();
+    };
+    
+    Constr.prototype.copy = function() {
+        var selected = this.grid.getSelectionModel().getSelectedRows();
+        this.clipboard = [];
+		for (var i = 0; i < selected.length; i++) {
+            var path = this.data[selected[i]].name;
+            if (path.substr(0, 1) != "/") {
+                path = this.collection + "/" + path;
+            }
+			this.clipboard.push(path);
+		}
+        $.log("Clipboard: %o", this.clipboard);
+    };
+    
+    Constr.prototype.paste = function() {
+        var $this = this;
+        $.log("Copying resources %o to %s", this.clipboard, this.collection);
+        var params = { root: this.collection };
+        params[this.clipboardMode] = this.clipboard;
+		$.getJSON("modules/collections.xql", params,
+			function (data) {
+				$.log(data.status);
+				if (data.status == "fail") {
+					eXide.util.Dialog.warning("Delete Resource Error", data.message);
+				} else {
+					$this.reload();
+				}
+			}
+	    );
+    };
+    
+    Constr.prototype.focus = function() {
+        this.container.find(".grid-canvas").focus();
+    };
+    
+	Constr.prototype.reload = function() {
+		this.update(this.collection);
 	};
 	
 	return Constr;
@@ -497,29 +463,11 @@ eXide.browse.Upload = (function () {
 		});
 	}
 	
-	Constr.prototype = {
-		update: function(collection) {
+    // Extend eXide.events.Sender for event support
+    eXide.util.oop.inherit(Constr, eXide.events.Sender);
+    
+	Constr.prototype.update = function(collection) {
 			$("input[name=\"collection\"]", this.container).val(collection);
-		},
-		
-		addEventListener: function (name, obj, callback) {
-			var event = this.events[name];
-			if (event) {
-				event.push({
-					obj: obj,
-					callback: callback
-				});
-			}
-		},
-		
-		$triggerEvent: function (name, args) {
-			var event = this.events[name];
-			if (event) {
-				for (var i = 0; i < event.length; i++) {
-					event[i].callback.apply(event[i].obj, args);
-				}
-			}
-		}
 	};
 	
 	return Constr;
@@ -553,6 +501,7 @@ eXide.browse.Browser = (function () {
 		
 		var button = createButton(toolbar, "Reload", "reload", 1, "arrow_refresh.png");
 		$(button).click(function (ev) {
+            $this.resources.reload(true);
 			$this.collections.reload();
 		});
 		
@@ -655,9 +604,11 @@ eXide.browse.Browser = (function () {
 					$("#eXide-browse-toolbar-" + buttons[i]).show();
 				}
 			}
-            this.mode = mode;
+            if (mode) {
+                this.mode = mode;
+            }
             this.resources.setMode(mode);
-			if (mode === "save") {
+			if (this.mode === "save") {
 				$(".eXide-browse-form", this.container).show().focus();
 			} else {
 				$(".eXide-browse-form", this.container).hide();
@@ -665,7 +616,7 @@ eXide.browse.Browser = (function () {
 			if (this.layout != null) {
 				this.resize();
 				this.collections.reload();
-				this.resources.update(this.collections.getSelection());
+				this.resources.update(this.collections.getSelection(), true);
 				$(this.selection).val("");
 			}
 		},
