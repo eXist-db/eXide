@@ -40,7 +40,7 @@ eXide.browse.CollectionBrowser = (function () {
             rootVisible: false,
             initAjax: { url: "modules/collections.xql" },
             clickFolderMode: 1,
-            autoFocus: false,
+            autoFocus: true,
             keyboard: false,
             onActivate: function (dtnode) {
                 var key = dtnode.data.key;
@@ -198,12 +198,12 @@ eXide.browse.ResourceBrowser = (function () {
             }
 			var enableWrite = true;
 			for (var i = 0; i < rows.length; i++) {
-				if (rows[i] < $this.data.length && !$this.data[rows[i]].writable) {
+				if (rows[i] < $this.data.length && $this.data[rows[i]] && !$this.data[rows[i]].writable) {
 					enableWrite = false;
 					break;
 				}
 			}
-			var doc = rows.length == 1 && !$this.data[rows[0]].isCollection ? $this.data[rows[0]] : null;
+			var doc = rows.length == 1 && $this.data[rows[0]] && !$this.data[rows[0]].isCollection ? $this.data[rows[0]] : null;
 			$this.$triggerEvent("activate", [ doc, enableWrite]);
 		});
 		this.grid.onDblClick.subscribe(function (e, args) {
@@ -294,7 +294,7 @@ eXide.browse.ResourceBrowser = (function () {
 	
 	Constr.prototype.resize = function () {
 		this.grid.resizeCanvas();
-		this.container.find(".grid-canvas").focus();
+		this.grid.focus();
 	};
 	
 	Constr.prototype.update = function(collection, reload) {
@@ -304,9 +304,10 @@ eXide.browse.ResourceBrowser = (function () {
 		this.collection = collection;
 		this.grid.invalidate();
 		this.data.length = 0;
-		this.grid.resetActiveCell();
+		this.grid.setActiveCell(0, 1);
         this.grid.setSelectedRows([]);
 		this.grid.onViewportChanged.notify();
+        this.grid.focus();
 	};
 	
 	Constr.prototype.load = function (start, end) {
@@ -328,7 +329,7 @@ eXide.browse.ResourceBrowser = (function () {
 			$this.grid.render();
 			if (start == 0) {
                 $this.grid.setActiveCell(0, 1);
-			    $this.container.find(".grid-canvas").focus();
+			    $this.grid.focus();
 			}
 		});
 	};

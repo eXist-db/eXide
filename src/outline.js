@@ -33,9 +33,9 @@ eXide.edit.Outline = (function () {
 	
 	Constr = function() {
 		// pre-compile regexp needed by this class
-		this.funcDefRe = /declare\s+function\s+([^\(]+)\(/g;
-		this.varDefRe = /declare\s+variable\s+\$[^\s;]+/gm;
-		this.varRe = /declare\s+variable\s+(\$[^\s;]+)/;
+		this.funcDefRe = /declare\s+(?:%(\w+)\s+)?function\s+([^\(]+)\(/g;
+		this.varDefRe = /declare\s+(?:%\w+\s+)?variable\s+\$[^\s;]+/gm;
+		this.varRe = /declare\s+(?:%\w+\s+)?variable\s+(\$[^\s;]+)/;
 		this.parseImportRe = /import\s+module\s+namespace\s+[^=]+\s*=\s*["'][^"']+["']\s*at\s+["'][^"']+["']\s*;/g;
 		this.moduleRe = /import\s+module\s+namespace\s+([^=\s]+)\s*=\s*["']([^"']+)["']\s*at\s+["']([^"']+)["']\s*;/;
 		
@@ -95,10 +95,13 @@ eXide.edit.Outline = (function () {
 				}
 				var offset = this.funcDefRe.lastIndex;
 				var end = this.$findMatchingParen(text, offset);
+                var name = funcDef.length == 3 ? funcDef[2] : funcDef[1];
+                var status = funcDef.length == 3 ? funcDef[1] : "public";
 				doc.functions.push({
 					type: TYPE_FUNCTION,
-					name: funcDef[1],
-					signature: funcDef[1] + "(" + text.substring(offset, end) + ")"
+					name: name,
+                    visibility: status,
+					signature: name + "(" + text.substring(offset, end) + ")"
 				});
 			}
 			var varDefs = text.match(this.varDefRe);
@@ -165,6 +168,7 @@ eXide.edit.Outline = (function () {
 										type: TYPE_FUNCTION,
 										name: funcs[j].name,
 										signature: funcs[j].signature,
+                                        visibility: funcs[j].visibility,
 										source: modules[i].source
 									});
 								}
@@ -209,25 +213,32 @@ eXide.edit.Outline = (function () {
 			ul.empty();
 			for (var i = 0; i < doc.functions.length; i++) {
 				var func = doc.functions[i];
+                $.log("Function %s visibility: '%s'", func.name, func.visibility);
 				var li = document.createElement("li");
 				var a = document.createElement("a");
 				if (func.signature)
 					a.title = func.signature;
+                var _a = $(a);
 				if (func.type == TYPE_FUNCTION)
-					a.className = "t_function";
+					_a.addClass("t_function");
 				else
-					a.className = "t_variable";
+					_a.addClass("t_variable");
 				if (func.source)
 					a.href = "#" + func.source;
 				else
 					a.href = "#";
+                if (func.visibility === "private") {
+                    _a.addClass("private");
+                } else {
+                    _a.addClass("public");
+                }
 				a.appendChild(document.createTextNode(func.name));
 				li.appendChild(a);
 				ul.append(li);
 				
-				$(a).click(function () {
+				_a.click(function () {
 					var path = this.hash.substring(1);
-					if (this.className == "t_function") {
+					if ($(this).hasClass("t_function")) {
 						eXide.app.locate("function", path == '' ? null : path, $(this).text());
 					} else {
 						eXide.app.locate("variable", path == '' ? null : path, $(this).text());
