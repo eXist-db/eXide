@@ -44,6 +44,7 @@
                 <file name="mode-helper.js"/>
                 <file name="xquery-helper.js"/>
                 <file name="xml-helper.js"/>
+				<file name="less-helper.js"/>
                 <file name="outline.js"/>
                 <file name="editor.js"/>
                 <file name="eXide.js"/>

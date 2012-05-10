@@ -205,7 +205,8 @@ eXide.edit.Editor = (function () {
 		$this.modes = {
 			"xquery": new eXide.edit.XQueryModeHelper($this),
 			"xml": new eXide.edit.XMLModeHelper($this),
-            "html": new eXide.edit.XMLModeHelper($this)
+            "html": new eXide.edit.XMLModeHelper($this),
+            "less": new eXide.edit.LessModeHelper($this)
 		};
 	};
 
@@ -352,6 +353,11 @@ eXide.edit.Editor = (function () {
             doc.$session.setMode(new TextMode());
             if (setMime)
     			doc.mime = "text/text";
+        case "less":
+            var LessMode = require("ace/mode/less").Mode;
+            doc.$session.setMode(new LessMode());
+            if (setMime)
+        		doc.mime = "application/less";
 		}
 		doc.setModeHelper(this.modes[doc.getSyntax()]);
 	};
@@ -412,6 +418,12 @@ eXide.edit.Editor = (function () {
 					} else {
 						eXide.util.message($this.activeDoc.name + " stored.");
 					}
+                    
+                    // trigger post-save action on mode helper
+                    var mode = $this.activeDoc.getModeHelper();
+                	if (mode && mode.documentSaved) {
+            			mode.documentSaved($this.activeDoc);
+            		}
 				}
 			},
 			error: function (xhr, status) {
