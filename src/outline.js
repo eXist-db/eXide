@@ -213,7 +213,6 @@ eXide.edit.Outline = (function () {
 			ul.empty();
 			for (var i = 0; i < doc.functions.length; i++) {
 				var func = doc.functions[i];
-                $.log("Function %s visibility: '%s'", func.name, func.visibility);
 				var li = document.createElement("li");
 				var a = document.createElement("a");
 				if (func.signature)
