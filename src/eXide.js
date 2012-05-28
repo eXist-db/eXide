@@ -549,7 +549,7 @@ eXide.app = (function() {
 				south__minSize: 200,
 				south__initClosed: true,
 				west__size: 200,
-				west__initClosed: true,
+				west__initClosed: false,
 				west__contentSelector: ".content",
 				center__minSize: 300,
 				center__onresize: eXide.app.resize,
