@@ -159,6 +159,7 @@ define("eXide/mode/behaviour/xquery", function(require, exports, module) {
 	            var cursor = editor.getCursorPosition();
 	            var line = session.doc.getLine(cursor.row);
 	            var rightChars = line.substring(cursor.column, cursor.column + 2);
+                // check if pressed enter between two tags and increase indent automatically
 	            if (rightChars == '</') {
 	                var indent = this.$getIndent(session.doc.getLine(cursor.row)) + session.getTabString();
 	                var next_indent = this.$getIndent(session.doc.getLine(cursor.row));
@@ -172,6 +173,30 @@ define("eXide/mode/behaviour/xquery", function(require, exports, module) {
 	        return false;
 	    });
 
+        this.add("comments", "insertion", function (state, action, editor, session, text) {
+            var cursor = editor.getCursorPosition();
+            var line = session.doc.getLine(cursor.row);
+            if (text == "\n") {
+                // if user presses return within a comment, insert ' : ' 
+                if (line.match(/^[\(\s]:/)) {
+                    return {
+                        text: '\n' + " : ",
+                        selection: [1, 3, 1, 3]
+                    }
+                }
+            }
+            if (text == ":") {
+                var leftChar = line.substring(cursor.column - 1, 1);
+                if (leftChar == "(") {
+                    $.log("cursor: %d", cursor.column);
+                    return {
+                        text: ":  :",
+                        selection: [2, 2]
+                    }
+                }
+            }
+        });
+        
 	    // Check for open tag if user enters / and auto-close it.
 	    this.add("slash", "insertion", function (state, action, editor, session, text) {
 	    	if (text == "/") {
