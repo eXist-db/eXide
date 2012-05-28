@@ -2,15 +2,24 @@ eXide.namespace("eXide.find.IncrementalSearch");
 
 eXide.find.IncrementalSearch = (function () {
     
+    var searchOptions = {
+        backwards: false,
+        wrap: false,
+        caseSensitive: false,
+        wholeWord: false,
+        regExp: false
+    };
+    
     Constr = function (input, editor) {
         var $this = this;
         $this.input = $(input);
         $this.input.hide();
-        $this.input.keyup(function (ev) {
+        $this.input.keydown(function (ev) {
             switch (ev.which) {
                 case 27:
                 case 13:
                     // ESC or Return pressed
+                    ev.preventDefault();
                     $this.input.hide();
                     $this.editor.focus();
                     break;
@@ -43,8 +52,9 @@ eXide.find.IncrementalSearch = (function () {
     Constr.prototype.onChange = function () {
         this.editor.gotoLine(this.currentLine);
         var search = this.input.val();
-        this.editor.find(search);
+        this.editor.find(search, searchOptions, true);
     };
+    
     return Constr;
 }());
 
