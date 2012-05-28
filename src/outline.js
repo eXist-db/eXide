@@ -206,7 +206,7 @@ eXide.edit.Outline = (function () {
 				return;
 			
 			var layout = $("body").layout();
-			layout.open("west");
+			// layout.open("west");
 			eXide.app.resize();
 			
 			var ul = $("#outline");
