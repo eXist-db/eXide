@@ -37,7 +37,6 @@ eXide.edit.commands = (function () {
 		
 		init: function (editor) {
             var commands = editor.editor.commands;
-            $.log("commands: %o", commands);
 			commands.addCommand({
 				name: "fold",
 			    bindKey: bindKey("Alt-L", "Alt-F"),
@@ -166,7 +165,14 @@ eXide.edit.commands = (function () {
 		    	exec: function (env, args, request) {
 		    		eXide.app.manage();
 		    	}
-		    })
+		    });
+            commands.addCommand({
+    	    	name: "toggleComment",
+		    	bindKey: bindKey("Ctrl-Shift-C", "Command-Shift-C"),
+		    	exec: function (env, args, request) {
+		    		editor.editor.toggleCommentLines();
+		    	}
+		    });
 		},
 		
 		help: function (container, editor) {

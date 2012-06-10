@@ -27,7 +27,7 @@ eXide.edit.Document = (function() {
 	Constr = function(name, path, session) {
 		this.name = name;
 		this.path = path;
-		this.mime = "application/xquery";
+		this.mime = null;
 		this.syntax = "xquery";
 		this.saved = false;
 		this.editable = true;
@@ -72,6 +72,10 @@ eXide.edit.Document = (function() {
 		return this.syntax;
 	};
 	
+    Constr.prototype.setSyntax = function(syntax) {
+    	this.syntax = syntax;
+	};
+    
 	Constr.prototype.getSession = function() {
 		return this.$session;
 	};
@@ -235,7 +239,8 @@ eXide.edit.Editor = (function () {
 		return this.activeDoc.getText();
 	};
 	
-	Constr.prototype.newDocument = function(data) {
+	Constr.prototype.newDocument = function(data, type) {
+        $.log("Type: %s", type);
 		var $this = this;
 		var newDocId = 0;
 		for (var i = 0; i < $this.documents.length; i++) {
@@ -246,13 +251,20 @@ eXide.edit.Editor = (function () {
 		}
 		newDocId++;
         var session;
-        if (typeof data == "string") {
+        if (data && typeof data == "string") {
             session = new EditSession(data);
+        } else if (type && type === "xquery") {
+            session = new EditSession("xquery version \"3.0\";\n");
         } else {
-            session = new EditSession("xquery version \"1.0\";\n");
+            session = new EditSession("");
         }
 		var newDocument = new eXide.edit.Document("new-document " + newDocId,
 				"__new__" + newDocId, session);
+        if (type) {
+            newDocument.setSyntax(type);
+        } else {
+            newDocument.setSyntax("text");
+        }
 		this.$initDocument(newDocument);
 	};
 	
@@ -294,7 +306,7 @@ eXide.edit.Editor = (function () {
 	
 	Constr.prototype.$initDocument = function (doc) {
 		var $this = this;
-		$this.$setMode(doc);
+		$this.$setMode(doc, false);
 		doc.$session.setUndoManager(new UndoManager());
 		doc.$session.addEventListener("change", function (ev) {
 			if (doc.saved) {
@@ -439,6 +451,10 @@ eXide.edit.Editor = (function () {
 		});
 	};
 
+    Constr.prototype.reload = function(data) {
+        this.activeDoc.getSession().setValue(data);
+    };
+    
 	/**
 	 * Scan open documents and return the one matching path
 	 */

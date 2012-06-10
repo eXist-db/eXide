@@ -83,7 +83,6 @@ eXide.app = (function() {
 		    
 		    editor.init();
 		    editor.addEventListener("outlineChange", eXide.app.onOutlineChange);
-		    eXide.app.resize();
 
 			$(window).resize(eXide.app.resize);
 			
@@ -112,8 +111,8 @@ eXide.app = (function() {
 			editor.resize();
 		},
 
-		newDocument: function(data) {
-			editor.newDocument(data);
+		newDocument: function(data, type) {
+			editor.newDocument(data, type);
 		},
 
 		findDocument: function(path) {
@@ -169,10 +168,10 @@ eXide.app = (function() {
 				$("#open-dialog").dialog("close");
 		},
 
-		$doOpenDocument: function(resource, callback) {
+		$doOpenDocument: function(resource, callback, reload) {
 			resource.path = eXide.util.normalizePath(resource.path);
             var doc = editor.getDocument(resource.path);
-            if (doc) {
+            if (doc && !reload) {
                 editor.switchTo(doc);
                 return;
             }
@@ -180,8 +179,12 @@ eXide.app = (function() {
 				url: "modules/load.xql?path=" + resource.path,
 				dataType: 'text',
 				success: function (data, status, xhr) {
-					var mime = eXide.util.mimeTypes.getMime(xhr.getResponseHeader("Content-Type"));
-					editor.openDocument(data, mime, resource);
+                    if (reload) {
+                        editor.reload(data);
+                    } else {
+    					var mime = eXide.util.mimeTypes.getMime(xhr.getResponseHeader("Content-Type"));
+    					editor.openDocument(data, mime, resource);
+                    }
 					if (callback) {
 						callback.call(null, resource);
 					}
@@ -193,6 +196,25 @@ eXide.app = (function() {
 			});
 		},
 
+        reloadDocument: function() {
+            var doc = editor.getActiveDocument();
+            if (doc.isSaved()) {
+                eXide.app.$reloadDocument(doc);
+            } else {
+                eXide.util.Dialog.input("Reload Document", "Do you really want to reload the document?", function() {
+                    eXide.app.$reloadDocument(doc);
+                });
+            }
+        },
+        
+        $reloadDocument: function(doc) {
+            var resource = {
+                name: doc.getName(),
+                path: doc.getPath()
+            };
+            eXide.app.$doOpenDocument(resource, null, true);
+        },
+        
 		closeDocument: function() {
 			if (!editor.getActiveDocument().isSaved()) {
 				$("#dialog-confirm-close").dialog({
@@ -540,7 +562,7 @@ eXide.app = (function() {
         },
         
 		initGUI: function() {
-			$("body").layout({
+			var layout = $("body").layout({
 				enableCursorHotkey: false,
 				north__size: 70,
 				north__resizable: false,
@@ -653,7 +675,10 @@ eXide.app = (function() {
 			});
 			button.click(eXide.app.newDocument);
 			menu.click("#menu-file-new", eXide.app.newDocument);
-			
+    		menu.click("#menu-file-new-xquery", function() {
+                eXide.app.newDocument(null, "xquery");
+    		});
+            
 			button = $("#run").button({
 				icons: {
 					primary: "ui-icon-play"
@@ -675,6 +700,8 @@ eXide.app = (function() {
 			menu.click("#menu-file-save", eXide.app.saveDocument);
             menu.click("#menu-file-save-as", eXide.app.saveDocumentAs);
 			
+            menu.click("#menu-file-reload", eXide.app.reloadDocument);
+            
 			button = $("#download").button({
 				icons: {
 					primary: "ui-icon-transferthick-e-w"
@@ -743,6 +770,10 @@ eXide.app = (function() {
 			});
 			$('#results-container .next').click(eXide.app.browseNext);
 			$('#results-container .previous').click(eXide.app.browsePrevious);
+            
+            // dirty workaround to fix editor height
+            layout.toggle("south");
+            layout.toggle("south");
 		}
 	};
 }());
