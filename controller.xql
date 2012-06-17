@@ -15,7 +15,7 @@ if ($exist:path eq '/') then
 (:
  : Login a user via AJAX. Just returns a 401 if login fails.
  :)
-else if ($exist:resource = ('login', 'logout')) then
+else if ($exist:resource = 'login') then
     let $loggedIn := login:set-user("org.exist.login", ())
     return (
         util:declare-option("exist:serialize", "method=json"),

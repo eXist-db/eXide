@@ -532,7 +532,6 @@ eXide.app = (function() {
                 success: function(data) {
                     eXide.app.login = data;
                     $("#user").text("Logged in as " + eXide.app.login + ". ");
-					$("#login").text("Logout");
                 },
                 error: function (xhr, textStatus) {
                     eXide.app.login = null;
@@ -612,12 +611,12 @@ eXide.app = (function() {
 						$.ajax({
 							url: "login",
 							data: params,
+                            dataType: "json",
 							success: function (data) {
 								eXide.app.login = $("#login-form input[name=\"user\"]").val();
 								$.log("Logged in as %s", eXide.app.login);
 								$("#login-dialog").dialog("close");
 								$("#user").text("Logged in as " + eXide.app.login + ". ");
-								$("#login").text("Logout");
 								editor.focus();
 							},
 							error: function () {
@@ -769,13 +768,12 @@ eXide.app = (function() {
 				$("#syntax").val(doc.getSyntax());
 			});
 			
-			$("#login").click(function (ev) {
+			$("#user").click(function (ev) {
 				ev.preventDefault();
 				if (eXide.app.login) {
 					// logout
-					$.get("logout");
-					$("#user").empty();
-					$("#login").text("Login");
+					$.get("login?logout=logout");
+					$("#user").text("Login");
 					eXide.app.login = null;
 				} else {
 					$("#login-dialog").dialog("open");
