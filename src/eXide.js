@@ -63,7 +63,7 @@ eXide.app = (function() {
 	var endOffset = 0;
 	
 	var login = null;
-	
+    
 	return {
 
 		init: function(afterInitCallback) {
@@ -173,7 +173,7 @@ eXide.app = (function() {
             var doc = editor.getDocument(resource.path);
             if (doc && !reload) {
                 editor.switchTo(doc);
-                return;
+                return true;
             }
 			$.ajax({
 				url: "modules/load.xql?path=" + resource.path,
@@ -188,10 +188,12 @@ eXide.app = (function() {
 					if (callback) {
 						callback.call(null, resource);
 					}
+                    return true;
 				},
 				error: function (xhr, status) {
 					eXide.util.error("Failed to load document " + resource.path + ": " + 
 							xhr.status + " " + xhr.statusText);
+                    return false;
 				}
 			});
 		},
@@ -506,6 +508,9 @@ eXide.app = (function() {
 				}
                 restoring[doc.path] = doc;
 			}
+            if (!editor.getActiveDocument()) {
+                eXide.app.newDocument("", "xquery");
+            }
 			deploymentEditor.restoreState();
 			return restoring;
 		},
@@ -520,22 +525,21 @@ eXide.app = (function() {
 			deploymentEditor.saveState();
 		},
 		
-		ping: function() {
-			$.ajax({
-				url: "index.html",
-				type: "HEAD",
-				success: function () {
-					setTimeout(function () { eXide.app.ping(); }, 30000);
-				},
-				error: function (xhr, textStatus) {
-					$.log("ping failed: %s", textStatus);
-					eXide.app.login = null;
-					$("#user").empty();
-					$("#login").text("Login");
-				}
-			});
-		},
-		
+        getLogin: function() {
+            $.ajax({
+                url: "login",
+                dataType: "json",
+                success: function(data) {
+                    eXide.app.login = data;
+                    $("#user").text("Logged in as " + eXide.app.login + ". ");
+					$("#login").text("Logout");
+                },
+                error: function (xhr, textStatus) {
+                    eXide.app.login = null;
+                }
+            })
+        },
+        
 		$checkLogin: function () {
 			if (eXide.app.login)
 				return true;
@@ -562,6 +566,8 @@ eXide.app = (function() {
         },
         
 		initGUI: function() {
+            eXide.app.getLogin();
+            
 			var layout = $("body").layout({
 				enableCursorHotkey: false,
 				north__size: 70,
@@ -595,16 +601,23 @@ eXide.app = (function() {
 				autoOpen: false,
 				buttons: {
 					"Login": function() {
+                        var user = $("#login-form input[name=\"user\"]").val();
+                        var password = $("#login-form input[name=\"password\"]").val();
+                        var params = {
+                            user: user, password: password
+                        }
+                        if ($("#login-form input[name=\"duration\"]").is(":checked")) {
+                            params.duration = "P14D";
+                        }
 						$.ajax({
 							url: "login",
-							data: $("#login-form").serialize(),
+							data: params,
 							success: function (data) {
 								eXide.app.login = $("#login-form input[name=\"user\"]").val();
 								$.log("Logged in as %s", eXide.app.login);
 								$("#login-dialog").dialog("close");
 								$("#user").text("Logged in as " + eXide.app.login + ". ");
 								$("#login").text("Logout");
-								setTimeout(function () { eXide.app.ping(); }, 30000);
 								editor.focus();
 							},
 							error: function () {
@@ -774,6 +787,17 @@ eXide.app = (function() {
             // dirty workaround to fix editor height
             layout.toggle("south");
             layout.toggle("south");
+            
+            $("#error-status").mouseover(function(ev) {
+                var error = this;
+                $("#ext-status-bar").each(function() {
+                    this.innerHTML = error.innerHTML;
+                    $(this).css("display", "block");
+                });
+            });
+            $("#ext-status-bar").mouseout(function(ev) {
+               $(this).css("display", "none");
+            });
 		}
 	};
 }());

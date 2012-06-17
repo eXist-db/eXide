@@ -240,7 +240,6 @@ eXide.edit.Editor = (function () {
 	};
 	
 	Constr.prototype.newDocument = function(data, type) {
-        $.log("Type: %s", type);
 		var $this = this;
 		var newDocId = 0;
 		for (var i = 0; i < $this.documents.length; i++) {
@@ -714,11 +713,14 @@ eXide.edit.Editor = (function () {
 		var i = 0;
 		$.each(this.documents, function (index, doc) {
 			if (doc.path.match('^__new__.*')) {
-				localStorage["eXide." + i + ".path"] = doc.path;
-				localStorage["eXide." + i + ".name"] = doc.name;
-				localStorage["eXide." + i + ".mime"] = doc.mime;
-				localStorage["eXide." + i + ".data"] = doc.getText();
-				localStorage["eXide." + i + ".last-line"] = doc.getCurrentLine();
+                var data = doc.getText();
+                if (data && data.length > 0) {
+    				localStorage["eXide." + i + ".path"] = doc.path;
+    				localStorage["eXide." + i + ".name"] = doc.name;
+    				localStorage["eXide." + i + ".mime"] = doc.mime;
+    				localStorage["eXide." + i + ".data"] = doc.getText();
+    				localStorage["eXide." + i + ".last-line"] = doc.getCurrentLine();
+                }
 			} else {
 				localStorage["eXide." + i + ".path"] = doc.path;
 				localStorage["eXide." + i + ".name"] = doc.name;
