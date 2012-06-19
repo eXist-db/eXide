@@ -40,7 +40,7 @@ else if ($exist:resource eq 'execute') then
         <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
 	<!-- Query is executed by XQueryServlet -->
             <forward servlet="XQueryServlet">
-                {login:set-user("org.exist.eXide", ())}
+                {login:set-user("org.exist.login", ())}
                 <set-header name="Cache-Control" value="no-cache"/>
                 <!-- Query is passed via the attribute 'xquery.source' -->
                 <set-attribute name="xquery.source" value="{$query}"/>
@@ -70,7 +70,7 @@ else if ($exist:resource eq 'execute') then
 else if (starts-with($exist:path, '/results/')) then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <forward url="../modules/session.xql">
-            {login:set-user("org.exist.eXide", ())}
+            {login:set-user("org.exist.login", ())}
             <set-header name="Cache-Control" value="no-cache"/>
             <add-parameter name="num" value="{$exist:resource}"/>
         </forward>
@@ -83,7 +83,7 @@ else if ($exist:resource eq "outline") then
         <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
 	        <!-- Query is executed by XQueryServlet -->
             <forward url="modules/outline.xql">
-                {login:set-user("org.exist.eXide", ())}
+                {login:set-user("org.exist.login", ())}
                 <set-header name="Cache-Control" value="no-cache"/>
 	            <set-attribute name="xquery.module-load-path" value="{$base}"/>
             </forward>
@@ -91,7 +91,7 @@ else if ($exist:resource eq "outline") then
 
 else if (ends-with($exist:path, ".xql")) then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        {login:set-user("org.exist.eXide", ())}
+        {login:set-user("org.exist.login", ())}
         <set-header name="Cache-Control" value="no-cache"/>
         <set-attribute name="app-root" value="{$exist:prefix}{$exist:controller}"/>
     </dispatch>
