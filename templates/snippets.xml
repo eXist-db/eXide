@@ -28,7 +28,7 @@
     </snippet>
     <snippet abbrev="template-fun">
         <description>HTML templating function</description>
-        <code>declare function $name($node as node(), $params as element(parameters)?, $model as item()*) {
+        <code>declare function $name($node as node(), $model as map(*)) {
     $body
 };</code>
     </snippet>
