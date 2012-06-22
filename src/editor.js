@@ -42,6 +42,7 @@ eXide.edit.Document = (function() {
         } else if (wrap < 0) {
             this.$session.setWrapLimitRange(null, null);
         }
+        this.$session.setFoldStyle("markbegin");
 	};
 	
 	Constr.prototype.getText = function() {
@@ -161,7 +162,9 @@ eXide.edit.Editor = (function () {
 	    
 		this.editor = new Editor(renderer);
 		this.editor.setBehavioursEnabled(true);
-		
+		this.editor.setShowFoldWidgets(true);
+        this.editor.setFadeFoldWidgets(false);
+        
         eXide.edit.commands.init($this);
 		
 	    this.outline = new eXide.edit.Outline();

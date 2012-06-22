@@ -359,12 +359,14 @@ define("eXide/mode/xml", function(require, exports, module) {
 	var XmlMode = require("ace/mode/xml").Mode;
 	var Tokenizer = require("ace/tokenizer").Tokenizer;
 	var XmlHighlightRules = require("ace/mode/xml_highlight_rules").XmlHighlightRules;
+    var XmlFoldMode = require("ace/mode/folding/xml").FoldMode;
 	var XMLBehaviour = require("eXide/mode/behaviour/xml").XMLBehaviour;
 	var Range = require("ace/range").Range;
 
 	var Mode = function(parent) {
 	    this.$tokenizer = new Tokenizer(new XmlHighlightRules().getRules());
 	    this.$behaviour = new XMLBehaviour(parent);
+        this.foldingRules = new XmlFoldMode();
 	};
 
 	oop.inherits(Mode, XmlMode);
@@ -405,12 +407,22 @@ define("eXide/mode/html", function(require, exports, module) {
 	var HtmlMode = require("ace/mode/html").Mode;
 	var Tokenizer = require("ace/tokenizer").Tokenizer;
 	var HtmlHighlightRules = require("ace/mode/html_highlight_rules").HtmlHighlightRules;
+    var HtmlFoldMode = require("ace/mode/folding/html").FoldMode;
 	var XMLBehaviour = require("eXide/mode/behaviour/xml").XMLBehaviour;
 	var Range = require("ace/range").Range;
+    var JavaScriptMode = require("ace/mode/javascript").Mode;
+    var CssMode = require("ace/mode/css").Mode;
 
 	var Mode = function(parent) {
-	    this.$tokenizer = new Tokenizer(new HtmlHighlightRules().getRules());
+        var highlighter = new HtmlHighlightRules();
+	    this.$tokenizer = new Tokenizer(highlighter.getRules());
 	    this.$behaviour = new XMLBehaviour(parent);
+        this.foldingRules = new HtmlFoldMode();
+        this.$embeds = highlighter.getEmbeds();
+        this.createModeDelegates({
+            "js-": JavaScriptMode,
+            "css-": CssMode
+        });
 	};
 
 	oop.inherits(Mode, HtmlMode);
