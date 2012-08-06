@@ -41,6 +41,11 @@ $(document).ready(function() {
         } else if (snippet) {
             eXide.app.newDocument(snippet);
         }
+        
+        $.log("eXide.onload: %o", eXide.onload);
+        if (eXide_onload) {
+            eXide_onload(eXide.app);
+        }
     });
 });
 
@@ -685,7 +690,9 @@ eXide.app = (function() {
 					primary: "ui-icon-document"
 				}
 			});
-			button.click(eXide.app.newDocument);
+			button.click(function() {
+                eXide.app.newDocument(null, "xquery");
+			});
 			menu.click("#menu-file-new", eXide.app.newDocument);
     		menu.click("#menu-file-new-xquery", function() {
                 eXide.app.newDocument(null, "xquery");
