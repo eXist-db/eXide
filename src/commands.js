@@ -25,10 +25,10 @@ eXide.edit.commands = (function () {
 
 	var useragent = require("ace/lib/useragent");
 	
-	function bindKey(win, mac) {
+	function bindKey(bindings) {
 	    return {
-	        win: win,
-	        mac: mac,
+	        win: bindings[0],
+	        mac: bindings[1],
 	        sender: "editor"
 	    };
 	}
@@ -37,142 +37,145 @@ eXide.edit.commands = (function () {
 		
 		init: function (editor) {
             var commands = editor.editor.commands;
-			commands.addCommand({
-				name: "fold",
-			    bindKey: bindKey("Alt-L", "Alt-F"),
-			    exec: function(env, args, request) { 
-					env.editor.session.toggleFold(false);
-				},
-			    readOnly: true
-			});
-			commands.addCommand({
-				name: "unfold",
-			    bindKey: bindKey("Alt-Shift-L", "Alt-Shift-F"),
-			    exec: function(env, args, request) { 
-					env.editor.session.toggleFold(true);
-				},
-			    readOnly: true
-			});
-		    commands.addCommand({
-		    	name: "saveDocument",
-		    	bindKey: bindKey("Ctrl-Shift-S", "Command-Shift-S"),
-		    	exec: function (env, args, request) {
-		    		eXide.app.saveDocument();
-		    	}
-		    });
-		    commands.addCommand({
-		    	name: "runQuery",
-		    	bindKey: bindKey("Ctrl-Return", "Command-Return"),
-		    	exec: function (env, args, request) {
-		    		eXide.app.runQuery();
-		    	}
-		    });
-		    commands.addCommand({
-		    	name: "openDocument",
-		    	bindKey: bindKey("Ctrl-Shift-O", "Command-Shift-O"),
-		    	exec: function (env, args, request) {
-		    		eXide.app.openDocument();
-		    	}
-		    });
-		    commands.addCommand({
-		    	name: "newDocument",
-		    	bindKey: bindKey("Ctrl-Shift-N", "Command-Shift-N"),
-		    	exec: function (env, args, request) {
-		    		eXide.app.newDocument();
-		    	}
-		    });
-		    commands.addCommand({
-		    	name: "closeDocument",
-		    	bindKey: bindKey("Ctrl-Shift-W", "Command-Shift-W"),
-		    	exec: function (env, args, request) {
-		    		eXide.app.closeDocument();
-		    	}
-		    });
-		    commands.addCommand({
-		    	name: "autocomplete",
-		    	bindKey: bindKey("Ctrl-Space", "Ctrl-Space"),
-		    	exec: function(env, args, request) {
-		    		editor.autocomplete();
-		    	}
-		    });
-		    commands.addCommand({
-		    	name: "nextTab",
-		    	bindKey: bindKey("Ctrl-Shift-PageDown", "Command-Shift-PageDown"),
-		    	exec: function(env, args, request) {
-		    		editor.nextTab();
-		    	}
-		    });
-		    commands.addCommand({
-		    	name: "previousTab",
-		    	bindKey: bindKey("Ctrl-Shift-PageUp", "Command-Shift-PageUp"),
-		    	exec: function(env, args, request) {
-		    		editor.previousTab();
-		    	}
-		    });
-		    commands.addCommand({
-		    	name: "functionDoc",
-		    	bindKey: bindKey("F1", "F1"),
-		    	exec: function(env, args, request) {
-		    		editor.exec("showFunctionDoc");
-		    	}
-		    });
-		    commands.addCommand({
-		    	name: "gotoDefinition",
-		    	bindKey: bindKey("F3", "F3"),
-		    	exec: function(env, args, request) {
-		    		editor.exec("gotoDefinition");
-		    	}
-		    });
-            commands.addCommand({
-    	    	name: "searchIncremental",
-		    	bindKey: bindKey("Ctrl-F", "Command-F"),
-		    	exec: function(env, args, request) {
-		    		editor.quicksearch.start();
-		    	}
-		    });
-            commands.addCommand({
-    	    	name: "findModule",
-		    	bindKey: bindKey("F4", "F4"),
-		    	exec: function(env, args, request) {
-                    var doc = editor.getActiveDocument();
-		    		eXide.find.Modules.select(doc.syntax);
-		    	}
-		    });
-		    commands.addCommand({
-		    	name: "indentOrParam",
-		    	bindKey: bindKey("Tab", "Tab"),
-		    	exec: function(env, args, request) {
-		    		// if there's active template code in the document, tab will
-		    		// cycle through the template's params. Otherwise, it calls indent.
-		    		var doc = editor.getActiveDocument();
-		    		if (!(doc.template && doc.template.nextParam())) {
-		    			editor.editor.indent();
-		    		}
-		    	}
-		    });
-		    commands.addCommand({
-		    	name: "escape",
-		    	bindKey: bindKey("Esc", "Esc"),
-		    	exec: function(env, args, request) {
-		    		var doc = editor.getActiveDocument();
-		    		doc.template = null;
-		    		editor.editor.clearSelection();
-		    	}
-		    });
-		    commands.addCommand({
-		    	name: "dbManager",
-		    	bindKey: bindKey("Ctrl-Shift-M", "Command-Shift-M"),
-		    	exec: function (env, args, request) {
-		    		eXide.app.manage();
-		    	}
-		    });
-            commands.addCommand({
-    	    	name: "toggleComment",
-		    	bindKey: bindKey("Ctrl-Shift-C", "Command-Shift-C"),
-		    	exec: function (env, args, request) {
-		    		editor.editor.toggleCommentLines();
-		    	}
-		    });
+            $.getJSON("keybindings.js", function(bindings) {
+                commands.addCommand({
+        			name: "fold",
+    			    bindKey: bindKey(bindings.fold),
+    			    exec: function(env, args, request) { 
+    					env.editor.session.toggleFold(false);
+    				},
+    			    readOnly: true
+    			});
+    			commands.addCommand({
+    				name: "unfold",
+    			    bindKey: bindKey(bindings.unfold),
+    			    exec: function(env, args, request) { 
+    					env.editor.session.toggleFold(true);
+    				},
+    			    readOnly: true
+    			});
+    		    commands.addCommand({
+    		    	name: "saveDocument",
+    		    	bindKey: bindKey(bindings.saveDocument),
+    		    	exec: function (env, args, request) {
+    		    		eXide.app.saveDocument();
+    		    	}
+    		    });
+    		    commands.addCommand({
+    		    	name: "runQuery",
+    		    	bindKey: bindKey(bindings.runQuery),
+    		    	exec: function (env, args, request) {
+    		    		eXide.app.runQuery();
+    		    	}
+    		    });
+    		    commands.addCommand({
+    		    	name: "openDocument",
+    		    	bindKey: bindKey(bindings.openDocument),
+    		    	exec: function (env, args, request) {
+    		    		eXide.app.openDocument();
+    		    	}
+    		    });
+    		    commands.addCommand({
+    		    	name: "newDocument",
+    		    	bindKey: bindKey(bindings.newDocument),
+    		    	exec: function (env, args, request) {
+    		    		eXide.app.newDocument();
+    		    	}
+    		    });
+    		    commands.addCommand({
+    		    	name: "closeDocument",
+    		    	bindKey: bindKey(bindings.closeDocument),
+    		    	exec: function (env, args, request) {
+    		    		eXide.app.closeDocument();
+    		    	}
+    		    });
+    		    commands.addCommand({
+    		    	name: "autocomplete",
+    		    	bindKey: bindKey(bindings.autocomplete),
+    		    	exec: function(env, args, request) {
+    		    		editor.autocomplete();
+    		    	}
+    		    });
+    		    commands.addCommand({
+    		    	name: "nextTab",
+    		    	bindKey: bindKey(bindings.nextTab),
+    		    	exec: function(env, args, request) {
+    		    		editor.nextTab();
+    		    	}
+    		    });
+    		    commands.addCommand({
+    		    	name: "previousTab",
+    		    	bindKey: bindKey(bindings.previousTab),
+    		    	exec: function(env, args, request) {
+    		    		editor.previousTab();
+    		    	}
+    		    });
+    		    commands.addCommand({
+    		    	name: "functionDoc",
+    		    	bindKey: bindKey(bindings.functionDoc),
+    		    	exec: function(env, args, request) {
+    		    		editor.exec("showFunctionDoc");
+    		    	}
+    		    });
+    		    commands.addCommand({
+    		    	name: "gotoDefinition",
+    		    	bindKey: bindKey(bindings.gotoDefinition),
+    		    	exec: function(env, args, request) {
+    		    		editor.exec("gotoDefinition");
+    		    	}
+    		    });
+                commands.addCommand({
+        	    	name: "searchIncremental",
+    		    	bindKey: bindKey(bindings.searchIncremental),
+    		    	exec: function(env, args, request) {
+    		    		editor.quicksearch.start();
+    		    	}
+    		    });
+                commands.addCommand({
+        	    	name: "findModule",
+    		    	bindKey: bindKey(bindings.findModule),
+    		    	exec: function(env, args, request) {
+                        var doc = editor.getActiveDocument();
+    		    		eXide.find.Modules.select(doc.syntax);
+    		    	}
+    		    });
+    		    commands.addCommand({
+    		    	name: "indentOrParam",
+    		    	bindKey: bindKey(bindings.indentOrParam),
+    		    	exec: function(env, args, request) {
+    		    		// if there's active template code in the document, tab will
+    		    		// cycle through the template's params. Otherwise, it calls indent.
+    		    		var doc = editor.getActiveDocument();
+    		    		if (!(doc.template && doc.template.nextParam())) {
+    		    			editor.editor.indent();
+    		    		}
+    		    	}
+    		    });
+    		    commands.addCommand({
+    		    	name: "escape",
+    		    	bindKey: bindKey(bindings.escape),
+    		    	exec: function(env, args, request) {
+    		    		var doc = editor.getActiveDocument();
+    		    		doc.template = null;
+    		    		editor.editor.clearSelection();
+    		    	}
+    		    });
+    		    commands.addCommand({
+    		    	name: "dbManager",
+    		    	bindKey: bindKey(bindings.dbManager),
+    		    	exec: function (env, args, request) {
+    		    		eXide.app.manage();
+    		    	}
+    		    });
+                commands.addCommand({
+        	    	name: "toggleComment",
+    		    	bindKey: bindKey(bindings.toggleComment),
+    		    	exec: function (env, args, request) {
+    		    		editor.editor.toggleCommentLines();
+    		    	}
+    		    });
+            });
+			
 		},
 		
 		help: function (container, editor) {

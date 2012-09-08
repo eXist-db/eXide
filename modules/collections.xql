@@ -22,8 +22,6 @@ declare namespace json="http://www.json.org";
 
 declare option exist:serialize "method=json media-type=text/javascript";
 
-import module namespace date="http://exist-db.org/xquery/admin-interface/date" at "dates.xqm";
-
 declare function local:sub-collections($root as xs:string, $children as xs:string*, $user as xs:string) {
         for $child in $children
         let $processChild := 
@@ -165,10 +163,16 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
                     else
                         xmldb:get-group($collection, $resource)
                 let $lastMod := 
-                    if ($isCollection) then
-                        date:format-dateTime(xmldb:created($path))
-                    else
-                        date:format-dateTime(xmldb:created($collection, $resource))
+                    let $date :=
+                        if ($isCollection) then
+                            xmldb:created($path)
+                        else
+                            xmldb:created($collection, $resource)
+                    return
+                        if (xs:date($date) = current-date()) then
+                            format-dateTime($date, "Today [H00]:[m00]:[s00]")
+                        else
+                            format-dateTime($date, "[M00]/[D00]/[Y0000] [H00]:[m00]:[s00]")
                 let $canWrite :=
                     if ($isCollection) then
                         local:canWrite(concat($collection, "/", $resource), $user)
@@ -308,8 +312,240 @@ declare function local:rename($collection as xs:string, $source as xs:string) {
         }
 };
 
+declare %private function local:merge-properties($maps as map(*)) {
+    map:new(
+        for $key in map:keys($maps[1])
+        let $values := distinct-values(for $map in $maps return $map($key))
+        return
+            map:entry($key, if (count($values) = 1) then $values[1] else "")
+    )
+};
+
+declare %private function local:get-property-map($resource as xs:string) as map(*) {
+    let $isCollection := xmldb:collection-available($resource)
+    return
+        if ($isCollection) then
+            map {
+                "owner" := xmldb:get-owner($resource),
+                "group" := xmldb:get-group($resource),
+                "last-modified" := format-dateTime(xmldb:created($resource), "[MNn] [D00] [Y0000] [H00]:[m00]:[s00]"),
+                "permissions" := xmldb:permissions-to-string(xmldb:get-permissions($resource)),
+                "mime" := xmldb:get-mime-type(xs:anyURI($resource))
+            }
+        else
+            let $components := text:groups($resource, "^(.*)/([^/]+)$")
+            return
+                map {
+                    "owner" := xmldb:get-owner($components[2], $components[3]),
+                    "group" := xmldb:get-group($components[2], $components[3]),
+                    "last-modified" := 
+                        format-dateTime(xmldb:created($components[2], $components[3]), "[MNn] [D00] [Y0000] [H00]:[m00]:[s00]"),
+                    "permissions" := xmldb:permissions-to-string(xmldb:get-permissions($components[2], $components[3])),
+                    "mime" := xmldb:get-mime-type(xs:anyURI($resource))
+                }
+};
+
+declare %private function local:get-properties($resources as xs:string*) as map(*) {
+    local:merge-properties(for $resource in $resources return local:get-property-map($resource))
+};
+declare %private function local:merge-properties($maps as map(*)) {
+    map:new(
+        for $key in map:keys($maps[1])
+        let $values := distinct-values(for $map in $maps return $map($key))
+        return
+            map:entry($key, if (count($values) = 1) then $values[1] else "")
+    )
+};
+
+declare %private function local:get-property-map($resource as xs:string) as map(*) {
+    let $isCollection := xmldb:collection-available($resource)
+    return
+        if ($isCollection) then
+            map {
+                "owner" := xmldb:get-owner($resource),
+                "group" := xmldb:get-group($resource),
+                "last-modified" := format-dateTime(xmldb:created($resource), "[MNn] [D00] [Y0000] [H00]:[m00]:[s00]"),
+                "permissions" := xmldb:permissions-to-string(xmldb:get-permissions($resource)),
+                "mime" := xmldb:get-mime-type(xs:anyURI($resource))
+            }
+        else
+            let $components := text:groups($resource, "^(.*)/([^/]+)$")
+            return
+                map {
+                    "owner" := xmldb:get-owner($components[2], $components[3]),
+                    "group" := xmldb:get-group($components[2], $components[3]),
+                    "last-modified" := 
+                        format-dateTime(xmldb:created($components[2], $components[3]), "[MNn] [D00] [Y0000] [H00]:[m00]:[s00]"),
+                    "permissions" := xmldb:permissions-to-string(xmldb:get-permissions($components[2], $components[3])),
+                    "mime" := xmldb:get-mime-type(xs:anyURI($resource))
+                }
+};
+
+declare %private function local:get-properties($resources as xs:string*) as map(*) {
+    local:merge-properties(for $resource in $resources return local:get-property-map($resource))
+};
+
+declare %private function local:checkbox($name as xs:string, $test as xs:boolean) {
+    <input type="checkbox" name="{$name}">
+    {
+        if ($test) then attribute checked { 'checked' } else ()
+    }
+    </input>
+};
+
+declare %private function local:get-permissions($perms as xs:string) {
+    <table>
+        <tr>
+            <th>User</th>
+            <th>Group</th>
+            <th>World</th>
+        </tr>
+        <tr>
+            <td>
+                { local:checkbox("ur", substring($perms, 1, 1) = "r") }
+                read
+            </td>
+            <td>
+                { local:checkbox("gr", substring($perms, 4, 1) = "r") }
+                read
+            </td>
+            <td>
+                { local:checkbox("wr", substring($perms, 7, 1) = "r") }
+                read
+            </td>
+        </tr>
+        <tr>
+            <td>
+                { local:checkbox("uw", substring($perms, 2, 1) = "w") }
+                write
+            </td>
+            <td>
+                { local:checkbox("gw", substring($perms, 5, 1) = "w") }
+                write
+            </td>
+            <td>
+                { local:checkbox("ww", substring($perms, 8, 1) = "w") }
+                write
+            </td>
+        </tr>
+        <tr>
+            <td>
+                { local:checkbox("ux", substring($perms, 3, 1) = "x") }
+                execute
+            </td>
+            <td>
+                { local:checkbox("gx", substring($perms, 6, 1) = "x") }
+                execute
+            </td>
+            <td>
+                { local:checkbox("wx", substring($perms, 9, 1) = "x") }
+                execute
+            </td>
+        </tr>
+    </table>
+};
+
+declare %private function local:get-users() {
+    distinct-values(
+        for $group in sm:get-groups()
+        return
+            sm:get-group-members($group)
+    )
+};
+
+declare function local:edit-properties($resources as xs:string*) {
+    util:declare-option("exist:serialize", "media-type=text/html method=html5"),
+    let $props := local:get-properties($resources)
+    let $users := local:get-users()
+    return
+        <form id="browsing-dialog-form" action="">
+            <fieldset>
+                {
+                    if ($props("mime") != "") then
+                        <div class="control-group">
+                            <label for="mime">Mime:</label>
+                            <input type="text" name="mime" value="{$props('mime')}"/>
+                        </div>
+                    else
+                        ()
+                }
+                <div class="control-group">
+                    <label for="owner">Owner:</label>
+                    <select name="owner">
+                    {
+                        for $user in $users
+                        order by $user
+                        return
+                            <option value="{$user}">
+                            {
+                                if ($user = $props("owner")) then
+                                    attribute selected { "selected" }
+                                else
+                                    (),
+                                $user
+                            }
+                            </option>
+                    }
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label for="group">Group:</label>
+                    <select name="group">
+                    {
+                        for $group in sm:get-groups()
+                        order by $group
+                        return
+                            <option value="{$group}">
+                            {
+                                if ($group = $props("group")) then
+                                    attribute selected { "selected" }
+                                else
+                                    (),
+                                $group
+                            }
+                            </option>
+                    }
+                    </select>
+                </div>
+            </fieldset>
+            <fieldset>
+                <legend>Permissions</legend>
+                { local:get-permissions($props("permissions")) }
+            </fieldset>
+        </form>
+};
+
+declare %private function local:permissions-from-form() {
+    string-join(
+        for $type in ("u", "g", "w")
+        for $perm in ("r", "w", "x")
+        let $param := request:get-parameter($type || $perm, ())
+        return
+            if ($param) then
+                $perm
+            else
+                "-",
+        ""
+    )
+};
+
+declare function local:change-properties($resources as xs:string*) {
+    let $owner := request:get-parameter("owner", ())
+    let $group := request:get-parameter("group", ())
+    for $resource in $resources
+    let $uri := xs:anyURI($resource)
+    return (
+        sm:chown($uri, $owner),
+        sm:chgrp($uri, $group),
+        sm:chmod($uri, local:permissions-from-form())
+    ),
+    <response status="ok"/>
+};
+
 let $deleteCollection := request:get-parameter("remove", ())
 let $deleteResource := request:get-parameter("remove[]", ())
+let $properties := request:get-parameter("properties[]", ())
+let $modify := request:get-parameter("modify[]", ())
 let $copy := request:get-parameter("copy[]", ())
 let $move := request:get-parameter("move[]", ())
 let $rename := request:get-parameter("rename", ())
@@ -331,6 +567,10 @@ return
         local:rename($collection, $rename)
     else if (exists($deleteResource)) then
         local:delete(xmldb:encode-uri($collection), $deleteResource, $user)
+    else if (exists($properties)) then
+        local:edit-properties($properties)
+    else if (exists($modify)) then
+        local:change-properties($modify)
     else if ($createCollection) then
         local:create-collection(xmldb:encode-uri($createCollection), $user)
     else if ($view eq "c") then

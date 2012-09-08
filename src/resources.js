@@ -278,6 +278,36 @@ eXide.browse.ResourceBrowser = (function () {
             var vp = $this.grid.getViewport();
             $this.load(vp.top, vp.bottom);
         });
+        
+        $("#resource-properties-dialog").dialog({
+            title: "Resource/collection properties",
+			modal: true,
+	        autoOpen: false,
+	        height: 320,
+	        width: 460,
+            buttons: {
+                "Cancel": function () { $(this).dialog("close"); },
+                "Apply": function() {
+                    var dialog = this;
+                    var selected = $this.grid.getSelectionModel().getSelectedRows();
+                    if (selected.length == 0) {
+                		return;
+            		}
+            		var resources = [];
+            		for (var i = 0; i < selected.length; i++) {
+            			resources.push($this.collection + "/" + $this.data[selected[i]].name);
+            		}
+                    var params = $("form", dialog).serialize();
+                    params = params + "&" + $.param({ "modify[]": resources});
+                    $.getJSON("modules/collections.xql", params,
+                        function(data) {
+                            $(dialog).dialog("close");
+                            $this.reload();
+                        }
+                    );
+                }
+            }
+		});
 	};
 
     // Extend eXide.events.Sender for event support
@@ -379,6 +409,19 @@ eXide.browse.ResourceBrowser = (function () {
 		});
 	};
 	
+    Constr.prototype.properties = function() {
+        var selected = this.grid.getSelectionModel().getSelectedRows();
+    	if (selected.length == 0) {
+			return;
+		}
+		var resources = [];
+		for (var i = 0; i < selected.length; i++) {
+			resources.push(this.collection + "/" + this.data[selected[i]].name);
+		}
+        $("#resource-properties-content").load("modules/collections.xql", { "properties": resources });
+        $("#resource-properties-dialog").dialog("open");
+    };
+    
     Constr.prototype.cut = function() {
         this.clipboardMode = "move";
         this.copy();
@@ -498,6 +541,7 @@ eXide.browse.Browser = (function () {
 	Constr = function (container) {
 		var $this = this;
         this.mode = "open";
+        
 		var toolbar = $(".eXide-browse-toolbar", container);
 		
 		var button = createButton(toolbar, "Reload", "reload", 1, "arrow_refresh.png");
@@ -525,6 +569,12 @@ eXide.browse.Browser = (function () {
 			$this.deleteSelected();
 		});
 		
+        this.btnProperties = createButton(toolbar, "Properties", "properties", 10, "application_form_edit.png");
+        $(this.btnProperties).click(function(ev) {
+            ev.preventDefault();
+            $this.resources.properties();
+        });
+        
 		button = createButton(toolbar, "Open Selected", "open", 6, "page_edit.png");
 		$(button).click(function (ev) {
 			ev.preventDefault();
@@ -672,8 +722,10 @@ eXide.browse.Browser = (function () {
 			}
 			if (this.mode != "open" && writable) {
 				$(this.btnDeleteResource).css("display", "");
+                $(this.btnProperties).css("display", "");
 			} else {
 				$(this.btnDeleteResource).css("display", "none");
+                $(this.btnProperties).css("display", "none");
 			}
 		},
 		
@@ -684,12 +736,14 @@ eXide.browse.Browser = (function () {
 				$(this.btnDeleteResource).css("display", "");
                 $(this.btnCut).css("display", "");
                 $(this.btnPaste).css("display", "");
+                $(this.btnProperties).css("display", "");
 			} else {
 				$(this.btnCreateCollection).css("display", "none");
 				$(this.btnUpload).css("display", "none");
 				$(this.btnDeleteResource).css("display", "none");
                 $(this.btnCut).css("display", "none");
                 $(this.btnPaste).css("display", "none");
+                $(this.btnProperties).css("display", "none");
 			}
 				
 			this.resources.update(key, writable);

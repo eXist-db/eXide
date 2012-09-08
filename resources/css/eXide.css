@@ -2,6 +2,19 @@
 
 @import url(xml2html.css);
 
+table {
+    font-size: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+label {
+  padding-top: 6px;
+  font-size: 13px;
+  line-height: 18px;
+  color: #404040;
+}
+
 .ui-widget {
 	font-size: 75%;
 }
@@ -325,6 +338,7 @@ Sub level menu list items (undo style from Top level List Items)
 	color: white;
 }
 
+.eXide-
 ul.dynatree-container {
 	border: 0;
 }
@@ -345,6 +359,20 @@ ul.dynatree-container {
 
 .resource-view .even {
 	background-color: #F0F0F0;
+}
+
+#resource-properties-content label {
+    width: 60px;
+    float: left;
+}
+
+#resource-properties-content fieldset {
+    margin-top: 1em;
+}
+
+#resource-properties-content legend {
+    font-size: 100%;
+    font-weight: bold;
 }
 
 #results-container {

@@ -411,7 +411,7 @@ eXide.app = (function() {
 		
 		manage: function() {
 			eXide.app.requireLogin(function() {
-                dbBrowser.reload(["reload", "create", "upload", "open", "cut", "copy", "paste"], "manage");
+                dbBrowser.reload(["reload", "create", "upload", "properties", "open", "cut", "copy", "paste"], "manage");
                 $("#open-dialog").dialog("option", "title", "DB Manager");
                 $("#open-dialog").dialog("option", "buttons", { 
                     "Close": function() { $(this).dialog("close"); }
@@ -591,7 +591,7 @@ eXide.app = (function() {
             var menu = new eXide.util.Menubar($(".menu"));
             
 			$("#open-dialog").dialog({
-				title: "Open File",
+				title: "Open file",
 				modal: false,
 		        autoOpen: false,
 		        height: 480,
