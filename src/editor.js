@@ -188,22 +188,40 @@ eXide.edit.Editor = (function () {
         // incremental search box
         this.quicksearch = new eXide.find.IncrementalSearch($("#search-box"), this.editor);
         
-        $("#tab-next").button({
-            icons: {
-				primary: "ui-icon-triangle-1-e"
-			},
-            text: false
-        }).click(function (ev) {
-            $this.nextTab();
+        var tabsDiv = $("#tabs-container");
+        tabsDiv.css({overflow: 'hidden'});
+
+        //When user move mouse over menu
+        tabsDiv.mousemove(function(e) {
+        
+            var tabsUl = tabsDiv.find("ul");
+            var tabsWidth = tabsDiv.width();
+            var lastLi = tabsUl.find('li:last-child');
+            
+            //As images are loaded ul width increases,
+            //so we recalculate it each time
+            var ulWidth = lastLi[0].offsetLeft + lastLi.outerWidth();
+            
+            var left = (e.pageX - tabsDiv.offset().left) * (ulWidth-tabsWidth) / tabsWidth;
+            tabsDiv.scrollLeft(left);
         });
-        $("#tab-prev").button({
-            icons: {
-    			primary: "ui-icon-triangle-1-w"
-			},
-            text: false
-        }).click(function (ev) {
-            $this.previousTab();
-        });
+        
+//        $("#tab-next").button({
+//            icons: {
+//				primary: "ui-icon-triangle-1-e"
+//			},
+//            text: false
+//        }).click(function (ev) {
+//            $this.nextTab();
+//        });
+//        $("#tab-prev").button({
+//            icons: {
+//    			primary: "ui-icon-triangle-1-w"
+//			},
+//            text: false
+//        }).click(function (ev) {
+//            $this.previousTab();
+//        });
         
 	    this.lastChangeEvent = new Date().getTime();
 		this.validateTimeout = null;
@@ -596,19 +614,19 @@ eXide.edit.Editor = (function () {
     Constr.prototype.scrollToTab = function (current) {
         var offset = current.offset().left;
         var offsetRight = offset + current.outerWidth();
-        var width = $("#tabs").innerWidth();
-        var scrollLeft = $("#tabs").scrollLeft();
+        var width = $("#tabs-container").innerWidth();
+        var scrollLeft = $("#tabs-container").scrollLeft();
         if (offsetRight > width) {
-            $("#tab-next").show();
-            $("#tab-prev").show();
-            $("#tabs").scrollLeft(offsetRight - width);
+//            $("#tab-next").show();
+//            $("#tab-prev").show();
+            $("#tabs-container").scrollLeft(offsetRight - width);
         } else if (offset < scrollLeft) {
             if (offset < width)
-                $("#tabs").scrollLeft(0);
+                $("#tabs-container").scrollLeft(0);
             else
-                $("#tabs").scrollLeft(offset);
+                $("#tabs-container").scrollLeft(offset);
         }
-        $.log("Scrolling to %d %d", offset, $("#tabs").scrollLeft());
+        $.log("Scrolling to %d %d", offset, $("#tabs-container").scrollLeft());
     };
     
 	Constr.prototype.setTheme = function(theme) {

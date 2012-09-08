@@ -191,6 +191,11 @@ Sub level menu list items (undo style from Top level List Items)
 
 #tabs-container {
     position: relative;
+    /* Set it so we could calculate the offsetLeft */
+    /* height: 145px; */
+    /* width: 500px; */
+    /* Add scroll-bars */
+    overflow: auto;
 }
 
 #tabs {
