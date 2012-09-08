@@ -147,9 +147,10 @@ eXide.edit.Editor = (function () {
 		return { line: line, msg: msg };
 	}
     
-	Constr = function(container) {
+	Constr = function(container, menubar) {
 		var $this = this;
 		$this.container = container;
+        $this.menubar = menubar;
 		$this.documents = [];
 		$this.activeDoc = null;
 		$this.tabCounter = 0;
@@ -397,6 +398,7 @@ eXide.edit.Editor = (function () {
 	Constr.prototype.closeDocument = function() {
 		this.$triggerEvent("close", [this.activeDoc]);
 		$("#tabs a[title=\"" + this.activeDoc.path + "\"]").parent().remove();
+        this.menubar.remove("buffers", this.activeDoc.path);
 		for (var i = 0; i < this.documents.length; i++) {
 			if (this.documents[i].path == this.activeDoc.path) {
 				this.documents.splice(i, 1);
@@ -544,6 +546,10 @@ eXide.edit.Editor = (function () {
 			$this.switchTo(doc);
 		});
 		
+        $this.menubar.add("buffers", label, tab.title, function() {
+            $this.switchTo(doc);
+        });
+        
 		$this.activeDoc = doc;
 		$this.documents.push(doc);
 		$this.$triggerEvent("activate", [doc]);

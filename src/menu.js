@@ -32,7 +32,6 @@ eXide.util.Menubar = (function() {
         // Display sub menu on click
 		$("ul li", this.container).click(function (ev) {
             ev.stopPropagation();
-            var $this = this;
             $("ul", this).css({display: "block"});
             menuVisible = true;
 		});
@@ -43,14 +42,48 @@ eXide.util.Menubar = (function() {
         });
     };
     
-    Constr.prototype.click = function(selector, callback) {
+    Constr.prototype.click = function(selector, callback, action) {
         var $this = this;
+        if (action) {
+            var shortcut = eXide.edit.commands.getShortcut(action);
+            if (shortcut) {
+                // replace "Command" with Apple Command Symbol
+                shortcut = shortcut.replace(/Command/g, String.fromCharCode(8984));
+                shortcut = shortcut.replace(/Shift/g, String.fromCharCode(8679));
+                shortcut = shortcut.replace(/Option/g, String.fromCharCode(8997));
+                shortcut = shortcut.replace(/Control/g, "^");
+                $(selector).each(function() {
+                    var span = document.createElement("span");
+                    span.className = "shortcut";
+                    span.appendChild(document.createTextNode(shortcut));
+                    this.appendChild(span);
+                });
+            }
+        }
         $(selector).click(function(ev) {
             ev.preventDefault();
             $("ul li ul", $this.container).css({display: "none"});
-            menuVisible = false;
             callback();
         });
+    };
+    
+    Constr.prototype.add = function(menu, label, title, onclick) {
+        var $this = this;
+        var menu = $(this.container).find("ul li[title=\"" + menu + "\"]");
+        var ul = menu.find("ul");
+        ul.append($("<li><a href=\"#\" title=\"" + title + "\">" + label + "</a></li>"));
+        var item = ul.find("li:last-child a");
+        item.click(function(ev) {
+            ev.preventDefault();
+            onclick();
+            $("ul li ul", $this.container).css({display: "none"});
+        });
+    };
+    
+    Constr.prototype.remove = function(menu, title) {
+        $.log("Removing menu entry %s", title);
+        var menu = $(this.container).find("ul li[title=\"" + menu + "\"]");
+        menu.find("ul li a[title = \"" + title + "\"]").remove();
     };
     
     return Constr;

@@ -139,6 +139,10 @@ Sub level menu list items (undo style from Top level List Items)
 	color: white;
 }
 
+.menu .shortcut {
+    float: right;
+}
+
 #toolbar {
 	padding: 6px 4px;
 	margin: 0 0 0 200px;

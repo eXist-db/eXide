@@ -72,7 +72,8 @@ eXide.app = (function() {
 	return {
 
 		init: function(afterInitCallback) {
-			editor = new eXide.edit.Editor(document.getElementById("editor"));
+            var menu = new eXide.util.Menubar($(".menu"));
+			editor = new eXide.edit.Editor(document.getElementById("editor"), menu);
 			deploymentEditor = new eXide.edit.PackageEditor(document.getElementById("deployment-editor"));
 			dbBrowser = new eXide.browse.Browser(document.getElementById("open-dialog"));
             deploymentEditor.addEventListener("change", null, function() {
@@ -80,8 +81,8 @@ eXide.app = (function() {
                 eXide.app.openDocument();
             });
 			preferences = new eXide.util.Preferences(editor);
-            
-			eXide.app.initGUI();
+			
+            eXide.app.initGUI(menu);
 			
             // save restored paths for later
 			var restored = eXide.app.restoreState();
@@ -569,7 +570,7 @@ eXide.app = (function() {
             return preferences.get(key);
         },
         
-		initGUI: function() {
+		initGUI: function(menu) {
             eXide.app.getLogin();
             
 			var layout = $("body").layout({
@@ -587,8 +588,6 @@ eXide.app = (function() {
 				center__onresize: eXide.app.resize,
 				center__contentSelector: ".content"
 			});
-			
-            var menu = new eXide.util.Menubar($(".menu"));
             
 			$("#open-dialog").dialog({
 				title: "Open file",
@@ -675,7 +674,7 @@ eXide.app = (function() {
 				}
 			});
 			button.click(eXide.app.openDocument);
-            menu.click("#menu-file-open", eXide.app.openDocument);
+            menu.click("#menu-file-open", eXide.app.openDocument, "openDocument");
 			
 			button = $("#close").button({
 				icons: {
@@ -683,7 +682,7 @@ eXide.app = (function() {
 				}
 			});
 			button.click(eXide.app.closeDocument);
-			menu.click("#menu-file-close", eXide.app.closeDocument);
+			menu.click("#menu-file-close", eXide.app.closeDocument, "closeDocument");
 			
 			button = $("#new").button({
 				icons: {
@@ -693,10 +692,10 @@ eXide.app = (function() {
 			button.click(function() {
                 eXide.app.newDocument(null, "xquery");
 			});
-			menu.click("#menu-file-new", eXide.app.newDocument);
+			menu.click("#menu-file-new", eXide.app.newDocument, "newDocument");
     		menu.click("#menu-file-new-xquery", function() {
                 eXide.app.newDocument(null, "xquery");
-    		});
+    		}, "newXQuery");
             
 			button = $("#run").button({
 				icons: {
@@ -716,7 +715,7 @@ eXide.app = (function() {
 				}
 			});
 			button.click(eXide.app.saveDocument);
-			menu.click("#menu-file-save", eXide.app.saveDocument);
+			menu.click("#menu-file-save", eXide.app.saveDocument, "saveDocument");
             menu.click("#menu-file-save-as", eXide.app.saveDocumentAs);
 			
             menu.click("#menu-file-reload", eXide.app.reloadDocument);
@@ -728,7 +727,7 @@ eXide.app = (function() {
 			});
 			button.click(eXide.app.download);
 			menu.click("#menu-file-download", eXide.app.download);
-			menu.click("#menu-file-manager", eXide.app.manage);
+			menu.click("#menu-file-manager", eXide.app.manage, "dbManager");
 			// menu-only events
 			menu.click("#menu-deploy-new", eXide.app.newDeployment);
 			menu.click("#menu-deploy-edit", eXide.app.deploymentSettings);
@@ -737,24 +736,30 @@ eXide.app = (function() {
             menu.click("#menu-deploy-download", eXide.app.downloadApp);
 			menu.click("#menu-edit-undo", function () {
 				editor.editor.undo();
-			});
+			}, "undo");
 			menu.click("#menu-edit-redo", function () {
 				editor.editor.redo();
-			});
+			}, "redo");
+            menu.click("#menu-edit-find", function() {
+                editor.quicksearch.start();
+            }, "searchIncremental");
             menu.click("#menu-edit-toggle-comment", function () {
                 editor.editor.toggleCommentLines();
-            });
+            }, "toggleComment");
 			menu.click("#menu-edit-preferences", function() {
                 preferences.show(); 		
 			});
             
             menu.click("#menu-navigate-definition", function () {
                 editor.exec("gotoDefinition");
-            });
+            }, "gotoDefinition");
             menu.click("#menu-navigate-modules", function () {
                 var doc = editor.getActiveDocument();
 	    		eXide.find.Modules.select(doc.syntax);
-            });
+            }, "findModule");
+            menu.click("#menu-navigate-info", function() {
+                editor.exec("showFunctionDoc");
+            }, "functionDoc");
 			menu.click("#menu-deploy-run", eXide.app.openApp);
 			
             menu.click("#menu-help-keyboard", function (ev) {
