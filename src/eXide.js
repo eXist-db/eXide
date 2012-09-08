@@ -42,8 +42,7 @@ $(document).ready(function() {
             eXide.app.newDocument(snippet);
         }
         
-        $.log("eXide.onload: %o", eXide.onload);
-        if (eXide_onload) {
+        if (typeof eXide_onload == "function") {
             eXide_onload(eXide.app);
         }
     });

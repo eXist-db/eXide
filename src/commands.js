@@ -47,7 +47,6 @@ eXide.edit.commands = (function () {
             }
             bindings[command.name] = bind;
         }
-        console.dir(bindings);
     }
     
 	return {

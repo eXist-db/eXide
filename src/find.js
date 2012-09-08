@@ -83,6 +83,14 @@ eXide.find.Modules = (function () {
     var grid;
     
     $(document).ready(function() {
+        $.log("Initializing import module dialog");
+        $("#select-module-dialog").dialog({
+        	modal: false,
+    		autoOpen: false,
+    		height: 400,
+    		width: 600,
+            open: eXide.find.Modules.$init
+        });
         grid = new Slick.Grid("#module-list", moduleData, columns, options);
         var selectionModel = new Slick.RowSelectionModel({selectActiveRow: true});
     	grid.setSelectionModel(selectionModel);
@@ -104,13 +112,6 @@ eXide.find.Modules = (function () {
             });
             grid.invalidate();
             grid.render();
-        });
-        $("#select-module-dialog").dialog({
-    		modal: false,
-    		autoOpen: false,
-    		height: 400,
-    		width: 600,
-            open: eXide.find.Modules.$init
         });
     });
     
