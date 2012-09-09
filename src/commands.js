@@ -194,6 +194,27 @@ eXide.edit.commands = (function () {
         		    		editor.editor.toggleCommentLines();
         		    	}
         		    });
+                    commands.addCommand({
+                        name: "synchronize",
+                        bindKey: bindKey(bindings.synchronize),
+                        exec: function(env, args, request) {
+                            eXide.app.synchronize();
+                        }
+                    });
+                    commands.addCommand({
+                        name: "preferences",
+                        bindKey: bindKey(bindings.preferences),
+                        exec: function(env, args, request) {
+                            eXide.app.showPreferences();
+                        }
+                    });
+                    commands.addCommand({
+                        name: "openApp",
+                        bindKey: bindKey(bindings.openApp),
+                        exec: function(env, args, request) {
+                            eXide.app.openApp();
+                        }
+                    });
     			    createMap(editor);
                 }
             });

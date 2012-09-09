@@ -139,6 +139,10 @@
                                     <a href="#" id="menu-deploy-new">New application</a>
                                 </li>
                                 <li>
+                                    <span class="separator">App: <span id="menu-deploy-active">unknown</span>
+                                    </span>
+                                </li>
+                                <li>
                                     <a href="#" id="menu-deploy-edit">Edit descriptors</a>
                                 </li>
                                 <li>
@@ -176,7 +180,10 @@
                 </div>
                 <span id="toolbar">
                     <span class="options">
-                        <label for="syntax">Type: </label>
+                        <span class="current-app" title="Displays the application the current buffer belongs to - if any">
+                        Current app: <span id="toolbar-current-app">Unknown</span>
+                        </span>
+                        <label for="syntax">File Type: </label>
                         <select id="syntax">
                             <option value="text">Text</option>
                             <option value="xml">XML</option>

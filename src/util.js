@@ -206,6 +206,8 @@ eXide.util = (function () {
 		 * Normalize a collection path. Remove xmldb: part, resolve ..
 		 */
 		normalizePath: function (path) {
+            if (!path)
+                return path;
 			path = path.replace(/^xmldb:exist:\/\//, "");
 			var newComponents = [];
 			var components = path.split("/");

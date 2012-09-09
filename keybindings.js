@@ -5,7 +5,7 @@
     "runQuery": ["Ctrl-Return", "Command-Return"],
     "openDocument": ["Ctrl-Shift-O", "Command-Shift-O"],
     "newDocument": ["Ctrl-Shift-N", "Command-Shift-N"],
-    "closeDocument": ["Ctrl-Shift-W", "Command-Shift-W"],
+    "closeDocument": ["Ctrl-Shift-W", "Command-Option-W"],
     "autocomplete": ["Ctrl-Space", "Ctrl-Space"],
     "nextTab": ["Ctrl-Shift-PageDown", "Ctrl-Option-Right"],
     "previousTab": ["Ctrl-Shift-PageUp", "Ctrl-Option-Left"],
@@ -16,5 +16,8 @@
     "indentOrParam": ["Tab", "Tab"],
     "escape": ["Esc", "Esc"],
     "dbManager": ["Ctrl-Shift-M", "Command-Shift-M"],
-    "toggleComment": ["Ctrl-Shift-C", "Command-Shift-C"]   
+    "toggleComment": ["Ctrl-Shift-C", "Command-Shift-C"],
+    "synchronize": ["Alt-Shift-S", "Command-Option-S"],
+    "preferences": ["Alt-Shift-P", "Control-Command-,"],
+    "openApp": ["Alt-Control-R", "Command-Option-R"]
 }

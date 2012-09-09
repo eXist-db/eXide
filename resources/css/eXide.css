@@ -139,6 +139,18 @@ Sub level menu list items (undo style from Top level List Items)
 	color: white;
 }
 
+.menu .separator {
+    display: block;
+    font-size: 75%;
+    padding: 5px;
+	background-image: #F0F0F0;
+    color: #AAA;
+    padding-bottom: 2px;
+    margin-bottom: 2px;
+    border-bottom: 1px solid #777;
+    width: 160px;
+}
+
 .menu .shortcut {
     float: right;
 }
@@ -191,6 +203,10 @@ Sub level menu list items (undo style from Top level List Items)
 	font-size: 75%;
 	color: #666;
 	padding-right: 4px;
+}
+
+#toolbar .current-app {
+    margin-right: 20px;
 }
 
 #tabs-container {

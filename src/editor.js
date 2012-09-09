@@ -147,10 +147,11 @@ eXide.edit.Editor = (function () {
 		return { line: line, msg: msg };
 	}
     
-	Constr = function(container, menubar) {
+	Constr = function(container, menubar, projects) {
 		var $this = this;
 		$this.container = container;
         $this.menubar = menubar;
+        $this.projects = projects;
 		$this.documents = [];
 		$this.activeDoc = null;
 		$this.tabCounter = 0;
@@ -405,7 +406,7 @@ eXide.edit.Editor = (function () {
 			}
 		}
 		if (this.documents.length == 0)
-			this.newDocument();
+			this.newDocument(null, "xquery");
 		else {
 			this.activeDoc = this.documents[this.documents.length - 1];
 			$("#tabs a[title=\"" + this.activeDoc.path + "\"]").addClass("active");

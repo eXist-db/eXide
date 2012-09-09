@@ -77,9 +77,9 @@ eXide.namespace("eXide.edit.PackageEditor");
  */
 eXide.edit.PackageEditor = (function () {
     
-	Constr = function () {
+	Constr = function (projects) {
 		var $this = this;
-        this.projects = new eXide.edit.Projects();
+        this.projects = projects;
         this.currentProject = null;
 		this.container = $("#dialog-deploy");
 		this.container.dialog({
