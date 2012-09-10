@@ -33,9 +33,9 @@ eXide.edit.Outline = (function () {
 	
 	Constr = function() {
 		// pre-compile regexp needed by this class
-		this.funcDefRe = /declare\s+(?:%(\w+)\s+)?function\s+([^\(]+)\(/g;
-		this.varDefRe = /declare\s+(?:%\w+\s+)?variable\s+\$[^\s;]+/gm;
-		this.varRe = /declare\s+(?:%\w+\s+)?variable\s+(\$[^\s;]+)/;
+		this.funcDefRe = /declare\s+((?:%[\w\:\-]+(?:\([^\)]*\))?\s*)*)function\s+([^\(]+)\(/g;
+		this.varDefRe = /declare\s+(?:%\w+\s+)*variable\s+\$[^\s;]+/gm;
+		this.varRe = /declare\s+(?:%\w+\s+)*variable\s+(\$[^\s;]+)/;
 		this.parseImportRe = /import\s+module\s+namespace\s+[^=]+\s*=\s*["'][^"']+["']\s*at\s+["'][^"']+["']\s*;/g;
 		this.moduleRe = /import\s+module\s+namespace\s+([^=\s]+)\s*=\s*["']([^"']+)["']\s*at\s+["']([^"']+)["']\s*;/;
 		
@@ -97,6 +97,8 @@ eXide.edit.Outline = (function () {
 				var end = this.$findMatchingParen(text, offset);
                 var name = funcDef.length == 3 ? funcDef[2] : funcDef[1];
                 var status = funcDef.length == 3 ? funcDef[1] : "public";
+                if (status.indexOf("%private") !== -1)
+                    status = "private";
 				doc.functions.push({
 					type: TYPE_FUNCTION,
 					name: name,
