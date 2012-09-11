@@ -38,7 +38,9 @@ eXide.edit.Projects = (function() {
                     project = data;
                     $this.projects[data.abbrev] = project;
                 }
-                callback(project);
+                if (typeof callback == "function") {
+                    callback(project);
+                }
             }
         });
     };
