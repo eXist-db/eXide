@@ -130,65 +130,80 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
     let $start := number(request:get-parameter("start", 0)) + 1
     let $endParam := number(request:get-parameter("end", 1000000)) + 1
     let $resources := local:list-collection-contents($collection, $user)
-    let $end := if ($endParam gt count($resources)) then count($resources) else $endParam
+    let $count := count($resources) + 1
+    let $end := if ($endParam gt $count) then $count else $endParam
     let $subset := subsequence($resources, $start, $end - $start + 1)
     return
         <json:value>
             <total json:literal="true">{count($resources)}</total>
             <items>
-        {
-            for $resource in $subset
-            let $isCollection := starts-with($resource, "/")
-            let $path := 
-                if ($isCollection) then
-                    concat($collection, $resource)
-                else
-                    concat($collection, "/", $resource)
-            where sm:has-access(xs:anyURI($path), "r")
-            order by $resource ascending
-            return
-                let $permissions := 
-                    if ($isCollection) then
-                        xmldb:permissions-to-string(xmldb:get-permissions($path))
-                    else
-                        xmldb:permissions-to-string(xmldb:get-permissions($collection, $resource))
-                let $owner := 
-                    if ($isCollection) then
-                        xmldb:get-owner($path)
-                    else
-                        xmldb:get-owner($collection, $resource)
-                let $group :=
-                    if ($isCollection) then
-                        xmldb:get-group($path)
-                    else
-                        xmldb:get-group($collection, $resource)
-                let $lastMod := 
-                    let $date :=
-                        if ($isCollection) then
-                            xmldb:created($path)
-                        else
-                            xmldb:created($collection, $resource)
-                    return
-                        if (xs:date($date) = current-date()) then
-                            format-dateTime($date, "Today [H00]:[m00]:[s00]")
-                        else
-                            format-dateTime($date, "[M00]/[D00]/[Y0000] [H00]:[m00]:[s00]")
-                let $canWrite :=
-                    if ($isCollection) then
-                        local:canWrite(concat($collection, "/", $resource), $user)
-                    else
-                        local:canWriteResource($collection, $resource, $user)
-                return
+            {
+                if ($start = 1) then
                     <json:value json:array="true">
-                        <name>{xmldb:decode-uri(if ($isCollection) then substring-after($resource, "/") else $resource)}</name>
-                        <permissions>{$permissions}</permissions>
-                        <owner>{$owner}</owner>
-                        <group>{$group}</group>
-                        <last-modified>{$lastMod}</last-modified>
-                        <writable json:literal="true">{$canWrite}</writable>
-                        <isCollection json:literal="true">{$isCollection}</isCollection>
+                        <name>..</name>
+                        <permissions></permissions>
+                        <owner></owner>
+                        <group></group>
+                        <last-modified></last-modified>
+                        <writable json:literal="true">false</writable>
+                        <isCollection json:literal="true">true</isCollection>
                     </json:value>
-        }
+                else
+                    ()
+            }
+            {
+                for $resource in $subset
+                let $isCollection := starts-with($resource, "/")
+                let $path := 
+                    if ($isCollection) then
+                        concat($collection, $resource)
+                    else
+                        concat($collection, "/", $resource)
+                where sm:has-access(xs:anyURI($path), "r")
+                order by $resource ascending
+                return
+                    let $permissions := 
+                        if ($isCollection) then
+                            xmldb:permissions-to-string(xmldb:get-permissions($path))
+                        else
+                            xmldb:permissions-to-string(xmldb:get-permissions($collection, $resource))
+                    let $owner := 
+                        if ($isCollection) then
+                            xmldb:get-owner($path)
+                        else
+                            xmldb:get-owner($collection, $resource)
+                    let $group :=
+                        if ($isCollection) then
+                            xmldb:get-group($path)
+                        else
+                            xmldb:get-group($collection, $resource)
+                    let $lastMod := 
+                        let $date :=
+                            if ($isCollection) then
+                                xmldb:created($path)
+                            else
+                                xmldb:created($collection, $resource)
+                        return
+                            if (xs:date($date) = current-date()) then
+                                format-dateTime($date, "Today [H00]:[m00]:[s00]")
+                            else
+                                format-dateTime($date, "[M00]/[D00]/[Y0000] [H00]:[m00]:[s00]")
+                    let $canWrite :=
+                        if ($isCollection) then
+                            local:canWrite(concat($collection, "/", $resource), $user)
+                        else
+                            local:canWriteResource($collection, $resource, $user)
+                    return
+                        <json:value json:array="true">
+                            <name>{xmldb:decode-uri(if ($isCollection) then substring-after($resource, "/") else $resource)}</name>
+                            <permissions>{$permissions}</permissions>
+                            <owner>{$owner}</owner>
+                            <group>{$group}</group>
+                            <last-modified>{$lastMod}</last-modified>
+                            <writable json:literal="true">{$canWrite}</writable>
+                            <isCollection json:literal="true">{$isCollection}</isCollection>
+                        </json:value>
+            }
             </items>
         </json:value>
 };

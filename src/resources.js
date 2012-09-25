@@ -210,8 +210,12 @@ eXide.browse.ResourceBrowser = (function () {
 			var cell = $this.grid.getCellFromEvent(e);
 			if ($this.data[cell.row].isCollection) {
 				// navigate to new collection
-				var childColl = $this.collection + "/" + $this.data[cell.row].name;
-				$this.$triggerEvent("activateCollection", [ childColl ]);
+                var coll;
+                if ($this.data[cell.row].name == "..")
+                    coll = $this.collection.replace(/\/[^\/]+$/, "")
+                else
+    				coll = $this.collection + "/" + $this.data[cell.row].name;
+				$this.$triggerEvent("activateCollection", [ coll ]);
 			}
 		});
 		this.grid.onKeyDown.subscribe(function (e) {
@@ -225,8 +229,12 @@ eXide.browse.ResourceBrowser = (function () {
 		            if (rows.length == 1) {
 						if ($this.data[rows[0]].isCollection) {
 							// navigate to new collection
-							var childColl = $this.collection + "/" + $this.data[rows[0]].name;
-							$this.$triggerEvent("activateCollection", [ childColl ]);
+                            var coll;
+                            if ($this.data[rows[0]].name == "..")
+                                coll = $this.collection.replace(/\/[^\/]+$/, "")
+                            else
+                    			coll = $this.collection + "/" + $this.data[rows[0]].name;
+                            $this.$triggerEvent("activateCollection", [ coll ]);
 						} else {
 							eXide.app.openSelectedDocument();
 						}

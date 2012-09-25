@@ -49,7 +49,9 @@ declare function deploy:select-option($value as xs:string, $current as xs:string
 };
 
 declare function deploy:get-app-root($collection as xs:string) {
-    if (doc(concat($collection, "/expath-pkg.xml"))) then
+    if (not(starts-with($collection, "/"))) then
+        ()
+    else if (doc(concat($collection, "/expath-pkg.xml"))) then
         $collection
     else if ($collection ne "/db") then
         let $parent := replace($collection, "^(.*)/[^/]+$", "$1")

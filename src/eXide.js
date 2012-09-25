@@ -784,8 +784,6 @@ eXide.app = (function() {
 			editor.addEventListener("activate", null, function (doc) {
 				$("#syntax").val(doc.getSyntax());
                 var app = projects.getProjectFor(doc.getBasePath());
-                if (!app)
-                    app = projects.getProject(doc.getBasePath());
                 if (app) {
                     $("#toolbar-current-app").text(app.abbrev);
                     $("#menu-deploy-active").text(app.abbrev);
