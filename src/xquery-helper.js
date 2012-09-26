@@ -28,6 +28,12 @@ eXide.edit.XQueryModeHelper = (function () {
 	Constr = function(editor) {
 		this.parent = editor;
 		this.editor = this.parent.editor;
+        // pre-compile regexp needed by this class
+    	this.funcDefRe = /declare\s+((?:%[\w\:\-]+(?:\([^\)]*\))?\s*)*)function\s+([^\(]+)\(/g;
+		this.varDefRe = /declare\s+(?:%\w+\s+)*variable\s+\$[^\s;]+/gm;
+		this.varRe = /declare\s+(?:%\w+\s+)*variable\s+(\$[^\s;]+)/;
+		this.parseImportRe = /import\s+module\s+namespace\s+[^=]+\s*=\s*["'][^"']+["']\s*at\s+["'][^"']+["']\s*;/g;
+		this.moduleRe = /import\s+module\s+namespace\s+([^=\s]+)\s*=\s*["']([^"']+)["']\s*at\s+["']([^"']+)["']\s*;/;
 		
 		this.addCommand("showFunctionDoc", this.showFunctionDoc);
 		this.addCommand("gotoDefinition", this.gotoDefinition);
@@ -384,6 +390,134 @@ eXide.edit.XQueryModeHelper = (function () {
         var code = "import module namespace " + prefix + "=\"" + uri + "\" at \"" + location + "\";\n";
         this.editor.insert(code);
     }
+    
+    Constr.prototype.createOutline = function(doc, onComplete) {
+        var code = doc.getText();
+		this.$parseLocalFunctions(code, doc);
+        if (onComplete)
+            onComplete(doc);
+		var imports = this.$parseImports(code);
+		if (imports)
+			this.$resolveImports(doc, imports, onComplete);
+    }
+    
+    Constr.prototype.$sortFunctions = function(doc) {
+		doc.functions.sort(function (a, b) {
+			return(a.name == b.name) ? 0 : (a.name > b.name) ? 1 : -1;
+		});
+	}
+    
+    Constr.prototype.$parseLocalFunctions = function(text, doc) {
+		doc.functions = [];
+		
+		while (true) {
+			var funcDef = this.funcDefRe.exec(text);
+			if (funcDef == null) {
+				break;
+			}
+			var offset = this.funcDefRe.lastIndex;
+			var end = this.$findMatchingParen(text, offset);
+            var name = funcDef.length == 3 ? funcDef[2] : funcDef[1];
+            var status = funcDef.length == 3 ? funcDef[1] : "public";
+            if (status.indexOf("%private") !== -1)
+                status = "private";
+			doc.functions.push({
+				type: eXide.edit.Document.TYPE_FUNCTION,
+				name: name,
+                visibility: status,
+				signature: name + "(" + text.substring(offset, end) + ")"
+			});
+		}
+		var varDefs = text.match(this.varDefRe);
+		if (varDefs) {
+			for (var i = 0; i < varDefs.length; i++) {
+				var v = this.varRe.exec(varDefs[i]);
+				doc.functions.push({
+					type: eXide.edit.Document.TYPE_VARIABLE,
+					name: v[1]
+				});
+			}
+		}
+        this.$sortFunctions(doc);
+	}
+	
+	Constr.prototype.$findMatchingParen = function (text, offset) {
+		var depth = 1;
+		for (var i = offset; i < text.length; i++) {
+			var ch = text.charAt(i);
+			if (ch == ')') {
+				depth -= 1;
+				if (depth == 0)
+					return i;
+			} else if (ch == '(') {
+				depth += 1;
+			}
+		}
+		return -1;
+	}
+	
+	Constr.prototype.$parseImports = function(code) {
+		return code.match(this.parseImportRe);
+	}
+	
+	Constr.prototype.$resolveImports = function(doc, imports, onComplete) {
+		var $this = this;
+		var functions = [];
+		
+		var params = [];
+		for (var i = 0; i < imports.length; i++) {
+			var matches = this.moduleRe.exec(imports[i]);
+			if (matches != null && matches.length == 4) {
+				params.push("prefix=" + encodeURIComponent(matches[1]));
+				params.push("uri=" + encodeURIComponent(matches[2]));
+				params.push("source=" + encodeURIComponent(matches[3]));
+			}
+		}
+
+		var basePath = "xmldb:exist://" + doc.getBasePath();
+		params.push("base=" + encodeURIComponent(basePath));
+
+		$.ajax({
+			url: "outline",
+			dataType: "json",
+			type: "POST",
+			data: params.join("&"),
+			success: function (data) {
+				if (data != null) {
+					var modules = data.modules;
+					for (var i = 0; i < modules.length; i++) {
+						var funcs = modules[i].functions;
+						if (funcs) {
+							for (var j = 0; j < funcs.length; j++) {
+								functions.push({
+									type: eXide.edit.Document.TYPE_FUNCTION,
+									name: funcs[j].name,
+									signature: funcs[j].signature,
+                                    visibility: funcs[j].visibility,
+									source: modules[i].source
+								});
+							}
+						}
+						var vars = modules[i].variables;
+						if (vars) {
+							for (var j = 0; j < vars.length; j++) {
+								functions.push({
+									type: eXide.edit.Document.TYPE_VARIABLE,
+									name: "$" + vars[j],
+									source: modules[i].source
+								});
+							}
+						}
+					}
+					doc.functions = doc.functions.concat(functions);
+					$this.$sortFunctions(doc);
+                    if (onComplete)
+                        onComplete(doc);
+				}
+			}
+		});
+		return functions;
+	}
     
 	var COMPILE_MSG_RE = /.*line:?\s(\d+)/i;
 	

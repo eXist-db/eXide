@@ -28,7 +28,7 @@
     <target name="ace">
         <mkdir dir="${ace}"/>
         <copy todir="${ace}">
-            <fileset dir="${ace.src}/build/src">
+            <fileset dir="${ace.src}/build/src-min">
                 <exclude name="*-uncompressed.js"/>
                 <exclude name="*-noconflict.js"/>
             </fileset>
@@ -44,7 +44,9 @@
                 <file name="mode-helper.js"/>
                 <file name="xquery-helper.js"/>
                 <file name="xml-helper.js"/>
-				<file name="less-helper.js"/>
+                <file name="less-helper.js"/>
+                <file name="javascript-helper.js"/>
+                <file name="css-helper.js"/>
                 <file name="outline.js"/>
                 <file name="editor.js"/>
                 <file name="eXide.js"/>
@@ -67,9 +69,9 @@
                 <file name="slick.rowselectionmodel.js"/>
                 <file name="slick.grid.js"/>
                 <file name="slick.editors.js"/>
-				<file name="slick.formatters.js"/>
-				<file name="slick.cellselectionmodel.js"/>
-				<file name="slick.cellrangeselector.js"/>	
+                <file name="slick.formatters.js"/>
+                <file name="slick.cellselectionmodel.js"/>
+                <file name="slick.cellrangeselector.js"/>
             </sources>
         </jscomp>
     </target>

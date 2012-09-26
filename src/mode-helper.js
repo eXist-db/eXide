@@ -29,6 +29,7 @@ eXide.edit.ModeHelper = (function () {
 		this.editor = this.parent.editor;
 		
 		this.commands = {};
+        this.addCommand("locate", this.locate);
 	}
 	
 	Constr.prototype = {
@@ -57,7 +58,30 @@ eXide.edit.ModeHelper = (function () {
 			} else {
                 eXide.util.message("Not supported in this mode.")
             }
-		}
+		},
+        
+        /**
+         * Parse the document and add functions to the
+         * document for the outline view.
+         */
+        createOutline: function(doc, onComplete) {
+            // implemented by subclasses
+        },
+        
+        /**
+         * Called after a document was saved.
+         */
+        documentSaved: function(doc) {
+            // implemented by subclasses
+        },
+        
+        locate: function(doc, type, row) {
+            if (typeof row == "number") {
+                this.editor.gotoLine(row + 1);
+            	this.editor.focus();
+            }
+            return false;
+        }
 	};
 	
 	return Constr;

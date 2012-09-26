@@ -2,6 +2,10 @@
 
 @import url(xml2html.css);
 
+body {
+    font-family: "Verdana", "Helvetica", "Arial", sans-serif;
+}
+
 table {
     font-size: 100%;
     border-collapse: collapse;
@@ -230,11 +234,13 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 #tabs .tab {
-	font: normal 12px "Courier New", Courier, monospace;
+    /* font: 12px 'Ubuntu Mono', 'Monaco','Menlo','Droid Sans Mono','Courier New',monospace; */
+    font-size: 75%;
 	font-style: normal;
+    text-shadow: 1px 1px 1px #BBBBBB;
     white-space: nowrap;
     overflow: hidden;
-	color: #6e6e6e;
+	color: #5e5e5e;
 	background: #C8C8C8;
 	border: 1px solid #bbb;
 	box-shadow: 7px 1px 10px #d1cfd1;
@@ -519,6 +525,8 @@ ul.dynatree-container {
 }
 
 #outline {
+    font-family: 'Ubuntu Mono', 'Monaco','Menlo','Droid Sans Mono','Courier New',monospace;
+    line-height: 1.5em;
 	overflow: auto;
 	list-style: none;
 	margin: 8px 4px;
@@ -526,7 +534,7 @@ ul.dynatree-container {
 }
 
 #outline li {
-	margin: 0px 0px 8px 0px;
+	margin: 0px 0px 4px 0px;
 }
 
 #outline .private, #outline .public {

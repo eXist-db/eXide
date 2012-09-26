@@ -4,7 +4,7 @@ eXide.find.IncrementalSearch = (function () {
     
     var searchOptions = {
         backwards: false,
-        wrap: false,
+        wrap: true,
         caseSensitive: false,
         wholeWord: false,
         regExp: false

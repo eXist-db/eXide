@@ -43,6 +43,8 @@
         <script type="text/javascript" src="src/xquery-helper.js"/>
         <script type="text/javascript" src="src/xml-helper.js"/>
         <script type="text/javascript" src="src/less-helper.js"/>
+        <script type="text/javascript" src="src/javascript-helper.js"/>
+        <script type="text/javascript" src="src/css-helper.js"/>
         <script type="text/javascript" src="src/outline.js"/>
         <script type="text/javascript" src="src/editor.js"/>
         <script type="text/javascript" src="src/deployment.js"/>
@@ -54,8 +56,8 @@
         <script type="text/javascript" src="src/resources.js"/>
         <script type="text/javascript" src="src/find.js"/>
     
-    <!-- Compressed version -->
-<!--        <script type="text/javascript" src="resources/scripts/eXide-1.0.min.js"/>-->
+        <!-- Compressed version -->
+        <!--script type="text/javascript" src="resources/scripts/eXide-1.0.min.js"/-->
     </head>
     <body>
         <div class="ui-layout-north">
@@ -211,7 +213,7 @@
             </div>
             <div class="content" id="editor"/>
             <div id="status-bar">
-                <input id="search-box" type="text"/>
+                <input id="search-box" type="text" placeholder="Type string to search. Cursor-Up/Down for previous next match."/>
                 <a href="#" id="error-status"/>
             </div>
             <div id="ext-status-bar"/>

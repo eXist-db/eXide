@@ -23,7 +23,7 @@ eXide.namespace("eXide.edit.Document");
  * Represents an open document.
  */
 eXide.edit.Document = (function() {
-
+    
 	Constr = function(name, path, session) {
 		this.name = name;
 		this.path = path;
@@ -45,6 +45,10 @@ eXide.edit.Document = (function() {
         this.$session.setFoldStyle("markbegin");
 	};
 	
+    Constr.TYPE_FUNCTION = "function";
+    Constr.TYPE_VARIABLE = "variable";
+    Constr.TYPE_TEMPLATE = "template";
+    
 	Constr.prototype.getText = function() {
 		return this.$session.getValue();
 	};
@@ -233,7 +237,9 @@ eXide.edit.Editor = (function () {
 			"xquery": new eXide.edit.XQueryModeHelper($this),
 			"xml": new eXide.edit.XMLModeHelper($this),
             "html": new eXide.edit.XMLModeHelper($this),
-            "less": new eXide.edit.LessModeHelper($this)
+//            "less": new eXide.edit.LessModeHelper($this),
+            "javascript": new eXide.edit.JavascriptModeHelper($this),
+//            "css": new eXide.edit.CssModeHelper($this)
 		};
 	};
 
@@ -456,7 +462,7 @@ eXide.edit.Editor = (function () {
                     
                     // trigger post-save action on mode helper
                     var mode = $this.activeDoc.getModeHelper();
-                	if (mode && mode.documentSaved) {
+                	if (mode) {
             			mode.documentSaved($this.activeDoc);
             		}
 				}

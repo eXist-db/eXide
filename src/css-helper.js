@@ -16,65 +16,22 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-eXide.namespace("eXide.edit.LessModeHelper");
+eXide.namespace("eXide.edit.CssModeHelper");
 
 /**
  * XML specific helper methods.
  */
-eXide.edit.LessModeHelper = (function () {
+eXide.edit.CssModeHelper = (function () {
     
     var TokenIterator = require("ace/token_iterator").TokenIterator;
     
-	Constr = function(editor) {
-		this.parent = editor;
+    Constr = function(editor) {
+    	this.parent = editor;
 		this.editor = this.parent.editor;
         this.addCommand("locate", this.locate);
-	};
+	}
 	
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
-
-    Constr.prototype.documentSaved = function(doc) {
-        var $this = this;
-        var code = doc.getText();
-        var path = "/exist/apps/" + doc.getBasePath().replace(/^\/db\//, "") + "/";
-        var parser = new less.Parser({
-            paths: [path],
-            optimization: 3
-        });
-
-        parser.parse(code, function (err, tree) {
-            if (err) { 
-                return $.error(err);
-            }
-            $this.saveCSS(doc, tree.toCSS());
-        });
-    };
-    
-    Constr.prototype.saveCSS = function(doc, css) {
-        var cssPath = doc.getPath().replace(/\.less$/, ".css");
-        eXide.util.message("Compiling less file to " + cssPath);
-        var params = {
-    			path: cssPath,
-				data: css,
-                mime: "text/css"
-		};
-		$.ajax({
-			url: "modules/store.xql",
-			type: "POST",
-			data: params,
-			dataType: "json",
-			success: function (data) {
-			    if (data.status == "error") {
-					eXide.util.error(data.message);
-				} else {
-					eXide.util.message(cssPath + " stored.");
-				}
-			},
-			error: function (xhr, status) {
-				eXide.util.error(xhr.responseText);
-			}
-		});
-    };
     
     Constr.prototype.createOutline = function(doc, onComplete) {
         var iterator = new TokenIterator(doc.getSession(), 0, 0);
@@ -89,7 +46,7 @@ eXide.edit.LessModeHelper = (function () {
                 lastVar += next.value;
             } else if (next.type == "paren.lparen") {
                 doc.functions.push({
-                    type: eXide.edit.Document.TYPE_FUNCTION,
+                	type: eXide.edit.Document.TYPE_FUNCTION,
     				name: lastVar,
                     source: doc.getPath(),
     				signature: lastVar,
@@ -102,7 +59,7 @@ eXide.edit.LessModeHelper = (function () {
         }
         if (onComplete)
             onComplete(doc);
-    }
+    };
     
-	return Constr;
+    return Constr;
 }());
