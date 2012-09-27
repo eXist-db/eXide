@@ -34,12 +34,11 @@ declare option exist:serialize "method=json indent=yes";
     let $source := if (matches($sources[$i], "^(/|\w+:)")) then $sources[$i] else concat($base, "/", $sources[$i])
     return
             try {
-				let $log := util:log("DEBUG", ("Importing module ", $source))
 				let $tempPrefix := concat("temp", $i)
                 let $import := util:import-module($uri, $tempPrefix, $source)
                 let $prefix := $prefixes[$i]
                 return
-                    <modules json:array='true' source='{$source}'>
+                    <modules json:array='true' source='{$source}' prefix="{$prefix}">
                     {
                         for $func in util:registered-functions($uri)
                         (: fix namespace prefix to match the one in the import :)

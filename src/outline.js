@@ -60,13 +60,15 @@ eXide.edit.Outline = (function () {
             var self = this;
 			self.currentDoc = doc;
 			doc.functions = [];
-			$("#outline").empty();
-            var helper = doc.getModeHelper();
-            if (helper != null) {
-                helper.createOutline(doc, function() {
-                    self.$outlineUpdate(doc);
-                });
-            }
+			$("#outline").fadeOut(100, function() {
+                $(this).empty();
+                var helper = doc.getModeHelper();
+                if (helper != null) {
+                    helper.createOutline(doc, function() {
+                        self.$outlineUpdate(doc);
+                    });
+                }
+			});
 		},
 		
 		clearOutline: function() {
@@ -123,6 +125,7 @@ eXide.edit.Outline = (function () {
 					}
 				});
 			}
+            ul.fadeIn(100);
 		},
 		
 		$loadTemplates: function() {

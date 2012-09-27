@@ -238,7 +238,7 @@ eXide.edit.Editor = (function () {
 			"xml": new eXide.edit.XMLModeHelper($this),
             "html": new eXide.edit.XMLModeHelper($this),
 //            "less": new eXide.edit.LessModeHelper($this),
-            "javascript": new eXide.edit.JavascriptModeHelper($this),
+            "javascript": new eXide.edit.JavascriptModeHelper($this)
 //            "css": new eXide.edit.CssModeHelper($this)
 		};
 	};
