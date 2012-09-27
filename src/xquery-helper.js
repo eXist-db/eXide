@@ -403,7 +403,12 @@ eXide.edit.XQueryModeHelper = (function () {
     
     Constr.prototype.$sortFunctions = function(doc) {
 		doc.functions.sort(function (a, b) {
-			return(a.name == b.name) ? 0 : (a.name > b.name) ? 1 : -1;
+            if (a.source && !b.source)
+                return 1;
+            else if (b.source && !a.source)
+                return -1;
+            else
+			    return(a.name == b.name) ? 0 : (a.name > b.name) ? 1 : -1;
 		});
 	}
     
