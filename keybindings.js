@@ -18,6 +18,6 @@
     "dbManager": ["Ctrl-Shift-M", "Command-Shift-M"],
     "toggleComment": ["Ctrl-Shift-C", "Command-Shift-C"],
     "synchronize": ["Alt-Shift-S", "Command-Option-S"],
-    "preferences": ["Alt-Shift-P", "Control-Command-,"],
+    "preferences": ["Alt-Shift-P", "Ctrl-Command-P"],
     "openApp": ["Alt-Control-R", "Command-Option-R"]
 }
