@@ -10,6 +10,9 @@
     <property name="templates.dir" value="./templates"/>
     <property name="templates.default.dir" value="${templates.dir}/default"/>
     <property name="closure.compiler.url" value="http://closure-compiler.googlecode.com/files/compiler-latest.zip"/>
+    <property name="server.url" value="http://demo.exist-db.org/exist/apps/public-repo/public/"/>
+    <property name="server.pass" value=""/>
+
     <available property="closure.available" file="${tools}/compiler.jar"/>
     <target name="get-closure" unless="closure.available">
         <mkdir dir="${tools}"/>
@@ -28,7 +31,7 @@
     <target name="ace">
         <mkdir dir="${ace}"/>
         <copy todir="${ace}">
-            <fileset dir="${ace.src}/build/src-min">
+            <fileset dir="${ace.src}/build/src">
                 <exclude name="*-uncompressed.js"/>
                 <exclude name="*-noconflict.js"/>
             </fileset>
@@ -92,5 +95,11 @@
                 <exclude name=".git*"/>
             </fileset>
         </zip>
+    </target>
+    <target name="upload">
+        <property name="xar" value="eXide-1.0.xar"/>
+        <exec executable="curl">
+            <arg line="-T ${build}/${xar} -u admin:${server.pass} ${server.url}/${xar}"/>
+        </exec>
     </target>
 </project>
