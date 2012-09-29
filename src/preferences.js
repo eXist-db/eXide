@@ -37,6 +37,12 @@ eXide.util.Preferences = (function () {
         this.editor = editor;
         this.preferences = $.extend({}, defaultPreferences);
         var $this = this;
+        
+        var form = $("form", this);
+        $("select, input").change(function() {
+            $this.updatePreferences();
+        });
+        
         $("#preferences-dialog").dialog({
     		title: "Preferences",
 			modal: true,
@@ -44,29 +50,11 @@ eXide.util.Preferences = (function () {
 			height: 400,
 			width: 600,
 			buttons: {
-				"Cancel": function () { $(this).dialog("close"); editor.focus(); },
+				"Close": function () { $(this).dialog("close"); editor.focus(); },
                 "Reset Defaults": function () {
                     $this.preferences = $.extend({}, defaultPreferences);
                     $this.updateForm();
-                },
-				"Save": function () {
-					var form = $("form", this);
-					$this.preferences.theme = $("select[name=\"theme\"]", form).val();
-					$this.preferences.fontSize = $("select[name=\"font-size\"]", form).val();
-					$this.preferences.showInvisibles = $("input[name=\"show-invisibles\"]", form).is(":checked");
-					$this.preferences.showPrintMargin = $("input[name=\"print-margin\"]", form).is(":checked");
-                    var wrap = $("select[name=\"soft-wrap\"]", form).val();
-                    if (wrap === "free") {
-                        wrap = -1;
-                    } else if (wrap === "off") {
-                        wrap = 0;
-                    }
-                    $this.preferences.softWrap = parseInt(wrap);
-					$this.applyPreferences();
-					
-					$(this).dialog("close");
-					editor.focus();
-				}
+                }
 			}
 		});
     };
@@ -79,17 +67,33 @@ eXide.util.Preferences = (function () {
     Constr.prototype.updateForm = function() {
         $.log("Updating form");
         var form = $("#preferences-dialog form");
-    	$("select[name=\"theme\"]", form).val(this.preferences.theme);
+        $("select[name=\"theme\"]", form).val(this.preferences.theme);
 		$("select[name=\"font-size\"]", form).val(this.preferences.fontSize);
 		$("input[name=\"show-invisibles\"]", form).attr("checked", this.preferences.showInvisibles);
 		$("input[name=\"print-margin\"]", form).attr("checked", this.preferences.showPrintMargin);
         var wrap = this.preferences.softWrap;
-        if (wrap == 0) {
+        if (wrap === 0) {
             wrap = "off";
         } else if (wrap === -1) {
             wrap = "free";
         }
         $("input[name=\"soft-wrap\"]", form).val(wrap);
+    };
+    
+    Constr.prototype.updatePreferences = function() {
+        var form = $("#preferences-dialog form");
+        this.preferences.theme = $("select[name=\"theme\"]", form).val();
+		this.preferences.fontSize = $("select[name=\"font-size\"]", form).val();
+		this.preferences.showInvisibles = $("input[name=\"show-invisibles\"]", form).is(":checked");
+		this.preferences.showPrintMargin = $("input[name=\"print-margin\"]", form).is(":checked");
+        var wrap = $("select[name=\"soft-wrap\"]", form).val();
+        if (wrap === "free") {
+            wrap = -1;
+        } else if (wrap === "off") {
+            wrap = 0;
+        }
+        this.preferences.softWrap = parseInt(wrap, 10);
+		this.applyPreferences();
     };
     
     Constr.prototype.applyPreferences = function () {

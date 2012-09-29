@@ -568,6 +568,10 @@ fieldset {
 	border: 0;
 }
 
+fieldset input[type="checkbox"] {
+    margin-top: 8px;
+}
+
 fieldset legend {
 	font-size: 133%;
 	padding-bottom: 1em;
@@ -593,7 +597,7 @@ fieldset li {
 fieldset label {
 	float: left;
 	display: block;
-	width: 120px;
+	width: 160px;
 	margin-right: 10px;
 	text-align: right;
 	padding-top: .25em;
