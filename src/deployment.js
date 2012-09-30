@@ -49,7 +49,6 @@ eXide.edit.Projects = (function() {
         var re = new RegExp("^" + collection);
         for (k in this.projects) {
             var project = this.projects[k];
-            $.log("collection: %s -> root: %s", collection.substring(0, project.root.length), project.root);
             if (collection.substring(0, project.root.length) === project.root) {
                 return project;
             }

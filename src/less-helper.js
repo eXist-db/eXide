@@ -41,10 +41,10 @@ eXide.edit.LessModeHelper = (function () {
             paths: [path],
             optimization: 3
         });
-
         parser.parse(code, function (err, tree) {
-            if (err) { 
-                return $.error(err);
+            if (err) {
+                eXide.util.error("Error: " + err.message);
+                return;
             }
             $this.saveCSS(doc, tree.toCSS());
         });
@@ -79,20 +79,23 @@ eXide.edit.LessModeHelper = (function () {
     Constr.prototype.createOutline = function(doc, onComplete) {
         var iterator = new TokenIterator(doc.getSession(), 0, 0);
         var next = iterator.stepForward();
-        var lastVar = "";
         while (next != null) {
-//            $.log("type: %o value: %s", next.type, next.value);
-            if (next.type == "variable" || next.type == "keyword") {
-                if (lastVar.length > 0) {
-                    lastVar += " ";
+            if (next.type == "paren.lparen" && next.value == "{") {
+                var selector = [];
+                var row = iterator.getCurrentTokenRow();
+                var backIter = new TokenIterator(doc.getSession(), row, iterator.getCurrentTokenColumn());
+                var prev;
+                while ((prev = backIter.stepBackward()) != null) {
+                    if (backIter.getCurrentTokenRow() < row)
+                        break;
+                    selector.push(prev.value);
                 }
-                lastVar += next.value;
-            } else if (next.type == "paren.lparen") {
+                var selectorStr = selector.reverse().join("");
                 doc.functions.push({
                     type: eXide.edit.Document.TYPE_FUNCTION,
-    				name: lastVar,
+    				name: selectorStr,
                     source: doc.getPath(),
-    				signature: lastVar,
+    				signature: selectorStr,
                     row: iterator.getCurrentTokenRow(),
                     column: iterator.getCurrentTokenColumn()
     			});

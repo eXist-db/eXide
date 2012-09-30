@@ -237,7 +237,7 @@ eXide.edit.Editor = (function () {
 			"xquery": new eXide.edit.XQueryModeHelper($this),
 			"xml": new eXide.edit.XMLModeHelper($this),
             "html": new eXide.edit.XMLModeHelper($this),
-//            "less": new eXide.edit.LessModeHelper($this),
+            "less": new eXide.edit.LessModeHelper($this),
             "javascript": new eXide.edit.JavascriptModeHelper($this)
 //            "css": new eXide.edit.CssModeHelper($this)
 		};
@@ -705,6 +705,7 @@ eXide.edit.Editor = (function () {
 	 */
 	Constr.prototype.validate = function() {
 		var $this = this;
+		$this.$triggerEvent("validate", [$this.activeDoc]);
 		var mode = $this.activeDoc.getModeHelper();
 		if (!(mode && mode.validate)) {
 			return;
@@ -714,7 +715,6 @@ eXide.edit.Editor = (function () {
 		mode.validate($this.activeDoc, $this.getText(), function (success) {
 			$this.pendingCheck = false;
 		});
-		$this.$triggerEvent("validate", [$this.activeDoc]);
 	};
 	
 	/*
