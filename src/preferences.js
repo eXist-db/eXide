@@ -26,7 +26,7 @@ eXide.util.Preferences = (function () {
 
     var defaultPreferences = {
         theme: "tomorrow",
-		fontSize: "14px",
+		fontSize: 14,
 		showInvisibles: false,
 		showPrintMargin: true,
 		showHScroll: false,
@@ -39,7 +39,7 @@ eXide.util.Preferences = (function () {
         var $this = this;
         
         var form = $("form", this);
-        $("select, input").change(function() {
+        $("select, input", form).change(function() {
             $this.updatePreferences();
         });
         
@@ -83,7 +83,7 @@ eXide.util.Preferences = (function () {
     Constr.prototype.updatePreferences = function() {
         var form = $("#preferences-dialog form");
         this.preferences.theme = $("select[name=\"theme\"]", form).val();
-		this.preferences.fontSize = $("select[name=\"font-size\"]", form).val();
+		this.preferences.fontSize = parseInt($("select[name=\"font-size\"]", form).val());
 		this.preferences.showInvisibles = $("input[name=\"show-invisibles\"]", form).is(":checked");
 		this.preferences.showPrintMargin = $("input[name=\"print-margin\"]", form).is(":checked");
         var wrap = $("select[name=\"soft-wrap\"]", form).val();
@@ -101,7 +101,7 @@ eXide.util.Preferences = (function () {
         var $this = this;
 		this.editor.setTheme(this.preferences.theme);
 		this.editor.editor.setShowInvisibles(this.preferences.showInvisibles);
-		this.editor.editor.renderer.setShowPrintMargin(this.preferences.showPrintMargin);
+		this.editor.editor.setShowPrintMargin(this.preferences.showPrintMargin);
         this.editor.forEachDocument(function (doc) {
             if ($this.preferences.softWrap > 0) {
                 doc.getSession().setWrapLimitRange($this.preferences.softWrap, $this.preferences.softWrap);
@@ -110,7 +110,7 @@ eXide.util.Preferences = (function () {
             }
             doc.getSession().setUseWrapMode($this.preferences.softWrap != 0);
         });
-		$("#editor").css("font-size", this.preferences.fontSize);
+        this.editor.editor.setFontSize(this.preferences.fontSize);
 		this.editor.resize();
 	};
 	
