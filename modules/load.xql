@@ -18,7 +18,7 @@
  :)
 xquery version "1.0";
 
-declare option exist:serialize "indent=yes";
+declare option exist:serialize "indent=yes expand-xincludes=no";
 
 let $path := xmldb:encode(request:get-parameter("path", ()))
 let $download := request:get-parameter("download", ())
