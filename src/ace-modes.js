@@ -307,8 +307,21 @@ define("eXide/mode/behaviour/xml", function(require, exports, module) {
 	var oop = require("ace/lib/oop");
 	var Behaviour = require('ace/mode/behaviour').Behaviour;
 	var CstyleBehaviour = require('ace/mode/behaviour/cstyle').CstyleBehaviour;
-	var XQueryBehaviour = require('eXide/mode/behaviour/xquery').XQueryBehaviour;
+	var TokenIterator = require("ace/token_iterator").TokenIterator;
 	
+    function hasType(token, type) {
+        var hasType = true;
+        var typeList = token.type.split('.');
+        var needleList = type.split('.');
+        needleList.forEach(function(needle){
+            if (typeList.indexOf(needle) == -1) {
+                hasType = false;
+                return false;
+            }
+        });
+        return hasType;
+    }
+    
 	var XMLBehaviour = function (parent) {
 	    
 		this.inherit(CstyleBehaviour, ["braces", "parens", "string_dquotes"]); // Get string behaviour
@@ -347,6 +360,34 @@ define("eXide/mode/behaviour/xml", function(require, exports, module) {
 	    	}
 			return false;
 	    });
+        
+        this.add("autoclosing", "insertion", function (state, action, editor, session, text) {
+            if (text == '>') {
+                var position = editor.getCursorPosition();
+                var iterator = new TokenIterator(session, position.row, position.column);
+                var token = iterator.getCurrentToken();
+                var atCursor = false;
+                if (!token || !hasType(token, 'meta.tag') && !(hasType(token, 'text') && token.value.match('/'))){
+                    do {
+                        token = iterator.stepBackward();
+                    } while (token && (hasType(token, 'string') || hasType(token, 'keyword.operator') || hasType(token, 'entity.attribute-name') || hasType(token, 'text')));
+                } else {
+                    atCursor = true;
+                }
+                if (!token || !hasType(token, 'meta.tag-name') || iterator.stepBackward().value.match('/')) {
+                    return
+                }
+                var tag = token.value;
+                if (atCursor){
+                    var tag = tag.substring(0, position.column - token.start);
+                }
+    
+                return {
+                   text: '>' + '</' + tag + '>',
+                   selection: [1, 1]
+                }
+            }
+        });
 	}
 	oop.inherits(XMLBehaviour, Behaviour);
 
@@ -416,7 +457,8 @@ define("eXide/mode/html", function(require, exports, module) {
 	var Mode = function(parent) {
         var highlighter = new HtmlHighlightRules();
 	    this.$tokenizer = new Tokenizer(highlighter.getRules());
-	    this.$behaviour = new XMLBehaviour(parent);
+        this.$behaviour = new XMLBehaviour(parent);
+        //this.$behaviour = new HtmlBehaviour();
         this.foldingRules = new HtmlFoldMode();
         this.$embeds = highlighter.getEmbeds();
         this.createModeDelegates({
