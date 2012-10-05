@@ -38,8 +38,8 @@ eXide.util.Preferences = (function () {
         this.preferences = $.extend({}, defaultPreferences);
         var $this = this;
         
-        var form = $("form", this);
-        $("select, input", form).change(function() {
+        var container = $("#preferences-dialog");
+        $("select, input", container).change(function() {
             $this.updatePreferences();
         });
         
