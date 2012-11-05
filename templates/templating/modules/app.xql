@@ -1,3 +1,5 @@
+xquery version "3.0";
+
 module namespace app="http://exist-db.org/xquery/app";
 
 import module namespace templates="http://exist-db.org/xquery/templates" at "templates.xql";
