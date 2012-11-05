@@ -96,9 +96,9 @@ else if (ends-with($exist:path, ".xql")) then
         <set-attribute name="app-root" value="{$exist:prefix}{$exist:controller}"/>
     </dispatch>
     
-else if (starts-with($exist:path, "/libs/")) then
+else if (contains($exist:path, "/$shared/")) then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward url="/{substring-after($exist:path, '/libs/')}" absolute="yes"/>
+        <forward url="/shared-resources/{substring-after($exist:path, '/$shared/')}"/>
     </dispatch>
 else
     (: everything else is passed through :)

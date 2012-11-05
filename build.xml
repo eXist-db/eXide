@@ -11,8 +11,6 @@
     <property name="templates.default.dir" value="${templates.dir}/default"/>
     <property name="closure.compiler.url" value="http://closure-compiler.googlecode.com/files/compiler-latest.zip"/>
     <property name="server.url" value="http://demo.exist-db.org/exist/apps/public-repo/public/"/>
-    <property name="server.pass" value=""/>
-
     <available property="closure.available" file="${tools}/compiler.jar"/>
     <target name="get-closure" unless="closure.available">
         <mkdir dir="${tools}"/>
@@ -27,11 +25,11 @@
     <target name="prepare" depends="get-closure">
         <taskdef name="jscomp" classname="com.google.javascript.jscomp.ant.CompileTask" classpath="${tools}/compiler.jar"/>
     </target>
-    <target name="all" depends="compress,ace,xar"/>
+    <target name="all" depends="compress,xar"/>
     <target name="ace">
         <mkdir dir="${ace}"/>
         <copy todir="${ace}">
-            <fileset dir="${ace.src}/build/src">
+            <fileset dir="${ace.src}/build/src-min">
                 <exclude name="*-uncompressed.js"/>
                 <exclude name="*-noconflict.js"/>
             </fileset>
@@ -98,6 +96,9 @@
     </target>
     <target name="upload">
         <property name="xar" value="eXide-1.0.xar"/>
+        <input message="Enter password:" addproperty="server.pass" defaultvalue="">
+            <handler type="secure"/>
+        </input>
         <exec executable="curl">
             <arg line="-T ${build}/${xar} -u admin:${server.pass} ${server.url}/${xar}"/>
         </exec>
