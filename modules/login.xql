@@ -67,7 +67,7 @@ declare %private function login:store-credentials($user as xs:string, $password 
 };
 
 declare %private function login:is-valid($entry as map(*)) {
-    empty($entry("expires")) or util:system-dateTime() < $entry("expires")
+    empty($entry("expires")) or util:system-dateTime() < xs:dateTime($entry("expires"))
 };
 
 declare %private function login:with-login($user as xs:string, $password as xs:string, $func as function() as item()*) {
