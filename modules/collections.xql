@@ -327,43 +327,7 @@ declare function local:rename($collection as xs:string, $source as xs:string) {
         }
 };
 
-declare %private function local:merge-properties($maps as map(*)) {
-    map:new(
-        for $key in map:keys($maps[1])
-        let $values := distinct-values(for $map in $maps return $map($key))
-        return
-            map:entry($key, if (count($values) = 1) then $values[1] else "")
-    )
-};
-
-declare %private function local:get-property-map($resource as xs:string) as map(*) {
-    let $isCollection := xmldb:collection-available($resource)
-    return
-        if ($isCollection) then
-            map {
-                "owner" := xmldb:get-owner($resource),
-                "group" := xmldb:get-group($resource),
-                "last-modified" := format-dateTime(xmldb:created($resource), "[MNn] [D00] [Y0000] [H00]:[m00]:[s00]"),
-                "permissions" := xmldb:permissions-to-string(xmldb:get-permissions($resource)),
-                "mime" := xmldb:get-mime-type(xs:anyURI($resource))
-            }
-        else
-            let $components := text:groups($resource, "^(.*)/([^/]+)$")
-            return
-                map {
-                    "owner" := xmldb:get-owner($components[2], $components[3]),
-                    "group" := xmldb:get-group($components[2], $components[3]),
-                    "last-modified" := 
-                        format-dateTime(xmldb:created($components[2], $components[3]), "[MNn] [D00] [Y0000] [H00]:[m00]:[s00]"),
-                    "permissions" := xmldb:permissions-to-string(xmldb:get-permissions($components[2], $components[3])),
-                    "mime" := xmldb:get-mime-type(xs:anyURI($resource))
-                }
-};
-
-declare %private function local:get-properties($resources as xs:string*) as map(*) {
-    local:merge-properties(for $resource in $resources return local:get-property-map($resource))
-};
-declare %private function local:merge-properties($maps as map(*)) {
+declare %private function local:merge-properties($maps as map(*)+) {
     map:new(
         for $key in map:keys($maps[1])
         let $values := distinct-values(for $map in $maps return $map($key))
