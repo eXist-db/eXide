@@ -58,6 +58,98 @@ eXide.find.IncrementalSearch = (function () {
     return Constr;
 }());
 
+eXide.namespace("eXide.find.SearchReplace");
+
+eXide.find.SearchReplace = (function () {
+    
+    var searchOptions = {
+        backwards: false,
+        wrap: true,
+        caseSensitive: false,
+        wholeWord: false,
+        regExp: false
+    };
+    
+    Constr = function (editor) {
+        var self = this;
+        self.editor = editor;
+        self.needleSet = false;
+        self.container = $("#find-replace-dialog");
+        self.container.dialog({
+            modal: false,
+    		autoOpen: false,
+    		height: 300,
+    		width: 600,
+            buttons: {
+                "Close": function () { $(this).dialog("close"); self.editor.focus(); },
+                "Replace": function() {
+                    self.replace(false);
+                },
+                "Replace All": function() {
+                    self.replace(true);
+                },
+                "Find Next": function () { 
+                    self.find(1);
+                },
+                "Find Previous": function() {
+                    self.find(-1);
+                }
+            }
+        });
+    };
+    
+    Constr.prototype.open = function() {
+        this.container.dialog("open");
+    };
+    
+    Constr.prototype.find = function(direction) {
+        var search = this.container.find("input[name='search']").val();
+        if (search && search.length > 0) {
+            if (this.needleSet) {
+                if (direction == -1)
+                    this.editor.findPrevious();
+                else
+                    this.editor.findNext();
+            } else {
+                this.editor.find(search, this.getOptions(), true);
+                this.needleSet = true;
+            }
+            this.editor.focus();
+        }
+    };
+    
+    Constr.prototype.replace = function(all) {
+        var search = this.container.find("input[name='search']").val();
+        if (search && search.length > 0) {
+            if (!this.needleSet) {
+                this.editor.find(search, this.getOptions(), true);
+                this.needleSet = true;
+            }
+            var replace = this.container.find("input[name='replace']").val();
+            if (replace && replace.length > 0) {
+                if (all) {
+                    this.editor.replaceAll(replace);
+                } else {
+                    this.editor.replace(replace);
+                    this.editor.findNext();
+                }
+            }
+        }
+    };
+    
+    Constr.prototype.getOptions = function() {
+        var caseSensitive = this.container.find("input[name='case']").is(":checked");
+        var regex = this.container.find("input[name = 'regex']").is(":checked");
+        return {
+            wrap: true,
+            caseSensitive: caseSensitive,
+            regExp: regex
+        };
+    };
+    
+    return Constr;
+}());
+
 eXide.namespace("eXide.find.Modules");
 
 /**
@@ -83,7 +175,6 @@ eXide.find.Modules = (function () {
     var grid;
     
     $(document).ready(function() {
-        $.log("Initializing import module dialog");
         $("#select-module-dialog").dialog({
         	modal: false,
     		autoOpen: false,

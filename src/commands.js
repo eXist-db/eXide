@@ -152,6 +152,13 @@ eXide.edit.commands = (function () {
         		    	}
         		    });
                     commands.addCommand({
+                    	name: "searchReplace",
+        		    	bindKey: bindKey(bindings.searchReplace),
+        		    	exec: function(env, args, request) {
+        		    		editor.search.open();
+        		    	}
+        		    });
+                    commands.addCommand({
             	    	name: "findModule",
         		    	bindKey: bindKey(bindings.findModule),
         		    	exec: function(env, args, request) {

@@ -193,6 +193,7 @@ eXide.edit.Editor = (function () {
 
         // incremental search box
         this.quicksearch = new eXide.find.IncrementalSearch($("#search-box"), this.editor);
+        this.search = new eXide.find.SearchReplace(this.editor);
         
         var tabsDiv = $("#tabs-container");
         tabsDiv.css({overflow: 'hidden'});
@@ -657,7 +658,7 @@ eXide.edit.Editor = (function () {
         var net = require("ace/lib/net");
         this.themes[name] = 1;
         var base = name.split("/").pop();
-        var fileName = "resources/scripts/ace/theme-" + base + ".js";
+        var fileName = "$shared/resources/scripts/ace/theme-" + base + ".js";
         
         var head = document.getElementsByTagName('head')[0];
         var s = document.createElement('script');

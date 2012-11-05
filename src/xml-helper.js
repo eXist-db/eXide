@@ -43,6 +43,7 @@ eXide.edit.XMLModeHelper = (function () {
 			success: function (data) {
 				if (data.status && data.status == "invalid") {
 					var line = parseInt(data.message.line) - 1;
+                    $.log("Message: %s", line);
 					if (line <= row) {
 						var tag = /element type \"([^\"]+)\"/.exec(data.message["#text"]);
 						if (tag.length > 0) {

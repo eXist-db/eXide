@@ -12,6 +12,7 @@
     "functionDoc": ["F1", "F1"],
     "gotoDefinition": ["F3", "F3"],
     "searchIncremental": ["Ctrl-F", "Command-F"],
+    "searchReplace": ["Ctrl-Shift-F", "Command-Shift-F"],
     "findModule": ["F4", "F4"],
     "indentOrParam": ["Tab", "Tab"],
     "escape": ["Esc", "Esc"],
