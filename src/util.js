@@ -101,7 +101,8 @@ eXide.util = (function () {
 				if (data[i].tooltip) {
 					var help = document.createElement("span");
 					help.className = "tooltip";
-					help.appendChild(document.createTextNode(data[i].tooltip));
+                    help.innerHTML = data[i].tooltip;
+//					help.appendChild(document.createTextNode(data[i].tooltip));
 					
 					li.appendChild(help);
 				}

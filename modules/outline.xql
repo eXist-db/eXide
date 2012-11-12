@@ -20,6 +20,25 @@ xquery version "3.0";
 
 declare option exist:serialize "method=json indent=yes";
 
+declare function local:generate-signature($func as element(function)) {
+    $func/@name/string() || "(" ||
+    string-join(
+        for $param in $func/argument
+        return
+            "$" || $param/@var/string() || " as " || $param/@type/string() || local:cardinality($param/@cardinality),
+        ", "
+    ) ||
+    ")"
+};
+
+declare function local:cardinality($cardinality as xs:string) {
+    switch ($cardinality)
+        case "zero or one" return "?"
+        case "zero or more" return "*"
+        case "one or more" return "+"
+        default return ()
+};
+
 (:~
  : Resolve imported modules and return the signature of all functions and
  : variables to be displayed in the outline view
@@ -34,27 +53,22 @@ declare option exist:serialize "method=json indent=yes";
     let $source := if (matches($sources[$i], "^(/|\w+:)")) then $sources[$i] else concat($base, "/", $sources[$i])
     return
             try {
-				let $tempPrefix := concat("temp", $i)
-                let $import := util:import-module($uri, $tempPrefix, $source)
                 let $prefix := $prefixes[$i]
+                let $module := inspect:inspect-module($source)
                 return
                     <modules json:array='true' source='{$source}' prefix="{$prefix}">
                     {
-                        for $func in util:registered-functions($uri)
+                        for $desc in $module/function
+                        let $name := $desc/@name/string()
                         (: fix namespace prefix to match the one in the import :)
-                        let $name := concat($prefix, ":", substring-after($func, ":"))
-						let $desc := 
-							util:describe-function(
-								xs:QName(concat($tempPrefix, ":", substring-after($func, ":")))
-							)
-						for $prototype in $desc/prototype
+                        let $name := concat($prefix, ":", substring-after($name, ":"))
                         return
                             <functions json:array="true">
 								<name>{$name}</name>
-								<signature>{$prototype/signature/text()}</signature>
+								<signature>{local:generate-signature($desc)}</signature>
                                 <visibility>
                                 {
-                                    if ($prototype/annotation[@name="private"]) then
+                                    if ($desc/annotation[@name="private"]) then
                                         "private"
                                     else
                                         "public"
@@ -63,9 +77,9 @@ declare option exist:serialize "method=json indent=yes";
 							</functions>
                     }
                     {
-                        for $var in util:declared-variables($uri)
+                        for $var in $module/variable
                         (: fix namespace prefix to match the one in the import :)
-                        let $name := concat($prefix, ":", substring-after($var, ":"))
+                        let $name := concat($prefix, ":", substring-after($var/@name, ":"))
                         return
                             <variables json:array="true">{$name}</variables>
                     }

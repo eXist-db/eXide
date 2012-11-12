@@ -16,60 +16,82 @@
  :  You should have received a copy of the GNU General Public License
  :  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  :)
-xquery version "1.0";
+xquery version "3.0";
 
 declare namespace xqdoc="http://www.xqdoc.org/1.0";
 declare namespace json="http://json.org/";
 
 declare option exist:serialize "method=json media-type=application/json";
 
-declare function local:builtin-modules($xqdocs as element()*) {
+declare function local:builtin-modules() {
     let $prefix := request:get-parameter("prefix", ())
-    let $funcs := util:registered-functions()
-    let $matches := for $func in $funcs where matches($func, concat("^(\w+:)?", $prefix)) return $func
+    for $module in util:registered-modules()
+    let $funcs := inspect:module-functions-by-uri(xs:anyURI($module))
+    let $matches := for $func in $funcs where matches(function-name($func), concat("^(\w+:)?", $prefix)) return $func
     for $func in $matches
-    let $desc := util:describe-function($func)
-    order by $func
+    let $desc := inspect:inspect-function($func)
+    order by function-name($func)
     return
-        for $proto in $desc/prototype
-        let $signature := $proto/signature/string()
-        let $help := $proto/description/string()
-        let $xqdoc := $xqdocs/json:value[signature = $signature]
+        let $signature := local:generate-signature($desc)
         return
-            if (exists($xqdoc)) then
-                $xqdoc
-            else
-                <json:value json:array="true">
-                    <signature>{$signature}</signature>
-                    <help>{$help}</help>
-                    <type>function</type>
-                    <visibility>
-                    {
-                        if ($proto/annotation[@name="private"]) then
-                            "private"
-                        else
-                            "public"
-                    }
-                    </visibility>
-                </json:value>
+            <json:value json:array="true">
+                <signature>{$signature}</signature>
+                <help>{local:generate-help($desc)}</help>
+                <type>function</type>
+                <visibility>
+                {
+                    if ($desc/annotation[@name="private"]) then
+                        "private"
+                    else
+                        "public"
+                }
+                </visibility>
+            </json:value>
 };
 
-declare function local:xqdoc-modules() {
-    let $prefix := request:get-parameter("prefix", ())
-    for $fun in collection("/db")//xqdoc:function[matches(xqdoc:signature, concat("^(\w+:)?", $prefix))]
-    order by $fun/xqdoc:signature
+declare function local:generate-help($desc as element(function)) {
+    let $help :=
+        <div class="function-help">
+            <p>{$desc/description/node()}</p>
+            <dl>
+            {
+                for $arg in $desc/argument
+                return (
+                    <dt>${$arg/@var/string()} as {$arg/@type/string()}{local:cardinality($arg/@cardinality)}</dt>,
+                    <dd>{$arg/node()}</dd>
+                )
+            }
+            </dl>
+            <dl>
+                <dt>Returns: {$desc/returns/@type/string()}{local:cardinality($desc/returns/@cardinality)}</dt>
+                <dd>{$desc/returns/node()}</dd>
+            </dl>
+        </div>
     return
-        <json:value json:array="true">
-            <signature>{$fun/xqdoc:signature/string()}</signature>
-            <help>{$fun/xqdoc:comment/xqdoc:description/node()}</help>
-            <type>function</type>
-        </json:value>
+        util:serialize($help, "method=html5")
 };
 
-let $xqdocs := local:xqdoc-modules()
-return
-    <functions xmlns:json="http://json.org/">
-    {
-        local:builtin-modules($xqdocs)
-    }
-    </functions>
+declare function local:generate-signature($func as element(function)) {
+    $func/@name/string() || "(" ||
+    string-join(
+        for $param in $func/argument
+        return
+            "$" || $param/@var/string() || " as " || $param/@type/string() || local:cardinality($param/@cardinality),
+        ", "
+    ) ||
+    ")"
+};
+
+declare function local:cardinality($cardinality as xs:string) {
+    switch ($cardinality)
+        case "zero or one" return "?"
+        case "zero or more" return "*"
+        case "one or more" return "+"
+        default return ()
+};
+
+<functions xmlns:json="http://json.org/">
+{
+    local:builtin-modules()
+}
+</functions>
