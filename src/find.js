@@ -74,6 +74,7 @@ eXide.find.SearchReplace = (function () {
         var self = this;
         self.editor = editor;
         self.needleSet = false;
+        self.lastSearch = null;
         self.container = $("#find-replace-dialog");
         self.container.dialog({
             modal: false,
@@ -100,12 +101,14 @@ eXide.find.SearchReplace = (function () {
     
     Constr.prototype.open = function() {
         this.container.dialog("open");
+        this.container.find("input[name='search']").focus();
     };
     
     Constr.prototype.find = function(direction) {
         var search = this.container.find("input[name='search']").val();
+        $.log("Searching for %s", search);
         if (search && search.length > 0) {
-            if (this.needleSet) {
+            if (this.lastSearch != null && this.lastSearch == search) {
                 if (direction == -1)
                     this.editor.findPrevious();
                 else
