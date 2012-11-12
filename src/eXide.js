@@ -586,6 +586,7 @@ eXide.app = (function() {
                 north__showOverflowOnHover: true,
 				south__minSize: 200,
 				south__initClosed: true,
+                south__contentSelector: ".results",
 				west__size: 200,
 				west__initClosed: false,
 				west__contentSelector: ".content",
