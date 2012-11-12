@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project basedir="." default="all" name="eXide">
+    <property name="project.version" value="1.0.1"/>
     <property name="src" value="./src"/>
     <property name="tools" value="./tools"/>
     <property name="build" value="./build"/>
@@ -36,7 +37,7 @@
         </copy>
     </target>
     <target name="compress" depends="prepare">
-        <jscomp compilationLevel="simple" debug="false" output="${scripts}/eXide-1.0.min.js">
+        <jscomp compilationLevel="simple" debug="false" output="${scripts}/eXide-${project.version}.min.js">
             <sources dir="${basedir}/src">
                 <file name="ace-modes.js"/>
                 <file name="util.js"/>
@@ -78,12 +79,16 @@
     </target>
     <target name="clean">
         <delete dir="${ace}"/>
-        <delete file="${scripts}/eXide-1.0.min.js"/>
+        <delete>
+            <fileset dir="${scripts}">
+                <include name="eXide-*.min.js"/>
+            </fileset>
+        </delete>
         <delete file="${scripts}/jquery/jquery.plugins.min.js"/>
     </target>
     <target name="xar">
         <mkdir dir="${build}"/>
-        <zip destfile="${build}/eXide-1.0.xar">
+        <zip destfile="${build}/eXide-${project.version}.xar">
             <fileset dir=".">
                 <include name="*.*"/>
                 <include name="modules/**"/>
@@ -95,7 +100,7 @@
         </zip>
     </target>
     <target name="upload">
-        <property name="xar" value="eXide-1.0.xar"/>
+        <property name="xar" value="eXide-${project.version}.xar"/>
         <input message="Enter password:" addproperty="server.pass" defaultvalue="">
             <handler type="secure"/>
         </input>
