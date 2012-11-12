@@ -53,6 +53,7 @@ eXide.find.IncrementalSearch = (function () {
         this.editor.gotoLine(this.currentLine);
         var search = this.input.val();
         this.editor.find(search, searchOptions, true);
+        this.input.focus();
     };
     
     return Constr;
