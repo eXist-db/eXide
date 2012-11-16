@@ -62,11 +62,18 @@ declare function deploy:get-app-root($collection as xs:string) {
 };
 
 declare function deploy:store-expath($collection as xs:string?, $userData as xs:string*, $permissions as xs:int?) {
+    let $includeAll := request:get-parameter("includeall", ())
     let $descriptor :=
         <package xmlns="http://expath.org/ns/pkg"
             name="{request:get-parameter('name', ())}" abbrev="{request:get-parameter('abbrev', ())}"
             version="{request:get-parameter('version', ())}" spec="1.0">
             <title>{request:get-parameter("title", ())}</title>
+            {
+                if (empty($includeAll)) then
+                    <dependency package="http://exist-db.org/apps/shared"/>
+                else
+                    ()
+            }
         </package>
     return (
         xmldb:store($collection, "expath-pkg.xml", $descriptor, "text/xml"),
@@ -92,8 +99,15 @@ declare function deploy:repo-descriptor() {
         <status>{request:get-parameter("status", ())}</status>
         <license>GNU-LGPL</license>
         <copyright>true</copyright>
-        <type>application</type>
-        <target>{request:get-parameter("target", ())}</target>
+        <type>{request:get-parameter("type", "application")}</type>
+        {
+            let $target := request:get-parameter("target", ())
+            return
+                if (exists($target)) then
+                    <target>{$target}</target>
+                else
+                    ()
+        }
         <prepare>{request:get-parameter("prepare", ())}</prepare>
         <finish>{request:get-parameter("finish", ())}</finish>
         {
@@ -252,6 +266,37 @@ declare function deploy:store-ant($target as xs:string, $permissions as xs:int) 
         xmldb:store($target, "build.xml", $antXML)
 };
 
+declare function deploy:expand($collection as xs:string, $resource as xs:string, $parameters as element(parameters)) {
+    let $doc := util:binary-doc($collection || "/" || $resource)
+    return
+        if (exists($doc)) then
+            let $expanded := tmpl:parse(util:binary-to-string($doc), $parameters)
+            return
+                xmldb:store($collection, $resource, $expanded)
+        else
+            ()
+};
+
+declare function deploy:expand-viewxql($target as xs:string) {
+    let $includeTmpl := request:get-parameter("includeall", ())
+    let $template := 
+        if ($includeTmpl) then
+            "at &quot;templates.xql&quot;"
+        else
+            ""
+    let $parameters :=
+        <parameters>
+            <param name="templates" value="{$template}"/>
+        </parameters>
+    let $cleanup :=
+        if (empty($includeTmpl) and util:binary-doc-available($target || "/modules/templates.xql")) then
+            xmldb:remove($target || "/modules", "templates.xql")
+        else
+            ()
+    return
+        deploy:expand($target || "/modules", "view.xql", $parameters)
+};
+
 declare function deploy:store-templates-from-fs($target as xs:string, $base as xs:string, $userData as xs:string+, $permissions as xs:int) {
     let $pathSep := util:system-property("file.separator")
     let $template := request:get-parameter("template", "basic")
@@ -272,6 +317,11 @@ declare function deploy:store-templates($target as xs:string, $userData as xs:st
 };
 
 declare function deploy:store($collection as xs:string?, $expathConf as element()?) {
+    let $collection :=
+        if (starts-with($collection, "/")) then
+            $collection
+        else
+            repo:get-root() || $collection
     let $repoConf := deploy:repo-descriptor()
     let $permissions := deploy:target-permissions($repoConf)
     let $userData := deploy:check-user($repoConf)
@@ -285,7 +335,8 @@ declare function deploy:store($collection as xs:string?, $expathConf as element(
                 deploy:store-repo($repoConf, $collection, $userData, $permissions),
                 if (empty($expathConf)) then (
                     deploy:store-templates($collection, $userData, $permissions),
-                    deploy:store-ant($collection, $permissions)
+                    deploy:store-ant($collection, $permissions),
+                    deploy:expand-viewxql($collection)
                 ) else
                     ()
             )
@@ -300,7 +351,7 @@ declare function deploy:view($collection as xs:string?, $expathConf as element()
             {
                 if ($collection) then (
                     <input type="hidden" name="collection" value="{$collection}"/>,
-                    <h3>App collection: {$collection}</h3>
+                    <h3>Package collection: {$collection}</h3>
                 ) else
                     ()
             }
@@ -310,10 +361,11 @@ declare function deploy:view($collection as xs:string?, $expathConf as element()
                     {
                         if (empty($repoConf)) then
                             <li>
-                                <div class="hint">The template to use for generating the basic app structure.</div>
+                                <div class="hint">The template to use for generating the basic package structure.</div>
                                 <select name="template">
-                                    <option value="templating" selected="selected">eXist-db Design</option>
+                                    <option value="existdb" selected="selected">eXist-db Design</option>
                                     <option value="bootstrap">Plain (using Bootstrap CSS)</option>
+                                    <option value="plain">Empty package</option>
                                 </select>
                                 <label for="template">Template:</label>
                             </li>
@@ -321,10 +373,26 @@ declare function deploy:view($collection as xs:string?, $expathConf as element()
                             ()
                     }
                     <li>
-                        <div class="hint">The collection where the app will be installed. Should normally be different from 
-                        the source collection.</div>
+                        <div class="hint">Type of the package: a library contains XQuery modules and resources, but no web interface.</div>
+                        <select name="type">
+                            <option value="application">Application</option>
+                            <option value="library">Library</option>
+                        </select>
+                        <label for="type">Type of the package:</label>
+                    </li>
+                    <li>
+                        <div class="hint">By default some XQuery libraries and other resources will be imported from the "shared-resources" package.
+                            The generated package will thus have a dependancy on "shared-resources". Check this to avoid the dependency.
+                        </div>
+                        <input type="checkbox" name="includeall"/>
+                        <label for="includeall">Include all libraries</label>
+                    </li>
+                    <li>
+                        <div class="hint">A relative path to the collection where the package will be installed below the repository root. Leave
+                            this empty if the package does not need to be deployed into the database.
+                        </div>
                         <input type="text" name="target" value="{$repoConf/repo:target}" 
-                            placeholder="/db/yourapp" size="40" required="required"/>
+                            placeholder="app-collection" size="40" required="required"/>
                         <label for="target">Target collection:</label>
                     </li>
                     <li><hr/></li>
@@ -489,6 +557,7 @@ declare function deploy:get-info-from-descriptor($collection as xs:string) {
             <target>{$repoConf/repo:target/string()}</target>
             <deployed>{$repoConf/repo:deployed/string()}</deployed>
             <isAdmin json:literal="true">{$auth}</isAdmin>
+            <url>{ request:get-attribute("$exist:prefix") || "/" || substring-after($collection, repo:get-root()) }</url>
         </info>
 };
 
@@ -511,6 +580,7 @@ let $collection :=
             if ($root) then $root else $collectionParam
     else
         $target
+let $log := util:log("DEBUG", "Collection: " || $collection)
 let $info := request:get-parameter("info", ())
 let $deploy := request:get-parameter("deploy", ())
 let $download := request:get-parameter("download", ())

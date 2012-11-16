@@ -265,7 +265,8 @@ eXide.edit.PackageEditor = (function () {
 	Constr.prototype.runApp = function (collection) {
 		var $this = this;
         $this.projects.getProject(collection, function (project) {
-			var link = "/exist/apps/" + project.root.replace(/^\/db\//, "") + "/";
+            var link = "/exist" + project.url + "/";
+//			var link = "/exist/apps/" + project.root.replace(/^\/db\//, "") + "/";
 			eXide.util.Dialog.message("Run Application " + project.abbrev, "<p>Click on the following link to open your application:</p>" +
 				"<center><a href=\"" + link + "\" target=\"_new\">" + link + "</a></center>");
         });

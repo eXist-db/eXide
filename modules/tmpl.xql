@@ -30,13 +30,20 @@ declare function tmpl:expand-template($input as item(), $map as element(paramete
 (:~
  : Helper function: recursively replace parameters in the given string.
  :)
-declare function tmpl:parse($str as xs:string, $map as element(parameters)?) {
-    if (contains($str, "$$")) then
-        let $after := substring-after($str, "$$")
-        let $param := substring-before($after, "$$")
-        let $replacement := $map/param[@name = $param]/@value
-        return
-            tmpl:parse(concat(substring-before($str, "$$"), $replacement, substring-after($after, "$$")), $map)
-    else
-        $str
+declare function tmpl:parse($str as xs:string, $parameters as element(parameters)?) {
+    let $analyzed := analyze-string($str, "\$\$([^\$]+)\$\$")
+    return
+        string-join(tmpl:process($analyzed/node(), $parameters))
+};
+
+declare function tmpl:process($node as node(), $parameters as element(parameters)) {
+    typeswitch($node)
+        case element(fn:match) return
+            let $var := $node/fn:group/string()
+            return 
+                string($parameters/param[@name = $var]/@value)
+        case element() return
+            for $child in $node/node() return tmpl:process($child, $parameters)
+        default return
+            $node
 };

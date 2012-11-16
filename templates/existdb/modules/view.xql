@@ -5,7 +5,7 @@
  :)
 xquery version "3.0";
 
-import module namespace templates="http://exist-db.org/xquery/templates" at "templates.xql";
+import module namespace templates="http://exist-db.org/xquery/templates" $$templates$$;
 
 (: 
  : The following modules provide functions which will be called by the 
@@ -16,6 +16,10 @@ import module namespace app="http://exist-db.org/xquery/app" at "app.xql";
 
 declare option exist:serialize "method=html5 media-type=text/html";
 
+let $config := map {
+    $templates:CONFIG_APP_ROOT := $config:app-root,
+    $templates:CONFIG_STOP_ON_ERROR := true()
+}
 (:
  : We have to provide a lookup function to templates:apply to help it
  : find functions in the imported application modules. The templates
@@ -35,4 +39,4 @@ let $lookup := function($functionName as xs:string, $arity as xs:int) {
  :)
 let $content := request:get-data()
 return
-    templates:apply($content, $lookup, ())
+    templates:apply($content, $lookup, (), $config)
