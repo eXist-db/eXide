@@ -163,7 +163,7 @@ eXide.edit.Editor = (function () {
 		$this.pendingCheck = false;
         $this.themes = {};
 		
-	    var renderer = new Renderer($this.container, "ace/theme/eclipse");
+        var renderer = new Renderer($this.container, "ace/theme/eclipse");
 	    renderer.setShowGutter(true);
 	    
 		this.editor = new Editor(renderer);

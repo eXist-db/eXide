@@ -456,7 +456,10 @@ eXide.util.oop.extend = (function() {
 //    	if (typeof console == "undefined" || typeof console.log == "undefined") {
 //    		console.log( Array.prototype.slice.call(arguments) );
         if(window.console && window.console.log) {
-            console.log.apply(window.console,arguments)
+//            console.log.apply(window.console,arguments)
+            
+            var log = Function.prototype.bind.call(console.log, console);
+            log.apply(console, arguments);
         }
     };
     $.fn.log = function() {

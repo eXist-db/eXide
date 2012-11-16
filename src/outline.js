@@ -107,7 +107,9 @@ eXide.edit.Outline = (function () {
                     _a.addClass("public");
                 }
                 if (func.row) {
-                    a.dataset.row = func.row;
+                    a.setAttribute("data-row", func.row);
+                    // Does not work on IE
+//                    a.dataset.row = func.row;
                 }
 				a.appendChild(document.createTextNode(func.name));
 				li.appendChild(a);
@@ -116,8 +118,8 @@ eXide.edit.Outline = (function () {
 				_a.click(function (ev) {
                     ev.preventDefault();
 					var path = this.hash.substring(1);
-                    if (this.dataset.row) {
-                        eXide.app.locate("function", path == '' ? null : path, parseInt(this.dataset.row));
+                    if (this.getAttribute("data-row")) {
+                        eXide.app.locate("function", path == '' ? null : path, parseInt(this.getAttribute("data-row")));
                     } else	if ($(this).hasClass("t_function")) {
 						eXide.app.locate("function", path == '' ? null : path, $(this).text());
 					} else {

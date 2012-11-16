@@ -110,7 +110,7 @@ eXide.util.Preferences = (function () {
             }
             doc.getSession().setUseWrapMode($this.preferences.softWrap != 0);
         });
-        this.editor.editor.setFontSize(this.preferences.fontSize);
+        this.editor.editor.setFontSize(this.preferences.fontSize + "px");
 		this.editor.resize();
 	};
 	
