@@ -1,8 +1,8 @@
 xquery version "3.0";
 
-module namespace app="http://exist-db.org/xquery/app";
+module namespace app="$$namespace$$";
 
-import module namespace templates="http://exist-db.org/xquery/templates" at "templates.xql";
+import module namespace templates="http://exist-db.org/xquery/templates" $$templates$$;
 
 (:~
  : This is a sample templating function. It will be called by the templating module if

@@ -277,7 +277,8 @@ declare function deploy:expand($collection as xs:string, $resource as xs:string,
             ()
 };
 
-declare function deploy:expand-viewxql($target as xs:string) {
+declare function deploy:expand-xql($target as xs:string) {
+    let $name := request:get-parameter("name", ())
     let $includeTmpl := request:get-parameter("includeall", ())
     let $template := 
         if ($includeTmpl) then
@@ -287,14 +288,16 @@ declare function deploy:expand-viewxql($target as xs:string) {
     let $parameters :=
         <parameters>
             <param name="templates" value="{$template}"/>
+            <param name="namespace" value="{$name}/templates"/>
         </parameters>
     let $cleanup :=
         if (empty($includeTmpl) and util:binary-doc-available($target || "/modules/templates.xql")) then
             xmldb:remove($target || "/modules", "templates.xql")
         else
             ()
+    for $module in ("view.xql", "app.xql")
     return
-        deploy:expand($target || "/modules", "view.xql", $parameters)
+        deploy:expand($target || "/modules", $module, $parameters)
 };
 
 declare function deploy:store-templates-from-fs($target as xs:string, $base as xs:string, $userData as xs:string+, $permissions as xs:int) {
@@ -336,7 +339,7 @@ declare function deploy:store($collection as xs:string?, $expathConf as element(
                 if (empty($expathConf)) then (
                     deploy:store-templates($collection, $userData, $permissions),
                     deploy:store-ant($collection, $permissions),
-                    deploy:expand-viewxql($collection)
+                    deploy:expand-xql($collection)
                 ) else
                     ()
             )

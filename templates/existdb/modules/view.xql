@@ -12,7 +12,7 @@ import module namespace templates="http://exist-db.org/xquery/templates" $$templ
  : templating.
  :)
 import module namespace config="http://exist-db.org/xquery/apps/config" at "config.xqm";
-import module namespace app="http://exist-db.org/xquery/app" at "app.xql";
+import module namespace app="$$namespace$$" at "app.xql";
 
 declare option exist:serialize "method=html5 media-type=text/html";
 
