@@ -37,7 +37,7 @@
         </copy>
     </target>
     <target name="compress" depends="prepare">
-        <jscomp compilationLevel="simple" debug="false" output="${scripts}/eXide-${project.version}.min.js">
+        <jscomp compilationLevel="simple" debug="false" output="${scripts}/eXide.min.js">
             <sources dir="${basedir}/src">
                 <file name="ace-modes.js"/>
                 <file name="util.js"/>
