@@ -32,6 +32,7 @@ eXide.util.Menubar = (function() {
         // Display sub menu on click
 		$("ul li", this.container).click(function (ev) {
             ev.stopPropagation();
+            $("ul li ul", $this.container).css({display: "none"});
             $("ul", this).css({display: "block"});
             menuVisible = true;
 		});
