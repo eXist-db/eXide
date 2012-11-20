@@ -209,7 +209,8 @@ declare function deploy:set-execute-bit($permissions as xs:int) {
 
 declare function deploy:copy-templates($target as xs:string, $source as xs:string, $userData as xs:string+, $permissions as xs:int) {
     let $null := deploy:mkcol($target, $userData, $permissions)
-    return (
+    return
+    if (exists(collection($source))) then (
         for $resource in xmldb:get-child-resources($source)
         let $targetPath := xs:anyURI(concat($target, "/", $resource))
         return (
@@ -225,7 +226,8 @@ declare function deploy:copy-templates($target as xs:string, $source as xs:strin
         for $childColl in xmldb:get-child-collections($source)
         return
             deploy:copy-templates(concat($target, "/", $childColl), concat($source, "/", $childColl), $userData, $permissions)
-    )
+    ) else
+        ()
 };
 
 declare function deploy:store-templates-from-db($target as xs:string, $base as xs:string, $userData as xs:string+, $permissions as xs:int) {
