@@ -29,7 +29,11 @@ else if ($exist:resource = 'login') then
 
 else if ($exist:resource eq "index.html") then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <set-header name="Cache-Control" value="max-age=3600"/>
+        <view>
+            <forward url="modules/view.xql">
+                <set-header name="Cache-Control" value="max-age=3600"/>
+            </forward>
+        </view>
     </dispatch>
 
 else if ($exist:resource eq 'execute') then
@@ -94,6 +98,7 @@ else if (ends-with($exist:path, ".xql")) then
         {login:set-user("org.exist.login", ())}
         <set-header name="Cache-Control" value="no-cache"/>
         <set-attribute name="app-root" value="{$exist:prefix}{$exist:controller}"/>
+        <set-attribute name="$exist:prefix" value="{$exist:prefix}"/>
     </dispatch>
     
 else if (contains($exist:path, "/$shared/")) then
