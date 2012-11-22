@@ -133,7 +133,11 @@ declare function deploy:store-repo($descriptor as element(), $collection as xs:s
 
 declare function deploy:mkcol-recursive($collection, $components, $userData as xs:string*, $permissions as xs:int?) {
     if (exists($components)) then
-        let $permissions := xmldb:string-to-permissions(deploy:set-execute-bit($permissions))
+        let $permissions := 
+            if ($permissions) then
+                xmldb:string-to-permissions(deploy:set-execute-bit($permissions))
+            else
+                ()
         let $newColl := concat($collection, "/", $components[1])
         return (
             xmldb:create-collection($collection, $components[1]),
@@ -346,7 +350,18 @@ declare function deploy:store($collection as xs:string?, $expathConf as element(
                     ()
             )
             return
-                <ok/>
+                $collection
+};
+
+declare function deploy:create-app($collection as xs:string?, $expathConf as element()?) {
+    let $collection := deploy:store($collection, $expathConf)
+    return
+        if (empty($expathConf)) then
+            let $expathConf := doc($collection || "/expath-pkg.xml")/*
+            return
+                (<ok/>, deploy:deploy($collection, $expathConf))[1]
+        else
+            <ok/>
 };
 
 declare function deploy:view($collection as xs:string?, $expathConf as element()?, $repoConf as element()?) {
@@ -537,19 +552,14 @@ declare function deploy:download($collection as xs:string, $expathConf as elemen
     )
 };
 
-declare function deploy:deploy($collection as xs:string, $target as xs:string, $expathConf as element(),
-    $repoConf as element()) {
-    let $null := util:declare-option("exist:serialize", "method=json media-type=application/json")
-    let $port := request:get-server-port()
+declare function deploy:deploy($collection as xs:string, $expathConf as element()) {
     let $pkg := deploy:package($collection, $expathConf)
-    let $url := concat('http://localhost:',$port,'/exist/rest',$pkg)
     let $null := (
         repo:remove($expathConf/@name),
-        repo:install($url),
-        repo:deploy($expathConf/@name, $target)
+        repo:install-from-db($pkg)
     )
     return
-        <info>{substring-after($target, "/db/")}</info>
+        ()
 };
 
 declare function deploy:get-info-from-descriptor($collection as xs:string) {
@@ -585,7 +595,6 @@ let $collection :=
             if ($root) then $root else $collectionParam
     else
         $target
-let $log := util:log("DEBUG", "Collection: " || $collection)
 let $info := request:get-parameter("info", ())
 let $deploy := request:get-parameter("deploy", ())
 let $download := request:get-parameter("download", ())
@@ -598,10 +607,8 @@ return
             deploy:download($collection, $expathConf)
         else if ($info) then
             deploy:get-info($info)
-        else if ($deploy) then
-            deploy:deploy($collection, $target, $expathConf, $repoConf)
         else if ($abbrev) then
-            deploy:store($collection, $expathConf)
+            deploy:create-app($collection, $expathConf)
         else
             deploy:view($collection, $expathConf, $repoConf)
     } catch exerr:EXXQDY0003 {
