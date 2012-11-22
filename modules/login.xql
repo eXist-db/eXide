@@ -27,7 +27,7 @@ import module namespace cache="http://exist-db.org/xquery/cache" at "java:org.ex
     @param $domain arbitrary string to be used for the name of the cookie
     @param $maxAge max duration for which the user credentials remain valid
 :)
-declare function login:set-user($domain as xs:string, $maxAge as xs:dayTimeDuration?) as element()* {
+declare function login:set-user($domain as xs:string, $maxAge as xs:dayTimeDuration?, $asDba as xs:boolean) as element()* {
     session:create(),
     let $user := request:get-parameter("user", ())
     let $password := request:get-parameter("password", ())
@@ -40,14 +40,18 @@ declare function login:set-user($domain as xs:string, $maxAge as xs:dayTimeDurat
             $maxAge
     let $cookie := request:get-cookie-value($domain)
     return
-        if ($logout eq "logout") then
+        if ($logout) then
             login:clear-credentials($cookie)
         else if ($user) then
-            login:create-login-session($domain, $user, $password, $duration)
+            login:create-login-session($domain, $user, $password, $duration, $asDba)
         else if (exists($cookie)) then
-            login:get-credentials($domain, $cookie)
+            login:get-credentials($domain, $cookie, $asDba)
         else
             ()
+};
+
+declare function login:set-user($domain as xs:string, $maxAge as xs:dayTimeDuration?) as element()* {
+    login:set-user($domain, $maxAge, false())
 };
 
 declare %private function login:store-credentials($user as xs:string, $password as xs:string,
@@ -67,37 +71,39 @@ declare %private function login:store-credentials($user as xs:string, $password 
 };
 
 declare %private function login:is-valid($entry as map(*)) {
-    empty($entry("expires")) or util:system-dateTime() < xs:dateTime($entry("expires"))
+    empty(map:get($entry, "expires")) or util:system-dateTime() < xs:dateTime(map:get($entry, "expires"))
 };
 
-declare %private function login:with-login($user as xs:string, $password as xs:string, $func as function() as item()*) {
+declare %private function login:with-login($user as xs:string, $password as xs:string, $asDba as xs:boolean, $func as function() as item()*) {
     let $loggedIn := xmldb:login("/db", $user, $password)
     return
-        if ($loggedIn) then
+        if ($loggedIn and (not($asDba) or xmldb:is-admin-user($user))) then
             $func()
         else
             ()
 };
 
-declare %private function login:get-credentials($domain as xs:string, $token as xs:string) as element()* {
+declare %private function login:get-credentials($domain as xs:string, $token as xs:string, $asDba as xs:boolean) as element()* {
     let $entry := cache:get("xquery.login.users", $token)
     return
         if (exists($entry) and login:is-valid($entry)) then
-            login:with-login($entry("user"), $entry("password"), function() {
-                <set-attribute xmlns="http://exist.sourceforge.net/NS/exist" name="xquery.user" value="{$entry('user')}"/>,
-                <set-attribute xmlns="http://exist.sourceforge.net/NS/exist" name="xquery.password" value="{$entry('password')}"/>,
-                <set-attribute xmlns="http://exist.sourceforge.net/NS/exist" name="{$domain}.user" value="{$entry('user')}"/>
+            login:with-login(map:get($entry, "user"), map:get($entry, "password"), $asDba, function() {
+                <set-attribute xmlns="http://exist.sourceforge.net/NS/exist" name="xquery.user" value="{map:get($entry, 'user')}"/>,
+                <set-attribute xmlns="http://exist.sourceforge.net/NS/exist" name="xquery.password" value="{map:get($entry, 'password')}"/>,
+                <set-attribute xmlns="http://exist.sourceforge.net/NS/exist" name="{$domain}.user" value="{map:get($entry, 'user')}"/>,
+                request:set-attribute($domain || ".user", map:get($entry, "user"))
             })
         else
             util:log("INFO", ("No login entry found for user hash: ", $token))
 };
 
 declare %private function login:create-login-session($domain as xs:string, $user as xs:string, $password as xs:string,
-    $maxAge as xs:dayTimeDuration?) {
-    login:with-login($user, $password, function() {
+    $maxAge as xs:dayTimeDuration?, $asDba as xs:boolean) {
+    login:with-login($user, $password, $asDba, function() {
         let $token := login:store-credentials($user, $password, $maxAge)
         return (
             <set-attribute xmlns="http://exist.sourceforge.net/NS/exist" name="{$domain}.user" value="{$user}"/>,
+            request:set-attribute($domain || ".user", $user),
             <set-attribute xmlns="http://exist.sourceforge.net/NS/exist" name="xquery.user" value="{$user}"/>,
             <set-attribute xmlns="http://exist.sourceforge.net/NS/exist" name="xquery.password" value="{$password}"/>,
             if (empty($maxAge)) then
