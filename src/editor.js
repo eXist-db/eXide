@@ -35,6 +35,7 @@ eXide.edit.Document = (function() {
 		this.helper = null;
 		this.history = [];
 		this.$session = session;
+        this.debuger = new eXide.XQueryDebuger(this);
         var wrap = eXide.app.getPreference("softWrap");
         this.$session.setUseWrapMode(wrap != 0);
         if (wrap > 0) {

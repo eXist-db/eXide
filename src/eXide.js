@@ -54,7 +54,7 @@ eXide.namespace("eXide.app");
  * Static class for the main application. Controls the GUI.
  */
 eXide.app = (function() {
-	
+    
 	var editor;
 
 	var deploymentEditor;
@@ -574,7 +574,27 @@ eXide.app = (function() {
         getPreference: function(key) {
             return preferences.get(key);
         },
-        
+
+        startDebug: function() {
+            var _class1 = "ui-icon-stop";
+            var _class2 = "ui-icon-play";
+            var _icon = $("#debug span.ui-icon");
+            if (_icon.hasClass(_class1)){
+                _icon.removeClass(_class1);
+                _icon.addClass(_class2);
+            } else {
+                _icon.removeClass(_class2);
+                _icon.addClass(_class1);
+            }
+            editor.getActiveDocument().debuger.init();
+            $.log("start debugging click");
+        },
+
+        stepOver: function() {
+            editor.getActiveDocument().debuger.stepOver();
+            $.log("start debugging click");
+        },
+
 		initGUI: function(menu) {
             eXide.app.getLogin();
             
@@ -709,6 +729,35 @@ eXide.app = (function() {
 				}
 			});
 			button.click(eXide.app.runQuery);
+
+            button = $("#debug").button({
+                icons: {
+                    primary: "ui-icon-seek-end"
+                }
+            });
+            button.click(eXide.app.startDebug);
+
+            button = $("#debug-actions #step-over").button({
+                icons: {
+                    primary: "ui-icon-seek-end"
+                }
+            });
+            button.click(eXide.app.stepOver);
+
+            button = $("#debug-actions #step-into").button({
+                icons: {
+                    primary: "ui-icon-seek-end"
+                }
+            });
+            button.click(eXide.app.startDebug);
+
+            button = $("#debug-actions #step-out").button({
+                icons: {
+                    primary: "ui-icon-seek-end"
+                }
+            });
+            button.click(eXide.app.startDebug);
+
 			button = $("#validate").button({
 				icons: {
 					primary: "ui-icon-check"

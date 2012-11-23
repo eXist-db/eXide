@@ -824,3 +824,24 @@ form.file_upload button,.no-js .file_upload_label,.no-js .file_upload_overall_pr
 .file_upload .ui-widget {
 	font-size: 1em;
 }
+
+/*button#debug .ui-icon {*/
+    /*background-image: "../images/debug.png";*/
+/*}*/
+
+#debug-actions {
+    background-color: #F3F3F3;
+    padding: 4px;
+}
+
+div#debuger-container {
+    padding: 0;
+}
+
+div#valueHighLight { 
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+    }

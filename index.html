@@ -35,7 +35,7 @@
         <script src="$shared/resources/scripts/ace/mode-less.js" type="text/javascript" charset="utf-8"/>
 
     <!--  Uncompressed Javascript files. Uncomment for development/debugging. -->
-        <!--script type="text/javascript" src="src/ace-modes.js"/>
+        <script type="text/javascript" src="src/ace-modes.js"/>
         <script type="text/javascript" src="src/util.js"/>
         <script type="text/javascript" src="src/events.js"/>
         <script type="text/javascript" src="src/commands.js"/>
@@ -46,6 +46,7 @@
         <script type="text/javascript" src="src/javascript-helper.js"/>
         <script type="text/javascript" src="src/css-helper.js"/>
         <script type="text/javascript" src="src/outline.js"/>
+        <script type="text/javascript" src="src/debuger.js"/>
         <script type="text/javascript" src="src/editor.js"/>
         <script type="text/javascript" src="src/deployment.js"/>
         <script type="text/javascript" src="src/menu.js"/>
@@ -54,10 +55,10 @@
         <script type="text/javascript" src="src/eXide.js"/>
         <script type="text/javascript" src="src/templates.js"/>
         <script type="text/javascript" src="src/resources.js"/>
-        <script type="text/javascript" src="src/find.js"/-->
+        <script type="text/javascript" src="src/find.js"/>
     
         <!-- Compressed version -->
-        <script type="text/javascript" src="resources/scripts/eXide.min.js"/>
+        <!--script type="text/javascript" src="resources/scripts/eXide.min.js"/-->
     </head>
     <body>
         <div class="ui-layout-north">
@@ -148,7 +149,10 @@
                                     <a href="#" id="menu-deploy-edit">Edit descriptors</a>
                                 </li>
                                 <li>
-                                    <a href="#" id="menu-deploy-run">Run app</a>
+                                    <a href="#" id="menu-deploy-run">Run app source</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-deploy-deploy">Deploy</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-deploy-download">Download app</a>
@@ -198,6 +202,7 @@
                     <button id="save">Save</button>
                     <button id="close">Close</button>
                     <button id="run">Run</button>
+                    <button id="debug">Debug</button>
                     <button id="validate">Check</button>
                 </span>
             </div>
@@ -232,6 +237,25 @@
                 <div class="current"/>
             </div>
             <div class="results"/>
+        </div>
+        <div id="debuger-container" class="ui-layout-east">
+            <div id="debug-actions">
+                <button id="step-over">over</button>
+                <button id="step-into">into</button>
+                <button id="step-out">out</button>
+            </div>
+            <div id="debuger" class="content">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>name</th>
+                            <th>type</th>
+                            <th>value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="variables"/>
+                </table>
+            </div>
         </div>
         <div id="open-dialog">
             <div class="eXide-browse-panel">
