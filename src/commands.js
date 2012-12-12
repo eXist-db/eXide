@@ -59,6 +59,13 @@ eXide.edit.commands = (function () {
                 async: false,
                 success: function(bindings) {
                     commands.addCommand({
+                        name: "gotoLine",
+                        bindKey: bindKey(bindings.gotoLine),
+                        exec: function(env, args, request) {
+                            editor.gotoLine();
+                        }
+                    })
+                    commands.addCommand({
             			name: "fold",
         			    bindKey: bindKey(bindings.fold),
         			    exec: function(env, args, request) { 

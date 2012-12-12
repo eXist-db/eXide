@@ -1,4 +1,5 @@
 {
+    "gotoLine": ["Ctrl-L", "Command-L"],
     "fold": ["Alt-L", "Alt-F"],
     "unfold": ["Alt-Shift-L", "Alt-Shift-F"],
     "saveDocument": ["Ctrl-Shift-S", "Command-Shift-S"],

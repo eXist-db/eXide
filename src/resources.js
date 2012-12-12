@@ -492,22 +492,22 @@ eXide.browse.Upload = (function () {
 		
 		$("#file_upload").fileUploadUI({
 			sequentialUploads: true,
-	        uploadTable: $('#files'),
-	        buildUploadRow: function (files, index, handler) {
-	            return $('<tr><td>' + files[index].name + '<\/td>' +
-	                    '<td class="file_upload_progress"><div><\/div><\/td>' +
-	                    '<td class="file_upload_cancel">' +
-	                    '<button class="ui-state-default ui-corner-all" title="Cancel">' +
-	                    '<span class="ui-icon ui-icon-cancel">Cancel<\/span>' +
-	                    '<\/button><\/td><\/tr>');
-	        },
-	        buildDownloadRow: function (info) {
-	        	if (info.error) {
-	        		return $("<tr><td>" + info.name + "</td><td>" + info.error + "</td></tr>");
-	        	}
-	        	return null;
-	        }
-	    });
+            uploadTable: $('#files'),
+            buildUploadRow: function (files, index, handler) {
+                return $('<tr><td>' + files[index].name + '<\/td>' +
+                        '<td class="file_upload_progress"><div><\/div><\/td>' +
+                        '<td class="file_upload_cancel">' +
+                        '<button class="ui-state-default ui-corner-all" title="Cancel">' +
+                        '<span class="ui-icon ui-icon-cancel">Cancel<\/span>' +
+                        '<\/button><\/td><\/tr>');
+            },
+            buildDownloadRow: function (info) {
+                if (info.error) {
+                    return $("<tr><td>" + info.name + "</td><td>" + info.error + "</td></tr>");
+                }
+                return null;
+            }
+        });
 		var $this = this;
 		$("#eXide-browse-upload-done").button().click(function() {
 			$('#files').empty();

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project basedir="." default="all" name="eXide">
-    <property name="project.version" value="1.0.5"/>
+    <property name="project.version" value="1.0.7"/>
     <property name="src" value="./src"/>
     <property name="tools" value="./tools"/>
     <property name="build" value="./build"/>
@@ -94,7 +94,7 @@
                 <include name="modules/**"/>
                 <include name="resources/**"/>
                 <include name="templates/**"/>
-                <exclude name="src/**"/>
+                <include name="src/**"/>
                 <exclude name=".git*"/>
             </fileset>
         </zip>

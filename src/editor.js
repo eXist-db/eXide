@@ -214,23 +214,6 @@ eXide.edit.Editor = (function () {
             tabsDiv.scrollLeft(left);
         });
         
-//        $("#tab-next").button({
-//            icons: {
-//				primary: "ui-icon-triangle-1-e"
-//			},
-//            text: false
-//        }).click(function (ev) {
-//            $this.nextTab();
-//        });
-//        $("#tab-prev").button({
-//            icons: {
-//    			primary: "ui-icon-triangle-1-w"
-//			},
-//            text: false
-//        }).click(function (ev) {
-//            $this.previousTab();
-//        });
-        
 	    this.lastChangeEvent = new Date().getTime();
 		this.validateTimeout = null;
 		
@@ -243,6 +226,27 @@ eXide.edit.Editor = (function () {
             "javascript": new eXide.edit.JavascriptModeHelper($this)
 //            "css": new eXide.edit.CssModeHelper($this)
 		};
+        
+        $("#dialog-goto-line").dialog({
+            modal: false,
+            autoOpen: false,
+            height: 200,
+            width: 300,
+            buttons: {
+                "Goto": function() {
+                    var line = $(this).find('input[name="row"]').val();
+                    var column = $(this).find('input[name="column"]').val();
+                    if (column && column != "") {
+                        $this.editor.gotoLine(line, column, true);
+                    } else {
+                        $this.editor.gotoLine(line, 0, true);
+                    }
+                    $(this).dialog("close");
+                    $this.editor.focus();
+                },
+                "Cancel": function () { $(this).dialog("close"); $this.editor.focus(); }
+            }
+        });
 	};
 
     // Extend eXide.events.Sender for event support
@@ -532,6 +536,11 @@ eXide.edit.Editor = (function () {
         }
     };
     
+    Constr.prototype.gotoLine = function() {
+        $("#dialog-goto-line").dialog("open");
+        $('#dialog-goto-line input[name="row"]').focus();
+    };
+    
 	Constr.prototype.addTab = function(doc) {
 		var $this = this;
 		var tabId = "t" + $this.tabCounter++;
@@ -563,40 +572,6 @@ eXide.edit.Editor = (function () {
 		$this.documents.push(doc);
 		$this.$triggerEvent("activate", [doc]);
         $this.scrollToTab($(tab));
-	};
-	
-	Constr.prototype.nextTab = function() {
-		if (this.documents.length < 2)
-			return;
-		var next = 0;
-		for (var i = 0; i < this.documents.length; i++) {
-			if (this.documents[i] == this.activeDoc) {
-				next = i;
-				break;
-			}
-		}
-		if (next == this.documents.length - 1)
-			next = 0;
-		else
-			next++;
-		this.switchTo(this.documents[next]);
-	};
-	
-	Constr.prototype.previousTab = function() {
-		if (this.documents.length < 2)
-			return;
-		var next = 0;
-		for (var i = 0; i < this.documents.length; i++) {
-			if (this.documents[i] == this.activeDoc) {
-				next = i;
-				break;
-			}
-		}
-		if (next == 0)
-			next = this.documents.length - 1;
-		else
-			next--;
-		this.switchTo(this.documents[next]);
 	};
 	
 	Constr.prototype.switchTo = function(doc) {
