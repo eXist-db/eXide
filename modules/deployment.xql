@@ -273,14 +273,16 @@ declare function deploy:store-ant($target as xs:string, $permissions as xs:int) 
 };
 
 declare function deploy:expand($collection as xs:string, $resource as xs:string, $parameters as element(parameters)) {
-    let $doc := util:binary-doc($collection || "/" || $resource)
-    return
-        if (exists($doc)) then
-            let $expanded := tmpl:parse(util:binary-to-string($doc), $parameters)
+    if (util:binary-doc-available($collection || "/" || $resource)) then
+        let $code := 
+            let $doc := util:binary-doc($collection || "/" || $resource)
             return
-                xmldb:store($collection, $resource, $expanded)
-        else
-            ()
+                util:binary-to-string($doc)
+        let $expanded := tmpl:parse($code, $parameters)
+        return
+            xmldb:store($collection, $resource, $expanded)
+    else
+        ()
 };
 
 declare function deploy:expand-xql($target as xs:string) {
