@@ -35,7 +35,6 @@ eXide.edit.Document = (function() {
 		this.helper = null;
 		this.history = [];
 		this.$session = session;
-        this.debuger = new eXide.XQueryDebuger(this);
         var wrap = eXide.app.getPreference("softWrap");
         this.$session.setUseWrapMode(wrap != 0);
         if (wrap > 0) {
@@ -163,6 +162,7 @@ eXide.edit.Editor = (function () {
 		$this.newDocCounter = 0;
 		$this.pendingCheck = false;
         $this.themes = {};
+        $this.initializing = true;
 		
         var renderer = new Renderer($this.container, "ace/theme/eclipse");
 	    renderer.setShowGutter(true);
@@ -255,6 +255,9 @@ eXide.edit.Editor = (function () {
 	Constr.prototype.init = function() {
 	    if (this.documents.length == 0)
 	    	this.newDocument();
+        this.initializing = false;
+        var currentDoc = this.getActiveDocument();
+        this.$triggerEvent("activate", [currentDoc]);
 	};
 	
 	Constr.prototype.exec = function () {
@@ -538,6 +541,7 @@ eXide.edit.Editor = (function () {
     
     Constr.prototype.gotoLine = function() {
         $("#dialog-goto-line").dialog("open");
+        $("#dialog-goto-line input[type='text']").val("");
         $('#dialog-goto-line input[name="row"]').focus();
     };
     
@@ -570,7 +574,9 @@ eXide.edit.Editor = (function () {
         
 		$this.activeDoc = doc;
 		$this.documents.push(doc);
-		$this.$triggerEvent("activate", [doc]);
+        if (!$this.initializing) {
+            $this.$triggerEvent("activate", [doc]);
+        }
         $this.scrollToTab($(tab));
 	};
 	

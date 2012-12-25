@@ -20,9 +20,38 @@ xquery version "3.0";
 
 import module namespace sandbox="http://exist-db.org/xquery/sandbox" at "session.xql";
 
+declare namespace json="http://json.org/";
+declare namespace dbg="urn:debugger_protocol_v1";
+
+declare option exist:serialize "method=json media-type=application/json";
+
+declare function local:get-stack($session as xs:string?) {
+    let $response := dbgr:stack-get($session)
+(:    let $log := util:log-system-out($response):)
+    for $stack in $response//dbg:stack
+    return
+        <stack json:array="true" lineno="{$stack/@lineno}"/>
+};
+
+declare function local:get-context($session as xs:string?) {
+    let $context := dbgr:context-get($session)
+    let $log := util:log-system-out($context)
+    return
+        <context>
+        {
+            for $property in $context//dbg:property
+            return
+                <properties json:array="true">
+                    {$property/@name, $property/@fullname, $property/@type}
+                    <value>{$property/node()}</value>
+                </properties>
+        }    
+        </context>
+};
+
 let $action := request:get-parameter("action", ())
 let $session := request:get-parameter("session", ())
-let $response-template := function($s, $r, $a, $f){
+let $response-template := function($s, $r, $a, $f) {
     <dbgr session="{$s}" resource="{$r}" action="{$a}">
         {$f()}
     </dbgr>
@@ -32,11 +61,11 @@ return
         case ("init") return
             let $res := request:get-parameter("resource", ())
             let $session := dbgr:init($res)
-            return 
+            return
                 <dbgr session="{$session}" resource="{$res}" action="{$action}">
                     {
-                        try{dbgr:context-get($session)} catch * {()},
-                        try{dbgr:stack-get($session)} catch * {()}
+                        local:get-context($session),
+                        local:get-stack($session)
                     }
                 </dbgr>
             
@@ -47,8 +76,8 @@ return
             return
                 <dbgr session="{$session}" result="{$res}" action="{$action}">
                     {
-                        try{dbgr:context-get($session)} catch * {()},
-                        try{dbgr:stack-get($session)} catch * {()}
+                        local:get-context($session),
+                        local:get-stack($session)
                     }
                 </dbgr>
             
@@ -58,8 +87,8 @@ return
             return
                 <dbgr session="{$session}" result="{$res}" action="{$action}">
                     {
-                        try{dbgr:context-get($session)} catch * {()},
-                        try{dbgr:stack-get($session)} catch * {()}
+                        local:get-context($session),
+                        local:get-stack($session)
                     }
                 </dbgr>
 

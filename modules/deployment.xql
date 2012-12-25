@@ -620,4 +620,7 @@ return
     } catch exerr:EXREPOINSTALL001 {
         response:set-status-code(404),
         <p>Failed to install application.</p>
+    } catch * {
+        response:set-status-code(500),
+        <span>Unknown error: {$err:description}</span>
     }

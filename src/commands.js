@@ -64,7 +64,7 @@ eXide.edit.commands = (function () {
                         exec: function(env, args, request) {
                             editor.gotoLine();
                         }
-                    })
+                    });
                     commands.addCommand({
             			name: "fold",
         			    bindKey: bindKey(bindings.fold),

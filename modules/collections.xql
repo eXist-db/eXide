@@ -34,57 +34,6 @@ declare function local:sub-collections($root as xs:string, $children as xs:strin
 			</children>
 };
 
-declare function local:canRead($collection as xs:string, $user as xs:string) as xs:boolean {
-	if (xmldb:is-admin-user($user)) then
-		true()
-	else
-		let $permissions := xmldb:permissions-to-string(xmldb:get-permissions($collection))
-		let $owner := xmldb:get-owner($collection)
-		let $group := xmldb:get-group($collection)
-		let $groups := xmldb:get-user-groups($user)
-		return
-			if ($owner eq $user) then
-				substring($permissions, 1, 1) eq 'r'
-			else if ($group = $groups) then
-				substring($permissions, 4, 1) eq 'r'
-			else
-				substring($permissions, 7, 1) eq 'r'
-};
-
-declare function local:canWrite($collection as xs:string, $user as xs:string) as xs:boolean {
-	if (xmldb:is-admin-user($user)) then
-		true()
-	else
-    	let $permissions := xmldb:permissions-to-string(xmldb:get-permissions($collection))
-    	let $owner := xmldb:get-owner($collection)
-    	let $group := xmldb:get-group($collection)
-    	let $groups := xmldb:get-user-groups($user)
-    	return
-        	if ($owner eq $user) then
-            	substring($permissions, 2, 1) eq 'w'
-        	else if ($group = $groups) then
-            	substring($permissions, 5, 1) eq 'w'
-        	else
-            	substring($permissions, 8, 1) eq 'w'
-};
-
-declare function local:canWriteResource($collection as xs:string, $resource as xs:string, $user as xs:string) as xs:boolean {
-    if (xmldb:is-admin-user($user)) then
-		true()
-	else
-		let $permissions := xmldb:permissions-to-string(xmldb:get-permissions($collection, $resource))
-		let $owner := xmldb:get-owner($collection, $resource)
-		let $group := xmldb:get-group($collection, $resource)
-		let $groups := xmldb:get-user-groups($user)
-		return
-			if ($owner eq $user) then
-				substring($permissions, 2, 1) eq 'w'
-			else if ($group = $groups) then
-				substring($permissions, 5, 1) eq 'w'
-			else
-				substring($permissions, 8, 1) eq 'w'
-};
-
 declare function local:collections($root as xs:string, $child as xs:string, 
 	$user as xs:string) {
     if (sm:has-access(xs:anyURI($root), "x")) then
@@ -138,14 +87,16 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
             <total json:literal="true">{count($resources)}</total>
             <items>
             {
-                if ($start = 1) then
+                if ($start = 1 and $collection != "/db") then
                     <json:value json:array="true">
                         <name>..</name>
                         <permissions></permissions>
                         <owner></owner>
                         <group></group>
                         <last-modified></last-modified>
-                        <writable json:literal="true">false</writable>
+                        <writable json:literal="true">
+                        { sm:has-access(xs:anyURI($collection), "w") }
+                        </writable>
                         <isCollection json:literal="true">true</isCollection>
                     </json:value>
                 else
@@ -189,10 +140,7 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
                             else
                                 format-dateTime($date, "[M00]/[D00]/[Y0000] [H00]:[m00]:[s00]")
                     let $canWrite :=
-                        if ($isCollection) then
-                            local:canWrite(concat($collection, "/", $resource), $user)
-                        else
-                            local:canWriteResource($collection, $resource, $user)
+                            sm:has-access(xs:anyURI($collection || "/" || $resource), "w")
                     return
                         <json:value json:array="true">
                             <name>{xmldb:decode-uri(if ($isCollection) then substring-after($resource, "/") else $resource)}</name>
@@ -211,7 +159,7 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
 declare function local:create-collection($collName as xs:string, $user as xs:string) {
     let $parent := xmldb:encode-uri(request:get-parameter("collection", "/db"))
     return
-        if (local:canWrite($parent, $user)) then
+        if (sm:has-access(xs:anyURI($parent), "w")) then
             let $null := xmldb:create-collection($parent, $collName)
             return
                 <response status="ok"/>
@@ -222,7 +170,7 @@ declare function local:create-collection($collName as xs:string, $user as xs:str
 };
 
 declare function local:delete-collection($collName as xs:string, $user as xs:string) {
-    if (local:canWrite($collName, $user)) then
+    if (sm:has-access(xs:anyURI($collName), "w")) then
         let $null := xmldb:remove($collName)
         return
             <response status="ok"/>
@@ -233,7 +181,10 @@ declare function local:delete-collection($collName as xs:string, $user as xs:str
 };
 
 declare function local:delete-resource($collection as xs:string, $resource as xs:string+, $user as xs:string) {
-    let $canWrite := local:canWriteResource($collection, $resource, $user)
+    let $canWrite := 
+        sm:has-access(xs:anyURI($collection || "/" || $resource), "w")
+        and
+        sm:has-access(xs:anyURI($collection), "w")
     return
     if ($canWrite) then
         let $removed := xmldb:remove($collection, $resource)
@@ -271,7 +222,7 @@ declare function local:delete($collection as xs:string, $selection as xs:string+
 
 declare function local:copyOrMove($operation as xs:string, $target as xs:string, $sources as xs:string+, 
     $user as xs:string) {
-    if (local:canWrite($target, $user)) then
+    if (sm:has-access(xs:anyURI($target), "w")) then
         for $source in $sources
         let $isCollection := xmldb:collection-available($source)
         return
@@ -534,27 +485,31 @@ let $collection := request:get-parameter("root", "/db")
 let $collName := replace($collection, "^.*/([^/]+$)", "$1")
 let $user := if (request:get-attribute('org.exist.login.user')) then request:get-attribute('org.exist.login.user') else "guest"
 return
-    if (exists($copy)) then
-        let $result := local:copyOrMove("copy", xmldb:encode-uri($collection), $copy, $user)
-        return
-            ($result[@status = "fail"], $result[1])[1]
-    else if (exists($move)) then
-        let $result := local:copyOrMove("move", xmldb:encode-uri($collection), $move, $user)
-        return
-            ($result[@status = "fail"], $result[1])[1]
-    else if (exists($rename)) then
-        local:rename($collection, $rename)
-    else if (exists($deleteResource)) then
-        local:delete(xmldb:encode-uri($collection), $deleteResource, $user)
-    else if (exists($properties)) then
-        local:edit-properties($properties)
-    else if (exists($modify)) then
-        local:change-properties($modify)
-    else if ($createCollection) then
-        local:create-collection(xmldb:encode-uri($createCollection), $user)
-    else if ($view eq "c") then
-        <collection json:array="true">
-            {local:collections(xmldb:encode-uri($collection), xmldb:encode-uri($collName), $user)}
-        </collection>
-    else
-        local:resources(xmldb:encode-uri($collection), $user)
+    try {
+        if (exists($copy)) then
+            let $result := local:copyOrMove("copy", xmldb:encode-uri($collection), $copy, $user)
+            return
+                ($result[@status = "fail"], $result[1])[1]
+        else if (exists($move)) then
+            let $result := local:copyOrMove("move", xmldb:encode-uri($collection), $move, $user)
+            return
+                ($result[@status = "fail"], $result[1])[1]
+        else if (exists($rename)) then
+            local:rename($collection, $rename)
+        else if (exists($deleteResource)) then
+            local:delete(xmldb:encode-uri($collection), $deleteResource, $user)
+        else if (exists($properties)) then
+            local:edit-properties($properties)
+        else if (exists($modify)) then
+            local:change-properties($modify)
+        else if ($createCollection) then
+            local:create-collection(xmldb:encode-uri($createCollection), $user)
+        else if ($view eq "c") then
+            <collection json:array="true">
+                {local:collections(xmldb:encode-uri($collection), xmldb:encode-uri($collName), $user)}
+            </collection>
+        else
+            local:resources(xmldb:encode-uri($collection), $user)
+    } catch * {
+        <response status="fail">{$err:description}</response>
+    }

@@ -28,6 +28,8 @@ eXide.edit.XQueryModeHelper = (function () {
 	Constr = function(editor) {
 		this.parent = editor;
 		this.editor = this.parent.editor;
+        this.xqDebugger = null;
+        
         // pre-compile regexp needed by this class
     	this.funcDefRe = /declare\s+((?:%[\w\:\-]+(?:\([^\)]*\))?\s*)*)function\s+([^\(]+)\(/g;
 		this.varDefRe = /declare\s+(?:%\w+\s+)*variable\s+\$[^\s;]+/gm;
@@ -40,6 +42,9 @@ eXide.edit.XQueryModeHelper = (function () {
 		this.addCommand("locate", this.locate);
 		this.addCommand("closeTag", this.closeTag);
         this.addCommand("importModule", this.importModule);
+        this.addCommand("debug", this.initDebugger);
+        this.addCommand("stepOver", this.stepOver);
+        this.addCommand("stepInto", this.stepInto);
 	}
 	
 	// extends ModeHelper
@@ -523,6 +528,23 @@ eXide.edit.XQueryModeHelper = (function () {
 		});
 		return functions;
 	}
+    
+    Constr.prototype.initDebugger = function(doc) {
+        this.xqDebugger = new eXide.XQueryDebuger(this.editor, doc);
+        this.xqDebugger.init();
+    }
+    
+    Constr.prototype.stepOver = function(doc) {
+        if (this.xqDebugger) {
+            this.xqDebugger.stepOver();
+        }
+    }
+    
+    Constr.prototype.stepInto = function(doc) {
+        if (this.xqDebugger) {
+            this.xqDebugger.stepInto();
+        }
+    }
     
 	var COMPILE_MSG_RE = /.*line:?\s(\d+)/i;
 	

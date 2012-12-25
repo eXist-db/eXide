@@ -23,12 +23,12 @@ eXide.namespace("eXide.edit.XQueryDebuger");
  */
 eXide.XQueryDebuger = (function () {
     
-	Constr = function(doc_) {
+	Constr = function(editor_, doc_) {
 		this.doc = doc_;
         this.count = 0;
         this.session = "";
         this.existURL = "xmldb:exist://" + document.location.hostname + ":" + document.location.port;
-//		this.editor = this.parent.editor;
+		this.editor = editor_;
         // pre-compile regexp needed by this class
 		
 	}
@@ -47,7 +47,7 @@ eXide.XQueryDebuger = (function () {
         this.runCommand({action: "step-into"});
     };
 
-    Constr.prototype.stepInto = function() {
+    Constr.prototype.stepOut = function() {
         this.runCommand({action: "step-out"});
     };
 	
@@ -59,13 +59,15 @@ eXide.XQueryDebuger = (function () {
 			type: "POST",
 			url: "modules/debuger.xql",
 			data: params,
-			dataType: "xml",
+			dataType: "json",
 			success: function (data) {
-                var root = data.documentElement;
-                if (root.nodeName == "dbgr"){
-                    $this.session = $(root).attr("session");
-                    $('div#debuger.content tbody#variables tr').remove();
-                    getVariables($(data)).forEach(function(line){
+                $.log("response: %o", data);
+                $this.session = data.session;
+                var line = data.stack[0].lineno;
+                $this.editor.gotoLine(line);
+                if (data.context && data.context.properties) {
+                    $.each(data.context.properties, function(i, property) {
+                        var line = $this.getVariable(property);
                         $(line).appendTo($('div#debuger.content tbody#variables'));
                     });
                 }
@@ -77,25 +79,20 @@ eXide.XQueryDebuger = (function () {
 		});
 	}
 
-    function getVariables(data){
-        var res = [];
-        data.find('response[command=context_get]')
-            .children('property').each(function(){
-                var tmpl = $('<tr>' +
-                    '<td class="name"></td>' +
-                    '<td class="type"></td>' +
-                    '<td class="value"></td>' +
-                '</tr>');
-                tmpl.children(".name").append($(this).attr('name'));
-                tmpl.children(".type").append($(this).attr('type'));
-                if ($(this).attr('type') === "node"){
-                    tmpl.children(".value").append($('<div id="valueHighLight">' + $(this).text() + '</div>'));
-                    //TODOneed to be prettify
-                } else
-                    tmpl.children(".value").append($(this).text());
-                res.push(tmpl);
-            });
-        return res;
+    Constr.prototype.getVariable = function(property) {
+        var tmpl = $('<tr>' +
+            '<td class="name"></td>' +
+            '<td class="type"></td>' +
+            '<td class="value"></td>' +
+        '</tr>');
+        tmpl.children(".name").append(property.name);
+        tmpl.children(".type").append(property.type);
+        if (property.type === "node"){
+            tmpl.children(".value").append($('<div id="valueHighLight">' + property.value + '</div>'));
+            //TODOneed to be prettify
+        } else
+            tmpl.children(".value").append(property.value);
+        return tmpl;
     }
 
     function getStack(data){

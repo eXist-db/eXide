@@ -314,8 +314,22 @@ Sub level menu list items (undo style from Top level List Items)
 	padding: 0;
 }
 
-.eXide-browse-toolbar {
+.eXide-browse-toolbar, .eXide-browse-breadcrumbs {
 	background-color: #CCC;
+}
+
+.eXide-browse-breadcrumbs {
+    font-weight: bold;
+    padding: 2px 0;
+    height: 18px;
+}
+
+.eXide-browse-breadcrumbs a:link, .eXide-browse-breadcrumbs a:visited {
+    color: #000;
+}
+
+.eXide-browse-breadcrumbs a:hover {
+    color: #FFF;
 }
 
 .eXide-browse-resources {
@@ -690,8 +704,10 @@ fieldset input:required:valid {
 	margin-top: 20px;
 }
 
-form.file_upload .file_upload_body{
+form.file_upload .file_upload_body {
 	position: relative;
+    font-size: 125%;
+    font-weight: normal;
 	overflow: hidden;
 	direction: ltr;
 	cursor: pointer;
@@ -702,12 +718,11 @@ form.file_upload .file_upload_body{
 	-webkit-border-radius: 10px;
 	border-radius: 10px;
 	width: 15em;
-	height: 2.5em;
 	line-height: 2.5em;
-	background: #E6E6E6;
-	border: 1px solid lightGrey;
+    border: 3px dashed orange;
 	margin-left: auto;
 	margin-right: auto;
+    margin-top: 1.5em;
 }
 
 form.file_upload_small {
@@ -729,7 +744,7 @@ form.file_upload_large {
 }
 
 form.file_upload_highlight,form.file_upload .file_upload_body:hover {
-	background: lawngreen;
+	border: 3px dashed lawngreen;
 }
 
 form.file_upload .file_upload_body input {

@@ -4,14 +4,12 @@
         <title>eXide</title>
         <meta charset="utf-8"/>
         <link rel="stylesheet" type="text/css" href="$shared/resources/scripts/jquery/css/smoothness/jquery.ui.all.css"/>
-        <link rel="stylesheet" type="text/css" href="$shared/resources/scripts/jquery/skin/ui.dynatree.css"/>
         <link rel="stylesheet" type="text/css" href="$shared/resources/scripts/jquery/css/jquery.pnotify.default.css"/>
         <link rel="stylesheet" type="text/css" href="resources/scripts/jquery/jquery.layout-latest.css"/>
         <link rel="stylesheet" type="text/css" href="resources/scripts/jquery/slick.grid.css"/>
         <link rel="stylesheet" type="text/css" href="resources/css/eXide.css"/>
         <script type="text/javascript" src="$shared/resources/scripts/jquery/jquery-1.7.1.min.js"/>
         <script type="text/javascript" src="$shared/resources/scripts/jquery/jquery-ui-1.8.custom.min.js"/>
-        <script type="text/javascript" src="$shared/resources/scripts/jquery/jquery.dynatree-1.1.1.min.js"/>
         <script type="text/javascript" src="$shared/resources/scripts/jquery/jquery.pnotify.min.js"/>
         <script type="text/javascript" src="$shared/resources/scripts/jquery/jquery-utils.js"/>
     <!-- The following javascript libraries are compressed into jquery.plugins.min.js -->
@@ -259,8 +257,10 @@
         </div>
         <div id="open-dialog">
             <div class="eXide-browse-panel">
-                <div class="eXide-browse-toolbar ui-layout-north"/>
-                <div class="eXide-browse-collections ui-layout-west"/>
+                <div class="ui-layout-north">
+                    <div class="eXide-browse-toolbar"/>
+                    <div class="eXide-browse-breadcrumbs"/>
+                </div>
                 <div class="eXide-browse-main ui-layout-center">
                     <div class="eXide-browse-resources"/>
                     <div id="file_upload" class="eXide-browse-upload">

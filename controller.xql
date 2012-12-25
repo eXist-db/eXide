@@ -1,11 +1,61 @@
-xquery version "1.0";
-
-import module namespace login="http://exist-db.org/xquery/app/wiki/session" at "modules/login.xql";
+xquery version "3.0";
 
 declare variable $exist:path external;
 declare variable $exist:resource external;
 declare variable $exist:prefix external;
 declare variable $exist:controller external;
+
+(: Determine if the persistent login module is available :)
+declare variable $login :=
+    let $tryImport :=
+        try {
+            util:import-module(xs:anyURI("http://exist-db.org/xquery/login"), "login", xs:anyURI("resource:org/exist/xquery/modules/persistentlogin/login.xql")),
+            true()
+        } catch * {
+            false()
+        }
+    return
+        if ($tryImport) then
+            function-lookup(xs:QName("login:set-user"), 3)
+        else
+            local:fallback-login#3
+;
+
+(:~
+    Fallback login function used when the persistent login module is not available.
+    Stores user/password in the HTTP session.
+ :)
+declare function local:fallback-login($domain as xs:string, $maxAge as xs:dayTimeDuration?, $asDba as xs:boolean) {
+    let $durationParam := request:get-parameter("duration", ())
+    let $user := request:get-parameter("user", ())
+    let $password := request:get-parameter("password", ())
+    let $logout := request:get-parameter("logout", ())
+    return
+        if ($durationParam) then
+            error(xs:QName("login"), "Persistent login module not enabled in this version of eXist-db")
+        else if ($logout) then
+            session:invalidate()
+        else 
+            if ($user) then
+                let $isLoggedIn := xmldb:login("/db", $user, $password, true())
+                return
+                    if ($isLoggedIn and (not($asDba) or xmldb:is-admin-user($user))) then (
+                        session:set-attribute("eXide.user", $user),
+                        session:set-attribute("eXide.password", $password),
+                        request:set-attribute($domain || ".user", $user),
+                        request:set-attribute("xquery.user", $user),
+                        request:set-attribute("xquery.password", $password)
+                    ) else
+                        ()
+            else
+                let $user := session:get-attribute("eXide.user")
+                let $password := session:get-attribute("eXide.password")
+                return (
+                    request:set-attribute($domain || ".user", $user),
+                    request:set-attribute("xquery.user", $user),
+                    request:set-attribute("xquery.password", $password)
+                )
+};
 
 if ($exist:path eq '/') then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -16,20 +66,28 @@ if ($exist:path eq '/') then
  : Login a user via AJAX. Just returns a 401 if login fails.
  :)
 else if ($exist:resource = 'login') then
-    let $loggedIn := login:set-user("org.exist.login", ())
-    return (
-        util:declare-option("exist:serialize", "method=json"),
-        if (exists($loggedIn)) then
-            <status>{$loggedIn[@name="org.exist.login.user"]/@value/string()}</status>
-        else (
+    let $loggedIn := $login("org.exist.login", (), false())
+    return
+        try {
+            util:declare-option("exist:serialize", "method=json"),
+            if (request:get-attribute("org.exist.login.user")) then
+                <status>{request:get-attribute("org.exist.login.user")}</status>
+            else (
+                response:set-status-code(401),
+                <status>fail</status>
+            )
+        } catch * {
             response:set-status-code(401),
-            <status>fail</status>
-        )
-    )
+            <status>{$err:description}</status>
+        }
 
 else if ($exist:resource eq "index.html") then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <set-header name="Cache-Control" value="max-age=3600"/>
+        <view>
+            <forward url="modules/view.xql">
+                <set-header name="Cache-Control" value="max-age=3600"/>
+            </forward>
+        </view>
     </dispatch>
 
 else if ($exist:resource eq 'execute') then
@@ -40,7 +98,7 @@ else if ($exist:resource eq 'execute') then
         <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
 	<!-- Query is executed by XQueryServlet -->
             <forward servlet="XQueryServlet">
-                {login:set-user("org.exist.login", ())}
+                {$login("org.exist.login", (), false())}
                 <set-header name="Cache-Control" value="no-cache"/>
                 <!-- Query is passed via the attribute 'xquery.source' -->
                 <set-attribute name="xquery.source" value="{$query}"/>
@@ -70,7 +128,7 @@ else if ($exist:resource eq 'execute') then
 else if (starts-with($exist:path, '/results/')) then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <forward url="../modules/session.xql">
-            {login:set-user("org.exist.login", ())}
+            {$login("org.exist.login", (), false())}
             <set-header name="Cache-Control" value="no-cache"/>
             <add-parameter name="num" value="{$exist:resource}"/>
         </forward>
@@ -83,7 +141,7 @@ else if ($exist:resource eq "outline") then
         <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
 	        <!-- Query is executed by XQueryServlet -->
             <forward url="modules/outline.xql">
-                {login:set-user("org.exist.login", ())}
+                {$login("org.exist.login", (), false())}
                 <set-header name="Cache-Control" value="no-cache"/>
 	            <set-attribute name="xquery.module-load-path" value="{$base}"/>
             </forward>
@@ -91,16 +149,16 @@ else if ($exist:resource eq "outline") then
 
 else if ($exist:resource eq "debug") then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-	        <!-- Query is executed by XQueryServlet -->
-            <forward url="modules/debuger.xql">
-                {login:set-user("org.exist.login", ())}
-                <set-header name="Cache-Control" value="no-cache"/>
-            </forward>
+        <!-- Query is executed by XQueryServlet -->
+        <forward url="modules/debuger.xql">
+            {$login("org.exist.login", (), false())}
+            <set-header name="Cache-Control" value="no-cache"/>
+        </forward>
     </dispatch>
     
 else if (ends-with($exist:path, ".xql")) then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        {login:set-user("org.exist.login", ())}
+        {$login("org.exist.login", (), false())}
         <set-header name="Cache-Control" value="no-cache"/>
         <set-attribute name="app-root" value="{$exist:prefix}{$exist:controller}"/>
     </dispatch>

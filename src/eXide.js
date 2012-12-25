@@ -86,9 +86,15 @@ eXide.app = (function() {
             eXide.app.initGUI(menu);
 			
             // save restored paths for later
-			var restored = eXide.app.restoreState();
+            eXide.app.getLogin(function() {
+                 eXide.app.restoreState(function(restored) {
+                    editor.init();
+                    if (afterInitCallback) {
+                        afterInitCallback(restored);
+                    }
+                });
+            });
 		    
-		    editor.init();
 		    editor.addEventListener("outlineChange", eXide.app.onOutlineChange);
 
 			$(window).resize(eXide.app.resize);
@@ -103,10 +109,6 @@ eXide.app = (function() {
             eXide.find.Modules.addEventListener("import", null, function (module) {
                 editor.exec("importModule", module.prefix, module.uri, module.at);
             });
-            
-            if (afterInitCallback) {
-                afterInitCallback(restored);
-            }
 		},
 
 		resize: function() {
@@ -146,8 +148,10 @@ eXide.app = (function() {
 							name: path.match(/[^\/]+$/),
 							path: path
 					};
-					eXide.app.$doOpenDocument(resource, function() {
-						editor.exec("locate", type, symbol);
+					eXide.app.$doOpenDocument(resource, function(doc) {
+                        if (doc) {
+                            editor.exec("locate", type, symbol);
+                        }
 					});
 				} else {
 					editor.switchTo(doc);
@@ -180,6 +184,9 @@ eXide.app = (function() {
             var doc = editor.getDocument(resource.path);
             if (doc && !reload) {
                 editor.switchTo(doc);
+                if (callback) {
+                    callback(resource);
+                }
                 return true;
             }
 			$.ajax({
@@ -193,13 +200,16 @@ eXide.app = (function() {
     					editor.openDocument(data, mime, resource);
                     }
 					if (callback) {
-						callback.call(null, resource);
+						callback(resource);
 					}
                     return true;
 				},
 				error: function (xhr, status) {
 					eXide.util.error("Failed to load document " + resource.path + ": " + 
 							xhr.status + " " + xhr.statusText);
+                    if (callback) {
+                        callback(null);
+                    }
                     return false;
 				}
 			});
@@ -489,7 +499,7 @@ eXide.app = (function() {
 			deploymentEditor.runApp(collection[1]);
 		},
         
-		restoreState: function() {
+		restoreState: function(callback) {
 			if (!eXide.util.supportsHtml5Storage)
 				return false;
 			preferences.read();
@@ -499,6 +509,8 @@ eXide.app = (function() {
 			var docCount = localStorage["eXide.documents"];
 			if (!docCount)
 				docCount = 0;
+            // we need to restore documents one after the other
+            var docsToLoad = [];
 			for (var i = 0; i < docCount; i++) {
 				var doc = {
 						path: localStorage["eXide." + i + ".path"],
@@ -506,22 +518,40 @@ eXide.app = (function() {
 						writable: (localStorage["eXide." + i + ".writable"] == "true"),
 						line: parseInt(localStorage["eXide." + i + ".last-line"])
 				};
+                if (!doc.name) {
+                    continue;
+                }
 				$.log("Restoring doc %s, going to line = %i", doc.path, doc.line);
 				var data = localStorage["eXide." + i + ".data"];
 				if (data) {
 					editor.newDocumentWithText(data, localStorage["eXide." + i + ".mime"], doc);
 				} else {
-					eXide.app.$doOpenDocument(doc);
+                    docsToLoad.push(doc);
 				}
                 restoring[doc.path] = doc;
 			}
-            if (!editor.getActiveDocument()) {
-                eXide.app.newDocument("", "xquery");
-            }
+            this.restoreDocs(docsToLoad, function() {
+                if (!editor.getActiveDocument()) {
+                    eXide.app.newDocument("", "xquery");
+                }
+                if (callback) callback(restoring);
+            });
 			deploymentEditor.restoreState();
 			return restoring;
 		},
 		
+        restoreDocs: function(docs, callback) {
+            if (docs.length == 0) {
+                callback();
+                return;
+            }
+            var self = this;
+            var doc = docs.pop();
+            eXide.app.$doOpenDocument(doc, function() {
+                self.restoreDocs(docs, callback);
+            });
+        },
+        
 		saveState: function() {
 			if (!eXide.util.supportsHtml5Storage)
 				return;
@@ -532,16 +562,18 @@ eXide.app = (function() {
 			deploymentEditor.saveState();
 		},
 		
-        getLogin: function() {
+        getLogin: function(callback) {
             $.ajax({
                 url: "login",
                 dataType: "json",
                 success: function(data) {
                     eXide.app.login = data;
                     $("#user").text("Logged in as " + eXide.app.login + ". ");
+                    if (callback) callback();
                 },
                 error: function (xhr, textStatus) {
                     eXide.app.login = null;
+                    if (callback) callback();
                 }
             })
         },
@@ -586,18 +618,19 @@ eXide.app = (function() {
                 _icon.removeClass(_class2);
                 _icon.addClass(_class1);
             }
-            editor.getActiveDocument().debuger.init();
+            editor.exec("debug");
             $.log("start debugging click");
         },
 
         stepOver: function() {
-            editor.getActiveDocument().debuger.stepOver();
-            $.log("start debugging click");
+            editor.exec("stepOver");
         },
 
+        stepInto: function() {
+            editor.exec("stepInto");
+        },
+        
 		initGUI: function(menu) {
-            eXide.app.getLogin();
-            
 			var layout = $("body").layout({
 				enableCursorHotkey: false,
 				north__size: 70,
@@ -620,7 +653,7 @@ eXide.app = (function() {
 				modal: false,
 		        autoOpen: false,
 		        height: 480,
-		        width: 700,
+		        width: 600,
 				open: function() { dbBrowser.init(); },
 				resize: function() { dbBrowser.resize(); }
 			});
@@ -649,8 +682,8 @@ eXide.app = (function() {
 								$("#user").text("Logged in as " + eXide.app.login + ". ");
 								editor.focus();
 							},
-							error: function () {
-								$("#login-error").text("Login failed. Bad username or password.");
+							error: function (xhr, status, data) {
+								$("#login-error").text("Login failed. " + data);
 								$("#login-dialog input:first").focus();
 							}
 						});
@@ -749,7 +782,7 @@ eXide.app = (function() {
                     primary: "ui-icon-seek-end"
                 }
             });
-            button.click(eXide.app.startDebug);
+            button.click(eXide.app.stepInto);
 
             button = $("#debug-actions #step-out").button({
                 icons: {
