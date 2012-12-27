@@ -99,6 +99,8 @@ eXide.browse.ResourceBrowser = (function () {
     				coll = $this.collection + "/" + $this.data[cell.row].name;
                 $this.$triggerEvent("activateCollection", [ coll, $this.data[cell.row].writable ]);
 				$this.update(coll, false);
+			} else {
+    		    eXide.app.openSelectedDocument();   
 			}
 		});
 		this.grid.onKeyDown.subscribe(function (e) {
