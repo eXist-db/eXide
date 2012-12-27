@@ -65,7 +65,7 @@ eXide.util.Preferences = (function () {
     };
     
     Constr.prototype.updateForm = function() {
-        $.log("Updating form");
+        $.log("Updating form %s", this.preferences.fontSize);
         var form = $("#preferences-dialog form");
         $("select[name=\"theme\"]", form).val(this.preferences.theme);
 		$("select[name=\"font-size\"]", form).val(this.preferences.fontSize);
