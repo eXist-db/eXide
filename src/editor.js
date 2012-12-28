@@ -318,6 +318,35 @@ eXide.edit.Editor = (function () {
 		this.$initDocument(doc);
 	};
 	
+    Constr.prototype.newDocumentFromTemplate = function(mode, template) {
+        if (!template || template.length == 0) {
+            this.newDocument(null, mode);
+            return;
+        }
+        var self = this;
+        $.ajax({
+    		url: "modules/get-template.xql",
+			type: "POST",
+			data: { template: template },
+			dataType: "text",
+			success: function (data) {
+            	var newDocId = 0;
+        		for (var i = 0; i < self.documents.length; i++) {
+        			var doc = self.documents[i];
+        			if (doc.path.match(/^__new__(\d+)/)) {
+        				newDocId = parseInt(RegExp.$1);
+        			}
+        		}
+        		newDocId++;
+                var session = new EditSession(data);
+        		var newDocument = new eXide.edit.Document("new-document " + newDocId,
+        				"__new__" + newDocId, session);
+                newDocument.setSyntax(mode);
+        		self.$initDocument(newDocument);
+			}
+        });
+    };
+    
 	Constr.prototype.openDocument = function(data, mime, resource) {
 		var $this = this;
 		if (!resource.writable)

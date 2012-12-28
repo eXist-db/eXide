@@ -102,11 +102,11 @@ eXide.edit.commands = (function () {
         		    		eXide.app.openDocument();
         		    	}
         		    });
-        		    commands.addCommand({
-        		    	name: "newDocument",
-        		    	bindKey: bindKey(bindings.newDocument),
+                    commands.addCommand({
+            	    	name: "newDocumentFromTemplate",
+        		    	bindKey: bindKey(bindings.newDocumentFromTemplate),
         		    	exec: function (env, args, request) {
-        		    		eXide.app.newDocument();
+        		    		eXide.app.newDocumentFromTemplate();
         		    	}
         		    });
         		    commands.addCommand({

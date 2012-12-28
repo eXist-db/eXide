@@ -196,6 +196,7 @@
                         </select>
                     </span>
                     <button id="new">New</button>
+                    <button id="new-xquery">New XQuery</button>
                     <button id="open">Open</button>
                     <button id="save">Save</button>
                     <button id="close">Close</button>
@@ -490,6 +491,35 @@
                         <li>
                             <input name="column" type="text" placeholder="Column" size="6"/>
                             <label for="column">Column:</label>
+                        </li>
+                    </ol>
+                </fieldset>
+            </form>
+        </div>
+        <div id="dialog-templates">
+            <p>Create a new document by selecting a mode below. If templates are defined for this mode,
+            a second select will appear to choose a template from. If you do not want to use a template,
+            leave it to "None".</p>
+            <form>
+                <fieldset>
+                    <ol>
+                        <li>
+                            <select class="type-select" name="type">
+                                <option value="text">Other</option>
+                                <option value="xml">XML</option>
+                                <option value="html">HTML</option>
+                                <option value="xquery">XQuery</option>
+                                <option value="javascript">Javascript</option>
+                                <option value="css">CSS</option>
+                                <option value="less">Less</option>
+                            </select>
+                            <label for="type">Type:</label>
+                        </li>
+                        <li class="templates">
+                            <select name="template">
+                                <option value="">None</option>
+                            </select>
+                            <label for="template">Template:</label>
                         </li>
                     </ol>
                 </fieldset>

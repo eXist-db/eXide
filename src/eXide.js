@@ -61,6 +61,7 @@ eXide.app = (function() {
 	var dbBrowser;
     var projects;
 	var preferences;
+    var templates = {};
     
 	var hitCount = 0;
 	var startOffset = 0;
@@ -123,6 +124,11 @@ eXide.app = (function() {
 		newDocument: function(data, type) {
 			editor.newDocument(data, type);
 		},
+        
+        newDocumentFromTemplate: function() {
+            $("#dialog-templates").dialog("open");
+            //editor.newDocumentFromTemplate("collection-config");
+        },
 
 		findDocument: function(path) {
 			var doc = editor.getDocument(path);
@@ -726,6 +732,54 @@ eXide.app = (function() {
     				"Close": function () { $(this).dialog("close"); }
 				}
             });
+            $("#dialog-templates").dialog({
+    			title: "New document",
+				modal: false,
+		        autoOpen: false,
+		        height: 280,
+		        width: 550,
+                dataType: "json",
+                open: function() {
+                    $.ajax({
+                	    url: "modules/get-template.xql",
+            			type: "POST",
+            			success: function(data) {
+                		    templates = data;
+                            $("#dialog-templates .templates").hide();
+                            $("#dialog-templates .type-select").val("");
+            			}
+                    });
+                },
+                buttons: {
+				    "Cancel": function () { $(this).dialog("close"); editor.focus(); },
+                    "Create": function() {
+                        var mode = $(this).find(".type-select").val();
+                        var template = $(this).find(".templates select").val();
+                        $.log("creating new doc with mode: %s and template: %s", mode, template);
+                        editor.newDocumentFromTemplate(mode, template);
+                        $(this).dialog("close");
+                        editor.focus();
+                    }
+                }
+			});
+            $("#dialog-templates .type-select").change(function() {
+                var templ = $("#dialog-templates .templates");
+                var templSel = $("select", templ);
+                var type = $(this).val();
+                templSel.empty();
+                var mode = templates[type];
+                if (mode) {
+                    var options = "<option value=''>None</option>";
+                    for (var i = 0; i < mode.length; i++) {
+                        options += "<option value='" + mode[i].name + "'>" + mode[i].description + "</option>";
+                    }
+                    templSel.html(options);
+                    templ.show();
+                } else {
+                    templ.hide();
+                }
+            });
+            
 			// initialize buttons and menu events
 			var button = $("#open").button({
 				icons: {
@@ -749,9 +803,17 @@ eXide.app = (function() {
 				}
 			});
 			button.click(function() {
+                eXide.app.newDocumentFromTemplate();
+			});
+            button = $("#new-xquery").button({
+    			icons: {
+					primary: "ui-icon-document"
+				}
+			});
+			button.click(function() {
                 eXide.app.newDocument(null, "xquery");
 			});
-			menu.click("#menu-file-new", eXide.app.newDocument, "newDocument");
+			menu.click("#menu-file-new", eXide.app.newDocumentFromTemplate, "newDocumentFromTemplate");
     		menu.click("#menu-file-new-xquery", function() {
                 eXide.app.newDocument(null, "xquery");
     		}, "newXQuery");
