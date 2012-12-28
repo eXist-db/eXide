@@ -79,4 +79,8 @@ else
  :
  :)</code>
     </snippet>
+    <snippet abbrev="json">
+        <description>JSON namespace declaration</description>
+        <code>declare namespace json="http://www.json.org";</code>
+    </snippet>
 </snippets>
