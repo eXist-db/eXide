@@ -82,12 +82,13 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
     let $count := count($resources) + 1
     let $end := if ($endParam gt $count) then $count else $endParam
     let $subset := subsequence($resources, $start, $end - $start + 1)
+    let $parent := $start = 1 and $collection != "/db"
     return
         <json:value>
-            <total json:literal="true">{count($resources)}</total>
+            <total json:literal="true">{count($resources) + (if ($parent) then 1 else 0)}</total>
             <items>
             {
-                if ($start = 1 and $collection != "/db") then
+                if ($parent) then
                     <json:value json:array="true">
                         <name>..</name>
                         <permissions></permissions>
@@ -259,12 +260,12 @@ declare function local:copyOrMove($operation as xs:string, $target as xs:string,
 
 declare function local:rename($collection as xs:string, $source as xs:string) {
     let $target := request:get-parameter("target", ())
-    let $isCollection := xmldb:collection-available($source)
+    let $isCollection := xmldb:collection-available($collection || "/" || $source)
     return
         try {
             if ($isCollection) then
                 let $null := 
-                    xmldb:rename($source, $target)
+                    xmldb:rename($collection || "/" || $source, $target)
                 return
                     <response status="ok"/>
             else
