@@ -332,6 +332,10 @@ Sub level menu list items (undo style from Top level List Items)
     color: #FFF;
 }
 
+.eXide-browse-main {
+    height: 100%;
+}
+
 .eXide-browse-resources {
 	position: absolute;
 	top: 0;
@@ -381,11 +385,6 @@ Sub level menu list items (undo style from Top level List Items)
 .eXide-browser-active {
 	background-color: #3169C6 !important;
 	color: white;
-}
-
-.eXide-
-ul.dynatree-container {
-	border: 0;
 }
 
 .resource-view thead th {
