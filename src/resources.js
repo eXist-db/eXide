@@ -109,37 +109,41 @@ eXide.browse.ResourceBrowser = (function () {
 			if (!e.shiftKey && !e.altKey && !e.ctrlKey) {
                 switch (e.which) {
     				case 13:
-					e.stopPropagation();
-		            e.preventDefault();
-		            var rows = selectionModel.getSelectedRows();
-		            if (rows.length == 1) {
-						if ($this.data[rows[0]].isCollection) {
-							// navigate to new collection
-                            var coll;
-                            if ($this.data[rows[0]].name == "..")
-                                coll = $this.collection.replace(/\/[^\/]+$/, "")
-                            else
-                    			coll = $this.collection + "/" + $this.data[rows[0]].name;
-                            $this.$triggerEvent("activateCollection", [ coll, $this.data[rows[0]].writable ]);
-                            $this.update(coll, false);
-						} else {
-							eXide.app.openSelectedDocument();
-						}
-		            }
-                    break;
+    					e.stopPropagation();
+    		            e.preventDefault();
+    		            var rows = selectionModel.getSelectedRows();
+    		            if (rows.length == 1) {
+    						if ($this.data[rows[0]].isCollection) {
+    							// navigate to new collection
+                                var coll;
+                                if ($this.data[rows[0]].name == "..")
+                                    coll = $this.collection.replace(/\/[^\/]+$/, "")
+                                else
+                        			coll = $this.collection + "/" + $this.data[rows[0]].name;
+                                $this.$triggerEvent("activateCollection", [ coll, $this.data[rows[0]].writable ]);
+                                $this.update(coll, false);
+    						} else {
+    							eXide.app.openSelectedDocument();
+    						}
+    		            }
+                        break;
     				case 8:
-					var p = $this.collection.lastIndexOf("/");
-					if (p > 0) {
-						e.stopPropagation();
-			            e.preventDefault();
-			            if ($this.collection != "/db") {
-			            	var parent = $this.collection.substring(0, p);
-						
-							// navigate to parent collection
-                            $this.$triggerEvent("activateCollection", [ parent ]);
-							$this.update(parent, false);
-						}
-					}
+    					var p = $this.collection.lastIndexOf("/");
+    					if (p > 0) {
+    						e.stopPropagation();
+    			            e.preventDefault();
+    			            if ($this.collection != "/db") {
+    			            	var parent = $this.collection.substring(0, p);
+    						
+    							// navigate to parent collection
+                                $this.$triggerEvent("activateCollection", [ parent ]);
+    							$this.update(parent, false);
+    						}
+    					}
+                        break;
+                    case 46:
+                        $this.deleteResource();
+                        break;
 				}
 			}
 		});
