@@ -673,6 +673,10 @@ eXide.browse.Browser = (function () {
 			};
 		},
 		
+        changeToCollection: function (collection) {
+            this.resources.update(collection, true);
+        },
+        
 		onActivateResource: function (doc, writable) {
 			if (doc) {
 				$(this.selection).val(doc.name);
@@ -712,14 +716,7 @@ eXide.browse.Browser = (function () {
                     }
             }
 			this.upload.update(key, writable);
-		},
-		
-		onChangeCollection: function (path) {
-		},
-        
-        onChange: function() {
-            $.log("Reloading db manager views");
-        }
+		}
 	};
 	
 	return Constr;

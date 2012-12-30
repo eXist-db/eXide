@@ -24,12 +24,22 @@ eXide.edit.Projects = (function() {
         this.projects = {};
     };
     
+    Constr.prototype.findProject = function (collection, callback) {
+        var project = this.getProjectFor(collection);
+        if (project) {
+            callback(project);
+        } else {
+            this.getProject(collection, callback)
+        }
+    };
+    
     Constr.prototype.getProject = function (collection, callback) {
         var $this = this;
         $.getJSON("modules/deployment.xql", { info: collection }, function (data) {
             if (!data) {
-                eXide.util.error("Application not found: The document currently opened in the editor " +
-                    "should belong to an application package.");
+                if (typeof callback == "function") {
+                    callback(null);
+                }
             } else {
                 var project = $this.projects[data.abbrev];
                 if (project) {
@@ -141,21 +151,17 @@ eXide.edit.PackageEditor = (function () {
 			data: params,
 			success: function (data) {
 				$this.container.html(data);
-//                        $this.container.find("input[name='collection']").change(function () {
-//                            var target = $this.container.find("input[name='target']");
-//                            if (target.val() === "")
-//                                target.val($(this).val());
-//                        });
 				$this.container.form({
 					done: function () {
 						var params = $this.container.find("form").serialize();
 						$.ajax({
 							url: "modules/deployment.xql",
 							type: "POST",
+                            dataType: "json",
 							data: params,
-							success: function () {
+							success: function (data) {
 								$this.container.dialog("close");
-                                $this.$triggerEvent("change", collection);
+                                $this.$triggerEvent("change", [ data ]);
 							},
 							error: function (xhr, status) {
 								eXide.util.error(xhr.responseText);
@@ -225,7 +231,12 @@ eXide.edit.PackageEditor = (function () {
 	 */
 	Constr.prototype.synchronize = function (collection) {
 		var $this = this;
-        $this.projects.getProject(collection, function (project) {
+        $this.projects.findProject(collection, function (project) {
+            if (!project) {
+                eXide.util.error("Application not found: The document currently opened in the editor " +
+                    "should belong to an application package.");
+                return;
+            }
 			if (!project.isAdmin) {
 				eXide.util.error("You need to be logged in as an admin user with dba role " +
 						"to use this feature.");
@@ -264,7 +275,12 @@ eXide.edit.PackageEditor = (function () {
      
 	Constr.prototype.runApp = function (collection) {
 		var $this = this;
-        $this.projects.getProject(collection, function (project) {
+        $this.projects.findProject(collection, function (project) {
+            if (!project) {
+                eXide.util.error("Application not found: The document currently opened in the editor " +
+                    "should belong to an application package.");
+                return;
+            }
             var url = project.url.replace(/\/{2,}/, "/");
             var link = "/exist" + url + "/";
 //			var link = "/exist/apps/" + project.root.replace(/^\/db\//, "") + "/";

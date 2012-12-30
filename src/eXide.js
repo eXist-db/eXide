@@ -78,8 +78,8 @@ eXide.app = (function() {
 			editor = new eXide.edit.Editor(document.getElementById("editor"), menu);
 			deploymentEditor = new eXide.edit.PackageEditor(projects);
 			dbBrowser = new eXide.browse.Browser(document.getElementById("open-dialog"));
-            deploymentEditor.addEventListener("change", null, function() {
-                dbBrowser.onChange();
+            deploymentEditor.addEventListener("change", null, function(collection) {
+                dbBrowser.changeToCollection(collection);
                 eXide.app.openDocument();
             });
 			preferences = new eXide.util.Preferences(editor);
@@ -928,14 +928,15 @@ eXide.app = (function() {
 			// register listener to update syntax drop down
 			editor.addEventListener("activate", null, function (doc) {
 				$("#syntax").val(doc.getSyntax());
-                var app = projects.getProjectFor(doc.getBasePath());
-                if (app) {
-                    $("#toolbar-current-app").text(app.abbrev);
-                    $("#menu-deploy-active").text(app.abbrev);
-                } else {
-                    $("#toolbar-current-app").text("unknown");
-                    $("#menu-deploy-active").text("unknown");
-                }
+                projects.findProject(doc.getBasePath(), function(app) {
+                    if (app) {
+                        $("#toolbar-current-app").text(app.abbrev);
+                        $("#menu-deploy-active").text(app.abbrev);
+                    } else {
+                        $("#toolbar-current-app").text("unknown");
+                        $("#menu-deploy-active").text("unknown");
+                    }
+                });
 			});
 			
 			$("#user").click(function (ev) {

@@ -360,10 +360,13 @@ declare function deploy:create-app($collection as xs:string?, $expathConf as ele
     return
         if (empty($expathConf)) then
             let $expathConf := doc($collection || "/expath-pkg.xml")/*
-            return
-                (<ok/>, deploy:deploy($collection, $expathConf))[1]
+            return (
+                util:declare-option("exist:serialize", "method=json media-type=application/json"),
+                deploy:deploy($collection, $expathConf),
+                <ok>{ $collection }</ok>
+            )
         else
-            <ok/>
+            <ok>{ $collection }</ok>
 };
 
 declare function deploy:view($collection as xs:string?, $expathConf as element()?, $repoConf as element()?) {
@@ -504,7 +507,9 @@ declare function deploy:view($collection as xs:string?, $expathConf as element()
                 <legend>Default Permissions</legend>
                 
                 <p>Default permissions applied to all resources uploaded into the database. To set
-                non-default permissions on particular resources, use a post-install script.</p>
+                non-default permissions on particular resources, use a post-install script. If a user
+                and password is specified, it will be created upon install if it does not yet exist.
+                </p>
                 {
                     let $owner := $repoConf/repo:permissions/@user
                     let $password := $repoConf/repo:permissions/@password
