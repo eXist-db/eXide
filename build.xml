@@ -5,8 +5,6 @@
     <property name="tools" value="./tools"/>
     <property name="build" value="./build"/>
     <property name="scripts" value="./resources/scripts"/>
-    <property name="ace" value="${scripts}/ace"/>
-    <property name="ace.src" value="./support/ace"/>
     <property name="top.dir" value="../.."/>
     <property name="templates.dir" value="./templates"/>
     <property name="templates.default.dir" value="${templates.dir}/default"/>
@@ -27,15 +25,6 @@
         <taskdef name="jscomp" classname="com.google.javascript.jscomp.ant.CompileTask" classpath="${tools}/compiler.jar"/>
     </target>
     <target name="all" depends="compress,xar"/>
-    <target name="ace">
-        <mkdir dir="${ace}"/>
-        <copy todir="${ace}">
-            <fileset dir="${ace.src}/build/src-min">
-                <exclude name="*-uncompressed.js"/>
-                <exclude name="*-noconflict.js"/>
-            </fileset>
-        </copy>
-    </target>
     <target name="compress" depends="prepare">
         <jscomp compilationLevel="simple" debug="false" output="${scripts}/eXide.min.js">
             <sources dir="${basedir}/src">
@@ -78,7 +67,6 @@
         </jscomp>
     </target>
     <target name="clean">
-        <delete dir="${ace}"/>
         <delete>
             <fileset dir="${scripts}">
                 <include name="eXide-*.min.js"/>
