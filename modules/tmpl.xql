@@ -33,7 +33,12 @@ declare function tmpl:expand-template($input as item(), $map as element(paramete
 declare function tmpl:parse($str as xs:string, $parameters as element(parameters)?) {
     let $analyzed := analyze-string($str, "\$\$([^\$]+)\$\$")
     return
-        string-join(tmpl:process($analyzed/node(), $parameters))
+        (: for backwards compatibility: handle recent change to analyze-string :)
+        typeswitch ($analyzed)
+            case element() return
+                string-join(tmpl:process($analyzed, $parameters))
+            default return
+                string-join(tmpl:process($analyzed/node(), $parameters))
 };
 
 declare function tmpl:process($node as node(), $parameters as element(parameters)) {
