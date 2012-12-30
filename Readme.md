@@ -16,6 +16,7 @@ Features
 * Background syntax checks for XQuery and XML
 * Database manager
 * Support for EXPath application packages: scaffolding, deployment...
+* And more ...
 
 eXide consists of two parts:
 
@@ -34,7 +35,6 @@ you should first get eXist-db from SVN and build it (build.sh/build.bat). Next, 
 
      git clone git://github.com/wolfgangmm/eXide.git eXideDev
      cd eXideDev
-     git submodule update --init --recursive
 
 Next, call ant on the build.xml file in eXideDev:
 
@@ -44,10 +44,8 @@ You should now find a .xar file in the build directory:
      
      build/eXide-1.0.xar
 
-The .xar file is an installable package containing everything needed by eXide. You can install this into any eXist 
-instance using the application repository manager. In a web browser, open the 
-admin web page of your eXist instance and select "Package Repository". Switch to the "Upload" tab and select the .xar
-file for upload, then click "Upload Package". After installation has finished, your new version of eXide (now stored
-inside the database) should be accessible at:
+The .xar file is an installable package containing eXide. You can install this into any eXist 
+instance using the application repository manager in the dashboard.
 
-     http://localhost:8080/exist/apps/eXide
+eXide depends on the shared-resources xar package which provides the ace editor files. If you install eXide
+via the dashboard, the dependency should be processed automatically.
