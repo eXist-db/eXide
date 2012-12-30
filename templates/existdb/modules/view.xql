@@ -14,7 +14,7 @@ import module namespace templates="http://exist-db.org/xquery/templates" $$templ
 import module namespace config="http://exist-db.org/xquery/apps/config" at "config.xqm";
 import module namespace app="$$namespace$$" at "app.xql";
 
-declare option exist:serialize "method=html5 media-type=text/html";
+declare option exist:serialize "method=html5 media-type=text/html enforce-xhtml=yes";
 
 let $config := map {
     $templates:CONFIG_APP_ROOT := $config:app-root,
