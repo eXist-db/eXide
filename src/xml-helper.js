@@ -28,6 +28,7 @@ eXide.edit.XMLModeHelper = (function () {
 		this.editor = this.parent.editor;
 		
 		this.addCommand("closeTag", this.closeTag);
+        this.addCommand("suggest", this.suggest);
 	}
 	
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
@@ -83,7 +84,6 @@ eXide.edit.XMLModeHelper = (function () {
 				text: data.message["#text"],
 				type: "error"
 			}];
-			$.log("annotation: %o", annotation);
 			this.parent.updateStatus(data.message["#text"], doc.getPath() + "#" + data.message.line);
 			doc.getSession().setAnnotations(annotation);
 		} else {
@@ -91,6 +91,57 @@ eXide.edit.XMLModeHelper = (function () {
 			this.parent.updateStatus("");
 		}
 	}
+    
+    Constr.prototype.suggest = function(doc, text, row, column) {
+        $.log("Getting suggestions for %s", text);
+        $.ajax({
+    		type: "POST",
+			url: "modules/validate-xml.xql",
+			data: { 
+                xml: text,
+                row: row,
+                column: column
+            },
+			dataType: "json",
+			success: function (data) {
+				$this.compileError(data, doc);
+				onComplete.call(this, true);
+			},
+			error: function (xhr, status) {
+				onComplete.call(this, true);
+				$.log("Compile error: %s - %s", status, xhr.responseText);
+			}
+		});
+    }
 	
+    Constr.prototype.documentSaved = function(doc) {
+        if (/.*\.xconf$/.test(doc.getName())) {
+            var collection = doc.getBasePath();
+            eXide.util.Dialog.input("Apply Configuration?", "You have saved a collection configuration file. Would you like to " +
+                "apply it to collection " + collection + " now?", function() {
+                    eXide.util.message("Apply configuration and reindex...");
+                    $.ajax({
+                        type: "POST",
+                        url: "modules/apply-config.xql",
+                        data: {
+                            collection: doc.getBasePath(),
+                            config: doc.getName()
+                        },
+                        dataType: "json",
+                        success: function(data) {
+                            if (data.error) {
+                                eXide.util.error("Failed to apply configuration: " + data.error);
+                            } else {
+                                eXide.util.message("Configuration applied.");
+                            }
+                        },
+                        error: function(xhr, status) {
+                            eXide.util.error("Failed to apply configuration: " + xhr.responseText);
+                        }
+                    });
+            });
+        }
+    }
+    
 	return Constr;
 }());
