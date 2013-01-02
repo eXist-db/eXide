@@ -39,7 +39,7 @@ eXide.edit.XMLModeHelper = (function () {
 		$.ajax({
 			type: "POST",
 			url: "modules/validate-xml.xql",
-			data: { xml: text },
+			data: { xml: text, validate: "no" },
 			dataType: "json",
 			success: function (data) {
 				if (data.status && data.status == "invalid") {
@@ -79,13 +79,21 @@ eXide.edit.XMLModeHelper = (function () {
 	Constr.prototype.compileError = function(data, doc) {
 		$.log("Validation returned %o", data);
 		if (data.status && data.status == "invalid") {
-			var annotation = [{
-				row: parseInt(data.message.line) - 1,
-				text: data.message["#text"],
-				type: "error"
-			}];
-			this.parent.updateStatus(data.message["#text"], doc.getPath() + "#" + data.message.line);
-			doc.getSession().setAnnotations(annotation);
+            var messages;
+            if (data.message instanceof Array)
+                messages = data.message;
+            else
+                messages = [ data.message ];
+            var annotations = [];
+            for (var i = 0; i < messages.length; i++) {    
+    			annotations.push({
+    				row: parseInt(messages[i].line) - 1,
+    				text: messages[i]["#text"],
+    				type: "error"
+    			});
+            }
+			this.parent.updateStatus(messages[0]["#text"], doc.getPath() + "#" + messages[0].line);
+			doc.getSession().setAnnotations(annotations);
 		} else {
 			this.parent.clearErrors();
 			this.parent.updateStatus("");
