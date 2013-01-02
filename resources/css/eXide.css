@@ -577,6 +577,33 @@ Sub level menu list items (undo style from Top level List Items)
     padding: 0 8px 8px 8px;
 }
 
+.ui-pnotify.custom .ui-pnotify-container {
+	background-color: #404040 !important;
+	background-image: none !important;
+	border: none !important;
+	-moz-border-radius: 10px;
+	-webkit-border-radius: 10px;
+	border-radius: 10px;
+}
+
+.ui-pnotify.custom .ui-pnotify-title, .ui-pnotify.custom .ui-pnotify-text {
+	font-family: Arial, Helvetica, sans-serif !important;
+	text-shadow: 2px 2px 3px black !important;
+	font-size: 10pt !important;
+	color: #FFF !important;
+	padding-left: 50px !important;
+	line-height: 1 !important;
+	text-rendering: geometricPrecision !important;
+}
+
+.ui-pnotify.custom .ui-pnotify-title {
+	font-weight: bold;
+}
+
+.ui-pnotify.custom .ui-pnotify-icon {
+	float: left;
+}
+
 .ui-pnotify.stack-bottomright {
 	/* These are just CSS default values to reset the pnotify CSS. */
 	right: auto;

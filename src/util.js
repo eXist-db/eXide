@@ -48,6 +48,10 @@ eXide.util = (function () {
 
 	var stack_bottomright = {"dir1": "up", "dir2": "left", "firstpos1": 15, "firstpos2": 15};
 	
+    $(document).ready(function() {
+        $.pnotify.defaults.styling = "jqueryui";
+    });
+    
 	return {
 		
 		/**
@@ -250,27 +254,40 @@ eXide.util = (function () {
 		 */
 		message: function(message) {
 			$.pnotify({
-				pnotify_text: message,
-				pnotify_shadow: true,
-				pnotify_hide: true,
-				pnotify_closer: true,
-				pnotify_opacity: .75,
-				pnotify_addclass: "stack-bottomright",
-				pnotify_stack: stack_bottomright
+				text: message,
+				shadow: true,
+				hide: true,
+				closer: true,
+				opacity: .65,
+				addclass: "stack-bottomright custom",
+				stack: stack_bottomright
 			});
 		},
 		
+        success: function(message) {
+    		$.pnotify({
+				text: message,
+				shadow: true,
+                type: "success",
+				hide: true,
+				closer: true,
+				opacity: .65,
+				addclass: "stack-bottomright custom",
+				stack: stack_bottomright
+			});
+		},
+        
 		error: function(message, title) {
 			var opts = {
-				pnotify_text: message,
-				pnotify_type: 'error',
-				pnotify_shadow: true,
-				pnotify_hide: true,
-				pnotify_addclass: "stack-bottomright",
-				pnotify_stack: stack_bottomright
+				text: message,
+				type: 'error',
+				shadow: true,
+				hide: true,
+				addclass: "stack-bottomright custom",
+				stack: stack_bottomright
 			};
 			if (title) {
-				opts.pnotify_title = title;
+				opts.title = title;
 			}
 			$.pnotify(opts);
 		}

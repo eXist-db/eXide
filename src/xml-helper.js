@@ -132,7 +132,7 @@ eXide.edit.XMLModeHelper = (function () {
                             if (data.error) {
                                 eXide.util.error("Failed to apply configuration: " + data.error);
                             } else {
-                                eXide.util.message("Configuration applied.");
+                                eXide.util.success("Configuration applied.");
                             }
                         },
                         error: function(xhr, status) {

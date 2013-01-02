@@ -495,7 +495,7 @@ eXide.edit.Editor = (function () {
 					if (successHandler) {
 						successHandler.apply($this.activeDoc);
 					} else {
-						eXide.util.message($this.activeDoc.name + " stored.");
+						eXide.util.success($this.activeDoc.name + " stored.");
 					}
                     
                     // trigger post-save action on mode helper
