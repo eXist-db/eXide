@@ -70,6 +70,9 @@ eXide.app = (function() {
 	
 	var login = null;
     
+    // used to detect when window looses focus
+    var focusLost = false;
+    
 	return {
 
 		init: function(afterInitCallback) {
@@ -579,6 +582,7 @@ eXide.app = (function() {
                 },
                 error: function (xhr, textStatus) {
                     eXide.app.login = null;
+                    $("#user").text("Login");
                     if (callback) callback();
                 }
             })
@@ -966,6 +970,15 @@ eXide.app = (function() {
             });
             $("#ext-status-bar").mouseout(function(ev) {
                $(this).css("display", "none");
+            });
+            
+            $(window).blur(function() {
+                focusLost = true;
+            });
+            $(window).focus(function() {
+               if (focusLost) {
+                   eXide.app.getLogin();
+               } 
             });
 		}
 	};
