@@ -1,5 +1,7 @@
 xquery version "3.0";
 
+declare namespace json="http://www.json.org";
+
 declare variable $exist:path external;
 declare variable $exist:resource external;
 declare variable $exist:prefix external;
@@ -71,7 +73,10 @@ else if ($exist:resource = 'login') then
         try {
             util:declare-option("exist:serialize", "method=json"),
             if (request:get-attribute("org.exist.login.user")) then
-                <status>{request:get-attribute("org.exist.login.user")}</status>
+                <status>
+                    <user>{request:get-attribute("org.exist.login.user")}</user>
+                    <isAdmin json:literal="true">{ xmldb:is-admin-user(request:get-attribute("org.exist.login.user")) }</isAdmin>
+                </status>
             else (
                 response:set-status-code(401),
                 <status>fail</status>

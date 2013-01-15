@@ -577,7 +577,7 @@ eXide.app = (function() {
                 dataType: "json",
                 success: function(data) {
                     eXide.app.login = data;
-                    $("#user").text("Logged in as " + eXide.app.login + ". ");
+                    $("#user").text("Logged in as " + eXide.app.login.user + ". ");
                     if (callback) callback();
                 },
                 error: function (xhr, textStatus) {
@@ -686,10 +686,10 @@ eXide.app = (function() {
 							data: params,
                             dataType: "json",
 							success: function (data) {
-								eXide.app.login = $("#login-form input[name=\"user\"]").val();
-								$.log("Logged in as %s", eXide.app.login);
+								eXide.app.login = data;
+								$.log("Logged in as %s. Is dba: %s", eXide.app.login.user, eXide.app.login.isAdmin);
 								$("#login-dialog").dialog("close");
-								$("#user").text("Logged in as " + eXide.app.login + ". ");
+								$("#user").text("Logged in as " + eXide.app.login.user + ". ");
 								editor.focus();
 							},
 							error: function (xhr, status, data) {

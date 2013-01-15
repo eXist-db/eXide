@@ -237,7 +237,7 @@ eXide.edit.PackageEditor = (function () {
                     "should belong to an application package.");
                 return;
             }
-			if (!project.isAdmin) {
+			if (!eXide.app.login.isAdmin) {
 				eXide.util.error("You need to be logged in as an admin user with dba role " +
 						"to use this feature.");
 				return;
