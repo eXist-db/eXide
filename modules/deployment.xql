@@ -356,6 +356,7 @@ declare function deploy:store($collection as xs:string?, $expathConf as element(
 };
 
 declare function deploy:create-app($collection as xs:string?, $expathConf as element()?) {
+    let $null := util:declare-option("exist:serialize", "method=json media-type=application/json")
     let $collection := deploy:store($collection, $expathConf)
     return
         if (empty($expathConf)) then
