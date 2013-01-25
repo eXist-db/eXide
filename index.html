@@ -59,6 +59,13 @@
         <!--script type="text/javascript" src="resources/scripts/eXide.min.js"/-->
     </head>
     <body>
+        <div id="splash">
+            <div>
+                <img src="resources/images/logo.png"/>
+                <p>
+                    <span id="splash-status">Loading</span> ...</p>
+            </div>
+        </div>
         <div class="ui-layout-north">
 <!--            <div id="header">-->
 <!--            </div>-->
@@ -215,15 +222,30 @@
             <div class="content" id="editor"/>
             <div id="status-bar">
                 <input id="search-box" type="text" placeholder="Type string to search. Cursor-Up/Down for previous next match."/>
+                <span id="status">
+                    <a href="#" target="blank" title="Run in new tab">
+                        <img src="resources/images/application_go.png"/>
+                    </a>
+                    <span>Path</span>
+                </span>
                 <a href="#" id="error-status"/>
             </div>
             <div id="ext-status-bar"/>
         </div>
         <div id="outline-container" class="ui-layout-west">
             <h3>Outline</h3>
-            <ul id="outline" class="content">
-                <li/>
-            </ul>
+            <div id="outline-body" class="content">
+                <div class="ace_scroller">
+                    <div class="ace_text-layer">
+                        <ul id="outline">
+                            <li/>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="outline-status">
+                <input type="search" id="outline-filter" placeholder="Filter by..."/>
+            </div>
         </div>
         <div id="results-container" class="ui-layout-south">
             <div class="navbar">
@@ -235,7 +257,13 @@
                 </a>
                 <div class="current"/>
             </div>
-            <div class="results"/>
+            <div id="results-body">
+                <div class="ace_scroller">
+                    <div class="ace_text-layer ace_marker-layer">
+                        <div class="results"/>
+                    </div>
+                </div>
+            </div>
         </div>
         <div id="debuger-container" class="ui-layout-east">
             <div id="debug-actions">

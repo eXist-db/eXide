@@ -32,6 +32,11 @@ eXide.edit.Outline = (function () {
 		this.templates = [];
 		
 		this.$loadTemplates();
+        
+        var self = this;
+        $("#outline-filter").keyup(function() {
+            self.filter(this.value);
+        });
 	};
 	
 	Constr.prototype = {
@@ -75,13 +80,24 @@ eXide.edit.Outline = (function () {
 			$("#outline").empty();
 		},
 		
+        filter: function(str) {
+            var regex = new RegExp(str, "i");
+            $("#outline li a").each(function() {
+                var item = $(this);
+                if (!regex.test(item.text())) {
+                    item.hide();
+                } else {
+                    item.show();
+                }
+            });
+        },
+        
 		$outlineUpdate: function(doc) {
 			if (this.currentDoc != doc)
 				return;
 			
             $.log("Updating outline");
-			var layout = $("body").layout();
-			// layout.open("west");
+			
 			eXide.app.resize();
 			
 			var ul = $("#outline");
@@ -93,10 +109,13 @@ eXide.edit.Outline = (function () {
 				if (func.signature)
 					a.title = func.signature;
                 var _a = $(a);
-				if (func.type == eXide.edit.Document.TYPE_FUNCTION)
+				if (func.type == eXide.edit.Document.TYPE_FUNCTION) {
 					_a.addClass("t_function");
-				else
+                    li.className = "ace_support.ace_function";
+				} else {
 					_a.addClass("t_variable");
+                    li.className = "ace_variable";
+				}
 				if (func.source)
 					a.href = "#" + func.source;
 				else

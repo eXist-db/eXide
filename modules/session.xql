@@ -54,7 +54,7 @@ declare function sandbox:namespace-decls($elem as element(), $namespaces as xs:s
 declare function sandbox:pretty-print($node as item(), $namespaces as xs:string*) {
 	typeswitch ($node)
 		case $elem as element(exist:match) return
-			<span class="xml-match">{$elem/node()}</span>
+			<span class="ace_constant">{$elem/node()}</span>
 		case $elem as element() return
             let $nsDecls := sandbox:namespace-decls($elem, $namespaces)
             let $newNamespaces := 
@@ -64,13 +64,13 @@ declare function sandbox:pretty-print($node as item(), $namespaces as xs:string*
                     ($namespaces, $nsDecls/@uri/string())
             return
 			<div class="xml-element">
-				<span class="xml-element-tag">&lt;</span>
-				<span class="xml-element-name">{node-name($elem)}</span>
+				<span>&lt;</span>
+				<span class="ace_keyword">{node-name($elem)}</span>
                 {
                     for $nsDecl in $nsDecls
                     return (
                         ' ', 
-                        <span class="xml-attr-name">
+                        <span class="ace_keyword">
                         {
                             if ($nsDecl/@prefix != '') then 
                                 concat("xmlns:", $nsDecl/@prefix/string())
@@ -79,36 +79,36 @@ declare function sandbox:pretty-print($node as item(), $namespaces as xs:string*
                                 
                         }
                         </span>, '="',
-                        <span class="xml-attr-value">{$nsDecl/@uri/string()}</span>,
+                        <span class="ace_string">{$nsDecl/@uri/string()}</span>,
                         '"'
                     )
                 }
 				{
 					for $attr in $elem/@*
 					return (
-						' ', <span class="xml-attr-name">{node-name($attr)}</span>,
-						'="', <span class="xml-attr-value">{$attr/string()}</span>, '"'
+						' ', <span class="ace_keyword">{node-name($attr)}</span>,
+						'="', <span class="ace_string">{$attr/string()}</span>, '"'
 					)
 				}
 				{
 					let $children := $elem/node()
 					return
 						if (count($children) gt 0) then (
-							<span class="xml-element-tag">&gt;</span>,
+							<span>&gt;</span>,
 							for $child in $children
 							return
 								sandbox:pretty-print($child, $newNamespaces),
-							<span class="xml-element-tag">&lt;/</span>,
-							<span class="xml-element-name">{node-name($elem)}</span>,
-							<span class="xml-element-tag">&gt;</span>
+							<span>&lt;/</span>,
+							<span class="ace_keyword">{node-name($elem)}</span>,
+							<span>&gt;</span>
 						) else
-							<span class="xml-element-tag">/&gt;</span>
+							<span>/&gt;</span>
 				}
 			</div>
 		case $text as text() return
-			<span class="xml-text">{$text}</span>
+			<span class="ace_identifier">{$text}</span>
 		case $comment as comment() return
-			<div class="xml-comment">&lt;-- {$comment/string()} --&gt;</div>
+			<div class="ace_comment">&lt;-- {$comment/string()} --&gt;</div>
 		case $pi as processing-instruction() return
 			<div style="color: darkred">&lt;?{$pi/string()}?&gt;</div>
 		default return
@@ -127,14 +127,19 @@ declare function sandbox:retrieve($num as xs:integer) as element() {
     let $documentURI :=if ($node instance of node()) then document-uri(root($node)) else ()
     return
         <div class="{if ($num mod 2 eq 0) then 'even' else 'uneven'}">
-            <div class="pos">
             {
                 if (string-length($documentURI) > 0) then
-                    <a href="{$documentURI}#{util:node-id($node)}">{$num}</a>
+                    <div class="pos">
+                    {
+                        if (string-length($documentURI) > 0) then
+                            <a href="{$documentURI}#{util:node-id($node)}">{$num}</a>
+                        else
+                            ()
+                    }
+                    </div>
                 else
                     ()
             }
-            </div>
             <div class="item">
             { sandbox:pretty-print($item, ()) }
             </div>

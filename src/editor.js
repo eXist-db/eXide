@@ -35,6 +35,7 @@ eXide.edit.Document = (function() {
 		this.helper = null;
 		this.history = [];
 		this.$session = session;
+        this.externalLink = null;
         var wrap = eXide.app.getPreference("softWrap");
         this.$session.setUseWrapMode(wrap != 0);
         if (wrap > 0) {
@@ -89,6 +90,11 @@ eXide.edit.Document = (function() {
 		return this.saved;
 	};
 	
+    Constr.prototype.isNew = function() {
+        $.log("doc name: %s", this.path);
+        return /__new__/.test(this.path);
+    };
+    
 	Constr.prototype.isEditable = function() {
 		return this.editable;
 	};
@@ -118,6 +124,10 @@ eXide.edit.Document = (function() {
 		var lead = sel.getSelectionLead();
 		return lead.row;
 	};
+    
+    Constr.prototype.getExternalLink = function() {
+        return this.externalLink;
+    };
     
 	return Constr;
 }());
@@ -347,17 +357,18 @@ eXide.edit.Editor = (function () {
         });
     };
     
-	Constr.prototype.openDocument = function(data, mime, resource) {
+	Constr.prototype.openDocument = function(data, mime, resource, externalPath) {
 		var $this = this;
 		if (!resource.writable)
 			eXide.util.message("Opening " + resource.path + " readonly!");
 		else
 			eXide.util.message("Opening " + resource.path);
-
+        $.log("external: %s", externalPath);
 		var doc = new eXide.edit.Document(resource.name, resource.path, new EditSession(data));
 		doc.editable = resource.writable;
 		doc.mime = mime;
 		doc.syntax = eXide.util.mimeTypes.getLangFromMime(mime);
+        doc.externalLink = externalPath;
 		doc.saved = true;
 		if (resource.line) {
 			doc.addToHistory(resource.line);
@@ -491,6 +502,7 @@ eXide.edit.Editor = (function () {
 					}
 				} else {
 					$this.activeDoc.saved = true;
+                    $this.activeDoc.externalLink = data.externalLink;
 					$this.updateTabStatus(oldPath, $this.activeDoc);
 					if (successHandler) {
 						successHandler.apply($this.activeDoc);
@@ -659,6 +671,7 @@ eXide.edit.Editor = (function () {
         var $this = this;
         $this.loadTheme(theme, function() {
 		    $this.editor.setTheme("ace/theme/" + theme);
+            $this.$triggerEvent("setTheme", [ require($this.editor.getTheme()) ]);
         });
 	};
 	

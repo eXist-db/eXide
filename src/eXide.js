@@ -87,15 +87,22 @@ eXide.app = (function() {
             });
 			preferences = new eXide.util.Preferences(editor);
 			
+            editor.addEventListener("setTheme", eXide.app.setTheme);
+            
             eXide.app.initGUI(menu);
 			
             // save restored paths for later
             eXide.app.getLogin(function() {
-                 eXide.app.restoreState(function(restored) {
+                eXide.app.initStatus("Restoring state");
+                eXide.app.restoreState(function(restored) {
                     editor.init();
                     if (afterInitCallback) {
                         afterInitCallback(restored);
                     }
+                    // dirty workaround to fix editor height
+                    $("body").layout().toggle("south");
+                    
+                    $("#splash").fadeOut(400);
                 });
             });
 		    
@@ -205,8 +212,9 @@ eXide.app = (function() {
                     if (reload) {
                         editor.reload(data);
                     } else {
-    					var mime = eXide.util.mimeTypes.getMime(xhr.getResponseHeader("Content-Type"));
-    					editor.openDocument(data, mime, resource);
+                        var mime = eXide.util.mimeTypes.getMime(xhr.getResponseHeader("Content-Type"));
+                        var externalPath = xhr.getResponseHeader("X-Link");
+                        editor.openDocument(data, mime, resource, externalPath);
                     }
 					if (callback) {
 						callback(resource);
@@ -257,8 +265,13 @@ eXide.app = (function() {
 						Cancel: function() {
 							$( this ).dialog( "close" );
 						}
-					}
+					},
+                    open: function() { 
+                        $(this).closest('.ui-dialog').find('.ui-dialog-buttonpane button:eq(0)').focus(); 
+                        $(this).closest('.ui-dialog').find('.ui-dialog-buttonpane button:eq(1)').blur(); 
+                    }
 				});
+                
 			} else {
 				editor.closeDocument();
 			}
@@ -277,6 +290,7 @@ eXide.app = (function() {
     						editor.saveDocument(dbBrowser.getSelection(), function () {
     							$("#open-dialog").dialog("close");
                                 deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
+                                eXide.app.updateStatus(this);
     						}, function (msg) {
     							eXide.util.Dialog.warning("Failed to Save Document", msg);
     						});
@@ -307,6 +321,7 @@ eXide.app = (function() {
     					editor.saveDocument(dbBrowser.getSelection(), function () {
     						$("#open-dialog").dialog("close");
                             deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
+                            eXide.app.updateStatus(this);
     					}, function (msg) {
     						eXide.util.Dialog.warning("Failed to Save Document", msg);
     					});
@@ -640,21 +655,45 @@ eXide.app = (function() {
             editor.exec("stepInto");
         },
         
+        setTheme: function(theme) {
+            $("#outline-body").removeClass().addClass(theme.cssClass);
+            $("#results-body").removeClass().addClass(theme.cssClass);
+        },
+        
+        updateStatus: function(doc) {
+            $("#syntax").val(doc.getSyntax());
+            $("#status span").text(eXide.util.normalizePath(doc.getPath()));
+            if (!doc.isNew() && (doc.getSyntax() == "xquery" || doc.getSyntax() == "html")) {
+                $("#status a").attr("href", doc.getExternalLink());
+                $("#status a").css("visibility", "visible");
+            } else {
+                $("#status a").css("visibility", "hidden");
+            }
+        },
+        
+        initStatus: function(msg) {
+            $("#splash-status").text(msg);
+        },
+        
 		initGUI: function(menu) {
 			var layout = $("body").layout({
 				enableCursorHotkey: false,
+                spacing_open: 6,
+                spacing_closed: 8,
 				north__size: 70,
 				north__resizable: false,
-				north__closable: true,
+				north__closable: false,
                 north__showOverflowOnHover: true,
+                north__spacing_open: 0,
 				south__minSize: 200,
-				south__initClosed: true,
-                south__contentSelector: ".results",
+				south__initClosed: false,
+                south__contentSelector: "#results-body",
 				west__size: 200,
 				west__initClosed: false,
 				west__contentSelector: ".content",
+                east__initClosed: true,
 				center__minSize: 300,
-				center__onresize: eXide.app.resize,
+			    center__onresize: eXide.app.resize,
 				center__contentSelector: ".content"
 			});
             
@@ -931,7 +970,7 @@ eXide.app = (function() {
 			});
 			// register listener to update syntax drop down
 			editor.addEventListener("activate", null, function (doc) {
-				$("#syntax").val(doc.getSyntax());
+                eXide.app.updateStatus(doc);
                 projects.findProject(doc.getBasePath(), function(app) {
                     if (app) {
                         $("#toolbar-current-app").text(app.abbrev);
@@ -956,10 +995,6 @@ eXide.app = (function() {
 			});
 			$('#results-container .next').click(eXide.app.browseNext);
 			$('#results-container .previous').click(eXide.app.browsePrevious);
-            
-            // dirty workaround to fix editor height
-            layout.toggle("south");
-            layout.toggle("south");
             
             $("#error-status").mouseover(function(ev) {
                 var error = this;

@@ -6,6 +6,31 @@ body {
     font-family: "Verdana", "Helvetica", "Arial", sans-serif;
 }
 
+#splash {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    background: #F3F3F3;
+    /*background-image: url(../images/logo.png);
+    background-position: center center;
+    background-repeat: no-repeat;*/
+    z-index: 10000;
+}
+
+#splash div {
+    position: absolute;
+    display: block;
+    top: 50%;
+    left: 50%;
+    margin: -27px 0 0 -74px;
+}
+
+#splash p {
+    text-shadow: 1px 1px 1px #666;
+}
+
 table {
     font-size: 100%;
     border-collapse: collapse;
@@ -38,6 +63,46 @@ a:link,a:visited {
 .ui-layout-center {
 	padding: 0;
 	border: 0;
+}
+
+.ui-layout-toggler-west-open {
+    background: url(../images/toggle-lt.gif) no-repeat center right;
+}
+
+.ui-layout-toggler-west-closed {
+    background: url(../images/toggle-rt.gif) no-repeat center right;
+}
+
+.ui-layout-toggler-east-open {
+    background: url(../images/toggle-rt.gif) no-repeat center right;
+}
+
+.ui-layout-toggler-east-closed {
+    background: url(../images/toggle-lt.gif) no-repeat center right;
+}
+
+.ui-layout-toggler-north-open {
+    background: url(../images/toggle-up.gif) no-repeat center right;
+}
+
+.ui-layout-toggler-north-closed {
+    background: url(../images/toggle-dn.gif) no-repeat center right;
+}
+
+.ui-layout-toggler-south-open {
+    background: url(../images/toggle-dn.gif) no-repeat center right;
+}
+
+.ui-layout-toggler-south-closed {
+    background: url(../images/toggle-up.gif) no-repeat center right;
+}
+
+.ui-layout-resizer {
+    background: #C0C0C0;
+}
+
+.ui-layout-resizer-hover {
+    background: #444;
 }
 
 #login-info {
@@ -165,18 +230,40 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 #status-bar {
-	margin: 0 4px;
+    position: relative;
 	padding: 4px;
 	height: 20px;
     min-height: 20px;
 	background: #E8E8E8;
 	overflow: hidden;
-	border-left: 1px solid #bbb;
 }
 
 #error-status {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    height: 100%;
+    z-index: 999;
 	font-size: 85%;
 	color: red;
+    background: #E8E8E8;
+}
+
+#status {
+    height: 100%;
+    font-size: 85%;
+}
+
+#status img {
+    margin-right: 1em;
+}
+
+.outline-status {
+    position: relative;
+    height: 20px;
+    padding: 4px;
+    background: #E8E8E8;
+    overflow: hidden;
 }
 
 #ext-status-bar {
@@ -422,12 +509,20 @@ Sub level menu list items (undo style from Top level List Items)
 #results-container {
 	font-size: 85%;
 	padding: 0;
+    overflow: hidden;
 }
 
 #results-container .results {
-	background-color: white;
 	margin: 0 15px;
     white-space: pre-wrap;
+}
+
+#results-body {
+    overflow: auto;
+}
+
+#results-body .ace_scroller {
+    width: 100%;
 }
 
 .navbar {
@@ -462,13 +557,13 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 .even {
-	background-color: #F0F0F0;
+	/*background-color: #F0F0F0; */
 }
 
 .pos {
 	float: left;
-	background-color: #ECF;
-	font-size: 1.25em;
+	background-color: #F0F0F0;
+	font-size: 1em;
 	padding: 2px;
 	margin-right: 5px;
 }
@@ -534,6 +629,7 @@ Sub level menu list items (undo style from Top level List Items)
 #outline-container {
 	padding: 0;
 	font-size: 85%;
+    border: 0;
 }
 
 #outline-container h3 {
@@ -544,13 +640,30 @@ Sub level menu list items (undo style from Top level List Items)
 	font-weight: normal;
 }
 
+#outline-body {
+    position: relative;
+    height: 100%;
+    width: 100%;
+}
+
+#outline-body .ace_scroller {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 4px;
+    right: 4px;
+    overflow-y: auto;
+    overflow-x: none;
+}
+
 #outline {
     font-family: 'Ubuntu Mono', 'Monaco','Menlo','Droid Sans Mono','Courier New',monospace;
     line-height: 1.5em;
-	overflow: auto;
 	list-style: none;
-	margin: 8px 4px;
+	margin: 8px 4px 16px 4px;
 	padding: 0;
+    height: 100%;
+    white-space: pre-wrap;
 }
 
 #outline li {
@@ -569,6 +682,18 @@ Sub level menu list items (undo style from Top level List Items)
 
 #outline .public {
     background-image: url(../images/public.png);
+}
+
+#outline a:link, #outline a:visited {
+    color: inherit;
+}
+
+#outline-filter {
+    display: block;
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    width: 100%;
 }
 
 .help img {
