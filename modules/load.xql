@@ -16,9 +16,22 @@
  :  You should have received a copy of the GNU General Public License
  :  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  :)
-xquery version "1.0";
+xquery version "3.0";
 
 declare option exist:serialize "indent=yes expand-xincludes=no";
+
+declare function local:get-run-path($path) {
+    let $appRoot := repo:get-root()
+    return
+        replace(
+            if (starts-with($path, $appRoot)) then
+                request:get-context-path() || "/" || request:get-attribute("$exist:prefix") || "/" ||
+                substring-after($path, $appRoot)
+            else
+                request:get-context-path() || "/rest" || $path,
+            "/{2,}", "/"
+        )
+};
 
 let $path := xmldb:encode(request:get-parameter("path", ()))
 let $download := request:get-parameter("download", ())
@@ -27,6 +40,7 @@ let $isBinary := util:is-binary-doc($path)
 (: Disable betterFORM filter :)
 let $attribute := request:set-attribute("betterform.filter.ignoreResponseBody", "true")
 let $header := response:set-header("Content-Type", if ($mime) then $mime else "application/binary")
+let $header := response:set-header("X-Link", local:get-run-path($path))
 let $header2 :=
     if ($download) then
         response:set-header("Content-Disposition", concat("attachment; filename=", replace($path, "^.*/([^/]+)$", "$1")))

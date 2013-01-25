@@ -16,7 +16,7 @@
  :  You should have received a copy of the GNU General Public License
  :  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  :)
-xquery version "1.0";
+xquery version "3.0";
 
 
 declare option exist:serialize "method=json media-type=text/javascript";
@@ -36,6 +36,19 @@ declare function local:fix-permissions($collection as xs:string, $resource as xs
             ()
 };
 
+declare function local:get-run-path($path) {
+    let $appRoot := repo:get-root()
+    return
+        replace(
+            if (starts-with($path, $appRoot)) then
+                request:get-context-path() || "/" || request:get-attribute("$exist:prefix") || "/" ||
+                substring-after($path, $appRoot)
+            else
+                request:get-context-path() || "/rest" || $path,
+            "/{2,}", "/"
+        )
+};
+
 (:~ Called by the editor to store a document :)
 
 let $path := request:get-parameter("path", ())
@@ -53,7 +66,7 @@ return
                 xmldb:store($collection, $resource, $data)
         return (
             local:fix-permissions($collection, $resource),
-            <message status="ok"/>
+            <message status="ok" externalLink="{local:get-run-path($path)}"/>
         ),
         let $message :=
             replace(
