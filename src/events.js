@@ -30,6 +30,10 @@ eXide.events.Sender = (function() {
     Constr.prototype = {
         
         addEventListener: function (name, obj, callback) {
+            if (typeof obj == "function") {
+                callback = obj;
+                obj = null;
+            }
             this.events = this.events || {};
     		var event = this.events[name];
             if (!event) {
