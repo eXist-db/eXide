@@ -45,7 +45,7 @@ eXide.util.Preferences = (function () {
         
         $("#preferences-dialog").dialog({
     		title: "Preferences",
-			modal: true,
+			modal: false,
 			autoOpen: false,
 			height: 400,
 			width: 600,
