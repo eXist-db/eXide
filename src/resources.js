@@ -26,7 +26,7 @@ eXide.browse.ResourceBrowser = (function () {
 	
 	var nameFormatter = function(row, cell, value, columnDef, dataContext) {
 		if (dataContext.isCollection)
-			return '<span class="collection"><img src="resources/images/folder_add.png"/> ' + value + '</span>';
+			return '<span class="collection"><img src="resources/images/folder.png"/> ' + value + '</span>';
 		else
 			return value;
 	};
