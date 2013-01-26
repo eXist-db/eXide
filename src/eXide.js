@@ -73,7 +73,7 @@ eXide.app = (function() {
 	var login = null;
     
     // used to detect when window looses focus
-    var focusLost = false;
+    var hasFocus = true;
     
 	return {
 
@@ -124,6 +124,10 @@ eXide.app = (function() {
             });
 		},
 
+        hasFocus: function() {
+            return hasFocus;
+        },
+        
 		resize: function() {
 			var panel = $("#editor");
 			var header = $(".header");
@@ -1011,12 +1015,15 @@ eXide.app = (function() {
             });
             
             $(window).blur(function() {
-                focusLost = true;
+                hasFocus = false;
             });
             $(window).focus(function() {
-               if (focusLost) {
+                $.log("Got focus");
+                var checkLogin = !hasFocus;
+                hasFocus = true;
+                if (checkLogin) {
                    eXide.app.getLogin();
-               } 
+                } 
             });
 		}
 	};
