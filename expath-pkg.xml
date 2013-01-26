@@ -2,5 +2,4 @@
 <package xmlns="http://expath.org/ns/pkg" name="http://exist-db.org/apps/eXide" abbrev="eXide" version="1.0.11" spec="1.0">
     <title>eXide - XQuery IDE</title>
     <dependency package="http://exist-db.org/apps/shared"/>
-    <dependency package="http://exist-db.org/apps/demo" semver="0.2"/>
 </package>
