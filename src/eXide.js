@@ -43,9 +43,8 @@ $(document).ready(function() {
         } else if (snippet) {
             eXide.app.newDocument(snippet);
         }
-        
-        if (typeof eXide_onload == "function") {
-            eXide_onload(eXide.app);
+        if (window.opener.eXide_onload) {
+            window.opener.eXide_onload(eXide.app);
         }
     });
 });
