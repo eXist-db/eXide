@@ -132,7 +132,7 @@ eXide.app = (function() {
 //			panel.height($(".ui-layout-center").innerHeight() - header.height());
 			editor.resize();
 		},
-
+        
 		newDocument: function(data, type) {
 			editor.newDocument(data, type);
 		},
@@ -367,7 +367,7 @@ eXide.app = (function() {
 						editor.clearErrors();
 						var layout = $("body").layout();
 						layout.open("south");
-						layout.sizePane("south", 300);
+						//layout.sizePane("south", 300);
 						eXide.app.resize();
 						
 						startOffset = 1;
@@ -406,7 +406,7 @@ eXide.app = (function() {
 						$("#results-container .current").text("Showing results " + startOffset + " to " + (currentOffset - 1) +
 								" of " + hitCount);
 						$("#results-container .pos:last a").click(function () {
-							eXide.app.findDocument(this.pathname);
+							eXide.app.findDocument($(this).data("path"));
 							return false;
 						});
 						eXide.app.retrieveNext();
@@ -688,6 +688,7 @@ eXide.app = (function() {
                 north__showOverflowOnHover: true,
                 north__spacing_open: 0,
 				south__minSize: 200,
+                south__size: 300,
 				south__initClosed: false,
                 south__contentSelector: "#results-body",
 				west__size: 200,

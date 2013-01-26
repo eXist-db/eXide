@@ -132,7 +132,8 @@ declare function sandbox:retrieve($num as xs:integer) as element() {
                     <div class="pos">
                     {
                         if (string-length($documentURI) > 0) then
-                            <a href="{$documentURI}#{util:node-id($node)}">{$num}</a>
+                            <a href="{$documentURI}#{util:node-id($node)}" data-path="{$documentURI}"
+                                title="Click to load source document">{$num}</a>
                         else
                             ()
                     }
