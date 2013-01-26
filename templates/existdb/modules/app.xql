@@ -3,6 +3,7 @@ xquery version "3.0";
 module namespace app="$$namespace$$";
 
 import module namespace templates="http://exist-db.org/xquery/templates" $$templates$$;
+import module namespace config="$$config-namespace$$" at "config.xqm";
 
 (:~
  : This is a sample templating function. It will be called by the templating module if

@@ -297,13 +297,14 @@ declare function deploy:expand-xql($target as xs:string) {
         <parameters>
             <param name="templates" value="{$template}"/>
             <param name="namespace" value="{$name}/templates"/>
+            <param name="config-namespace" value="{$name}/config"/>
         </parameters>
     let $cleanup :=
         if (empty($includeTmpl) and util:binary-doc-available($target || "/modules/templates.xql")) then
             xmldb:remove($target || "/modules", "templates.xql")
         else
             ()
-    for $module in ("view.xql", "app.xql")
+    for $module in ("view.xql", "app.xql", "config.xqm")
     return
         deploy:expand($target || "/modules", $module, $parameters)
 };

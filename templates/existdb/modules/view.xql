@@ -11,7 +11,7 @@ import module namespace templates="http://exist-db.org/xquery/templates" $$templ
  : The following modules provide functions which will be called by the 
  : templating.
  :)
-import module namespace config="http://exist-db.org/xquery/apps/config" at "config.xqm";
+import module namespace config="$$config-namespace$$" at "config.xqm";
 import module namespace app="$$namespace$$" at "app.xql";
 
 declare option exist:serialize "method=html5 media-type=text/html enforce-xhtml=yes";
