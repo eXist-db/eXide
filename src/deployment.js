@@ -242,11 +242,14 @@ eXide.edit.PackageEditor = (function () {
 						"to use this feature.");
 				return;
 			}
+            $("#synchronize-report").empty();
             $this.currentProject = project;
             $this.syncDialog.find(".project-name").text(project.abbrev);
 			$this.syncDialog.find("input[name=\"start\"]").val(project.deployed);
             if (project.dir) {
                 $this.syncDialog.find("input[name=\"dir\"]").val(project.dir);
+            } else {
+                $this.syncDialog.find("input[name=\"dir\"]").val("");
             }
             $this.syncDialog.find("input[name=\"collection\"]").val(project.root);
             $this.syncDialog.find("input[name=\"auto\"]").attr("checked", project.autoSync);
