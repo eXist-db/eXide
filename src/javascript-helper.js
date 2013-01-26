@@ -23,12 +23,14 @@ eXide.namespace("eXide.edit.JavascriptModeHelper");
  */
 eXide.edit.JavascriptModeHelper = (function () {
     
+    var RE_FUNC_NAME = /^[\$\w\-_]+/;
+    
     var TokenIterator = require("ace/token_iterator").TokenIterator;
     
     Constr = function(editor) {
 		this.parent = editor;
 		this.editor = this.parent.editor;
-        this.addCommand("locate", this.locate);
+        this.addCommand("gotoDefinition", this.gotoDefinition);
 	}
 	
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
@@ -51,6 +53,38 @@ eXide.edit.JavascriptModeHelper = (function () {
         if (onComplete)
             onComplete(doc);
     };
+    
+    Constr.prototype.gotoDefinition = function (doc) {
+    	var sel = this.editor.getSelection();
+		var lead = sel.getSelectionLead();
+		var funcName = this.getFunctionAtCursor(lead);
+		if (funcName) {
+			this.locate(doc, null, funcName);
+		}
+	};
+    
+    Constr.prototype.locate = function(doc, type, name) {
+    	var func = this.parent.outline.findDefinition(doc, name);
+        if (func && func.row) {
+            this.editor.gotoLine(func.row + 1);
+        }
+	};
+    
+    Constr.prototype.getFunctionAtCursor = function (lead) {
+    	var row = lead.row;
+	    var session = this.editor.getSession();
+		var line = session.getDisplayLine(row);
+		var start = lead.column;
+		do {
+			start--;
+		} while (start >= 0 && line.charAt(start).match(RE_FUNC_NAME));
+		start++;
+		var end = lead.column;
+		while (end < line.length && line.charAt(end).match(RE_FUNC_NAME)) {
+			end++;
+		}
+		return line.substring(start, end);
+	};
     
     return Constr;
 }());

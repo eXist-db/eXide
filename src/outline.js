@@ -61,6 +61,16 @@ eXide.edit.Outline = (function () {
 			});
 		},
 		
+        findDefinition: function(doc, name) {
+            for (var i = 0; i < doc.functions.length; i++) {
+                var func = doc.functions[i];
+    			if (name == func.name) {
+					return func;
+				}
+			}
+            return null;
+        },
+        
 		updateOutline: function(doc) {
             var self = this;
 			self.currentDoc = doc;
