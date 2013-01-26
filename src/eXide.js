@@ -43,7 +43,7 @@ $(document).ready(function() {
         } else if (snippet) {
             eXide.app.newDocument(snippet);
         }
-        if (window.opener.eXide_onload) {
+        if (window.opener && window.opener.eXide_onload) {
             window.opener.eXide_onload(eXide.app);
         }
     });
