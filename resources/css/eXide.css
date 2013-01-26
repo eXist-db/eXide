@@ -251,7 +251,7 @@ Sub level menu list items (undo style from Top level List Items)
 
 #status {
     height: 100%;
-    font-size: 85%;
+    font-size: 80%;
 }
 
 #status img {
@@ -522,7 +522,12 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 #results-body .ace_scroller {
+    height: 100%;
     width: 100%;
+}
+
+#results-body .ace_text-layer {
+    height: 100%;
 }
 
 .navbar {

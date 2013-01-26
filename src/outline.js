@@ -96,8 +96,6 @@ eXide.edit.Outline = (function () {
 			if (this.currentDoc != doc)
 				return;
 			
-            $.log("Updating outline");
-			
 			eXide.app.resize();
 			
 			var ul = $("#outline");
