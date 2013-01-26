@@ -19,6 +19,8 @@
 
 // main entry point
 $(document).ready(function() {
+    window.name = "eXide";
+    
     // parse query parameters passed in by URL:
     var qs = (function(a) {
         if (a == "") return {};
@@ -33,7 +35,7 @@ $(document).ready(function() {
     })(window.location.search.substr(1).split('&'));
     
     // check parameters passed in GET request
-    eXide.app.init(function (restored) {
+    eXide.app.init(function (restored) {        
         var openDoc = qs["open"];
         var snippet = qs["snip"];
         if (openDoc && !restored[openDoc]) {
