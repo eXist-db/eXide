@@ -31,6 +31,7 @@ eXide.edit.JavascriptModeHelper = (function () {
 		this.parent = editor;
 		this.editor = this.parent.editor;
         this.addCommand("gotoDefinition", this.gotoDefinition);
+        this.addCommand("locate", this.locate);
 	}
 	
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
@@ -64,9 +65,13 @@ eXide.edit.JavascriptModeHelper = (function () {
 	};
     
     Constr.prototype.locate = function(doc, type, name) {
-    	var func = this.parent.outline.findDefinition(doc, name);
-        if (func && func.row) {
-            this.editor.gotoLine(func.row + 1);
+        if (typeof name == "number") {
+            this.editor.gotoLine(name + 1);
+        } else {
+        	var func = this.parent.outline.findDefinition(doc, name);
+            if (func && func.row) {
+                this.editor.gotoLine(func.row + 1);
+            }
         }
 	};
     
