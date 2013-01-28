@@ -53,8 +53,9 @@ declare function deploy:get-app-root($collection as xs:string) {
         ()
     else if (doc(concat($collection, "/expath-pkg.xml"))) then
         $collection
-    else if ($collection ne "/db") then
-        let $parent := replace($collection, "^(.*)/[^/]+$", "$1")
+    else if (not(matches($collection, "^/db/?$"))) then
+        let $parent := replace($collection, "^(.*)/+[^/]+$", "$1")
+        let $log := util:log-system-out($parent)
         return
             deploy:get-app-root($parent)
     else
