@@ -3,7 +3,7 @@
     <template name="collection-config" mode="xml">
         <description>eXist-db Collection Configuration</description>
         <code>&lt;collection xmlns="http://exist-db.org/collection-config/1.0"&gt;
-    &lt;index xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:mods="http://www.loc.gov/mods/v3"&gt;
+    &lt;index xmlns:xs="http://www.w3.org/2001/XMLSchema"&gt;
         &lt;fulltext default="none" attributes="false"/&gt;
     &lt;/index&gt;
 &lt;/collection&gt;</code>
@@ -27,23 +27,23 @@
     </template>
     <template name="ant" mode="xml">
         <description>Ant Script</description>
-        <code><![CDATA[<project basedir="." default="dist" name="myproject">
- <target name="dist">
+        <code>&lt;project basedir="." default="dist" name="myproject"&gt;
+ &lt;target name="dist"&gt;
   
- </target> 
-</project>]]></code>
+ &lt;/target&gt; 
+&lt;/project&gt;</code>
     </template>
     <template name="xquery-module" mode="xquery">
         <description>XQuery Library Module</description>
-        <code><![CDATA[xquery version "3.0";
+        <code>xquery version "3.0";
 
 module namespace mymodule="http://exist-db.org/apps/myapp/mymodule";
 
-]]></code>
+</code>
     </template>
     <template name="controller" mode="xquery">
         <description>XQuery URL Rewriting Controller</description>
-        <code><![CDATA[xquery version "3.0";
+        <code>xquery version "3.0";
             
 declare variable $exist:path external;
 declare variable $exist:resource external;
@@ -52,8 +52,8 @@ declare variable $exist:prefix external;
 declare variable $exist:root external;
 
 (: everything is passed through :)
-<dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-    <cache-control cache="yes"/>
-</dispatch>]]></code>
+&lt;dispatch xmlns="http://exist.sourceforge.net/NS/exist"&gt;
+    &lt;cache-control cache="yes"/&gt;
+&lt;/dispatch&gt;</code>
     </template>
 </templates>
