@@ -463,12 +463,17 @@ declare %private function local:permissions-from-form() {
 declare function local:change-properties($resources as xs:string*) {
     let $owner := request:get-parameter("owner", ())
     let $group := request:get-parameter("group", ())
+    let $mime := request:get-parameter("mime", ())
     for $resource in $resources
     let $uri := xs:anyURI($resource)
     return (
         sm:chown($uri, $owner),
         sm:chgrp($uri, $group),
-        sm:chmod($uri, local:permissions-from-form())
+        sm:chmod($uri, local:permissions-from-form()),
+        if ($mime) then
+            xmldb:set-mime-type($uri, $mime)
+        else
+            ()
     ),
     <response status="ok"/>
 };
