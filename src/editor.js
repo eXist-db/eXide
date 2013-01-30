@@ -74,6 +74,10 @@ eXide.edit.Document = (function() {
 		return this.mime;
 	};
 	
+    Constr.prototype.setMime = function(mimeType) {
+        this.mime = mimeType;
+    };
+    
 	Constr.prototype.getSyntax = function() {
 		return this.syntax;
 	};
@@ -257,18 +261,18 @@ eXide.edit.Editor = (function () {
                 "Cancel": function () { $(this).dialog("close"); $this.editor.focus(); }
             },
             open: function() {
-				// clear form fields
-				$(this).find("input[name='row']").val("");
+                // clear form fields
+                $(this).find("input[name='row']").val("");
                 $(this).find("input[name='column']").val("");
-				$(this).find("input:first").focus();
-				
-				var dialog = $(this);
-				dialog.find("input").keyup(function (e) {
-					if (e.keyCode == 13) {
-			           dialog.parent().find(".ui-dialog-buttonpane button:first").trigger("click");
-			        }
-				});
-			}
+                $(this).find("input:first").focus();
+                
+                var dialog = $(this);
+                dialog.find("input").keyup(function (e) {
+                    if (e.keyCode == 13) {
+                        dialog.parent().find(".ui-dialog-buttonpane button:first").trigger("click");
+                    }
+                });
+            }
         });
 	};
 
@@ -277,7 +281,7 @@ eXide.edit.Editor = (function () {
     
 	Constr.prototype.init = function() {
 	    if (this.documents.length == 0)
-	    	this.newDocument();
+	    	this.newDocument(null, "xquery");
         this.initializing = false;
         var currentDoc = this.getActiveDocument();
         this.$triggerEvent("activate", [currentDoc]);
@@ -325,7 +329,7 @@ eXide.edit.Editor = (function () {
         } else {
             newDocument.setSyntax("text");
         }
-		this.$initDocument(newDocument);
+		this.$initDocument(newDocument, true);
 	};
 	
 	Constr.prototype.newDocumentWithText = function(data, mime, resource) {
@@ -365,7 +369,7 @@ eXide.edit.Editor = (function () {
         		var newDocument = new eXide.edit.Document("new-document " + newDocId,
         				"__new__" + newDocId, session);
                 newDocument.setSyntax(mode);
-        		self.$initDocument(newDocument);
+        		self.$initDocument(newDocument, true);
 			}
         });
     };
@@ -394,9 +398,9 @@ eXide.edit.Editor = (function () {
 		this.$initDocument(doc);
 	};
 	
-	Constr.prototype.$initDocument = function (doc) {
+	Constr.prototype.$initDocument = function (doc, setMime) {
 		var $this = this;
-		$this.$setMode(doc, false);
+		$this.$setMode(doc, setMime);
 		doc.$session.setUndoManager(new UndoManager());
 		doc.$session.addEventListener("change", function (ev) {
 			if (doc.saved) {
