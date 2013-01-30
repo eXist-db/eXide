@@ -255,7 +255,20 @@ eXide.edit.Editor = (function () {
                     $this.editor.focus();
                 },
                 "Cancel": function () { $(this).dialog("close"); $this.editor.focus(); }
-            }
+            },
+            open: function() {
+				// clear form fields
+				$(this).find("input[name='row']").val("");
+                $(this).find("input[name='column']").val("");
+				$(this).find("input:first").focus();
+				
+				var dialog = $(this);
+				dialog.find("input").keyup(function (e) {
+					if (e.keyCode == 13) {
+			           dialog.parent().find(".ui-dialog-buttonpane button:first").trigger("click");
+			        }
+				});
+			}
         });
 	};
 
