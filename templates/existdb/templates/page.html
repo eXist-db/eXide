@@ -5,6 +5,8 @@
         <meta class="config:app-meta"/>
         <link rel="shortcut icon" href="resources/images/favicon.ico"/>
         <link rel="stylesheet" type="text/css" href="resources/css/exist.css"/>
+        <script type="text/javascript" src="$shared/resources/scripts/jquery/jquery-1.7.1.min.js"/>
+        <script type="text/javascript" src="$shared/resources/scripts/loadsource.js"/>
     </head>
     <body id="body">
         <div id="grey-top">
@@ -25,8 +27,17 @@
                             </li>
                         </ul>
                     </div>
-                    <!-- Page content will be injected into the div below -->
-                    <div class="container" id="content"/>
+                    <div class="container" id="main">
+                        <div class="row" id="container-body">
+                            <!-- Page content will be injected into the div below -->
+                            <div class="span8" id="content"/>
+							<!-- Right hand column: 4 wide -->
+                            <div class="span4">
+                                <h2>Application Info</h2>
+                                <div class="config:app-info"/>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

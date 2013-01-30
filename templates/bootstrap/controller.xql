@@ -22,10 +22,12 @@ else if (ends-with($exist:resource, ".html")) then
 			<forward url="{$exist:controller}/modules/view.xql"/>
 		</error-handler>
     </dispatch>
-(: Requests for javascript libraries are resolved to the file system :)
-else if (contains($exist:path, "/libs/")) then
+(: Resource paths starting with $shared are loaded from the shared-resources app :)
+else if (contains($exist:path, "/$shared/")) then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward url="/{substring-after($exist:path, '/libs/')}" absolute="yes"/>
+        <forward url="/shared-resources/{substring-after($exist:path, '/$shared/')}">
+            <set-header name="Cache-Control" value="max-age=3600, must-revalidate"/>
+        </forward>
     </dispatch>
 else
     (: everything else is passed through :)
