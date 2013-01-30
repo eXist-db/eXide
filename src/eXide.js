@@ -162,7 +162,6 @@ eXide.app = (function() {
 			if (path == null) {
 				editor.exec("locate", type, symbol);
 			} else {
-				$.log("Locating %s in document %s", symbol, path);
 				var doc = editor.getDocument(path);
 				if (doc == null) {
 					var resource = {
@@ -1017,7 +1016,6 @@ eXide.app = (function() {
                 hasFocus = false;
             });
             $(window).focus(function() {
-                $.log("Got focus");
                 var checkLogin = !hasFocus;
                 hasFocus = true;
                 if (checkLogin) {
