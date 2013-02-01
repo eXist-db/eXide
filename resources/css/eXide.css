@@ -518,13 +518,10 @@ Sub level menu list items (undo style from Top level List Items)
     white-space: pre-wrap;
 }
 
-#results-body {
-    overflow: auto;
-}
-
 #results-body .ace_scroller {
     height: 100%;
     width: 100%;
+    overflow: auto;
 }
 
 #results-body .ace_text-layer {
