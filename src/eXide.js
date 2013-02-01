@@ -41,7 +41,7 @@ $(document).ready(function() {
         if (openDoc && !restored[openDoc]) {
             eXide.app.findDocument(qs["open"]);
         } else if (snippet) {
-            eXide.app.newDocument(snippet);
+            eXide.app.newDocument(snippet, "xquery");
         }
         if (window.opener && window.opener.eXide_onload) {
             window.opener.eXide_onload(eXide.app);
