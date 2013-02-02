@@ -14,7 +14,7 @@ eXide.find.IncrementalSearch = (function () {
         var $this = this;
         $this.input = $(input);
         $this.input.hide();
-        $this.input.keydown(function (ev) {
+        $this.input.keyup(function (ev) {
             switch (ev.which) {
                 case 27:
                 case 13:
@@ -43,7 +43,7 @@ eXide.find.IncrementalSearch = (function () {
     
     Constr.prototype.start = function () {
         var sel = this.editor.getSession().getSelection();
-    	var lead = sel.getSelectionLead();
+        var lead = sel.getSelectionLead();
 		this.currentLine = lead.row;
         this.input.val("");
         this.input.show().focus();
