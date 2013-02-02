@@ -29,7 +29,7 @@ eXide.edit.CssModeHelper = (function () {
     	this.parent = editor;
 		this.editor = this.parent.editor;
         this.addCommand("locate", this.locate);
-	}
+	};
 	
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
     
@@ -38,18 +38,20 @@ eXide.edit.CssModeHelper = (function () {
         var next = iterator.stepForward();
         var lastVar = "";
         while (next != null) {
-//            $.log("type: %o value: %s", next.type, next.value);
             if (next.type == "variable" || next.type == "keyword") {
                 if (lastVar.length > 0) {
                     lastVar += " ";
                 }
                 lastVar += next.value;
+            } else if (next.type == "paren.rparen") {
+                lastVar = "";
             } else if (next.type == "paren.lparen") {
                 doc.functions.push({
                 	type: eXide.edit.Document.TYPE_FUNCTION,
     				name: lastVar,
                     source: doc.getPath(),
     				signature: lastVar,
+                    sort: lastVar,
                     row: iterator.getCurrentTokenRow(),
                     column: iterator.getCurrentTokenColumn()
     			});
