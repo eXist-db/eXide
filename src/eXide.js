@@ -149,7 +149,7 @@ eXide.app = (function() {
 			var doc = editor.getDocument(path);
 			if (doc == null) {
 				var resource = {
-						name: path.match(/[^\/]+$/),
+						name: path.match(/[^\/]+$/)[0],
 						path: path
 				};
 				eXide.app.$doOpenDocument(resource);
@@ -165,7 +165,7 @@ eXide.app = (function() {
 				var doc = editor.getDocument(path);
 				if (doc == null) {
 					var resource = {
-							name: path.match(/[^\/]+$/),
+							name: path.match(/[^\/]+$/)[0],
 							path: path
 					};
 					eXide.app.$doOpenDocument(resource, function(doc) {
@@ -667,7 +667,7 @@ eXide.app = (function() {
         updateStatus: function(doc) {
             $("#syntax").val(doc.getSyntax());
             $("#status span").text(eXide.util.normalizePath(doc.getPath()));
-            if (!doc.isNew() && (doc.getSyntax() == "xquery" || doc.getSyntax() == "html")) {
+            if (!doc.isNew() && (doc.getSyntax() == "xquery" || doc.getSyntax() == "html" || doc.getSyntax() == "xml")) {
                 $("#status a").attr("href", doc.getExternalLink());
                 $("#status a").css("visibility", "visible");
             } else {
