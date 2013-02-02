@@ -439,22 +439,28 @@ eXide.edit.XQueryModeHelper = (function () {
 			var end = this.$findMatchingParen(text, offset);
             var name = (funcDef.length == 3 ? funcDef[2] : funcDef[1]).replace(this.trimRe,"");
             var status = funcDef.length == 3 ? funcDef[1] : "public";
+            var signature =  name + "(" + text.substring(offset, end) + ")"
             if (status.indexOf("%private") !== -1)
                 status = "private";
 			doc.functions.push({
 				type: eXide.edit.Document.TYPE_FUNCTION,
 				name: name,
                 visibility: status,
-				signature: name + "(" + text.substring(offset, end) + ")"
+                signature: signature,
+                sort : "$$" + signature
 			});
 		}
 		var varDefs = text.match(this.varDefRe);
 		if (varDefs) {
 			for (var i = 0; i < varDefs.length; i++) {
 				var v = this.varRe.exec(varDefs[i]);
+                var sort = v[1].substr(1).split(":");
+                sort.splice(1,0,":$");
+                
 				doc.functions.push({
 					type: eXide.edit.Document.TYPE_VARIABLE,
-					name: v[1]
+					name: v[1],
+                    sort: "$$" + sort.join("")
 				});
 			}
 		}
@@ -514,17 +520,21 @@ eXide.edit.XQueryModeHelper = (function () {
 									name: funcs[j].name,
 									signature: funcs[j].signature,
                                     visibility: funcs[j].visibility,
-									source: modules[i].source
+									source: modules[i].source,
+                                    sort : funcs[j].signature
 								});
 							}
 						}
 						var vars = modules[i].variables;
 						if (vars) {
 							for (var j = 0; j < vars.length; j++) {
+                                var  sort = vars[j].split(":");
+                                sort.splice(1,0,":$"); 
 								functions.push({
 									type: eXide.edit.Document.TYPE_VARIABLE,
 									name: "$" + vars[j],
-									source: modules[i].source
+									source: modules[i].source,
+                                    sort : sort.join("")
 								});
 							}
 						}

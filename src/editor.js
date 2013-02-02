@@ -1,7 +1,7 @@
 /*
  *  eXide - web-based XQuery IDE
  *  
- *  Copyright (C) 2011 Wolfgang Meier
+ *  Copyright (C) 2011-2013 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -237,8 +237,8 @@ eXide.edit.Editor = (function () {
 			"xml": new eXide.edit.XMLModeHelper($this),
             "html": new eXide.edit.XMLModeHelper($this),
             "less": new eXide.edit.LessModeHelper($this),
-            "javascript": new eXide.edit.JavascriptModeHelper($this)
-//            "css": new eXide.edit.CssModeHelper($this)
+            "javascript": new eXide.edit.JavascriptModeHelper($this),
+            "css": new eXide.edit.CssModeHelper($this)
 		};
         
         $("#dialog-goto-line").dialog({
@@ -465,7 +465,11 @@ eXide.edit.Editor = (function () {
             if (setMime)
         		doc.mime = "application/less";
 		}
-		doc.setModeHelper(this.modes[doc.getSyntax()]);
+        var mode = this.modes[doc.getSyntax()];
+        if (!mode) {
+            mode = new eXide.edit.ModeHelper(this);
+        }
+		doc.setModeHelper(mode);
 	};
 	
 	Constr.prototype.closeDocument = function() {

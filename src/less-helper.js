@@ -96,6 +96,7 @@ eXide.edit.LessModeHelper = (function () {
     				name: selectorStr,
                     source: doc.getPath(),
     				signature: selectorStr,
+                    sort: selectorStr,
                     row: iterator.getCurrentTokenRow(),
                     column: iterator.getCurrentTokenColumn()
     			});

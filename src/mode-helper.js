@@ -66,6 +66,11 @@ eXide.edit.ModeHelper = (function () {
          */
         createOutline: function(doc, onComplete) {
             // implemented by subclasses
+            d3.select("#outline").selectAll("li")
+                .transition()
+                    .duration(400)
+                    .style("opacity",0)
+                    .remove();
         },
         
         /**

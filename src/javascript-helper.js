@@ -45,6 +45,7 @@ eXide.edit.JavascriptModeHelper = (function () {
             		type: eXide.edit.Document.TYPE_FUNCTION,
     				name: next.value,
     				signature: next.value,
+                    sort: next.value,
                     row: iterator.getCurrentTokenRow(),
                     column: iterator.getCurrentTokenColumn()
     			});

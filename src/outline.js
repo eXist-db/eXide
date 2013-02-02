@@ -75,15 +75,13 @@ eXide.edit.Outline = (function () {
             var self = this;
 			self.currentDoc = doc;
 			doc.functions = [];
-			$("#outline").fadeOut(100, function() {
-                $(this).empty();
-                var helper = doc.getModeHelper();
-                if (helper != null) {
-                    helper.createOutline(doc, function() {
-                        self.$outlineUpdate(doc);
-                    });
-                }
-			});
+            
+            var helper = doc.getModeHelper();
+            if (helper != null) {
+                helper.createOutline(doc, function() {
+                    self.$outlineUpdate(doc);
+                });
+            }
 		},
 		
 		clearOutline: function() {
@@ -102,61 +100,69 @@ eXide.edit.Outline = (function () {
             });
         },
         
-		$outlineUpdate: function(doc) {
-			if (this.currentDoc != doc)
-				return;
-			
-			eXide.app.resize();
-			
-			var ul = $("#outline");
-			ul.empty();
-			for (var i = 0; i < doc.functions.length; i++) {
-				var func = doc.functions[i];
-				var li = document.createElement("li");
-				var a = document.createElement("a");
-				if (func.signature)
-					a.title = func.signature;
-                var _a = $(a);
-				if (func.type == eXide.edit.Document.TYPE_FUNCTION) {
-					_a.addClass("t_function");
-                    li.className = "ace_support.ace_function";
-				} else {
-					_a.addClass("t_variable");
-                    li.className = "ace_variable";
-				}
-				if (func.source)
-					a.href = "#" + func.source;
-				else
-					a.href = "#";
-                if (func.visibility === "private") {
-                    _a.addClass("private");
-                } else {
-                    _a.addClass("public");
-                }
-                if (func.row) {
-                    a.setAttribute("data-row", func.row);
-                    // Does not work on IE
-//                    a.dataset.row = func.row;
-                }
-				a.appendChild(document.createTextNode(func.name));
-				li.appendChild(a);
-				ul.append(li);
-                
-				_a.click(function (ev) {
-                    ev.preventDefault();
-					var path = this.hash.substring(1);
-                    if (this.getAttribute("data-row")) {
-                        eXide.app.locate("function", path == '' ? null : path, parseInt(this.getAttribute("data-row")));
-                    } else	if ($(this).hasClass("t_function")) {
-						eXide.app.locate("function", path == '' ? null : path, $(this).text());
-					} else {
-						eXide.app.locate("variable", path == '' ? null : path, $(this).text());
-					}
-				});
-			}
-            ul.fadeIn(100);
-		},
-		
+        $outlineUpdate: function (doc) {
+            if (this.currentDoc != doc)
+                return;
+            
+            eXide.app.resize();
+            // use d3s for smooth transitions
+            var outline = d3.select("#outline");
+
+            var sel = outline.selectAll("li")
+                .data(doc.functions, function(d) {
+                    return d.sort;
+                });
+
+            function stringCompare(a, b) {
+                a = a.toLowerCase();
+                b = b.toLowerCase();
+                return a > b ? 1 : a == b ? 0 : -1;
+            }   
+
+            var li = sel.enter()
+                .append("li")
+                    .attr("class", function(d) {
+                        return d.type == eXide.edit.Document.TYPE_FUNCTION
+                            ? "ace_support.ace_function"
+                            : "ace_variable";
+                    })
+                    .append("a")
+                        .style("opacity", 0)
+                        .attr("title", function(d) {
+                            if (d.signature) { return d.signature }
+                            return null;
+                        })
+                        .attr("href", function(d) {
+                            return  "#" + (d.source ? d.source : "");
+                        })
+                        .attr("class",function(d) {
+                            var cl =  d.type == eXide.edit.Document.TYPE_FUNCTION ?  "t.function" : "t_variable";
+                            return cl + " " + (d.visibility === "private" ? "private" : "public" );
+                        })
+                       .text(function(d) {return d.name})
+
+                       .on("click", function(d) {
+                            var path = this.hash.substring(1);
+                            if(d.row) {
+                                eXide.app.locate("function", path == '' ? null: path, parseInt(d.row));
+                            } else if(d.type == eXide.edit.Document.TYPE_FUNCTION) {
+                                eXide.app.locate("function", path == '' ? null: path, d.name);
+                            } else {
+                                eXide.app.locate("variable", path == '' ? null: path,d.name);
+                            }
+                       })
+                       .transition()
+                            .duration(800)
+                            .style("opacity",1);
+
+            sel.exit()
+                .transition()
+                    .duration(400)
+                    .style("opacity",0)
+                    .remove();
+            sel.sort(function (a, b) { return a == null || b == null ? -1  : stringCompare(a.sort, b.sort); });
+        },
+        
 		$loadTemplates: function() {
 			var $this = this;
 			$.ajax({
