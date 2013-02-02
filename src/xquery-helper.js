@@ -159,35 +159,37 @@ eXide.edit.XQueryModeHelper = (function () {
 		return true;
 	}
 	
-	Constr.prototype.$localVars = function(prefix, wordrange, complete) {
-		var variables = [];
-		var stopRegex = /declare function|};/;
-		var varRegex = /let \$[\w\:]+|for \$[\w\:]+|\$[\w\:]+\)/;
-		var getVarRegex = /\$[\w\:]+/;
-		var nameRegex = new RegExp("^\\" + prefix);
-		var session = this.editor.getSession();
-		var row = wordrange.start.row;
-		while (row > -1) {
-			var line = session.getDisplayLine(row);
-			var m;
-			if (m = line.match(varRegex)) {
-				$.log("Var: %s", m[0]);
-				var name = m[0].match(getVarRegex);
-				if (name[0].match(nameRegex)) {
-					variables.push({
-						name: name[0],
-						type: "variable"
-					});
-				}
-			}
-			if (line.match(stopRegex)) {
-				$.log("Stop: %s", line);
-				return variables;
-			}
-			row--;
-		}
-		return variables;
-	}
+    Constr.prototype.$localVars = function (prefix, wordrange, complete) {
+        var variables =[];
+        var stopRegex = /declare function|};/;
+        //var varRegex = /let \$[\w\:]+|for \$[\w\:]+|\$[\w\:]+\)/;
+        //var getVarRegex = /\$[\w\:]+/;
+        var varRegex = /let \$[\w\-_\:]+|for \$[\w\-_\:]+|\$[\w\-_\:]+\)/;
+        var getVarRegex = /\$[\w\-_\:]+/;
+        var nameRegex = new RegExp("^\\" + prefix);
+        var session = this.editor.getSession();
+        var row = wordrange.start.row;
+        while (row > -1) {
+            var line = session.getDisplayLine(row);
+            var m;
+            if (m = line.match(varRegex)) {
+                $.log("Var: %s", m[0]);
+                var name = m[0].match(getVarRegex);
+                if (name[0].match(nameRegex)) {
+                    variables.push({
+                        name: name[0],
+                        type: "variable"
+                    });
+                }
+            }
+            if (line.match(stopRegex)) {
+                $.log("Stop: %s", line);
+                return variables;
+            }
+            row--;
+        }
+        return variables;
+    };
 	
 	Constr.prototype.functionLookup = function(doc, prefix, wordrange, complete) {
 		var $this = this;
