@@ -44,6 +44,13 @@
         <description>Serialization declaration</description>
         <code>declare option exist:serialize "$options";</code>
     </snippet>
+    <snippet abbrev="html-output">
+        <description>Option declaration for HTML5 output</description>
+        <code><![CDATA[declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
+
+declare option output:method "html5";
+declare option output:media-type "text/html";]]></code>
+    </snippet>
     <snippet abbrev="if">
         <description>If-then-else statement</description>
         <code>if ($condition) then
@@ -82,5 +89,9 @@ else
     <snippet abbrev="json">
         <description>JSON namespace declaration</description>
         <code>declare namespace json="http://www.json.org";</code>
+    </snippet>
+    <snippet abbrev="tei">
+        <description>TEI namespace declaration</description>
+        <code>declare namespace tei="http://www.tei-c.org/ns/1.0";</code>
     </snippet>
 </snippets>
