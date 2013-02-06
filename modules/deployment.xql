@@ -55,7 +55,6 @@ declare function deploy:get-app-root($collection as xs:string) {
         $collection
     else if (not(matches($collection, "^/db/?$"))) then
         let $parent := replace($collection, "^(.*)/+[^/]+$", "$1")
-        let $log := util:log-system-out($parent)
         return
             deploy:get-app-root($parent)
     else
