@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project basedir="." default="all" name="eXide">
-    <property name="project.version" value="1.0.14"/>
+    <property name="project.version" value="1.0.15"/>
     <property name="src" value="./src"/>
     <property name="tools" value="./tools"/>
     <property name="build" value="./build"/>

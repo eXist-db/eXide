@@ -22,6 +22,13 @@
                 <li>Change indicator "*" not cleared properly after save</li>
             </ul>
         </change>
+        <change version="1.0.15">
+            <ul xmlns="">
+                <li>Fixed new app templates</li>
+                <li>Removed annoying log output</li>
+                <li>Updated code snippets</li>
+            </ul>
+        </change>
     </changelog>
-    <deployed>2013-02-01T23:23:20.438+01:00</deployed>
+    <deployed>2013-02-06T11:58:26.451+01:00</deployed>
 </meta>
