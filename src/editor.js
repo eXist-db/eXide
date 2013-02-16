@@ -36,6 +36,7 @@ eXide.edit.Document = (function() {
 		this.history = [];
 		this.$session = session;
         this.externalLink = null;
+        this.lastChangeEvent = new Date().getTime();
         var wrap = eXide.app.getPreference("softWrap");
         this.$session.setUseWrapMode(wrap != 0);
         if (wrap > 0) {
@@ -147,6 +148,8 @@ eXide.namespace("eXide.edit.Editor");
  */
 eXide.edit.Editor = (function () {
 	
+    var VALIDATE_TIMEOUT = 1000;
+    
 	var Renderer = require("ace/virtual_renderer").VirtualRenderer;
 	var Editor = require("ace/editor").Editor;
 	var EditSession = require("ace/edit_session").EditSession;
@@ -413,7 +416,6 @@ eXide.edit.Editor = (function () {
 				$this.updateTabStatus(doc.path, doc);
 			}
 			$this.triggerCheck();
-//				$this.onInput(doc, ev.data);
 		});
 		$this.addTab(doc);
 		
@@ -421,7 +423,6 @@ eXide.edit.Editor = (function () {
 		$this.editor.resize();
 		$this.editor.focus();
         
-        $this.triggerCheck();
         if (doc.getModeHelper()) {
             doc.getModeHelper().activate();
         }
@@ -754,13 +755,13 @@ eXide.edit.Editor = (function () {
 				return;
 			}
 			var time = new Date().getTime();
-			if ($this.validateTimeout && time - $this.lastChangeEvent < 2000) {
+			if ($this.validateTimeout && time - this.activeDoc.lastChangeEvent < VALIDATE_TIMEOUT) {
 				clearTimeout($this.validateTimeout);
 			}
-			$this.lastChangeEvent = time;
-			$this.validateTimeout = setTimeout(function() { 
+			this.activeDoc.lastChangeEvent = time;
+			this.validateTimeout = setTimeout(function() { 
 					$this.validate.apply($this); 
-				}, 2000);
+			}, VALIDATE_TIMEOUT);
 		}
 	};
 

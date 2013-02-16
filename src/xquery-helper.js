@@ -67,6 +67,7 @@ eXide.edit.XQueryModeHelper = (function () {
 	
     Constr.prototype.activate = function() {
         this.menu.show();
+        this.parent.triggerCheck();
     };
     
     Constr.prototype.deactivate = function() {
@@ -98,7 +99,7 @@ eXide.edit.XQueryModeHelper = (function () {
 	}
 		
 	Constr.prototype.validate = function(doc, code, onComplete) {
-		$.log("Running validation...");
+		$.log("Running validation on %s", doc.getName());
 		var $this = this;
 		var basePath = "xmldb:exist://" + doc.getBasePath();
 		

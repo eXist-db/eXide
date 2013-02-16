@@ -230,7 +230,6 @@ var CStyleFoldMode = require("ace/mode/folding/cstyle").FoldMode;
 var Range = require("ace/range").Range;
 
 var Mode = function(parent) {
-    //this.$tokenizer = new Tokenizer(new XQueryHighlightRules().getRules());
     this.$tokenizer = new XQueryLexer();
     this.$behaviour = new XQueryBehaviour(parent);
     this.foldingRules = new CStyleFoldMode();
