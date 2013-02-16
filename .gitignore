@@ -1,2 +1,8 @@
 .DS_Store
 *.xar
+
+resources/scripts/xqlint.min.js
+
+tools/r.js
+
+tools/js.jar
