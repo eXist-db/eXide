@@ -9,9 +9,14 @@
     <property name="templates.dir" value="./templates"/>
     <property name="templates.default.dir" value="${templates.dir}/default"/>
     <property name="closure.compiler.url" value="http://closure-compiler.googlecode.com/files/compiler-latest.zip"/>
+    <property name="rhino.url" value="https://github.com/jrburke/r.js/blob/master/lib/rhino/js.jar?raw=true"/>
+    <property name="rhino.jar" value="tools/js.jar"/>
+    <property name="r.js.url" value="http://requirejs.org/docs/release/2.1.4/r.js"/>
     <property name="server.url" value="http://demo.exist-db.org/exist/apps/public-repo/public/"/>
     <available property="closure.available" file="${tools}/compiler.jar"/>
+    <available property="rhino.available" file="${tools}/js.jar"/>
     <target name="get-closure" unless="closure.available">
+        <echo message="Downloading closure..."/>
         <mkdir dir="${tools}"/>
         <get src="${closure.compiler.url}" dest="${tools}"/>
         <unzip dest="${tools}">
@@ -21,11 +26,18 @@
         </unzip>
         <delete file="${tools}/compiler-latest.zip"/>
     </target>
-    <target name="prepare" depends="get-closure">
+    <target name="get-rhino" unless="rhino.available">
+        <echo message="Downloading rhino..."/>
+        <mkdir dir="${tools}"/>
+        <get src="${rhino.url}" dest="${tools}"/>
+        <get src="${r.js.url}" dest="${tools}"/>
+    </target>
+    <target name="prepare" depends="get-closure,get-rhino">
         <taskdef name="jscomp" classname="com.google.javascript.jscomp.ant.CompileTask" classpath="${tools}/compiler.jar"/>
     </target>
-    <target name="all" depends="compress,xar"/>
+    <target name="all" depends="xqlint,compress,xar"/>
     <target name="compress" depends="prepare">
+        <echo message="Optimizing eXide sources"/>
         <jscomp compilationLevel="simple" debug="false" output="${scripts}/eXide.min.js">
             <sources dir="${basedir}/src">
                 <file name="util.js"/>
@@ -66,6 +78,13 @@
             </sources>
         </jscomp>
     </target>
+    <target name="xqlint" depends="get-rhino">
+        <echo message="Optimizing xqlint ..."/>
+        <java classpath="${rhino.jar}:${tools}/compiler.jar" classname="org.mozilla.javascript.tools.shell.Main">
+            <arg line="tools/r.js"/>
+            <arg line="-o tools/build.js"/>
+        </java>
+    </target>
     <target name="clean">
         <delete>
             <fileset dir="${scripts}">
@@ -73,6 +92,7 @@
             </fileset>
         </delete>
         <delete file="${scripts}/jquery/jquery.plugins.min.js"/>
+        <delete file="${scripts}/xqlint.min.js"/>
     </target>
     <target name="xar">
         <mkdir dir="${build}"/>
@@ -82,7 +102,7 @@
                 <include name="modules/**"/>
                 <include name="resources/**"/>
                 <include name="templates/**"/>
-                <exclude name="src/**"/>
+                <include name="src/**"/>
                 <exclude name=".git*"/>
             </fileset>
         </zip>
