@@ -63,7 +63,7 @@ eXide.app = (function() {
     var projects;
 	var preferences;
     var templates = {};
-    
+    var menu;
 	var hitCount = 0;
 	var startOffset = 0;
 	var currentOffset = 0;
@@ -75,9 +75,9 @@ eXide.app = (function() {
     var hasFocus = true;
     
 	return {
-
+        
 		init: function(afterInitCallback) {
-            var menu = new eXide.util.Menubar($(".menu"));
+            menu = new eXide.util.Menubar($(".menu"));
             projects = new eXide.edit.Projects();
 			editor = new eXide.edit.Editor(document.getElementById("editor"), menu);
 			deploymentEditor = new eXide.edit.PackageEditor(projects);
@@ -947,7 +947,6 @@ eXide.app = (function() {
 			menu.click("#menu-edit-preferences", function() {
                 preferences.show(); 		
 			}, "preferences");
-            
             menu.click("#menu-navigate-definition", function () {
                 editor.exec("gotoDefinition");
             }, "gotoDefinition");

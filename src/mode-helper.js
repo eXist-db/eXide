@@ -34,6 +34,12 @@ eXide.edit.ModeHelper = (function () {
 	
 	Constr.prototype = {
 
+        activate: function() {
+        },
+        
+        deactivate: function() {
+        },
+        
 		/**
 		 * Add a command which can be invoked dynamically by the editor
 		 */

@@ -54,6 +54,10 @@ eXide.edit.Document = (function() {
 		return this.$session.getValue();
 	};
 	
+    Constr.prototype.setText = function(text) {
+        this.$session.setValue(text);
+    };
+    
 	Constr.prototype.getName = function() {
 		return this.name;
 	};
@@ -185,9 +189,11 @@ eXide.edit.Editor = (function () {
 		this.editor.setBehavioursEnabled(true);
 		this.editor.setShowFoldWidgets(true);
         this.editor.setFadeFoldWidgets(false);
-        
+        // enable multiple cursors
+		require("ace/multi_select").MultiSelect(this.editor);
+        // register keybindings
         eXide.edit.commands.init($this);
-		
+        
 	    this.outline = new eXide.edit.Outline();
 	    this.addEventListener("activate", this.outline, this.outline.updateOutline);
     	this.addEventListener("validate", this.outline, this.outline.updateOutline);
@@ -233,7 +239,7 @@ eXide.edit.Editor = (function () {
 		
 		// register mode helpers
 		$this.modes = {
-			"xquery": new eXide.edit.XQueryModeHelper($this),
+			"xquery": new eXide.edit.XQueryModeHelper($this, menubar),
 			"xml": new eXide.edit.XMLModeHelper($this),
             "html": new eXide.edit.XMLModeHelper($this),
             "less": new eXide.edit.LessModeHelper($this),
@@ -380,7 +386,6 @@ eXide.edit.Editor = (function () {
 			eXide.util.message("Opening " + resource.path + " readonly!");
 		else
 			eXide.util.message("Opening " + resource.path);
-        $.log("external: %s", externalPath);
 		var doc = new eXide.edit.Document(resource.name, resource.path, new EditSession(data));
 		doc.editable = resource.writable;
 		doc.mime = mime;
@@ -415,6 +420,11 @@ eXide.edit.Editor = (function () {
 		$this.editor.setSession(doc.$session);
 		$this.editor.resize();
 		$this.editor.focus();
+        
+        $this.triggerCheck();
+        if (doc.getModeHelper()) {
+            doc.getModeHelper().activate();
+        }
 	};
 	
 	Constr.prototype.setMode = function(mode) {
@@ -643,6 +653,10 @@ eXide.edit.Editor = (function () {
 	};
 	
 	Constr.prototype.switchTo = function(doc) {
+        var helper = this.activeDoc.getModeHelper();
+        if (helper) {
+            helper.deactivate();
+        }
 		this.editor.setSession(doc.$session);
 		this.editor.resize();
 		this.activeDoc = doc;
@@ -658,6 +672,11 @@ eXide.edit.Editor = (function () {
 		});
 		this.updateStatus("");
 		this.$triggerEvent("activate", [doc]);
+        
+        helper = doc.getModeHelper();
+        if (helper) {
+            helper.activate();
+        }
 	};
 	
 	Constr.prototype.updateTabStatus = function(oldPath, doc) {

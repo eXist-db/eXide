@@ -97,7 +97,6 @@ eXide.util.Preferences = (function () {
     };
     
     Constr.prototype.applyPreferences = function () {
-		$.log("Applying preferences: %o", this.preferences);
         var $this = this;
 		this.editor.setTheme(this.preferences.theme);
 		this.editor.editor.setShowInvisibles(this.preferences.showInvisibles);

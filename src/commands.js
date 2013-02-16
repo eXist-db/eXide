@@ -52,7 +52,7 @@ eXide.edit.commands = (function () {
 	return {
 		
 		init: function (editor) {
-            commands = editor.editor.commands;
+            var commands = editor.editor.commands;
             $.ajax({
                 url: "keybindings.js",
                 dataType: 'json',
@@ -137,6 +137,14 @@ eXide.edit.commands = (function () {
         		    		editor.previousTab();
         		    	}
         		    });
+                    commands.addCommand({
+                        name: "formatCode",
+                        bindkey: bindKey(bindings.formatCode),
+                        exec: function(env, args, request) {
+                            $.log("Formatting");
+                            editor.exec("format");
+                        }
+                    });
         		    commands.addCommand({
         		    	name: "functionDoc",
         		    	bindKey: bindKey(bindings.functionDoc),

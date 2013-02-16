@@ -29,10 +29,12 @@
         <script src="$shared/resources/scripts/ace/theme-eclipse.js" type="text/javascript" charset="utf-8"/>
         <script src="$shared/resources/scripts/ace/mode-javascript.js" type="text/javascript" charset="utf-8"/>
         <script src="$shared/resources/scripts/ace/mode-xml.js" type="text/javascript" charset="utf-8"/>
+        <script src="$shared/resources/scripts/ace/mode-c_cpp.js" type="text/javascript" charset="utf-8"/>
         <script src="$shared/resources/scripts/ace/mode-html.js" type="text/javascript" charset="utf-8"/>
         <script src="$shared/resources/scripts/ace/mode-css.js" type="text/javascript" charset="utf-8"/>
         <script src="$shared/resources/scripts/ace/mode-less.js" type="text/javascript" charset="utf-8"/>
-
+        <script type="text/javascript" src="resources/scripts/xqlint.min.js"/>
+        
     <!--  Uncompressed Javascript files. Uncomment for development/debugging. -->
         <script type="text/javascript" src="src/ace-modes.js"/>
         <script type="text/javascript" src="src/util.js"/>
@@ -165,6 +167,14 @@
                                 </li>
                                 <li>
                                     <a href="#" id="menu-deploy-sync">Synchronize</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li id="menu-xquery">
+                            <a href="#">XQuery</a>
+                            <ul>
+                                <li>
+                                    <a href="#" id="menu-xquery-format">Format code</a>
                                 </li>
                             </ul>
                         </li>

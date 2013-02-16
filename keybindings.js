@@ -21,5 +21,6 @@
     "toggleComment": ["Ctrl-Shift-C", "Command-Shift-C"],
     "synchronize": ["Alt-Shift-S", "Command-Option-S"],
     "preferences": ["Alt-Shift-P", "Ctrl-Command-P"],
-    "openApp": ["Ctrl-Alt-R", "Command-Option-R"]
+    "openApp": ["Ctrl-Alt-R", "Command-Option-R"],
+    "formatCode": ["Ctrl-Shift-P", "Command-Shift-P"]
 }

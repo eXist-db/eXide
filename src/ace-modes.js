@@ -222,37 +222,41 @@ define("eXide/mode/xquery", function(require, exports, module) {
 
 var oop = require("ace/lib/oop");
 var TextMode = require("ace/mode/text").Mode;
+var XQueryLexer = require("xqlint/XQueryLexer").XQueryLexer;
+
 var Tokenizer = require("ace/tokenizer").Tokenizer;
-var XQueryHighlightRules = require("eXide/mode/xquery_highlight_rules").XQueryHighlightRules;
 var XQueryBehaviour = require("eXide/mode/behaviour/xquery").XQueryBehaviour;
+var CStyleFoldMode = require("ace/mode/folding/cstyle").FoldMode;
 var Range = require("ace/range").Range;
 
 var Mode = function(parent) {
-    this.$tokenizer = new Tokenizer(new XQueryHighlightRules().getRules());
+    //this.$tokenizer = new Tokenizer(new XQueryHighlightRules().getRules());
+    this.$tokenizer = new XQueryLexer();
     this.$behaviour = new XQueryBehaviour(parent);
+    this.foldingRules = new CStyleFoldMode();
 };
 
 oop.inherits(Mode, TextMode);
 
 (function() {
-
+    
     this.getNextLineIndent = function(state, line, tab) {
-    	var indent = this.$getIndent(line);
-    	var match = line.match(/\s*(?:then|else|return|[{\(]|<\w+>)\s*$/);
-    	if (match)
-    		indent += tab;
+      var indent = this.$getIndent(line);
+      var match = line.match(/\s*(?:then|else|return|[{\(]|<\w+>)\s*$/);
+      if (match)
+        indent += tab;
         return indent;
     };
     
     this.checkOutdent = function(state, line, input) {
-    	if (! /^\s+$/.test(line))
+      if (! /^\s+$/.test(line))
             return false;
 
         return /^\s*[\}\)]/.test(input);
     };
     
     this.autoOutdent = function(state, doc, row) {
-    	var line = doc.getLine(row);
+      var line = doc.getLine(row);
         var match = line.match(/^(\s*[\}\)])/);
 
         if (!match) return 0;
@@ -297,6 +301,61 @@ oop.inherits(Mode, TextMode);
             doc.replace(range, outdent ? line.match(re)[1] : "(:" + line + ":)");
         }
     };
+    
+    /*this.createWorker = function(session) {
+        this.$deltas = [];
+        var worker = new WorkerClient(["ace"], "ace/mode/xquery_worker", "XQueryWorker");
+        var that = this;
+
+        session.getDocument().on('change', function(evt){
+          that.$deltas.push(evt.data);
+        });
+
+        worker.attachToDocument(session.getDocument());
+        
+        worker.on("start", function(e) {
+          that.$deltas = [];
+        });
+
+        worker.on("error", function(e) {
+            // errors are ignored because they are reported by eXist's compiler
+        });
+        
+        worker.on("xqlint", function(e) {
+            var annotations = [];
+            for (var i = 0; i < e.data.length; i++) {
+                if (e.data[i].type !== "error") {
+                    annotations.push({
+                        row: e.data[i].pos.sl,
+                        text: e.data[i].message,
+                        type: e.data[i].type
+                    });
+                }
+            }
+            session.setAnnotations(annotations);
+        });
+        
+        worker.on("ok", function(e) {
+            session.clearAnnotations();
+        });
+        
+        worker.on("highlight", function(tokens) {
+          if(that.$deltas.length > 0) return;
+
+          var firstRow = 0;
+          var lastRow = session.getLength() - 1;
+          
+          var lines = tokens.data.lines;
+          var states = tokens.data.states;
+           
+          session.bgTokenizer.lines = lines;
+          session.bgTokenizer.states = states;
+          session.bgTokenizer.fireUpdateEvent(firstRow, lastRow);
+        });
+        
+        return worker;
+    };*/
+    
 }).call(Mode.prototype);
 
 exports.Mode = Mode;

@@ -25,7 +25,13 @@ eXide.edit.XQueryModeHelper = (function () {
 	
 	var RE_FUNC_NAME = /^[\$\w:\-_\.]+/;
 	
-	Constr = function(editor) {
+    var SemanticHighlighter = require("xqlint/visitors/SemanticHighlighter").SemanticHighlighter;
+    var XQueryParser = require("xqlint/XQueryParser").XQueryParser;
+    var JSONParseTreeHandler = require("xqlint/JSONParseTreeHandler").JSONParseTreeHandler;
+    var Translator = require("xqlint/Translator").Translator;
+    var CodeFormatter = require("xqlint/visitors/CodeFormatter").CodeFormatter;
+        
+	Constr = function(editor, menubar) {
 		this.parent = editor;
 		this.editor = this.parent.editor;
         this.xqDebugger = null;
@@ -39,6 +45,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		// added to clean function name : 
         this.trimRe = /^[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+|[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+$/g;
         
+        this.addCommand("format", this.format);
 		this.addCommand("showFunctionDoc", this.showFunctionDoc);
 		this.addCommand("gotoDefinition", this.gotoDefinition);
 		this.addCommand("locate", this.locate);
@@ -47,11 +54,25 @@ eXide.edit.XQueryModeHelper = (function () {
         this.addCommand("debug", this.initDebugger);
         this.addCommand("stepOver", this.stepOver);
         this.addCommand("stepInto", this.stepInto);
-	}
+        
+        var self = this;
+        this.menu = $("#menu-xquery").hide();
+        menubar.click("#menu-xquery-format", function() {
+            self.format(editor.getActiveDocument());
+        }, "formatCode");
+	};
 	
 	// extends ModeHelper
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
 	
+    Constr.prototype.activate = function() {
+        this.menu.show();
+    };
+    
+    Constr.prototype.deactivate = function() {
+        this.menu.hide();
+    };
+    
 	Constr.prototype.closeTag = function (doc, text, row) {
 		var basePath = "xmldb:exist://" + doc.getBasePath();
 		var $this = this;
@@ -88,10 +109,15 @@ eXide.edit.XQueryModeHelper = (function () {
 			dataType: "json",
 			success: function (data) {
 				$this.compileError(data, doc);
-				onComplete.call(this, true);
+                $this.xqlint(doc);
+                if (onComplete) {
+				    onComplete.call(this, true);
+                }
 			},
 			error: function (xhr, status) {
-				onComplete.call(this, true);
+                if (onComplete) {
+				    onComplete.call(this, true);
+                }
 				$.log("Compile error: %s - %s", status, xhr.responseText);
 			}
 		});
@@ -103,19 +129,81 @@ eXide.edit.XQueryModeHelper = (function () {
 	Constr.prototype.compileError = function(data, doc) {
 		if (data.result == "fail") {
 			var err = parseErrMsg(data.error);
-			var annotation = [{
+			var annotation = {
 				row: err.line,
 				text: err.msg,
 				type: "error"
-			}];
+			};
 			this.parent.updateStatus(err.msg, doc.getPath() + "#" + err.line);
-			doc.getSession().setAnnotations(annotation);
+            var annotations = this.clearAnnotations(doc, "error");
+            annotations.push(annotation);
+			doc.getSession().setAnnotations(annotations);
 		} else {
-			this.parent.clearErrors();
+			doc.getSession().setAnnotations(this.clearAnnotations(doc, "error"));
 			this.parent.updateStatus("");
 		}
-	}
+	};
 	
+    Constr.prototype.xqlint = function(doc) {
+        var session = doc.getSession();
+        var value = doc.getText();    
+        var h = new JSONParseTreeHandler(value);
+        var parser = new XQueryParser(value, h);
+        try {
+            parser.parse_XQuery();
+            var ast = h.getParseTree();
+            
+            var highlighter = new SemanticHighlighter(ast, value);
+      
+            var mode = doc.getSession().getMode();
+
+            mode.$tokenizer.tokens = highlighter.getTokens();
+            mode.$tokenizer.lines  = session.getDocument().getAllLines();
+            session.bgTokenizer.lines = [];
+            session.bgTokenizer.states = [];
+            
+            var rows = Object.keys(mode.$tokenizer.tokens);
+            for(var i=0; i < rows.length; i++) {
+                var row = parseInt(rows[i]);
+                session.bgTokenizer.fireUpdateEvent(row, row);
+            }
+
+            var translator = new Translator(ast);
+            ast = translator.translate();
+            
+            var markers = ast.markers;
+            var annotations = this.clearAnnotations(doc, "warning");
+            for (var i = 0; i < markers.length; i++) {
+                if (markers[i].type !== "error") {
+                    annotations.push({
+                        row: markers[i].pos.sl,
+                        text: markers[i].message,
+                        type: markers[i].type
+                    });
+                }
+            }
+            session.setAnnotations(annotations);
+        } catch(e) {
+            $.log("error: %o", e);
+            if(e instanceof parser.ParseException) {
+                // ignore
+            } else {
+                throw e;
+            }
+        }
+    };
+    
+    Constr.prototype.clearAnnotations = function(doc, type) {
+        var na = [];
+        var a = doc.getSession().getAnnotations();
+        for (var i = 0; i < a.length; i++) {
+            if (a[i].type !== type) {
+                na.push(a[i]);
+            }
+        }
+        return na;
+    };
+    
 	Constr.prototype.autocomplete = function(doc) {
 		var lang = require("pilot/lang");
 		var Range = require("ace/range").Range;
@@ -337,6 +425,17 @@ eXide.edit.XQueryModeHelper = (function () {
 		}
 	}
 	
+    Constr.prototype.format = function(doc) {
+        var code = doc.getText();
+        var h = new JSONParseTreeHandler(code);
+        var parser = new XQueryParser(code, h); 
+        parser.parse_XQuery();
+        var ast = h.getParseTree();
+        var codeFormatter = new CodeFormatter(ast);
+        var formatted = codeFormatter.format();
+        doc.setText(formatted);
+    };
+    
 	Constr.prototype.gotoFunction = function (doc, name) {
 		$.log("Goto function %s", name);
         var prefix = this.getModuleNamespacePrefix();
