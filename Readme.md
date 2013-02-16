@@ -1,4 +1,4 @@
-![eXide logo](/wolfgangmm/eXide/raw/master/resources/images/logo.png)
+![eXide logo](/wolfgangmm/eXide/blob/master/resources/images/logo.png)
 
 eXide - a web-based XQuery IDE
 ==============================
@@ -9,7 +9,7 @@ It is tightly integrated with the eXist-db native XML database (http://exist-db.
 Features
 --------
 
-* XQuery function and variable completion (press Ctrl-Space)
+* XQuery function and variable completion (press Ctrl-Space or Opt-Space)
 * Outline view showing all functions and variables reachable from the current file
 * Powerful navigation (press F3 on a function call to see its declaration)
 * Templates
@@ -21,7 +21,13 @@ Features
 eXide consists of two parts:
 
 1. a javascript library for the client-side application
-2. a set of XQuery scripts which are called from AJAX
+2. a set of XQuery scripts which are called via AJAX
+
+Dependencies
+------------
+
+eXide requires the shared-resources package in eXist-db. It should be installed by default unless you changed
+the build.
 
 Building
 --------
@@ -35,6 +41,7 @@ you should first get eXist-db from SVN and build it (build.sh/build.bat). Next, 
 
      git clone git://github.com/wolfgangmm/eXide.git eXideDev
      cd eXideDev
+     git submodule update --init --recursive
 
 Next, call ant on the build.xml file in eXideDev:
 
