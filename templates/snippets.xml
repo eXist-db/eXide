@@ -2,88 +2,88 @@
 <snippets>
     <snippet abbrev="for-return">
         <description>Basic for-in-return statement</description>
-        <code>for $item in $inseq
-    return
-        $item</code>
+        <code>for $item in ␣
+return
+    $item</code>
     </snippet>
     <snippet abbrev="let-return">
         <description>Basic let-return expression</description>
-        <code>let $item := $inseq
+        <code>let $item := ␣
     return
-        $block</code>
+        ␣</code>
     </snippet>
     <snippet abbrev="let-single">
         <description>Single let statement without return</description>
-        <code>let $item := $inseq</code>
+        <code>let $item := ␣</code>
     </snippet>
     <snippet abbrev="log">
         <description>util:log statement</description>
-        <code>util:log("DEBUG", ($message))</code>
+        <code>util:log("DEBUG", (␣))</code>
     </snippet>
     <snippet abbrev="fun">
         <description>Function declaration</description>
-        <code>declare function $name($param) {
-    $body
+        <code>declare function ␣($param) {
+    ␣
 };</code>
     </snippet>
     <snippet abbrev="template-fun">
         <description>HTML templating function</description>
-        <code>declare function $name($node as node(), $model as map(*)) {
-    $body
+        <code>declare function ␣($node as node(), $model as map(*)) {
+    ␣
 };</code>
     </snippet>
     <snippet abbrev="import">
         <description>Module import</description>
-        <code>import module namespace $prefix="$uri" at "$location";</code>
+        <code>import module namespace ␣="$uri" at "␣";</code>
     </snippet>
     <snippet abbrev="declare-ns">
         <description>Declare namespace</description>
-        <code>declare namespace $prefix="$uri";</code>
+        <code>declare namespace ␣="␣";</code>
     </snippet>
     <snippet abbrev="declare-option">
         <description>Serialization declaration</description>
-        <code>declare option exist:serialize "$options";</code>
+        <code>declare option exist:serialize "␣";</code>
     </snippet>
     <snippet abbrev="html-output">
         <description>Option declaration for HTML5 output</description>
-        <code><![CDATA[declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
+        <code>declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 
 declare option output:method "html5";
-declare option output:media-type "text/html";]]></code>
+declare option output:media-type "text/html";</code>
     </snippet>
     <snippet abbrev="if">
         <description>If-then-else statement</description>
-        <code>if ($condition) then
-    $block
+        <code>if (␣) then
+    ␣
 else
-    $block</code>
+    ␣</code>
     </snippet>
     <snippet abbrev="declare-var">
         <description>Variable declaration</description>
-        <code>declare variable $var := $block;</code>
+        <code>declare variable $var := ␣;</code>
     </snippet>
     <snippet abbrev="typeswitch">
         <description>Typeswitch statement</description>
-        <code>typeswitch ($node)
-        case element($name) return
-            $node
+        <code>typeswitch (␣)
+        case element(␣) return
+            ␣
         default return
-            $node</code>
+            ␣</code>
     </snippet>
     <snippet abbrev="switch">
         <description>XQuery 3.0 switch statement</description>
-        <code>switch ($item)
-        case $value return $block
-        default return $block</code>
+        <code>switch (␣)
+        case ␣ return ␣
+        default return ␣</code>
     </snippet>
     <snippet abbrev="case">
         <description>Case clause in typeswitch or switch</description>
-        <code>case element($name) return</code>
+        <code>case element(␣) return</code>
     </snippet>
     <snippet abbrev="comment (for function)">
         <description>Insert an XQDoc comment for a function declaration</description>
         <code>(:~
- :
+ : ␣
  :)</code>
     </snippet>
     <snippet abbrev="json">

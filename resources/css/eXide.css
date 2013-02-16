@@ -580,32 +580,39 @@ Sub level menu list items (undo style from Top level List Items)
 	width: 320px;
 	display: none;
 	z-index: 1000;
-	background-color: #F0F0F0;
+    background-color: #E0E0E0;
+    border: 1px solid #BBB;
+    border-width: 1px 1px 1px 1px;
+    border-radius: 0;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.3);
 	font-size: 85%;
+    outline: none;
 }
 
 #autocomplete-box ul {
-	position: absolute;
-	background-color: #F0F0F0;
 	list-style: none;
-	width: 304px;
-	margin: 0;
-	padding: 8px;
-	height: 160px;
+    background-color: #E8E8E8;
+	width: 312px;
+	margin: 8px 4px;
+	padding: 0;
+	height: 220px;
 	overflow: auto;
 }
 
 #autocomplete-box li {
 	cursor: pointer;
+    padding: 2px 0;
+}
+
+#autocomplete-box .title {
+    font-size: 85%;
+    padding: 4px;
+    text-align: right;
+	background-color: #404040;
 }
 
 #autocomplete-box .popup-close {
-	display: block;
-	font-size: 85%;
-	padding: 4px;
-	text-align: right;
-	background-color: #404040;
-	color: white;
+    color: white;
 }
 
 #autocomplete-box .selection {
@@ -616,12 +623,17 @@ Sub level menu list items (undo style from Top level List Items)
 	display: none;
 	z-index: 1000;
 	width: 320px;
-	height: 168px;
+	height: 228px;
 	overflow: auto;
 	position: absolute;
-	background-color: #F0F0F0;
-	font-size: 75%;
+    background-color: #E8E8E8;
+    border: 1px solid #BBB;
+    border-width: 1px 1px 1px 1px;
+    border-radius: 0;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.3);
+	font-size: 85%;
 	padding: 4px 8px;
+    margin: 0;
 }
 
 #autocomplete-help dt {

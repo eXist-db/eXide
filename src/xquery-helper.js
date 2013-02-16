@@ -60,6 +60,10 @@ eXide.edit.XQueryModeHelper = (function () {
         menubar.click("#menu-xquery-format", function() {
             self.format(editor.getActiveDocument());
         }, "formatCode");
+        
+        editor.addEventListener("change", function(doc) {
+            
+        });
 	};
 	
 	// extends ModeHelper
@@ -235,7 +239,6 @@ eXide.edit.XQueryModeHelper = (function () {
 		var editorHeight = this.parent.getHeight();
 		if (pos.pageY + 150 > editorHeight) {
 			pos.pageY = editorHeight - 150;
-			$.log("window height: %i, pageY: %i", editorHeight, pos.pageY);
 		}
 		$("#autocomplete-box").css({ left: pos.pageX + "px", top: (pos.pageY + 10) + "px" });
 		$("#autocomplete-help").css({ left: (pos.pageX + 324) + "px", top: (pos.pageY + 10) + "px" });
@@ -362,7 +365,7 @@ eXide.edit.XQueryModeHelper = (function () {
 	Constr.prototype.$showPopup = function (doc, wordrange, popupItems) {
 		// display popup
 		var $this = this;
-		eXide.util.popup($("#autocomplete-box"), $("#autocomplete-help"), popupItems,
+		eXide.util.popup(this.editor, $("#autocomplete-box"), $("#autocomplete-help"), popupItems,
 				function (selected) {
 					if (selected) {
 						var expansion = selected.label;

@@ -61,7 +61,7 @@ eXide.util = (function () {
 		 * callback function. Pressing any other key closes the popup and
 		 * calls onSelect with a null argument.
 		 */
-		popup: function (div, tooltipDiv, data, onSelect) {
+		popup: function (editor, div, tooltipDiv, data, onSelect) {
 			var container = $(div);
 			var tooltips = tooltipDiv ? $(tooltipDiv) : null;
 			var selection = null;
@@ -81,12 +81,15 @@ eXide.util = (function () {
 			
 			data.sort(compareLabels);
 			
-			container.empty().css("display", "block").focus();
+			container.empty();
+            var titlebar = document.createElement("div");
+            titlebar.className = "title";
 			var closeLink = document.createElement("a");
 			closeLink.href = "#";
 			closeLink.className = "popup-close";
 			closeLink.appendChild(document.createTextNode("Close"));
-			container.append(closeLink);
+            titlebar.appendChild(closeLink);
+			container.append(titlebar);
 			$(closeLink).click(function (ev) {
 				ev.preventDefault();
 				// close container and unbind event
@@ -106,7 +109,6 @@ eXide.util = (function () {
 					var help = document.createElement("span");
 					help.className = "tooltip";
                     help.innerHTML = data[i].tooltip;
-//					help.appendChild(document.createTextNode(data[i].tooltip));
 					
 					li.appendChild(help);
 				}
@@ -136,10 +138,7 @@ eXide.util = (function () {
 			var selection = container.find("ul li:first").addClass('selection');
 			updateTooltip(selection);
 			
-			var list = $(ul).css("position", "absolute").scrollTop(0);
-			if (tooltips) {
-				tooltips.css({ display: "block", top: list.offset().top + "px" });
-			}
+			var list = $(ul).scrollTop(0);
 			var ch = list.innerHeight();
 
 			$(container).keydown(function (ev) {
@@ -164,7 +163,6 @@ eXide.util = (function () {
 						if (prev.hasClass("first")) {
 							list.scrollTop(0);
 						} else if (prev.position().top < 0) {
-//							list.scrollTop((list.scrollTop() + prev.position().top) - prev.height());
 							prev.get(0).scrollIntoView();
 						}
 						updateTooltip(prev);
@@ -194,6 +192,13 @@ eXide.util = (function () {
 				}
 				return false;
 			});
+            container.fadeIn(80, function() {
+                container.focus();
+                if (tooltips) {
+                    tooltips.css({ top: (list.offset().top - 8) + "px" });
+                    tooltips.fadeIn();
+                }
+            });
 		},
 		
 		/**

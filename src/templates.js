@@ -37,7 +37,7 @@ eXide.edit.Template = (function () {
 		this.currentLine = this.startLine;
 		this.startColumn = range.start.column;
 		this.lineOffset = this.startColumn;
-		this.regex = /\$[\w\-:_]+/g;
+		this.regex = /(?:\$[\w\-:_]+|␣)/g;
 		if (this.startColumn > 0)
 			this.regex.lastIndex = this.startColumn;
 	}
@@ -83,6 +83,9 @@ eXide.edit.Template = (function () {
 					$.log("Matched %s", match[0]);
 					sel.setSelectionAnchor(this.currentLine, match.index);
 					sel.selectTo(this.currentLine, match.index + match[0].length);
+                    if (match[0].length === 1) {
+                        session.remove(sel.getRange());
+                    }
 					this.lineOffset = match.index;
 					found = true;
 					break;

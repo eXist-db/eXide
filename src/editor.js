@@ -423,6 +423,10 @@ eXide.edit.Editor = (function () {
 		$this.editor.resize();
 		$this.editor.focus();
         
+        doc.$session.getDocument().on("change", function(ev) {
+            $this.$triggerEvent("change", [$this.activeDoc]);
+        });
+        
         if (doc.getModeHelper()) {
             doc.getModeHelper().activate();
         }
