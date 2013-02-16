@@ -1,4 +1,4 @@
-![eXide logo](/wolfgangmm/eXide/blob/master/resources/images/logo.png)
+![eXide logo](resources/images/logo.png)
 
 eXide - a web-based XQuery IDE
 ==============================
