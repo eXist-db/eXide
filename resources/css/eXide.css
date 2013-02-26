@@ -200,7 +200,7 @@ Sub level menu list items (undo style from Top level List Items)
 	padding: 5px;
 	margin: 0;
 	background-image: #F0F0F0;
-	width: 160px; /*width of sub menus*/
+	width: 220px; /*width of sub menus*/
 }
 
 .menu ul li ul li a:hover { /*sub menus hover style*/
@@ -217,11 +217,12 @@ Sub level menu list items (undo style from Top level List Items)
     padding-bottom: 2px;
     margin-bottom: 2px;
     border-bottom: 1px solid #777;
-    width: 160px;
+    width: 220px;
 }
 
 .menu .shortcut {
     float: right;
+    font-size: 0.9em;
 }
 
 #toolbar {
