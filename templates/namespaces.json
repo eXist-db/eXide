@@ -1,0 +1,5 @@
+{
+    "tei": "http://www.tei-c.org/ns/1.0",
+    "html": "http://www.w3.org/1999/xhtml",
+    "json": "http://www.json.org"
+}

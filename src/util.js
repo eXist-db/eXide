@@ -98,19 +98,34 @@ eXide.util = (function () {
 					tooltips.css("display", "none");
 			});
 			
-			var ul = document.createElement("ul");
+            var div = document.createElement("div");
+            div.className = "items";
+            
+			var ul = document.createElement("table");
+            div.appendChild(ul);
 			for (var i = 0; i < data.length; i++) {
-				var li = document.createElement("li");
+				var li = document.createElement("tr");
 				if (i == 0) {
 					li.className = "first";
 				}
-				li.appendChild(document.createTextNode(data[i].label));
+                var td;
+                if (data[i].label instanceof Array) {
+                    for (var j = 0; j < data[i].label.length; j++) {
+                        td = document.createElement("td");
+                        td.appendChild(document.createTextNode(data[i].label[j]));
+                        li.appendChild(td);
+                    }
+                } else {
+                    td = document.createElement("td");
+				    td.appendChild(document.createTextNode(data[i].label));
+                    li.appendChild(td);
+                }
 				if (data[i].tooltip) {
 					var help = document.createElement("span");
 					help.className = "tooltip";
                     help.innerHTML = data[i].tooltip;
 					
-					li.appendChild(help);
+					td.appendChild(help);
 				}
 				ul.appendChild(li);
 				
@@ -121,7 +136,7 @@ eXide.util = (function () {
 					updateTooltip(selection);
 				});
 				$(li).dblclick(function () {
-					var pos = container.find("li").index(selection);
+					var pos = container.find("tr").index(selection);
 					
 					// close container and unbind event
 					container.css("display", "none");
@@ -132,13 +147,13 @@ eXide.util = (function () {
 					onSelect.call(null, data[pos]);
 				});
 			}
-			container.append(ul);
+			container.append(div);
 			
 			
-			var selection = container.find("ul li:first").addClass('selection');
+			var selection = container.find("table tr:first").addClass('selection');
 			updateTooltip(selection);
 			
-			var list = $(ul).scrollTop(0);
+			var list = $(div).scrollTop(0);
 			var ch = list.innerHeight();
 
 			$(container).keydown(function (ev) {
@@ -168,7 +183,7 @@ eXide.util = (function () {
 						updateTooltip(prev);
 					}
 				} else if (ev.which == 13) {
-					var pos = container.find("li").index(selection);
+					var pos = container.find("tr").index(selection);
 					
 					// close container and unbind event
 					container.css("display", "none");
@@ -194,8 +209,9 @@ eXide.util = (function () {
 			});
             container.fadeIn(80, function() {
                 container.focus();
+                var offset = list.offset();
                 if (tooltips) {
-                    tooltips.css({ top: (list.offset().top - 8) + "px" });
+                    tooltips.css({ top: (offset.top - 8) + "px", left: (offset.left + list.width()+ 4) + "px" });
                     tooltips.fadeIn();
                 }
             });

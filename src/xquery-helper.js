@@ -1,7 +1,7 @@
 /*
  *  eXide - web-based XQuery IDE
  *  
- *  Copyright (C) 2011 Wolfgang Meier
+ *  Copyright (C) 2013 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -25,11 +25,13 @@ eXide.edit.XQueryModeHelper = (function () {
 	
 	var RE_FUNC_NAME = /^[\$\w:\-_\.]+/;
 	
-    var SemanticHighlighter = require("xqlint/visitors/SemanticHighlighter").SemanticHighlighter;
-    var XQueryParser = require("xqlint/XQueryParser").XQueryParser;
-    var JSONParseTreeHandler = require("xqlint/JSONParseTreeHandler").JSONParseTreeHandler;
-    var Translator = require("xqlint/Translator").Translator;
-    var CodeFormatter = require("xqlint/visitors/CodeFormatter").CodeFormatter;
+    var SemanticHighlighter = require("lib/visitors/SemanticHighlighter").SemanticHighlighter;
+    var XQueryParser = require("lib/XQueryParser").XQueryParser;
+    var JSONParseTreeHandler = require("lib/JSONParseTreeHandler").JSONParseTreeHandler;
+    var Translator = require("lib/Translator").Translator;
+    var CodeFormatter = require("lib/visitors/CodeFormatter").CodeFormatter;
+    var Compiler = require("lib/Compiler").Compiler;
+    var Range = require("ace/range").Range;
         
 	Constr = function(editor, menubar) {
 		this.parent = editor;
@@ -51,6 +53,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		this.addCommand("locate", this.locate);
 		this.addCommand("closeTag", this.closeTag);
         this.addCommand("importModule", this.importModule);
+        this.addCommand("quickFix", this.quickFix);
         this.addCommand("debug", this.initDebugger);
         this.addCommand("stepOver", this.stepOver);
         this.addCommand("stepInto", this.stepInto);
@@ -61,8 +64,21 @@ eXide.edit.XQueryModeHelper = (function () {
             self.format(editor.getActiveDocument());
         }, "formatCode");
         
+        self.validating = null;
+        self.validationListeners = [];
         editor.addEventListener("change", function(doc) {
-            
+            if (self.validating) {
+                clearTimeout(self.validating);
+            }
+            self.validating = setTimeout(function() {
+                self.xqlint(doc);
+                for (var i = 0; i < self.validationListeners.length; i++) {
+                    var listener = self.validationListeners[i];
+                    listener.exec.apply(listener.context, [doc]);
+                }
+                self.validationListeners.length = 0;
+                self.validating = null;
+            }, 300);
         });
 	};
 	
@@ -71,11 +87,17 @@ eXide.edit.XQueryModeHelper = (function () {
 	
     Constr.prototype.activate = function() {
         this.menu.show();
+        this.parent.updateStatus("");
         this.parent.triggerCheck();
+        this.xqlint(this.parent.getActiveDocument());
     };
     
     Constr.prototype.deactivate = function() {
         this.menu.hide();
+    };
+    
+    Constr.prototype.afterValidate = function(context, callback) {
+        this.validationListeners.push({context: context, exec: callback});
     };
     
 	Constr.prototype.closeTag = function (doc, text, row) {
@@ -114,7 +136,6 @@ eXide.edit.XQueryModeHelper = (function () {
 			dataType: "json",
 			success: function (data) {
 				$this.compileError(data, doc);
-                $this.xqlint(doc);
                 if (onComplete) {
 				    onComplete.call(this, true);
                 }
@@ -136,6 +157,7 @@ eXide.edit.XQueryModeHelper = (function () {
 			var err = parseErrMsg(data.error);
 			var annotation = {
 				row: err.line,
+                column: err.column,
 				text: err.msg,
 				type: "error"
 			};
@@ -156,46 +178,45 @@ eXide.edit.XQueryModeHelper = (function () {
         var parser = new XQueryParser(value, h);
         try {
             parser.parse_XQuery();
-            var ast = h.getParseTree();
-            
-            var highlighter = new SemanticHighlighter(ast, value);
-      
-            var mode = doc.getSession().getMode();
-
-            mode.$tokenizer.tokens = highlighter.getTokens();
-            mode.$tokenizer.lines  = session.getDocument().getAllLines();
-            session.bgTokenizer.lines = [];
-            session.bgTokenizer.states = [];
-            
-            var rows = Object.keys(mode.$tokenizer.tokens);
-            for(var i=0; i < rows.length; i++) {
-                var row = parseInt(rows[i]);
-                session.bgTokenizer.fireUpdateEvent(row, row);
-            }
-
-            var translator = new Translator(ast);
-            ast = translator.translate();
-            
-            var markers = ast.markers;
-            var annotations = this.clearAnnotations(doc, "warning");
-            for (var i = 0; i < markers.length; i++) {
-                if (markers[i].type !== "error") {
-                    annotations.push({
-                        row: markers[i].pos.sl,
-                        text: markers[i].message,
-                        type: markers[i].type
-                    });
-                }
-            }
-            session.setAnnotations(annotations);
         } catch(e) {
-            $.log("error: %o", e);
             if(e instanceof parser.ParseException) {
-                // ignore
-            } else {
-                throw e;
+                h.closeParseTree();
             }
         }
+        var ast = h.getParseTree();
+        
+        var highlighter = new SemanticHighlighter(ast, value);
+  
+        var mode = doc.getSession().getMode();
+
+        mode.$tokenizer.tokens = highlighter.getTokens();
+        mode.$tokenizer.lines  = session.getDocument().getAllLines();
+        session.bgTokenizer.lines = [];
+        session.bgTokenizer.states = [];
+        
+        var rows = Object.keys(mode.$tokenizer.tokens);
+        for(var i=0; i < rows.length; i++) {
+            var row = parseInt(rows[i]);
+            session.bgTokenizer.fireUpdateEvent(row, row);
+        }
+
+        var translator = new Translator(ast);
+        doc.ast = translator.translate();
+        
+        var markers = doc.ast.markers;
+        var annotations = this.clearAnnotations(doc, "warning");
+        for (var i = 0; i < markers.length; i++) {
+            if (markers[i].type !== "error") {
+                annotations.push({
+                    row: markers[i].pos.sl,
+                    column: markers[i].pos.sc,
+                    text: markers[i].message,
+                    type: markers[i].type,
+                    pos: markers[i].pos
+                });
+            }
+        }
+        session.setAnnotations(annotations);
     };
     
     Constr.prototype.clearAnnotations = function(doc, type) {
@@ -210,32 +231,91 @@ eXide.edit.XQueryModeHelper = (function () {
     };
     
 	Constr.prototype.autocomplete = function(doc) {
-		var lang = require("pilot/lang");
-		var Range = require("ace/range").Range;
-		
-	    var sel   = this.editor.getSelection();
-	    var session   = doc.getSession();
-	    
-		var lead = sel.getSelectionLead();
-		var line = session.getDisplayLine(lead.row);
-		var start = lead.column - 1;
-		var end = lead.column;
-		while (start >= 0) {
-			var ch = line.substring(start, end);
-			if (ch.match(/^\$[\w:\-_\.]+$/)) {
-				break;
-			}
-			if (!ch.match(/^[\w:\-_\.]+$/)) {
-				start++;
-				break;
-			}
-			start--;
-		}
-		var token = line.substring(start, end);
-		$.log("completing token: %s", token);
-		var range = new Range(lead.row, start, lead.row, end);
+        var sel   = this.editor.getSelection();
+        var session   = doc.getSession();
 
-		var pos = this.editor.renderer.textToScreenCoordinates(lead.row, lead.column);
+        var lead = sel.getSelectionLead();
+        
+        var token = "";
+        var mode = "templates";
+        var row, start, end;
+        
+        // try to determine the ast node where the cursor is located
+        var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+        $.log("autocomplete: %o", astNode);
+        
+        if (!astNode) {
+            // no ast node: scan preceding text
+            mode = "functions";
+            row = lead.row;
+            line = session.getDisplayLine(lead.row);
+            start = lead.column - 1;
+            end = lead.column;
+            while (start >= 0) {
+               var ch = line.substring(start, end);
+               if (ch.match(/^\$[\w:\-_\.]+$/)) {
+                       break;
+               }
+               if (!ch.match(/^[\w:\-_\.]+$/)) {
+                       start++;
+                       break;
+               }
+               start--;
+            }
+            token = line.substring(start, end);
+        } else {
+            var importStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "Import");
+            var nsDeclStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "NamespaceDecl");
+            if (importStmt) {
+                mode = "modules";
+                if (astNode.name == "NCName") {
+                    token = astNode.value;
+                } else if (astNode.name == "URILiteral") {
+                    var prefix = eXide.edit.XQueryUtils.findSibling(astNode, "NCName");
+                    if (prefix) {
+                        token = eXide.edit.XQueryUtils.getValue(prefix);
+                    }
+                }
+                
+                row = importStmt.pos.sl;
+                start = importStmt.pos.sc;
+                end = importStmt.pos.ec;
+                var separator = eXide.edit.XQueryUtils.findNext(importStmt, "Separator");
+                if (separator) {
+                    end = separator.pos.ec;
+                }
+            } else if (nsDeclStmt) {
+                mode = "namespaces";
+                if (astNode.name == "URILiteral") {
+                    var prefix = eXide.edit.XQueryUtils.findSibling(astNode, "NCName");
+                    if (prefix) {
+                        token = eXide.edit.XQueryUtils.getValue(prefix);
+                    }
+                }
+                row = nsDeclStmt.pos.sl;
+                start = nsDeclStmt.pos.sc;
+                end = nsDeclStmt.pos.ec;
+                var separator = eXide.edit.XQueryUtils.findNext(nsDeclStmt, "Separator");
+                if (separator) {
+                    end = separator.pos.ec;
+                }
+            } else if (astNode.name == "EQName") {
+                mode = "functions";
+                token = astNode.value;
+                row = astNode.pos.sl;
+                start = astNode.pos.sc;
+                end = astNode.pos.ec;
+            } else {
+                row = lead.row;
+                start = lead.column;
+                end = lead.column;
+            }
+        }
+        
+		$.log("completing token: %s, mode: %s, row: %d, %d:%d", token, mode, row, start, end);
+		var range = new Range(row, start, row, end);
+
+		var pos = this.editor.renderer.textToScreenCoordinates(row, start);
 		var editorHeight = this.parent.getHeight();
 		if (pos.pageY + 150 > editorHeight) {
 			pos.pageY = editorHeight - 150;
@@ -243,17 +323,21 @@ eXide.edit.XQueryModeHelper = (function () {
 		$("#autocomplete-box").css({ left: pos.pageX + "px", top: (pos.pageY + 10) + "px" });
 		$("#autocomplete-help").css({ left: (pos.pageX + 324) + "px", top: (pos.pageY + 10) + "px" });
 		
-		if (token.length == 0) {
+		if (mode == "templates") {
 			this.templateLookup(doc, token, range, true);
-		} else {
+		} else if (mode == "functions") {
 			this.functionLookup(doc, token, range, true);
+		} else if (mode == "namespaces") {
+            this.namespaceLookup(doc, token, range, true);   
+		} else {
+            this.moduleLookup(doc, token, range, true);   
 		}
 		return true;
-	}
+	};
 	
     Constr.prototype.$localVars = function (prefix, wordrange, complete) {
         var variables =[];
-        var stopRegex = /declare function|};/;
+        var stopRegex = /declare function|\};/;
         //var varRegex = /let \$[\w\:]+|for \$[\w\:]+|\$[\w\:]+\)/;
         //var getVarRegex = /\$[\w\:]+/;
         var varRegex = /let \$[\w\-_\:]+|for \$[\w\-_\:]+|\$[\w\-_\:]+\)/;
@@ -340,23 +424,62 @@ eXide.edit.XQueryModeHelper = (function () {
 				eXide.util.error(msg);
 			}
 		});
-	}
+	};
 	
 	Constr.prototype.templateLookup = function(doc, prefix, wordrange, complete) {
 		var popupItems = [];
 		this.$addTemplates(prefix, popupItems);
 		this.$showPopup(doc, wordrange, popupItems);
-	}
+	};
+    
+    Constr.prototype.moduleLookup = function(doc, prefix, wordrange, complete) {
+        var self = this;
+        $.getJSON("modules/find.xql", { prefix: prefix }, function (data) {
+            if (data) {
+                var popupItems = [];
+                for (var i = 0; i < data.length; i++) {
+                    popupItems.push({
+                        type: "template",
+                        label: [data[i].prefix, data[i].uri],
+                        tooltip: data[i].at,
+                        template: "import module namespace " + data[i].prefix + "=\"" + data[i].uri + 
+                            "\" at \"" + data[i].at + "\";"
+                    });
+                }
+                self.$showPopup(doc, wordrange, popupItems);
+            }
+        });
+    };
+    
+    Constr.prototype.namespaceLookup = function(doc, prefix, wordrange, complete) {
+        var self = this;
+        $.getJSON("templates/namespaces.json", function(data) {
+            if (data) {
+                var popupItems = [];
+                for (var key in data) {
+                    if (!key || key === prefix) {
+                        popupItems.push({
+                            type: "namespace",
+                            label: [key, data[key]],
+                            template: "declare namespace " + key + "=\"" + data[key] + "\";"
+                        });
+                    }
+                }
+                self.$showPopup(doc, wordrange, popupItems);
+            }
+        });
+    };
 	
 	Constr.prototype.$addTemplates = function (prefix, popupItems) {
 		// add templates
 		var templates = this.parent.outline.getTemplates(prefix);
 		for (var i = 0; i < templates.length; i++) {
 			var item = {
-					type: "template",
-					label: "[S] " + templates[i].name,
-					tooltip: templates[i].help,
-					template: templates[i].template
+				type: "template",
+				label: "[S] " + templates[i].name,
+				tooltip: templates[i].help,
+				template: templates[i].template,
+                completion: templates[i].completion
 			};
 			popupItems.push(item);
 		}
@@ -366,20 +489,23 @@ eXide.edit.XQueryModeHelper = (function () {
 		// display popup
 		var $this = this;
 		eXide.util.popup(this.editor, $("#autocomplete-box"), $("#autocomplete-help"), popupItems,
-				function (selected) {
-					if (selected) {
-						var expansion = selected.label;
-						if (selected.type == "template") {
-							expansion = selected.template;
-						} else if (selected.type == "function") {
-							expansion = eXide.util.parseSignature(expansion);
-						}
-						
-						doc.template = new eXide.edit.Template($this.parent, wordrange, expansion, selected.type);
-						doc.template.insert();
+			function (selected) {
+				if (selected) {
+					var expansion = selected.label;
+                    if (selected.type == "function") {
+						expansion = eXide.util.parseSignature(expansion);
+					} else {
+    				    expansion = selected.template;   
 					}
-					$this.editor.focus();
+					
+					doc.template = new eXide.edit.Template($this.parent, wordrange, expansion, selected.type);
+					doc.template.insert();
+                    if (selected.completion) {
+                        $this.autocomplete(doc);
+                    }
 				}
+				$this.editor.focus();
+			}
 		);
 	}
 	
@@ -410,6 +536,42 @@ eXide.edit.XQueryModeHelper = (function () {
 		this.functionLookup(doc, func, null, false);
 	}
 	
+    Constr.prototype.quickFix = function (doc, row) {
+        if (!row) {
+            row = this.editor.getCursorPosition().row;
+        }
+        $.log("Requesting quick fix for %s at %d", doc.getName(), row);
+        var pos = this.editor.renderer.textToScreenCoordinates(row, 0);
+    	var editorHeight = this.parent.getHeight();
+		if (pos.pageY + 150 > editorHeight) {
+			pos.pageY = editorHeight - 150;
+		}
+		$("#autocomplete-box").css({ left: pos.pageX + "px", top: (pos.pageY + 10) + "px" });
+        
+        var resolutions = [];
+        var an = doc.getSession().getAnnotations();
+        for (var i = 0; i < an.length; i++) {
+            if (an[i].row === row) {
+                var qf = eXide.edit.XQueryQuickFix.getResolutions(this.editor, doc, an[i]);
+                $.each(qf, function(j, fix) {
+                    resolutions.push({
+                        label: fix.action,
+                        resolve: fix.resolve,
+                        annotation: an[i]
+                    });
+                });
+            }
+        }
+        if (resolutions.length > 0) {
+            var self = this;
+            eXide.util.popup(this.editor, $("#autocomplete-box"), null, resolutions, function(selected) {
+                if (selected !== null) {
+                    selected.resolve(self.parent, doc, selected.annotation);
+                }
+            });
+        }
+    };
+    
 	Constr.prototype.gotoDefinition = function (doc) {
 		var sel = this.editor.getSelection();
 		var lead = sel.getSelectionLead();
@@ -430,14 +592,24 @@ eXide.edit.XQueryModeHelper = (function () {
 	}
 	
     Constr.prototype.format = function(doc) {
-        var code = doc.getText();
-        var h = new JSONParseTreeHandler(code);
-        var parser = new XQueryParser(code, h); 
-        parser.parse_XQuery();
-        var ast = h.getParseTree();
-        var codeFormatter = new CodeFormatter(ast);
-        var formatted = codeFormatter.format();
-        doc.setText(formatted);
+        var range = this.editor.getSelectionRange();
+        var value = doc.getSession().getTextRange(range);    
+        if (value.length == 0) {
+            eXide.util.error("Please select code to format.");
+            return;
+        }
+        var h = new JSONParseTreeHandler(value);
+        var parser = new XQueryParser(value, h);
+        try {
+            parser.parse_XQuery();
+            var ast = h.getParseTree();
+            
+            var codeFormatter = new CodeFormatter(ast);
+            var formatted = codeFormatter.format();
+            doc.getSession().replace(range, formatted);
+        } catch(e) {
+            eXide.util.error("Code could not be parsed. Formatting skipped.");
+        }
     };
     
 	Constr.prototype.gotoFunction = function (doc, name) {
@@ -687,7 +859,8 @@ eXide.edit.XQueryModeHelper = (function () {
 		} else if (error.line) {
 			line = parseInt(error.line) - 1;
 		}
-		return { line: line, msg: msg };
+        var column = error.column || 0;
+		return { line: line, column: parseInt(column), msg: msg };
 	}
 	
 	return Constr;

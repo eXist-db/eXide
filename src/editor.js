@@ -37,6 +37,7 @@ eXide.edit.Document = (function() {
 		this.$session = session;
         this.externalLink = null;
         this.lastChangeEvent = new Date().getTime();
+        this.ast = null;
         var wrap = eXide.app.getPreference("softWrap");
         this.$session.setUseWrapMode(wrap != 0);
         if (wrap > 0) {
@@ -282,6 +283,17 @@ eXide.edit.Editor = (function () {
                     }
                 });
             }
+        });
+        
+        this.editor.on("guttermousedown", function(ev) {
+            if (ev.getButton()) // !editor.isFocused()
+                return;
+            var gutterRegion = $this.editor.renderer.$gutterLayer.getRegion(ev);
+            if (gutterRegion != "markers")
+                return;
+            
+            var row = ev.getDocumentPosition().row;
+            $this.exec("quickFix", row);
         });
 	};
 
