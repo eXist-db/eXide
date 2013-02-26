@@ -25,8 +25,9 @@ eXide.edit.XQueryUtils = (function () {
     
     return {
         findNode: function(ast, pos) {
+            $.log("Searching %o for %o", ast, pos);
             var p = ast.pos;
-            if(eXide.edit.XQueryUtils.inRange(p, pos) === true) {
+            if(eXide.edit.XQueryUtils.inRange(p, pos, false) === true) {
                 for(var i in ast.children) {
                     var child = ast.children[i];
                     var n = eXide.edit.XQueryUtils.findNode(child, pos);
@@ -39,6 +40,20 @@ eXide.edit.XQueryUtils = (function () {
             }
         },
     
+        findNodeForRange: function(ast, start, end) {
+            var p = ast.pos;
+            if(eXide.edit.XQueryUtils.inRange(p, start) === true && eXide.edit.XQueryUtils.inRange(p, end) === true) {
+                for(var i in ast.children) {
+                    var child = ast.children[i];
+                    var n = eXide.edit.XQueryUtils.findNode(child, start, end);
+                    if(n !== null) return n;
+                }
+                return ast;
+            } else {
+                return null;
+            }
+        },
+        
         inRange: function(p, pos, exclusive) {
             if(p && p.sl <= pos.line && pos.line <= p.el) {
                 if(p.sl < pos.line && pos.line < p.el)
@@ -50,6 +65,13 @@ eXide.edit.XQueryUtils = (function () {
                 else if(p.sl < pos.line && p.el === pos.line)
                     return pos.col <= p.ec + (exclusive ? 1 : 0);
             }
+        },
+        
+        samePosition: function(pos1, pos2) {
+            return pos1.sl == pos2.sl &&
+                pos1.sc == pos2.sc &&
+                pos1.el == pos2.el &&
+                pos1.ec == pos2.ec;
         },
         
         findNext: function(node, type) {

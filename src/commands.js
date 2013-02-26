@@ -243,6 +243,14 @@ eXide.edit.commands = (function () {
                             parent.exec("quickFix");
                         }
                     });
+                    commands.addCommand({
+                        name: "expandSelection",
+                        bindKey: bindKey(bindings.expandSelection),
+                        exec: function(editor) {
+                            parent.exec("expandSelection");
+                        }
+                    });
+                    
     			    createMap(parent);
                 }
             });

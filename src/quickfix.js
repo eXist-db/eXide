@@ -82,6 +82,7 @@ eXide.edit.XQueryQuickFix = (function () {
                     } else if (ast && ast.name === "EQName") {
                         return [{
                             resolve: function(editor, doc, annotation) {
+                                doc.getModeHelper().afterValidate(editor, editor.autocomplete);
                                 var adder = new eXide.edit.PrologAdder(editor, doc);
                                 adder.declareNamespace(matches[1]);
                             },

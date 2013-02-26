@@ -48,6 +48,7 @@ eXide.edit.XQueryModeHelper = (function () {
         this.trimRe = /^[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+|[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+$/g;
         
         this.addCommand("format", this.format);
+        this.addCommand("expandSelection", this.expandSelection);
 		this.addCommand("showFunctionDoc", this.showFunctionDoc);
 		this.addCommand("gotoDefinition", this.gotoDefinition);
 		this.addCommand("locate", this.locate);
@@ -63,6 +64,9 @@ eXide.edit.XQueryModeHelper = (function () {
         menubar.click("#menu-xquery-format", function() {
             self.format(editor.getActiveDocument());
         }, "formatCode");
+        menubar.click("#menu-xquery-expand", function() {
+            self.expandSelection(editor.getActiveDocument());
+        }, "expandSelection");
         
         self.validating = null;
         self.validationListeners = [];
@@ -242,7 +246,6 @@ eXide.edit.XQueryModeHelper = (function () {
         
         // try to determine the ast node where the cursor is located
         var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
-        $.log("autocomplete: %o", astNode);
         
         if (!astNode) {
             // no ast node: scan preceding text
@@ -286,7 +289,9 @@ eXide.edit.XQueryModeHelper = (function () {
                 }
             } else if (nsDeclStmt) {
                 mode = "namespaces";
-                if (astNode.name == "URILiteral") {
+                if (astNode.name == "NCName") {
+                    token = astNode.value;
+                } else if (astNode.name == "URILiteral") {
                     var prefix = eXide.edit.XQueryUtils.findSibling(astNode, "NCName");
                     if (prefix) {
                         token = eXide.edit.XQueryUtils.getValue(prefix);
@@ -682,6 +687,34 @@ eXide.edit.XQueryModeHelper = (function () {
         var code = "import module namespace " + prefix + "=\"" + uri + "\" at \"" + location + "\";\n";
         this.editor.insert(code);
     }
+    
+    Constr.prototype.expandSelection = function(doc) {
+        var sel   = this.editor.getSelection();
+        var selRange = sel.getRange();
+
+        // try to determine the ast node where the cursor is located
+        var astNode;
+        if (selRange.start.column == selRange.end.column && selRange.start.line == selRange.end.line) {
+            astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: selRange.start.row, col: selRange.start.column });
+        } else {
+            astNode = eXide.edit.XQueryUtils.findNodeForRange(doc.ast, { line: selRange.start.row, col: selRange.start.column }, 
+                { line: selRange.end.row, col: selRange.end.column });
+        }
+
+        if (astNode) {
+            var parent = astNode.getParent;
+            while (parent && eXide.edit.XQueryUtils.samePosition(astNode.pos, parent.pos)) {
+                astNode = parent;
+                parent = parent.getParent;
+                if (!parent) {
+                    break;
+                }
+            }
+
+            var range = new Range(parent.pos.sl, parent.pos.sc, parent.pos.el, parent.pos.ec);
+            sel.setSelectionRange(range);
+        }
+    };
     
     Constr.prototype.createOutline = function(doc, onComplete) {
         var code = doc.getText();
