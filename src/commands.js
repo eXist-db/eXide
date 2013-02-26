@@ -250,6 +250,13 @@ eXide.edit.commands = (function () {
                             parent.exec("expandSelection");
                         }
                     });
+                    commands.addCommand({
+                        name: "rename",
+                        bindKey: bindKey(bindings.rename),
+                        exec: function(editor) {
+                            parent.exec("rename");
+                        }
+                    });
                     
     			    createMap(parent);
                 }

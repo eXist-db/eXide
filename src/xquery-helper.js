@@ -49,6 +49,7 @@ eXide.edit.XQueryModeHelper = (function () {
         
         this.addCommand("format", this.format);
         this.addCommand("expandSelection", this.expandSelection);
+        this.addCommand("rename", this.rename);
 		this.addCommand("showFunctionDoc", this.showFunctionDoc);
 		this.addCommand("gotoDefinition", this.gotoDefinition);
 		this.addCommand("locate", this.locate);
@@ -67,6 +68,9 @@ eXide.edit.XQueryModeHelper = (function () {
         menubar.click("#menu-xquery-expand", function() {
             self.expandSelection(editor.getActiveDocument());
         }, "expandSelection");
+        menubar.click("#menu-xquery-rename", function() {
+            self.rename(editor.getActiveDocument());
+        }, "rename");
         
         self.validating = null;
         self.validationListeners = [];
@@ -713,6 +717,35 @@ eXide.edit.XQueryModeHelper = (function () {
 
             var range = new Range(parent.pos.sl, parent.pos.sc, parent.pos.el, parent.pos.ec);
             sel.setSelectionRange(range);
+        }
+    };
+    
+    Constr.prototype.rename = function(doc) {
+        var self = this;
+        var sel = this.editor.getSelection();
+        var lead = sel.getSelectionLead();
+        var ast = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+        if (ast != null) {
+            if (!ast.getParent.name == "VarName") {
+                eXide.util.message("Position cursor on variable name.");
+            } else {
+                var varName = eXide.edit.XQueryUtils.getValue(ast);
+                var ancestor = eXide.edit.XQueryUtils.findVariableContext(ast, varName);
+                if (ancestor) {
+                    var references = new eXide.edit.VariableReferences(varName, ancestor).getReferences();
+                    sel.toOrientedRange();
+                    $.each(references, function(i, node) {
+                        var range = new Range(node.pos.sl, node.pos.sc, node.pos.el, node.pos.ec);
+                        range.cursor = range.end;
+                        sel.addRange(range);
+                    });
+                    self.editor.focus();
+                } else {
+                    eXide.util.message("Rename failed: unable to determine context, sorry.");
+                }
+            }
+        } else {
+            eXide.util.message("Rename failed: node not found in syntax tree, sorry.");
         }
     };
     

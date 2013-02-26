@@ -24,5 +24,6 @@
     "openApp": ["Ctrl-Alt-R", "Command-Option-R"],
     "formatCode": ["Ctrl-Shift-P", "Command-Shift-P"],
     "quickfix": ["Ctrl-Shift-Q", "Command-Ctrl-Q"],
-    "expandSelection": ["Ctrl-Shift-X", "Command-Shift-X|Ctrl-Command-Up"]
+    "expandSelection": ["Ctrl-Shift-X", "Command-Shift-X|Ctrl-Command-Up"],
+    "rename": ["Ctrl-Alt-Shift-R", "Command-Option-Shift-R"]
 }

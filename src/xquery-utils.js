@@ -25,7 +25,11 @@ eXide.edit.XQueryUtils = (function () {
     
     return {
         findNode: function(ast, pos) {
-            $.log("Searching %o for %o", ast, pos);
+//            if (ast.pos) {
+//                $.log("Search %d:%d in range %d:%d - %d:%d %s", pos.line, pos.col, ast.pos.sl, 
+//                    ast.pos.sc, ast.pos.el, ast.pos.ec, ast.name);
+//            } else
+//                return null;
             var p = ast.pos;
             if(eXide.edit.XQueryUtils.inRange(p, pos, false) === true) {
                 for(var i in ast.children) {
@@ -99,11 +103,35 @@ eXide.edit.XQueryUtils = (function () {
         },
         
         findAncestor: function(node, type) {
-            while (node != null) {
-                if (node.name == type) {
-                    return node;
+            if (type instanceof Array) {
+                while (node !== null) {
+                    if ($.inArray(node.name, type) > -1) {
+                        return node;
+                    }
+                    node = node.getParent;
                 }
-                node = node.getParent;
+            } else {
+                while (node !== null) {
+                    if (node.name == type) {
+                        return node;
+                    }
+                    node = node.getParent;
+                }
+            }
+            return null;
+        },
+        
+        findVariableContext: function(node, varName) {
+            var parent = node.getParent;
+            while (parent !== null) {
+                if ((parent.name === "FLWORExpr" || parent.name === "FunctionDecl") &&
+                    eXide.edit.XQueryUtils.findVarDecl(parent, varName) !== null) {
+                    return parent;
+                }
+                if (parent.name === "FunctionDecl") {
+                    return null;
+                }
+                parent = parent.getParent;
             }
             return null;
         },
@@ -118,6 +146,56 @@ eXide.edit.XQueryUtils = (function () {
                 }
             }
             return val;
+        },
+        
+        findVarDecl: function(node, name) {
+            var refs = new eXide.edit.VariableReferences(name, node).getReferences();
+            for (var i = 0; i < refs.length; i++) {
+                if (refs[i].getParent && (refs[i].getParent.name === "LetBinding") || 
+                    refs[i].getParent.name === "Param") {
+                    return refs[i];
+                }
+            }
+            return null;
         }
     };
+}());
+
+eXide.namespace("eXide.edit.VariableReferences");
+
+/**
+ * XQuery specific helper methods.
+ */
+eXide.edit.VariableReferences = (function () {
+    
+    var Range = require("ace/range").Range;
+    
+    Constr = function(variable, ast) {
+        this.variable = variable;
+        this.references = [];
+        this.visit(ast);
+    };
+    
+    eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
+    
+    Constr.prototype.VarName = function(node) {
+        var name = eXide.edit.XQueryUtils.getValue(node);
+        if (name == this.variable) {
+            this.references.push(node);
+        }
+    };
+    
+    Constr.prototype.Param = function(node) {
+        for (var i = 0; i < node.children.length; i++) {
+            if (node.children[i].value === this.variable) {
+                this.references.push(node.children[i]);
+            }
+        }
+    };
+    
+    Constr.prototype.getReferences = function() {
+        return this.references;
+    };
+    
+    return Constr;
 }());
