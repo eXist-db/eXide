@@ -577,7 +577,8 @@ Sub level menu list items (undo style from Top level List Items)
 /* Auto-complete box */
 #autocomplete-box {
 	position: relative;
-	width: 320px;
+	min-width: 320px;
+    max-width: 500px;
 	display: none;
 	z-index: 1000;
     background-color: #E0E0E0;
@@ -589,19 +590,28 @@ Sub level menu list items (undo style from Top level List Items)
     outline: none;
 }
 
-#autocomplete-box ul {
-	list-style: none;
+#autocomplete-box .items {
     background-color: #E8E8E8;
-	width: 312px;
-	margin: 8px 4px;
+	margin: 8px 0;
 	padding: 0;
 	height: 220px;
-	overflow: auto;
+    width: 100%;
+    overflow: auto;
 }
 
-#autocomplete-box li {
+#autocomplete-box table {
+    width: 100%;
+    padding: 0;
+}
+
+#autocomplete-box td {
+    padding: 2px;
+}
+
+#autocomplete-box tr {
 	cursor: pointer;
-    padding: 2px 0;
+    margin: 0;
+    padding: 0;
 }
 
 #autocomplete-box .title {
