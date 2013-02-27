@@ -31,16 +31,20 @@
         </unzip>
         <delete file="${tools}/compiler-latest.zip"/>
     </target>
+
     <target name="get-rhino" unless="rhino.available">
         <echo message="Downloading rhino..."/>
         <mkdir dir="${tools}"/>
         <get src="${rhino.url}" dest="${tools}"/>
         <get src="${r.js.url}" dest="${tools}"/>
     </target>
+
     <target name="prepare" depends="get-closure,get-rhino">
         <taskdef name="jscomp" classname="com.google.javascript.jscomp.ant.CompileTask" classpath="${tools}/compiler.jar"/>
     </target>
+
     <target name="all" depends="xqlint,compress,xar"/>
+
     <target name="compress" depends="prepare">
         <echo message="Optimizing eXide sources"/>
         <jscomp compilationLevel="simple" debug="false" output="${scripts}/eXide.min.js">
@@ -83,6 +87,7 @@
             </sources>
         </jscomp>
     </target>
+
     <target name="xqlint" depends="get-rhino">
         <echo message="Optimizing xqlint ..."/>
         <java classpath="${rhino.jar}:${tools}/compiler.jar" classname="org.mozilla.javascript.tools.shell.Main">
@@ -90,15 +95,23 @@
             <arg line="-o tools/build.js"/>
         </java>
     </target>
+
     <target name="clean">
         <delete>
             <fileset dir="${scripts}">
                 <include name="eXide-*.min.js"/>
             </fileset>
         </delete>
+        <delete>
+            <fileset dir="${tools}">
+                <include name="js.jar"/>
+                <include name="r.js"/>
+            </fileset>
+        </delete>
         <delete file="${scripts}/jquery/jquery.plugins.min.js"/>
         <delete file="${scripts}/xqlint.min.js"/>
     </target>
+
     <target name="xar">
         <mkdir dir="${build}"/>
         <zip destfile="${build}/eXide-${project.version}.xar">
@@ -112,6 +125,7 @@
             </fileset>
         </zip>
     </target>
+
     <target name="upload">
         <property name="xar" value="eXide-${project.version}.xar"/>
         <input message="Enter password:" addproperty="server.pass" defaultvalue="">
