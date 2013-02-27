@@ -21,6 +21,10 @@
     <available property="closure.available" file="${tools}/compiler.jar"/>
     <available property="rhino.available" file="${tools}/js.jar"/>
 
+    <condition property="rhino.optimize.interpret" value="-opt -1" else="">
+      <isset property="32bit" />      
+    </condition>
+
     <target name="get-closure" unless="closure.available">
         <echo message="Downloading closure..."/>
         <mkdir dir="${tools}"/>
@@ -96,8 +100,9 @@
         <copy file="tools/build.js" tofile="${xqlint.dir}/build.js"/>
         <copy file="tools/main/main.js" tofile="${xqlint.dir}/main.js"/>
         <java classpath="${rhino.jar}:${tools}/compiler.jar" classname="org.mozilla.javascript.tools.shell.Main" fork="true" failonerror="true">
-            <arg line="${xqlint.dir}/r.js"/>
-            <arg line="-o ${xqlint.dir}/build.js"/>
+	  <arg line="${rhino.optimize.interpret}"/>
+          <arg line="${xqlint.dir}/r.js"/>
+          <arg line="-o ${xqlint.dir}/build.js"/>
         </java>
     </target>
 
