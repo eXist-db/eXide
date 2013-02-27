@@ -1,3 +1,3 @@
-require(["xqlint/Translator", "xqlint/Compiler", "xqlint/XQueryParser", "xqlint/XQueryLexer", "xqlint/JSONParseTreeHandler", "xqlint/visitors/CodeFormatter",
-	"xqlint/visitors/SemanticHighlighter"], function (one, two, three) {
+require(["lib/Translator", "lib/Compiler", "lib/XQueryParser", "lib/XQueryLexer", "lib/JSONParseTreeHandler", 
+	"lib/visitors/CodeFormatter", "lib/visitors/SemanticHighlighter"], function (one, two, three) {
 });

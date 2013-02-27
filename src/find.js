@@ -33,6 +33,13 @@ eXide.find.IncrementalSearch = (function () {
                     ev.preventDefault();
                     $this.editor.findPrevious();
                     break;
+                case 71:
+                    // Ctrl-G, Command-G or Alt-G
+                    if (ev.metaKey || ev.ctrlKey) {
+                        ev.preventDefault();
+                        $this.editor.findNext();
+                        break;
+                    }
                 default:
                     $this.onChange();
                     break;

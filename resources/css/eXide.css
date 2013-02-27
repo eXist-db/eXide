@@ -200,7 +200,7 @@ Sub level menu list items (undo style from Top level List Items)
 	padding: 5px;
 	margin: 0;
 	background-image: #F0F0F0;
-	width: 160px; /*width of sub menus*/
+	width: 220px; /*width of sub menus*/
 }
 
 .menu ul li ul li a:hover { /*sub menus hover style*/
@@ -217,11 +217,12 @@ Sub level menu list items (undo style from Top level List Items)
     padding-bottom: 2px;
     margin-bottom: 2px;
     border-bottom: 1px solid #777;
-    width: 160px;
+    width: 220px;
 }
 
 .menu .shortcut {
     float: right;
+    font-size: 0.9em;
 }
 
 #toolbar {
@@ -577,7 +578,8 @@ Sub level menu list items (undo style from Top level List Items)
 /* Auto-complete box */
 #autocomplete-box {
 	position: relative;
-	width: 320px;
+	min-width: 320px;
+    max-width: 500px;
 	display: none;
 	z-index: 1000;
     background-color: #E0E0E0;
@@ -589,19 +591,28 @@ Sub level menu list items (undo style from Top level List Items)
     outline: none;
 }
 
-#autocomplete-box ul {
-	list-style: none;
+#autocomplete-box .items {
     background-color: #E8E8E8;
-	width: 312px;
-	margin: 8px 4px;
+	margin: 8px 0;
 	padding: 0;
 	height: 220px;
-	overflow: auto;
+    width: 100%;
+    overflow: auto;
 }
 
-#autocomplete-box li {
+#autocomplete-box table {
+    width: 100%;
+    padding: 0;
+}
+
+#autocomplete-box td {
+    padding: 2px;
+}
+
+#autocomplete-box tr {
 	cursor: pointer;
-    padding: 2px 0;
+    margin: 0;
+    padding: 0;
 }
 
 #autocomplete-box .title {

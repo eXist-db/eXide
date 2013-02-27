@@ -32,9 +32,9 @@ return
     ␣
 };</code>
     </snippet>
-    <snippet abbrev="import">
+    <snippet abbrev="import" completion="true">
         <description>Module import</description>
-        <code>import module namespace ␣="$uri" at "␣";</code>
+        <code>import module namespace ␣="␣" at "␣";</code>
     </snippet>
     <snippet abbrev="declare-ns">
         <description>Declare namespace</description>

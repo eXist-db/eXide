@@ -222,7 +222,7 @@ define("eXide/mode/xquery", function(require, exports, module) {
 
 var oop = require("ace/lib/oop");
 var TextMode = require("ace/mode/text").Mode;
-var XQueryLexer = require("xqlint/XQueryLexer").XQueryLexer;
+var XQueryLexer = require("lib/XQueryLexer").XQueryLexer;
 
 var Tokenizer = require("ace/tokenizer").Tokenizer;
 var XQueryBehaviour = require("eXide/mode/behaviour/xquery").XQueryBehaviour;

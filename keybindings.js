@@ -1,7 +1,7 @@
 {
     "gotoLine": ["Ctrl-L", "Command-L"],
-    "fold": ["Alt-L", "Alt-F"],
-    "unfold": ["Alt-Shift-L", "Alt-Shift-F"],
+    "fold": ["Alt-L", "Command-Option-L"],
+    "unfold": ["Alt-Shift-L", "Command-Option-Shift-L"],
     "saveDocument": ["Ctrl-Shift-S", "Command-Shift-S"],
     "runQuery": ["Ctrl-Return", "Command-Return"],
     "openDocument": ["Ctrl-Shift-O", "Command-Shift-O"],
@@ -22,5 +22,8 @@
     "synchronize": ["Alt-Shift-S", "Command-Option-S"],
     "preferences": ["Alt-Shift-P", "Ctrl-Command-P"],
     "openApp": ["Ctrl-Alt-R", "Command-Option-R"],
-    "formatCode": ["Ctrl-Shift-P", "Command-Shift-P"]
+    "formatCode": ["Ctrl-Shift-P", "Command-Shift-P"],
+    "quickfix": ["Ctrl-Shift-Q", "Command-Ctrl-Q"],
+    "expandSelection": ["Ctrl-Shift-X", "Command-Shift-X|Ctrl-Command-Up"],
+    "rename": ["Ctrl-Alt-Shift-R", "Command-Option-Shift-R"]
 }

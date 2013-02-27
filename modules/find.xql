@@ -18,7 +18,7 @@ declare function find:xquery-scripts($root as xs:string) {
         find:xquery-scripts($path)
 };
 
-declare function find:modules($root as xs:string) {
+declare function find:modules($root as xs:string, $callback as function(xs:string, xs:string, xs:string) as item()*) {
     for $script in find:xquery-scripts($root)
     let $data := util:binary-doc($script)
     let $source := util:base64-decode($data)
@@ -26,10 +26,20 @@ declare function find:modules($root as xs:string) {
     return
         let $match := analyze-string($source, "^module\s+namespace\s+([^\s=]+)\s*=\s*['""]([^'""]+)['""]", "m")//fn:match
         return
-            <json:value xmlns:json="http://www.json.org" json:array="true"
-                prefix="{$match/fn:group[1]}" uri="{$match/fn:group[2]}" at="{$script}"/>
+            $callback($match/fn:group[1], $match/fn:group[2], $script)
 };
 
-<json:value xmlns:json="http://www.json.org">
-{ for $module in find:modules("/db") order by $module/@at return $module }
-</json:value>
+let $prefixParam := request:get-parameter("prefix", ())
+let $modules := find:modules("/db", function($prefix, $uri, $source) {
+    if (empty($prefixParam) or contains($prefix, $prefixParam)) then
+        <json:value xmlns:json="http://www.json.org" json:array="true"
+            prefix="{$prefix}" uri="{$uri}" at="{$source}"/>
+    else
+        ()
+})
+return
+    <json:value xmlns:json="http://www.json.org">
+    { 
+        for $module in $modules order by $module/@at return $module
+    }
+    </json:value>

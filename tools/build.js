@@ -1,8 +1,5 @@
 {
-	name: "main/main",
-	out: "../resources/scripts/xqlint.min.js",
-	paths: {
-		"xqlint": "../support/xqlint/lib"
-	},
+	name: "main",
+	out: "../../resources/scripts/xqlint.min.js",
 	optimize: "closure"
 }

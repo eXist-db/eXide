@@ -1,7 +1,7 @@
 /*
  *  eXide - web-based XQuery IDE
  *  
- *  Copyright (C) 2011 Wolfgang Meier
+ *  Copyright (C) 2013 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,11 +31,17 @@ eXide.edit.Template = (function () {
 		this.editor = editor.editor;
 		this.range = range;
 		this.type = type;
-		this.startLine = range.start.row;
+        if (range) {
+    		this.startLine = range.start.row;
+            this.startColumn = range.start.column;
+        } else {
+            var cursor = this.editor.getCursorPosition();
+            this.startLine = cursor.row;
+            this.startColumn = cursor.column;
+        }
 		this.endLine = this.startLine + lines - 1;
 		$.log("startLine = %i, endLine = %i", this.startLine, this.endLine);
 		this.currentLine = this.startLine;
-		this.startColumn = range.start.column;
 		this.lineOffset = this.startColumn;
 		this.regex = /(?:\$[\w\-:_]+|␣)/g;
 		if (this.startColumn > 0)
@@ -48,7 +54,9 @@ eXide.edit.Template = (function () {
 		 * Insert the template code into the edited document.
 		 */
 		insert: function() {
-			this.editor.getSession().remove(this.range);
+            if (this.range) {
+			    this.editor.getSession().remove(this.range);
+            }
 			this.editor.insert(this.code);
 			var sel = this.editor.getSelection();
 			var lead = sel.getSelectionLead();
