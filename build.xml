@@ -94,7 +94,7 @@
         <copy file="tools/build.js" tofile="${xqlint.dir}/build.js"/>
         <copy file="tools/main/main.js" tofile="${xqlint.dir}/main.js"/>
         <java classpath="${rhino.jar}:${tools}/compiler.jar" classname="org.mozilla.javascript.tools.shell.Main">
-            <arg line="${xqlint.dir}/r.js"/>
+            <arg line="${tools}/r.js"/>
             <arg line="-o ${xqlint.dir}/build.js"/>
         </java>
     </target>
@@ -109,6 +109,11 @@
             <fileset dir="${tools}">
                 <include name="js.jar"/>
                 <include name="r.js"/>
+            </fileset>
+        </delete>
+        <delete>
+            <fileset dir="${build}">
+                <include name="*.xar"/>
             </fileset>
         </delete>
         <delete file="${scripts}/jquery/jquery.plugins.min.js"/>
