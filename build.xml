@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project basedir="." default="all" name="eXide">
+    <!-- import default properties from file -->
+    <property file="local.build.properties"/>
+    <property file="build.properties"/>
+
     <property name="project.version" value="1.0.15"/>
     <property name="src" value="./src"/>
     <property name="tools" value="./tools"/>
@@ -9,12 +13,13 @@
     <property name="templates.dir" value="./templates"/>
     <property name="templates.default.dir" value="${templates.dir}/default"/>
     <property name="closure.compiler.url" value="http://closure-compiler.googlecode.com/files/compiler-latest.zip"/>
-    <property name="rhino.url" value="https://github.com/jrburke/r.js/blob/master/lib/rhino/js.jar?raw=true"/>
+    <property name="rhino.url" value="https://raw.github.com/jrburke/r.js/master/lib/rhino/js.jar"/>
     <property name="rhino.jar" value="tools/js.jar"/>
     <property name="r.js.url" value="http://requirejs.org/docs/release/2.1.4/r.js"/>
     <property name="server.url" value="http://demo.exist-db.org/exist/apps/public-repo/public/"/>
     <available property="closure.available" file="${tools}/compiler.jar"/>
     <available property="rhino.available" file="${tools}/js.jar"/>
+
     <target name="get-closure" unless="closure.available">
         <echo message="Downloading closure..."/>
         <mkdir dir="${tools}"/>
