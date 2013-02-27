@@ -46,6 +46,8 @@
 
     <target name="all" depends="xqlint,compress,xar"/>
 
+    <target name="rebuild" depends="clean,all"/>
+
     <target name="compress" depends="prepare">
         <echo message="Optimizing eXide sources"/>
         <jscomp compilationLevel="simple" debug="false" output="${scripts}/eXide.min.js">
