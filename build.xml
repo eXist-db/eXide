@@ -5,6 +5,7 @@
     <property file="build.properties"/>
 
     <property name="project.version" value="1.0.16"/>
+    <property name="project.revision" value="${git.commit}"/>
     <property name="src" value="./src"/>
     <property name="tools" value="./tools"/>
     <property name="build" value="./build"/>
@@ -18,14 +19,15 @@
     <property name="rhino.jar" value="tools/js.jar"/>
     <property name="r.js.url" value="http://requirejs.org/docs/release/2.1.4/r.js"/>
     <property name="server.url" value="http://demo.exist-db.org/exist/apps/public-repo/public/"/>
-    <available property="closure.available" file="${tools}/compiler.jar"/>
-    <available property="rhino.available" file="${tools}/js.jar"/>
-
     <condition property="rhino.optimize.interpret" value="-opt -1" else="">
       <isset property="32bit" />      
     </condition>
 
-    <target name="get-closure" unless="closure.available">
+    <target name="check-closure-available">
+      <available property="closure.available" file="${tools}/compiler.jar"/>
+    </target>
+
+    <target name="get-closure" depends="check-closure-available" unless="${closure.available}">
         <echo message="Downloading closure..."/>
         <mkdir dir="${tools}"/>
         <get src="${closure.compiler.url}" dest="${tools}"/>
@@ -37,7 +39,11 @@
         <delete file="${tools}/compiler-latest.zip"/>
     </target>
 
-    <target name="get-rhino" unless="rhino.available">
+    <target name="check-rhino-available">
+      <available property="rhino.available" file="${tools}/js.jar"/>
+    </target>
+
+    <target name="get-rhino" depends="check-rhino-available" unless="${rhino.available}">
         <echo message="Downloading rhino..."/>
         <mkdir dir="${tools}"/>
         <get src="${rhino.url}" dest="${tools}"/>
@@ -130,18 +136,18 @@
     </target>
 
     <target name="xar">
-      <copy file="index.html.tmpl" tofile="index.html" filtering="true">
+      <copy file="index.html.tmpl" tofile="index.html" filtering="true" overwrite="true">
 	<filterset>
           <filter token="project.version" value="${project.version}"/>
 	</filterset>
       </copy>
-      <copy file="expath-pkg.xml.tmpl" tofile="expath-pkg.xml" filtering="true">
+      <copy file="expath-pkg.xml.tmpl" tofile="expath-pkg.xml" filtering="true" overwrite="true">
 	<filterset>
           <filter token="project.version" value="${project.version}"/>
 	</filterset>
       </copy>
         <mkdir dir="${build}"/>
-        <zip destfile="${build}/eXide-${project.version}.xar">
+        <zip destfile="${build}/eXide-${project.version}-${project.revision}.xar">
             <fileset dir=".">
                 <include name="*.*"/>
                 <include name="modules/**"/>
