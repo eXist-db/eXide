@@ -125,9 +125,21 @@
         </delete>
         <delete file="${scripts}/jquery/jquery.plugins.min.js"/>
         <delete file="${scripts}/xqlint.min.js"/>
+        <delete file="index.html"/>
+        <delete file="expath-pkg.xml"/>
     </target>
 
     <target name="xar">
+      <copy file="index.html.tmpl" tofile="index.html" filtering="true">
+	<filterset>
+          <filter token="project.version" value="${project.version}"/>
+	</filterset>
+      </copy>
+      <copy file="expath-pkg.xml.tmpl" tofile="expath-pkg.xml" filtering="true">
+	<filterset>
+          <filter token="project.version" value="${project.version}"/>
+	</filterset>
+      </copy>
         <mkdir dir="${build}"/>
         <zip destfile="${build}/eXide-${project.version}.xar">
             <fileset dir=".">
@@ -137,6 +149,8 @@
                 <include name="templates/**"/>
                 <include name="src/**"/>
                 <exclude name=".git*"/>
+                <exclude name="*.tmpl"/>
+                <exclude name="*.properties"/>
             </fileset>
         </zip>
     </target>
