@@ -5,7 +5,6 @@
     <property file="build.properties"/>
 
     <property name="project.version" value="1.0.16"/>
-    <property name="project.revision" value="${git.commit}"/>
     <property name="src" value="./src"/>
     <property name="tools" value="./tools"/>
     <property name="build" value="./build"/>
@@ -21,6 +20,10 @@
     <property name="server.url" value="http://demo.exist-db.org/exist/apps/public-repo/public/"/>
     <condition property="rhino.optimize.interpret" value="-opt -1" else="">
       <isset property="32bit" />      
+    </condition>
+
+    <condition property="git.commit" value="${git.commit}" else="">
+      <isset property="git.commit" />      
     </condition>
 
     <target name="check-closure-available">
@@ -147,7 +150,7 @@
 	</filterset>
       </copy>
         <mkdir dir="${build}"/>
-        <zip destfile="${build}/eXide-${project.version}-${project.revision}.xar">
+        <zip destfile="${build}/eXide-${project.version}${git.commit}.xar">
             <fileset dir=".">
                 <include name="*.*"/>
                 <include name="modules/**"/>
