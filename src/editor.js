@@ -415,6 +415,7 @@ eXide.edit.Editor = (function () {
 		    doc.$session.setScrollTop(resource.line);
 		}
 		$.log("opening %s, mime: %s, syntax: %s, line: %i", resource.name, doc.mime, doc.syntax, resource.line);
+        this.updateStatus("");
 		this.$initDocument(doc);
 	};
 	
@@ -776,7 +777,7 @@ eXide.edit.Editor = (function () {
 			}
 			this.activeDoc.lastChangeEvent = time;
 			this.validateTimeout = setTimeout(function() { 
-					$this.validate.apply($this); 
+				$this.validate.apply($this); 
 			}, VALIDATE_TIMEOUT);
 		}
 	};
@@ -787,7 +788,6 @@ eXide.edit.Editor = (function () {
 	 */
 	Constr.prototype.validate = function() {
 		var $this = this;
-		$this.$triggerEvent("validate", [$this.activeDoc]);
 		var mode = $this.activeDoc.getModeHelper();
 		if (!(mode && mode.validate)) {
 			return;
@@ -796,6 +796,8 @@ eXide.edit.Editor = (function () {
 		$.log("Running validation...");
 		mode.validate($this.activeDoc, $this.getText(), function (success) {
 			$this.pendingCheck = false;
+            $.log("Validation completed.");
+            $this.$triggerEvent("validate", [$this.activeDoc]);
 		});
 	};
 	

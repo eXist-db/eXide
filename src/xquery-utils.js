@@ -199,3 +199,96 @@ eXide.edit.VariableReferences = (function () {
     
     return Constr;
 }());
+
+eXide.namespace("eXide.edit.InScopeVariables");
+
+/**
+ * XQuery specific helper methods.
+ */
+eXide.edit.InScopeVariables = (function () {
+    
+    var Range = require("ace/range").Range;
+    
+    Constr = function(root, node) {
+        this.node = node;
+        this.stack = [];
+        this.variables = null;
+        this.visit(root);
+    };
+    
+    eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
+    
+    Constr.prototype.FLWORExpr = function(node) {
+        var pos = this.stack.length;
+        this.visitChildren(node);
+        this.stack.length = pos;
+        return true;
+    };
+    
+    Constr.prototype.VarName = function(node) {
+        if (node == this.node) {
+            this.variables = this.deepCopy(this.stack);
+            return true;
+        }
+        if (node.getParent.name === "ForBinding" || node.getParent.name === "LetBinding") {
+            var name = eXide.edit.XQueryUtils.getValue(node);
+            this.stack.push(name);
+        }
+    };
+    
+    Constr.prototype.VarRef = function(node) {
+        if (node == this.node) {
+            this.variables = this.deepCopy(this.stack);
+            return true;
+        }
+        return false;
+    };
+    
+    Constr.prototype.VarDecl = function(node) {
+        var self = this;
+        this.visitChildren(node, {
+            VarName: function(node) {
+                var value = eXide.edit.XQueryUtils.getValue(node);
+                self.stack.push(value);
+                return true;
+            },
+            VarValue: function(node) {
+                return true; // skip
+            }
+        });
+        return true;
+    };
+    
+    Constr.prototype.FunctionDecl = function(node) {
+        $.log("Found function decl: %o", node);
+        var saved = this.deepCopy(this.stack);
+        this.visitChildren(node);
+        this.stack = saved;
+        $.log("Restored stack to %o", this.stack);
+        return true;
+    };
+    
+    Constr.prototype.Param = function(node) {
+        var self = this;
+        this.visitChildren(node, {
+            EQName: function(node) {
+                self.stack.push(node.value);
+            }
+        });
+        return true;
+    };
+    
+    Constr.prototype.deepCopy = function(arr) {
+        var copy = [];
+        for (var i = 0; i < arr.length; i++) {
+            copy.push(arr[i]);
+        }
+        return copy;
+    };
+    
+    Constr.prototype.getStack = function() {
+        return this.variables;
+    };
+    
+    return Constr;
+}());

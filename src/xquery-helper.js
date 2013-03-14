@@ -74,20 +74,20 @@ eXide.edit.XQueryModeHelper = (function () {
         
         self.validating = null;
         self.validationListeners = [];
-        editor.addEventListener("change", function(doc) {
-            if (self.validating) {
-                clearTimeout(self.validating);
-            }
-            self.validating = setTimeout(function() {
-                self.xqlint(doc);
-                for (var i = 0; i < self.validationListeners.length; i++) {
-                    var listener = self.validationListeners[i];
-                    listener.exec.apply(listener.context, [doc]);
-                }
-                self.validationListeners.length = 0;
-                self.validating = null;
-            }, 300);
-        });
+//        editor.addEventListener("change", function(doc) {
+//            if (self.validating) {
+//                clearTimeout(self.validating);
+//            }
+//            self.validating = setTimeout(function() {
+//                self.xqlint(doc);
+//                for (var i = 0; i < self.validationListeners.length; i++) {
+//                    var listener = self.validationListeners[i];
+//                    listener.exec.apply(listener.context, [doc]);
+//                }
+//                self.validationListeners.length = 0;
+//                self.validating = null;
+//            }, 300);
+//        });
 	};
 	
 	// extends ModeHelper
@@ -96,8 +96,8 @@ eXide.edit.XQueryModeHelper = (function () {
     Constr.prototype.activate = function() {
         this.menu.show();
         this.parent.updateStatus("");
-        this.parent.triggerCheck();
-        this.xqlint(this.parent.getActiveDocument());
+//        this.parent.triggerCheck();
+//        this.xqlint(this.parent.getActiveDocument());
     };
     
     Constr.prototype.deactivate = function() {
@@ -137,6 +137,13 @@ eXide.edit.XQueryModeHelper = (function () {
 		var $this = this;
 		var basePath = "xmldb:exist://" + doc.getBasePath();
 		
+        this.xqlint(doc);
+        for (var i = 0; i < this.validationListeners.length; i++) {
+            var listener = this.validationListeners[i];
+            listener.exec.apply(listener.context, [doc]);
+        }
+        this.validationListeners.length = 0;
+        
 		$.ajax({
 			type: "POST",
 			url: "modules/compile.xql",
@@ -180,6 +187,7 @@ eXide.edit.XQueryModeHelper = (function () {
 	};
 	
     Constr.prototype.xqlint = function(doc) {
+        $.log("Running xqlint...");
         var session = doc.getSession();
         var value = doc.getText();    
         var h = new JSONParseTreeHandler(value);
@@ -251,6 +259,8 @@ eXide.edit.XQueryModeHelper = (function () {
         // try to determine the ast node where the cursor is located
         var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
         
+        $.log("AST node: %o", astNode);
+        
         if (!astNode) {
             // no ast node: scan preceding text
             mode = "functions";
@@ -271,53 +281,67 @@ eXide.edit.XQueryModeHelper = (function () {
             }
             token = line.substring(start, end);
         } else {
-            var importStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "Import");
-            var nsDeclStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "NamespaceDecl");
-            if (importStmt) {
-                mode = "modules";
-                if (astNode.name == "NCName") {
-                    token = astNode.value;
-                } else if (astNode.name == "URILiteral") {
-                    var prefix = eXide.edit.XQueryUtils.findSibling(astNode, "NCName");
-                    if (prefix) {
-                        token = eXide.edit.XQueryUtils.getValue(prefix);
-                    }
-                }
-                
-                row = importStmt.pos.sl;
-                start = importStmt.pos.sc;
-                end = importStmt.pos.ec;
-                var separator = eXide.edit.XQueryUtils.findNext(importStmt, "Separator");
-                if (separator) {
-                    end = separator.pos.ec;
-                }
-            } else if (nsDeclStmt) {
-                mode = "namespaces";
-                if (astNode.name == "NCName") {
-                    token = astNode.value;
-                } else if (astNode.name == "URILiteral") {
-                    var prefix = eXide.edit.XQueryUtils.findSibling(astNode, "NCName");
-                    if (prefix) {
-                        token = eXide.edit.XQueryUtils.getValue(prefix);
-                    }
-                }
-                row = nsDeclStmt.pos.sl;
-                start = nsDeclStmt.pos.sc;
-                end = nsDeclStmt.pos.ec;
-                var separator = eXide.edit.XQueryUtils.findNext(nsDeclStmt, "Separator");
-                if (separator) {
-                    end = separator.pos.ec;
-                }
-            } else if (astNode.name == "EQName") {
-                mode = "functions";
-                token = astNode.value;
+            var parent = astNode.getParent;
+            if (parent.name === "VarRef" || parent.name === "VarName") {
+                mode = "variables";
                 row = astNode.pos.sl;
-                start = astNode.pos.sc;
                 end = astNode.pos.ec;
+                if (astNode.name === "EQName") {
+                    token = astNode.value;
+                    start = astNode.pos.sc - 1;
+                } else {
+                    start = astNode.pos.sc;
+                }
+                astNode = parent;
             } else {
-                row = lead.row;
-                start = lead.column;
-                end = lead.column;
+                var importStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "Import");
+                var nsDeclStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "NamespaceDecl");
+                if (importStmt) {
+                    mode = "modules";
+                    if (astNode.name == "NCName") {
+                        token = astNode.value;
+                    } else if (astNode.name == "URILiteral") {
+                        var prefix = eXide.edit.XQueryUtils.findSibling(astNode, "NCName");
+                        if (prefix) {
+                            token = eXide.edit.XQueryUtils.getValue(prefix);
+                        }
+                    }
+                    
+                    row = importStmt.pos.sl;
+                    start = importStmt.pos.sc;
+                    end = importStmt.pos.ec;
+                    var separator = eXide.edit.XQueryUtils.findNext(importStmt, "Separator");
+                    if (separator) {
+                        end = separator.pos.ec;
+                    }
+                } else if (nsDeclStmt) {
+                    mode = "namespaces";
+                    if (astNode.name == "NCName") {
+                        token = astNode.value;
+                    } else if (astNode.name == "URILiteral") {
+                        var prefix = eXide.edit.XQueryUtils.findSibling(astNode, "NCName");
+                        if (prefix) {
+                            token = eXide.edit.XQueryUtils.getValue(prefix);
+                        }
+                    }
+                    row = nsDeclStmt.pos.sl;
+                    start = nsDeclStmt.pos.sc;
+                    end = nsDeclStmt.pos.ec;
+                    var separator = eXide.edit.XQueryUtils.findNext(nsDeclStmt, "Separator");
+                    if (separator) {
+                        end = separator.pos.ec;
+                    }
+                } else if (astNode.name == "EQName") {
+                    mode = "functions";
+                    token = astNode.value;
+                    row = astNode.pos.sl;
+                    start = astNode.pos.sc;
+                    end = astNode.pos.ec;
+                } else {
+                    row = lead.row;
+                    start = lead.column;
+                    end = lead.column;
+                }
             }
         }
         
@@ -337,13 +361,50 @@ eXide.edit.XQueryModeHelper = (function () {
 		} else if (mode == "functions") {
 			this.functionLookup(doc, token, range, true);
 		} else if (mode == "namespaces") {
-            this.namespaceLookup(doc, token, range, true);   
+            this.namespaceLookup(doc, token, range, true);
+		} else if (mode == "variables") {
+            this.variableLookup(doc, astNode, token, range, true);
 		} else {
             this.moduleLookup(doc, token, range, true);   
 		}
 		return true;
 	};
 	
+    Constr.prototype.variableLookup = function(doc, astNode, prefix, wordrange, complete) {
+        $.log("Lookup variable %s %o", prefix, astNode);
+        var visitor = new eXide.edit.InScopeVariables(doc.ast, astNode);
+        var variables = visitor.getStack();
+        
+        // Create popup menu
+		// add function defs
+		var popupItems = [];
+        var prefixRegex = prefix ? new RegExp("^" + prefix) : null;
+		for (var i = 0; i < variables.length; i++) {
+            if (!prefix || prefixRegex.test(variables[i])) {
+    			var item = { 
+    				label: variables[i],
+                    template: "$" + variables[i],
+    				type: "variable"
+    			};
+    			popupItems.push(item);
+            }
+		}
+		
+        for (var i = 0; i < doc.functions.length; i++) {
+            if (doc.functions[i].type == "variable") {
+                popupItems.push({
+                    label: doc.functions[i].name,
+                    template: doc.functions[i].name,
+                    type: "variable"
+                });
+            }
+        }
+        
+		this.$addTemplates(prefix, popupItems);
+		
+		this.$showPopup(doc, wordrange, popupItems);
+    };
+    
     Constr.prototype.$localVars = function (prefix, wordrange, complete) {
         var variables =[];
         var stopRegex = /declare function|\};/;
@@ -617,6 +678,7 @@ eXide.edit.XQueryModeHelper = (function () {
             var formatted = codeFormatter.format();
             doc.getSession().replace(range, formatted);
         } catch(e) {
+            console.log("Error parsing code: %s %o", e.toString(), e);
             eXide.util.error("Code could not be parsed. Formatting skipped.");
         }
     };
@@ -752,11 +814,13 @@ eXide.edit.XQueryModeHelper = (function () {
     Constr.prototype.createOutline = function(doc, onComplete) {
         var code = doc.getText();
 		this.$parseLocalFunctions(code, doc);
-        if (onComplete)
-            onComplete(doc);
+//        if (onComplete)
+//            onComplete(doc);
 		var imports = this.$parseImports(code);
 		if (imports)
 			this.$resolveImports(doc, imports, onComplete);
+        else
+        onComplete(doc);
     }
     
     Constr.prototype.$sortFunctions = function(doc) {
