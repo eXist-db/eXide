@@ -182,6 +182,7 @@ eXide.edit.XQueryModeHelper = (function () {
         try {
             parser.parse_XQuery();
         } catch(e) {
+            $.log("Error while parsing XQuery: %s", parser.getErrorMessage(e));
             if(e instanceof parser.ParseException) {
                 h.closeParseTree();
             }
@@ -251,7 +252,7 @@ eXide.edit.XQueryModeHelper = (function () {
             // try to determine the ast node where the cursor is located
             var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
             
-            $.log("AST node: %o", astNode);
+            $.log("Autocomplete AST node: %o", astNode);
             
             if (!astNode) {
                 // no ast node: scan preceding text
@@ -272,7 +273,7 @@ eXide.edit.XQueryModeHelper = (function () {
                    start--;
                 }
                 token = line.substring(start, end);
-                start++; end++;
+                end++;
             } else {
                 var parent = astNode.getParent;
                 if (parent.name === "VarRef" || parent.name === "VarName") {
@@ -645,7 +646,7 @@ eXide.edit.XQueryModeHelper = (function () {
             var formatted = codeFormatter.format();
             doc.getSession().replace(range, formatted);
         } catch(e) {
-            console.log("Error parsing code: %s %o", e.toString(), e);
+            console.log("Error parsing XQuery code: %s", parser.getErrorMessage(e));
             eXide.util.error("Code could not be parsed. Formatting skipped.");
         }
     };
