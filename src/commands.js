@@ -24,6 +24,7 @@ eXide.namespace("eXide.edit.commands");
 eXide.edit.commands = (function () {
 
 	var useragent = require("ace/lib/useragent");
+	var SnippetManager = require("ace/snippets").SnippetManager;
 	var bindings = {};
     
 	function bindKey(bindings) {
@@ -181,18 +182,6 @@ eXide.edit.commands = (function () {
         		    	}
         		    });
         		    commands.addCommand({
-        		    	name: "indentOrParam",
-        		    	bindKey: bindKey(bindings.indentOrParam),
-        		    	exec: function(editor) {
-        		    		// if there's active template code in the document, tab will
-        		    		// cycle through the template's params. Otherwise, it calls indent.
-        		    		var doc = parent.getActiveDocument();
-        		    		if (!(doc.template && doc.template.nextParam())) {
-        		    			editor.indent();
-        		    		}
-        		    	}
-        		    });
-        		    commands.addCommand({
         		    	name: "escape",
         		    	bindKey: bindKey(bindings.escape),
         		    	exec: function(editor) {
@@ -257,7 +246,16 @@ eXide.edit.commands = (function () {
                             parent.exec("rename");
                         }
                     });
-                    
+                    commands.addCommand({
+                        name: "snippet",
+                        hint: "code snippet",
+                        bindKey: {mac: "Tab", win: "Tab"},
+                        exec: function(editor) {
+                            var success = SnippetManager.expandWithTab(editor);
+                            if (!success)
+                                editor.execCommand("indent");
+                        }
+                    });
     			    createMap(parent);
                 }
             });

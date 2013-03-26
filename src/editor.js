@@ -47,7 +47,7 @@ eXide.edit.Document = (function() {
         }
         this.$session.setFoldStyle("markbegin");
 	};
-	
+
     Constr.TYPE_FUNCTION = "function";
     Constr.TYPE_VARIABLE = "variable";
     Constr.TYPE_TEMPLATE = "template";
@@ -148,13 +148,14 @@ eXide.namespace("eXide.edit.Editor");
  * The main editor component. Handles the ACE editor as well as tabs, keybindings, commands...
  */
 eXide.edit.Editor = (function () {
-	
-    var VALIDATE_TIMEOUT = 1000;
+
+    var VALIDATE_TIMEOUT = 300;
     
 	var Renderer = require("ace/virtual_renderer").VirtualRenderer;
 	var Editor = require("ace/editor").Editor;
 	var EditSession = require("ace/edit_session").EditSession;
     var UndoManager = require("ace/undomanager").UndoManager;
+    var SnippetManager = require("ace/snippets").SnippetManager;
     
     function parseErrMsg(error) {
 		var msg;
@@ -193,8 +194,16 @@ eXide.edit.Editor = (function () {
 		this.editor.setBehavioursEnabled(true);
 		this.editor.setShowFoldWidgets(true);
         this.editor.setFadeFoldWidgets(false);
+        
         // enable multiple cursors
 		require("ace/multi_select").MultiSelect(this.editor);
+        
+        // SnippetManager.register([{
+        //     trigger: "for",
+        //     name: "for",
+        //     content: "for (var ${1:i} = 0; i < ${2}; i++)"
+        // }], "javascript");
+        
         // register keybindings
         eXide.edit.commands.init($this);
         
@@ -248,7 +257,8 @@ eXide.edit.Editor = (function () {
             "html": new eXide.edit.XMLModeHelper($this),
             "less": new eXide.edit.LessModeHelper($this),
             "javascript": new eXide.edit.JavascriptModeHelper($this),
-            "css": new eXide.edit.CssModeHelper($this)
+            "css": new eXide.edit.CssModeHelper($this),
+            "tmsnippet": new eXide.edit.SnippetModeHelper($this)
 		};
         
         $("#dialog-goto-line").dialog({
@@ -299,7 +309,7 @@ eXide.edit.Editor = (function () {
 
     // Extend eXide.events.Sender for event support
     eXide.util.oop.inherit(Constr, eXide.events.Sender);
-    
+
 	Constr.prototype.init = function() {
 	    if (this.documents.length == 0)
 	    	this.newDocument(null, "xquery");
@@ -401,6 +411,9 @@ eXide.edit.Editor = (function () {
 			eXide.util.message("Opening " + resource.path + " readonly!");
 		else
 			eXide.util.message("Opening " + resource.path);
+        if (/\.snippet/.test(resource.name)) {
+            mime = "application/tmsnippet";
+        }
 		var doc = new eXide.edit.Document(resource.name, resource.path, new EditSession(data));
 		doc.editable = resource.writable;
 		doc.mime = mime;
@@ -451,34 +464,45 @@ eXide.edit.Editor = (function () {
 	};
 	
 	Constr.prototype.$setMode = function(doc, setMime) {
+        var mode;
 		switch (doc.getSyntax()) {
 		case "xquery":
 			var XQueryMode = require("eXide/mode/xquery").Mode;
-			doc.$session.setMode(new XQueryMode(this));
+            mode = new XQueryMode(this);
+            mode.$id = "xquery";
+			doc.$session.setMode(mode);
 			if (setMime)
 				doc.mime = "application/xquery";
 			break;
 		case "xml":
 			var XMLMode = require("eXide/mode/xml").Mode;
-			doc.$session.setMode(new XMLMode(this));
+            mode = new XMLMode(this);
+            mode.$id = "xml";
+			doc.$session.setMode(mode);
 			if (setMime)
 				doc.mime = "application/xml";
 			break;
 		case "html":
 			var HtmlMode = require("eXide/mode/html").Mode;
-			doc.$session.setMode(new HtmlMode(this));
+            mode = new HtmlMode(this);
+			doc.$session.setMode(mode);
+            mode.$id = "html";
 			if (setMime)
 				doc.mime = "text/html";
 			break;
 		case "javascript":
 			var JavascriptMode = require("ace/mode/javascript").Mode;
-			doc.$session.setMode(new JavascriptMode());
+            mode = new JavascriptMode();
+            mode.$id = "javascript";
+			doc.$session.setMode(mode);
 			if (setMime)
 				doc.mime = "application/x-javascript";
 			break;
 		case "css":
 			var CssMode = require("ace/mode/css").Mode;
-			doc.$session.setMode(new CssMode());
+            mode = new CssMode();
+            mode.$id = "css";
+			doc.$session.setMode(mode);
 			if (setMime)
 				doc.mime = "text/css";
 			break;
@@ -486,14 +510,26 @@ eXide.edit.Editor = (function () {
             var TextMode = require("ace/mode/text").Mode;
             doc.$session.setMode(new TextMode());
             if (setMime)
-    			doc.mime = "text/text";
+                doc.mime = "text/text";
+            break;
         case "less":
             var LessMode = require("ace/mode/less").Mode;
-            doc.$session.setMode(new LessMode());
+            mode = new LessMode();
+            mode.$id = "less";
+            doc.$session.setMode(mode);
             if (setMime)
-        		doc.mime = "application/less";
+                doc.mime = "application/less";
+            break;
+        case "tmsnippet":
+            var SnippetMode = require("ace/mode/tmsnippet").Mode;
+            doc.$session.setUseSoftTabs(false);
+            doc.$session.setMode(new SnippetMode());
+            if (setMime)
+                doc.mime = "application/tmsnippet";
+            break;
 		}
-        var mode = this.modes[doc.getSyntax()];
+        eXide.util.Snippets.init(doc.getSyntax());
+        mode = this.modes[doc.getSyntax()];
         if (!mode) {
             mode = new eXide.edit.ModeHelper(this);
         }
@@ -782,6 +818,10 @@ eXide.edit.Editor = (function () {
 		}
 	};
 
+    Constr.prototype.setValidation = function(enable) {
+        this.pendingCheck = !enable;
+    };
+    
 	/**
 	 * Validate the current document's text by calling validate on the
 	 * mode helper.

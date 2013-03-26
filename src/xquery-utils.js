@@ -25,11 +25,6 @@ eXide.edit.XQueryUtils = (function () {
     
     return {
         findNode: function(ast, pos) {
-//            if (ast.pos) {
-//                $.log("Search %d:%d in range %d:%d - %d:%d %s", pos.line, pos.col, ast.pos.sl, 
-//                    ast.pos.sc, ast.pos.el, ast.pos.ec, ast.name);
-//            } else
-//                return null;
             var p = ast.pos;
             if(eXide.edit.XQueryUtils.inRange(p, pos, false) === true) {
                 for(var i in ast.children) {
@@ -288,6 +283,82 @@ eXide.edit.InScopeVariables = (function () {
     
     Constr.prototype.getStack = function() {
         return this.variables;
+    };
+    
+    return Constr;
+}());
+
+eXide.namespace("eXide.edit.FunctionParameters");
+
+/**
+ * XQuery specific helper methods.
+ */
+eXide.edit.FunctionParameters = (function () {
+    
+    var Range = require("ace/range").Range;
+    
+    Constr = function(root) {
+        this.parameters = [];
+        this.visit(root);
+    };
+    
+    eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
+    
+    Constr.prototype.Argument = function(node) {
+        var name;
+        this.visitChildren(node, {
+            VarName: function(node) {
+                name = eXide.edit.XQueryUtils.getValue(node);
+                return false;
+            }
+        });
+        if (name) {
+            this.parameters.push(name);
+        } else {
+            this.parameters.push("argument" + this.parameters.length);
+        }
+        return true;
+    };
+    
+    Constr.prototype.getParameters = function() {
+        return this.parameters;
+    };
+    
+    return Constr;
+}());
+
+eXide.namespace("eXide.edit.FunctionCalls");
+
+/**
+ * XQuery specific helper methods.
+ */
+eXide.edit.FunctionCalls = (function () {
+    
+    var Range = require("ace/range").Range;
+    
+    Constr = function(funcName, arity, ast) {
+        this.name = funcName;
+        this.arity = arity;
+        this.references = [];
+        this.visit(ast);
+    };
+    
+    eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
+    
+    Constr.prototype.FunctionCall = function(node) {
+        if (node.arity !== this.arity) {
+            return false;
+        }
+        var name = node.children[0].value;
+        if (name === this.name) {
+            this.references.push(node.children[0]);
+            $.log("call: %o", name);
+        }
+        return false;
+    };
+    
+    Constr.prototype.getReferences = function() {
+        return this.references;
     };
     
     return Constr;

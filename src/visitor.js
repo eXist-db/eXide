@@ -26,14 +26,14 @@ eXide.edit.Visitor = (function () {
     Constr = function() {
     };
     
-    Constr.prototype.visit = function(node) {
+    Constr.prototype.visit = function(node, handler) {
         var name = node.name;
         var skip = false;
         
         if (typeof this[name] === "function") skip = this[name](node) === true ? true : false;
         
         if (!skip) {
-            this.visitChildren(node);
+            this.visitChildren(node, handler);
         }
     };
 
@@ -43,7 +43,7 @@ eXide.edit.Visitor = (function () {
             if (handler !== undefined && typeof handler[child.name] === "function") {
                 handler[child.name](child);
             } else {
-                this.visit(child);
+                this.visit(child, handler);
             }
         }
     };

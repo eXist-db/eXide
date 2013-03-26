@@ -23,6 +23,19 @@ declare namespace json="http://json.org/";
 
 declare option exist:serialize "method=json media-type=application/json";
 
+declare function local:create-template($signature as xs:string) {
+    string-join(
+        let $signature := "substring($source, $starting, $length)"
+        for $token in analyze-string($signature, "\$([^\s,\)]+)")/*
+        return
+            typeswitch($token)
+                case element(fn:match) return
+                    "$${" || count($token/preceding-sibling::fn:match) + 1 || ":" || $token/fn:group || "}"
+                default return
+                    $token/node()
+    )
+};
+
 declare function local:builtin-modules() {
     let $prefix := request:get-parameter("prefix", ())
     for $module in util:registered-modules()
@@ -36,6 +49,7 @@ declare function local:builtin-modules() {
         return
             <json:value json:array="true">
                 <signature>{$signature}</signature>
+                <template>{local:create-template($signature)}</template>
                 <help>{local:generate-help($desc)}</help>
                 <type>function</type>
                 <visibility>

@@ -32,6 +32,7 @@ eXide.edit.XQueryModeHelper = (function () {
     var CodeFormatter = require("lib/visitors/CodeFormatter").CodeFormatter;
     var Compiler = require("lib/Compiler").Compiler;
     var Range = require("ace/range").Range;
+    var SnippetManager = require("ace/snippets").SnippetManager;
         
 	Constr = function(editor, menubar) {
 		this.parent = editor;
@@ -74,20 +75,6 @@ eXide.edit.XQueryModeHelper = (function () {
         
         self.validating = null;
         self.validationListeners = [];
-//        editor.addEventListener("change", function(doc) {
-//            if (self.validating) {
-//                clearTimeout(self.validating);
-//            }
-//            self.validating = setTimeout(function() {
-//                self.xqlint(doc);
-//                for (var i = 0; i < self.validationListeners.length; i++) {
-//                    var listener = self.validationListeners[i];
-//                    listener.exec.apply(listener.context, [doc]);
-//                }
-//                self.validationListeners.length = 0;
-//                self.validating = null;
-//            }, 300);
-//        });
 	};
 	
 	// extends ModeHelper
@@ -97,7 +84,7 @@ eXide.edit.XQueryModeHelper = (function () {
         this.menu.show();
         this.parent.updateStatus("");
 //        this.parent.triggerCheck();
-//        this.xqlint(this.parent.getActiveDocument());
+        // this.xqlint(this.parent.getActiveDocument());
     };
     
     Constr.prototype.deactivate = function() {
@@ -247,6 +234,8 @@ eXide.edit.XQueryModeHelper = (function () {
     };
     
 	Constr.prototype.autocomplete = function(doc) {
+        if (!doc.ast)
+            return;
         var sel   = this.editor.getSelection();
         var session   = doc.getSession();
 
@@ -255,100 +244,107 @@ eXide.edit.XQueryModeHelper = (function () {
         var token = "";
         var mode = "templates";
         var row, start, end;
+        var range;
         
-        // try to determine the ast node where the cursor is located
-        var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
-        
-        $.log("AST node: %o", astNode);
-        
-        if (!astNode) {
-            // no ast node: scan preceding text
-            mode = "functions";
-            row = lead.row;
-            line = session.getDisplayLine(lead.row);
-            start = lead.column - 1;
-            end = lead.column;
-            while (start >= 0) {
-               var ch = line.substring(start, end);
-               if (ch.match(/^\$[\w:\-_\.]+$/)) {
+        // if text is selected we show templates only
+        if (sel.isEmpty()) {
+            // try to determine the ast node where the cursor is located
+            var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+            
+            $.log("AST node: %o", astNode);
+            
+            if (!astNode) {
+                // no ast node: scan preceding text
+                mode = "functions";
+                row = lead.row;
+                line = session.getDisplayLine(lead.row);
+                start = lead.column - 1;
+                end = lead.column;
+                while (start >= 0) {
+                   var ch = line.substring(start, end);
+                   if (ch.match(/^\$[\w:\-_\.]+$/)) {
                        break;
-               }
-               if (!ch.match(/^[\w:\-_\.]+$/)) {
+                   }
+                   if (!ch.match(/^[\w:\-_\.]+$/)) {
                        start++;
                        break;
-               }
-               start--;
-            }
-            token = line.substring(start, end);
-        } else {
-            var parent = astNode.getParent;
-            if (parent.name === "VarRef" || parent.name === "VarName") {
-                mode = "variables";
-                row = astNode.pos.sl;
-                end = astNode.pos.ec;
-                if (astNode.name === "EQName") {
-                    token = astNode.value;
-                    start = astNode.pos.sc - 1;
-                } else {
-                    start = astNode.pos.sc;
+                   }
+                   start--;
                 }
-                astNode = parent;
+                token = line.substring(start, end);
+                start++; end++;
             } else {
-                var importStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "Import");
-                var nsDeclStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "NamespaceDecl");
-                if (importStmt) {
-                    mode = "modules";
-                    if (astNode.name == "NCName") {
-                        token = astNode.value;
-                    } else if (astNode.name == "URILiteral") {
-                        var prefix = eXide.edit.XQueryUtils.findSibling(astNode, "NCName");
-                        if (prefix) {
-                            token = eXide.edit.XQueryUtils.getValue(prefix);
-                        }
-                    }
-                    
-                    row = importStmt.pos.sl;
-                    start = importStmt.pos.sc;
-                    end = importStmt.pos.ec;
-                    var separator = eXide.edit.XQueryUtils.findNext(importStmt, "Separator");
-                    if (separator) {
-                        end = separator.pos.ec;
-                    }
-                } else if (nsDeclStmt) {
-                    mode = "namespaces";
-                    if (astNode.name == "NCName") {
-                        token = astNode.value;
-                    } else if (astNode.name == "URILiteral") {
-                        var prefix = eXide.edit.XQueryUtils.findSibling(astNode, "NCName");
-                        if (prefix) {
-                            token = eXide.edit.XQueryUtils.getValue(prefix);
-                        }
-                    }
-                    row = nsDeclStmt.pos.sl;
-                    start = nsDeclStmt.pos.sc;
-                    end = nsDeclStmt.pos.ec;
-                    var separator = eXide.edit.XQueryUtils.findNext(nsDeclStmt, "Separator");
-                    if (separator) {
-                        end = separator.pos.ec;
-                    }
-                } else if (astNode.name == "EQName") {
-                    mode = "functions";
-                    token = astNode.value;
+                var parent = astNode.getParent;
+                if (parent.name === "VarRef" || parent.name === "VarName") {
+                    mode = "variables";
                     row = astNode.pos.sl;
-                    start = astNode.pos.sc;
                     end = astNode.pos.ec;
+                    if (astNode.name === "EQName") {
+                        token = astNode.value;
+                        start = astNode.pos.sc - 1;
+                    } else {
+                        start = astNode.pos.sc;
+                    }
+                    astNode = parent;
                 } else {
-                    row = lead.row;
-                    start = lead.column;
-                    end = lead.column;
+                    var importStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "Import");
+                    var nsDeclStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "NamespaceDecl");
+                    if (importStmt) {
+                        mode = "modules";
+                        if (astNode.name == "NCName") {
+                            token = astNode.value;
+                        } else if (astNode.name == "URILiteral") {
+                            var prefix = eXide.edit.XQueryUtils.findSibling(astNode, "NCName");
+                            if (prefix) {
+                                token = eXide.edit.XQueryUtils.getValue(prefix);
+                            }
+                        }
+                        
+                        row = importStmt.pos.sl;
+                        start = importStmt.pos.sc;
+                        end = importStmt.pos.ec;
+                        var separator = eXide.edit.XQueryUtils.findNext(importStmt, "Separator");
+                        if (separator) {
+                            end = separator.pos.ec;
+                        }
+                    } else if (nsDeclStmt) {
+                        mode = "namespaces";
+                        if (astNode.name == "NCName") {
+                            token = astNode.value;
+                        } else if (astNode.name == "URILiteral") {
+                            var prefix = eXide.edit.XQueryUtils.findSibling(astNode, "NCName");
+                            if (prefix) {
+                                token = eXide.edit.XQueryUtils.getValue(prefix);
+                            }
+                        }
+                        row = nsDeclStmt.pos.sl;
+                        start = nsDeclStmt.pos.sc;
+                        end = nsDeclStmt.pos.ec;
+                        var separator = eXide.edit.XQueryUtils.findNext(nsDeclStmt, "Separator");
+                        if (separator) {
+                            end = separator.pos.ec;
+                        }
+                    } else if (astNode.name == "EQName") {
+                        mode = "functions";
+                        token = astNode.value;
+                        row = astNode.pos.sl;
+                        start = astNode.pos.sc;
+                        end = astNode.pos.ec;
+                    } else {
+                        row = lead.row;
+                        start = lead.column;
+                        end = lead.column;
+                    }
                 }
             }
+            range = new Range(row, start, row, end);
+        } else {
+            mode = "templates";
+            range = null;
         }
-        
-		$.log("completing token: %s, mode: %s, row: %d, %d:%d", token, mode, row, start, end);
-		var range = new Range(row, start, row, end);
+		$.log("completing token: %s, mode: %s, range: %o", token, mode, range);
 
-		var pos = this.editor.renderer.textToScreenCoordinates(row, start);
+		var pos = this.editor.renderer.textToScreenCoordinates(lead.row, lead.column);
 		var editorHeight = this.parent.getHeight();
 		if (pos.pageY + 150 > editorHeight) {
 			pos.pageY = editorHeight - 150;
@@ -399,44 +395,10 @@ eXide.edit.XQueryModeHelper = (function () {
                 });
             }
         }
-        
-		this.$addTemplates(prefix, popupItems);
 		
 		this.$showPopup(doc, wordrange, popupItems);
     };
     
-    Constr.prototype.$localVars = function (prefix, wordrange, complete) {
-        var variables =[];
-        var stopRegex = /declare function|\};/;
-        //var varRegex = /let \$[\w\:]+|for \$[\w\:]+|\$[\w\:]+\)/;
-        //var getVarRegex = /\$[\w\:]+/;
-        var varRegex = /let \$[\w\-_\:]+|for \$[\w\-_\:]+|\$[\w\-_\:]+\)/;
-        var getVarRegex = /\$[\w\-_\:]+/;
-        var nameRegex = new RegExp("^\\" + prefix);
-        var session = this.editor.getSession();
-        var row = wordrange.start.row;
-        while (row > -1) {
-            var line = session.getDisplayLine(row);
-            var m;
-            if (m = line.match(varRegex)) {
-                $.log("Var: %s", m[0]);
-                var name = m[0].match(getVarRegex);
-                if (name[0].match(nameRegex)) {
-                    variables.push({
-                        name: name[0],
-                        type: "variable"
-                    });
-                }
-            }
-            if (line.match(stopRegex)) {
-                $.log("Stop: %s", line);
-                return variables;
-            }
-            row--;
-        }
-        return variables;
-    };
-	
 	Constr.prototype.functionLookup = function(doc, prefix, wordrange, complete) {
 		var $this = this;
 		// Call docs.xql to retrieve declared functions and variables
@@ -450,15 +412,8 @@ eXide.edit.XQueryModeHelper = (function () {
 				data = $.parseJSON(data);
 				
 				var funcs = [];
-				var regexStr;
-				var isVar = prefix.substring(0, 1) == "$";
 				
-				if (isVar) {
-					regexStr = "^\\" + prefix;
-					funcs = $this.$localVars(prefix, wordrange, complete);
-				} else {
-					regexStr = "^" + prefix;
-				}
+				var regexStr = "^" + prefix;
 				var regex = new RegExp(regexStr);
 				
 				// add local functions to the set
@@ -486,7 +441,7 @@ eXide.edit.XQueryModeHelper = (function () {
 					popupItems.push(item);
 				}
 				
-				$this.$addTemplates(prefix, popupItems);
+				$this.$addTemplates(doc, prefix, popupItems);
 				
 				$this.$showPopup(doc, wordrange, popupItems);
 			},
@@ -498,7 +453,7 @@ eXide.edit.XQueryModeHelper = (function () {
 	
 	Constr.prototype.templateLookup = function(doc, prefix, wordrange, complete) {
 		var popupItems = [];
-		this.$addTemplates(prefix, popupItems);
+		this.$addTemplates(doc, prefix, popupItems);
 		this.$showPopup(doc, wordrange, popupItems);
 	};
     
@@ -540,14 +495,13 @@ eXide.edit.XQueryModeHelper = (function () {
         });
     };
 	
-	Constr.prototype.$addTemplates = function (prefix, popupItems) {
+	Constr.prototype.$addTemplates = function (doc, prefix, popupItems) {
+        var templates = eXide.util.Snippets.getTemplates(doc, prefix);
 		// add templates
-		var templates = this.parent.outline.getTemplates(prefix);
 		for (var i = 0; i < templates.length; i++) {
 			var item = {
 				type: "template",
 				label: "[S] " + templates[i].name,
-				tooltip: templates[i].help,
 				template: templates[i].template,
                 completion: templates[i].completion
 			};
@@ -558,26 +512,38 @@ eXide.edit.XQueryModeHelper = (function () {
 	Constr.prototype.$showPopup = function (doc, wordrange, popupItems) {
 		// display popup
 		var $this = this;
-		eXide.util.popup(this.editor, $("#autocomplete-box"), $("#autocomplete-help"), popupItems,
-			function (selected) {
-				if (selected) {
-					var expansion = selected.label;
-                    if (selected.type == "function") {
-						expansion = eXide.util.parseSignature(expansion);
-					} else {
-    				    expansion = selected.template;   
-					}
-					
-					doc.template = new eXide.edit.Template($this.parent, wordrange, expansion, selected.type);
-					doc.template.insert();
-                    if (selected.completion) {
-                        $this.autocomplete(doc);
-                    }
-				}
-				$this.editor.focus();
+        function apply(selected) {
+            var expansion = selected.label;
+            if (selected.type == "function") {
+				expansion = eXide.util.parseSignature(expansion);
+			} else {
+                expansion = selected.template;   
 			}
-		);
-	}
+            if (wordrange) {
+                $this.editor.getSession().remove(wordrange);
+            }
+            if (selected.type === "variable") {
+                $this.editor.insert(expansion);
+            } else {
+                SnippetManager.insertSnippet($this.editor, expansion);
+            }
+            if (selected.completion) {
+                $this.autocomplete(doc);
+            }
+        }
+        if (popupItems.length > 1) {
+            eXide.util.popup(this.editor, $("#autocomplete-box"), $("#autocomplete-help"), popupItems,
+                function (selected) {
+                    if (selected) {
+                        apply(selected);
+                    }
+                    $this.editor.focus();
+                }
+            );
+        } else if (popupItems.length == 1) {
+            apply(popupItems[0]);
+        }
+	};
 	
 	Constr.prototype.getFunctionAtCursor = function (lead) {
 		var row = lead.row;
@@ -622,7 +588,7 @@ eXide.edit.XQueryModeHelper = (function () {
         var an = doc.getSession().getAnnotations();
         for (var i = 0; i < an.length; i++) {
             if (an[i].row === row) {
-                var qf = eXide.edit.XQueryQuickFix.getResolutions(this.editor, doc, an[i]);
+                var qf = eXide.edit.XQueryQuickFix.getResolutions(this, this.editor, doc, an[i]);
                 $.each(qf, function(j, fix) {
                     resolutions.push({
                         label: fix.action,
@@ -635,8 +601,9 @@ eXide.edit.XQueryModeHelper = (function () {
         if (resolutions.length > 0) {
             var self = this;
             eXide.util.popup(this.editor, $("#autocomplete-box"), null, resolutions, function(selected) {
-                if (selected !== null) {
-                    selected.resolve(self.parent, doc, selected.annotation);
+                if (selected) {
+                    selected.resolve(self, self.parent, doc, selected.annotation);
+                    self.editor.focus();
                 }
             });
         }
@@ -782,29 +749,44 @@ eXide.edit.XQueryModeHelper = (function () {
         }
     };
     
+    /**
+     * Rename variable or function call.
+     */
     Constr.prototype.rename = function(doc) {
         var self = this;
         var sel = this.editor.getSelection();
         var lead = sel.getSelectionLead();
         var ast = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+        
+        function doRename(references) {
+            sel.toOrientedRange();
+            $.each(references, function(i, node) {
+                var range = new Range(node.pos.sl, node.pos.sc, node.pos.el, node.pos.ec);
+                range.cursor = range.end;
+                sel.addRange(range);
+            });
+            self.editor.focus();
+        }
+        
         if (ast != null) {
-            if (!ast.getParent.name == "VarName") {
-                eXide.util.message("Position cursor on variable name.");
-            } else {
+            if (ast.getParent.name == "VarName") {
                 var varName = eXide.edit.XQueryUtils.getValue(ast);
                 var ancestor = eXide.edit.XQueryUtils.findVariableContext(ast, varName);
                 if (ancestor) {
                     var references = new eXide.edit.VariableReferences(varName, ancestor).getReferences();
-                    sel.toOrientedRange();
-                    $.each(references, function(i, node) {
-                        var range = new Range(node.pos.sl, node.pos.sc, node.pos.el, node.pos.ec);
-                        range.cursor = range.end;
-                        sel.addRange(range);
-                    });
-                    self.editor.focus();
+                    doRename(references);
                 } else {
                     eXide.util.message("Rename failed: unable to determine context, sorry.");
                 }
+            } else if (ast.name == "EQName" && ast.getParent.name == "FunctionDecl") {
+                var funName = ast.value;
+                var arity = parseInt(ast.getParent.arity);
+                $.log("searching calls to function: %s#%d", funName, arity);
+                var refs = new eXide.edit.FunctionCalls(funName, arity, doc.ast).getReferences();
+                refs.push(ast);
+                doRename(refs);
+            } else {
+                eXide.util.message("Please position cursor within variable or function name.");
             }
         } else {
             eXide.util.message("Rename failed: node not found in syntax tree, sorry.");

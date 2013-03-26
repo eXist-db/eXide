@@ -562,6 +562,7 @@ eXide.app = (function() {
                 if (!editor.getActiveDocument()) {
                     eXide.app.newDocument("", "xquery");
                 }
+                editor.triggerCheck();
                 if (callback) callback(restoring);
             });
 			deploymentEditor.restoreState();

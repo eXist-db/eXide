@@ -1,7 +1,7 @@
 /*
  *  eXide - web-based XQuery IDE
  *  
- *  Copyright (C) 2011 Wolfgang Meier
+ *  Copyright (C) 2013 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -48,6 +48,8 @@ eXide.util = (function () {
 
 	var stack_bottomright = {"dir1": "up", "dir2": "left", "firstpos1": 15, "firstpos2": 15};
 	
+    var selection = null;
+    
     $(document).ready(function() {
         $.pnotify.defaults.styling = "jqueryui";
     });
@@ -64,8 +66,8 @@ eXide.util = (function () {
 		popup: function (editor, div, tooltipDiv, data, onSelect) {
 			var container = $(div);
 			var tooltips = tooltipDiv ? $(tooltipDiv) : null;
-			var selection = null;
-			
+			var filter = "";
+            
 			function updateTooltip(node) {
 				if (tooltips) {
 					tooltips.empty();
@@ -75,6 +77,24 @@ eXide.util = (function () {
 				}
 			}
 			
+            function filterEntries() {
+                if (filter.length == 0) {
+                    container.find("table tr").css("display", "");
+                } else {
+                    container.find("table tr").removeClass("selection").css("display", "none");
+                    container.find("table tr").each(function(pos) {
+                        var label = data[pos] instanceof Array ? data[pos].label[0] : data[pos].label;
+                        if (label.indexOf(filter) > -1) {
+                            $(this).css("display", "");
+                        }
+                    });
+                }
+                selection = container.find("table tr:visible").first().addClass('selection');
+                if (selection.length > 0) {
+                    selection.get(0).scrollIntoView();
+                }
+            }
+            
 			function compareLabels (a, b) {
 				return (a.label == b.label) ? 0 : (a.label > b.label) ? 1 : -1;
 			}
@@ -101,12 +121,19 @@ eXide.util = (function () {
             var div = document.createElement("div");
             div.className = "items";
             
-			var ul = document.createElement("table");
-            div.appendChild(ul);
+			var table = document.createElement("table");
+            div.appendChild(table);
+            
+            var filterInfo = document.createElement("div");
+            filterInfo.appendChild(document.createTextNode("Type to filter"));
+            $(filterInfo).css({ position: "absolute", bottom: 0, "font-size": "11px" });
+            div.appendChild(filterInfo);
+            
 			for (var i = 0; i < data.length; i++) {
 				var li = document.createElement("tr");
 				if (i == 0) {
-					li.className = "first";
+					li.className = "selection";
+                    selection = $(li);
 				}
                 var td;
                 if (data[i].label instanceof Array) {
@@ -127,7 +154,7 @@ eXide.util = (function () {
 					
 					td.appendChild(help);
 				}
-				ul.appendChild(li);
+				table.appendChild(li);
 				
 				$(li).click(function () {
 					selection.removeClass("selection");
@@ -149,17 +176,17 @@ eXide.util = (function () {
 			}
 			container.append(div);
 			
-			
-			var selection = container.find("table tr:first").addClass('selection');
 			updateTooltip(selection);
 			
 			var list = $(div).scrollTop(0);
 			var ch = list.innerHeight();
 
 			$(container).keydown(function (ev) {
-				ev.preventDefault();
 				if (ev.which == 40) {
-					var next = selection.next();
+                    ev.preventDefault();
+                    var pos = container.find("tr").index(selection);
+					var next = selection.nextAll(":visible").first();
+                    $.log("next: %d - %d", pos, next.length);
 					if (next.length > 0) {
 						selection.removeClass("selection");
 						next.addClass("selection");
@@ -170,12 +197,13 @@ eXide.util = (function () {
 						updateTooltip(next);
 					}
 				} else if (ev.which == 38) {
-					var prev = selection.prev();
+                    ev.preventDefault();
+					var prev = selection.prevAll(":visible").first();
 					if (prev.length > 0) {
 						selection.removeClass("selection");
 						prev.addClass("selection");
 						selection = prev;
-						if (prev.hasClass("first")) {
+						if (prev.prevAll(":visible").length == 0) {
 							list.scrollTop(0);
 						} else if (prev.position().top < 0) {
 							prev.get(0).scrollIntoView();
@@ -183,30 +211,42 @@ eXide.util = (function () {
 						updateTooltip(prev);
 					}
 				} else if (ev.which == 13) {
+                    ev.preventDefault();
 					var pos = container.find("tr").index(selection);
 					
 					// close container and unbind event
 					container.css("display", "none");
 					if (tooltips)
 						tooltips.css("display", "none");
-					$(container).unbind(ev);
+					$(container).off();
 					
 					// pass content to callback function
 					onSelect.call(null, data[pos]);
 					
-				} else {
-					// other key pressed: close container and unbind event
+				} else if (ev.which == 27) {
+                    ev.preventDefault();
+					// ESC key pressed: close container and unbind event
 					container.css("display", "none");
 					if (tooltips)
 						tooltips.css("display", "none");
-					$(container).unbind(ev);
+					$(container).off();
 					
 					// apply callback with null argument 
 					onSelect.call(null, null);
-					return true;
+				} else if (ev.which == 8) {
+                    ev.preventDefault();
+    			    if (filter.length > 0) {
+        		        filter = filter.substring(0, filter.length - 1);   
+                        $(filterInfo).text(filter);
+                        filterEntries();
+    			    }
 				}
-				return false;
 			});
+            $(container).keypress(function (ev) {
+                filter = filter + String.fromCharCode(ev.which);
+    		    $(filterInfo).text(filter);
+                filterEntries();
+            });
             container.fadeIn(80, function() {
                 container.focus();
                 var offset = list.offset();
@@ -258,12 +298,12 @@ eXide.util = (function () {
 			if (p > -1) {
 				var parsed = signature.substring(0, p + 1);
 				signature = signature.substring(p);
-				var vars = signature.match(/\$[\w:-_]+/g);
+				var vars = signature.match(/\$[^\s,\)]+/g);
 				if (vars) {
 					for (var i = 0; i < vars.length; i++) {
 						if (i > 0)
 							parsed += ", ";
-						parsed += vars[i];
+						parsed += "$${" + (i + 1) + ":" + vars[i].substring(1) + "}";
 					}
 				}
 				parsed += ")";
@@ -427,7 +467,8 @@ eXide.util.mimeTypes = (function () {
         'html': ['text/html'],
         'javascript': ['application/x-javascript'],
         'text': ['text/text'],
-        'less': ['application/less']
+        'less': ['application/less'],
+        'tmsnippet': ['application/tmsnippet']
     };
 
     return {

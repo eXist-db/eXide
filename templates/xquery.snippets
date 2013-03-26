@@ -1,0 +1,102 @@
+#for clause
+snippet for
+	for $${1:item} in ${2:${TM_SELECTED_TEXT:expression}}
+
+#let clause
+snippet let
+	let $${1:item} := ${2:${TM_SELECTED_TEXT:expression}}
+
+#for with return
+snippet forr
+	for $${1:item} in ${2:expression}
+	return
+		${3:${TM_SELECTED_TEXT:()}}
+
+#let with return
+snippet letr
+	let $${1:item} := ${2:expression}
+	return
+		${3:${TM_SELECTED_TEXT:()}}
+
+# function
+snippet fun
+	declare function ${1:name}(${2:\$param}) {
+		${3:${TM_SELECTED_TEXT:()}}
+	};
+
+snippet as
+	as ${1:xs:string}
+
+# templating function
+snippet tmpl
+	declare
+		${1:%templates:wrap}
+	function ${2:name}(\$node as node(), \$model as map(*)) {
+		${3:${TM_SELECTED_TEXT:()}}
+	};
+
+# if statement
+snippet if
+	if (${1:expression}) then
+		${2:${TM_SELECTED_TEXT:()}}
+	else
+		${3:()}
+
+snippet import
+	import module namespace ${1:prefix}="${2:http://module.com}" at "${3:location}";
+	
+snippet decns
+	declare namespace ${1:${TM_SELECTED_TEXT:prefix}}="${2:http://my.namespace.com}";
+	
+snippet decopt
+	declare option exist:serialize "${1:method=html5 media-type=text/html}";
+
+snippet html5
+	declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
+	
+	declare option output:method "html5";
+	declare option output:media-type "text/html";
+
+snippet var
+	declare variable $${1:name} := ${2:()};
+
+snippet typeswitch
+	typeswitch ( $${1:node} )
+	case element( ${2:name} ) return
+		${3:()}
+	default return
+		${4:()}
+
+snippet switch
+	switch ($${1:key})
+		case ${2:"value"} return ${3:()}
+		default return ${4:()}
+
+snippet try
+	try {
+		${1:${TM_SELECTED_TEXT:()}}
+	} catch ${2:*} {
+		${3:()}
+	}
+
+snippet <
+	<${1:p}>${2:${TM_SELECTED_TEXT:text}}</${1}>
+
+snippet <e
+	<${1:p}>
+	{
+		${2:${TM_SELECTED_TEXT:text}}
+	}
+	</${1}>
+	
+snippet case
+	case element(${1:name}) return
+
+snippet xq
+	xquery version="3.0";
+
+snippet json
+	declare namespace json="http://www.json.org";
+	
+snippet tei
+	declare namespace tei="http://www.tei-c.org/ns/1.0";
