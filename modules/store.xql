@@ -1,7 +1,7 @@
 (:
  :  eXide - web-based XQuery IDE
  :  
- :  Copyright (C) 2011 Wolfgang Meier
+ :  Copyright (C) 2013 Wolfgang Meier
  :
  :  This program is free software: you can redistribute it and/or modify
  :  it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@ xquery version "3.0";
 
 declare option exist:serialize "method=json media-type=text/javascript";
 
-declare function local:fix-permissions($collection as xs:string, $resource as xs:string) as empty() {
+declare function local:fix-permissions($collection as xs:string, $resource as xs:string) {
     let $path := concat($collection, "/", $resource)
     let $mime := xmldb:get-mime-type($path)
     return
@@ -58,23 +58,24 @@ let $resource := xmldb:encode-uri($split[3])
 let $mime := request:get-header("Content-Type")
 let $data := request:get-data()
 return
-    util:catch("*",
-        let $path :=
+        try {
+            let $path :=
             if ($mime) then
                 xmldb:store($collection, $resource, $data, $mime)
             else
                 xmldb:store($collection, $resource, $data)
-        return (
-            local:fix-permissions($collection, $resource),
-            <message status="ok" externalLink="{local:get-run-path($path)}"/>
-        ),
-        let $message :=
+            return (
+                local:fix-permissions($collection, $resource),
+                <message status="ok" externalLink="{local:get-run-path($path)}"/>
+            )
+        } catch * {
+            let $message :=
             replace(
                 replace($util:exception-message, "^.*XMLDBException:", ""),
                 "\[at.*\]$", ""
             )
-        return
-            <error status="error">
-                <message>{$message}</message>
-            </error>
-    )
+            return
+                <error status="error">
+                    <message>{$message}</message>
+                </error>
+        }
