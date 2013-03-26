@@ -139,6 +139,16 @@ else if (starts-with($exist:path, '/results/')) then
         </forward>
     </dispatch>
 
+else if (starts-with($exist:path, "/store/")) then
+    let $resource := substring-after($exist:path, "/store")
+    return
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/modules/store.xql">
+                <add-parameter name="path" value="{$resource}"/>
+                {$login("org.exist.login", (), false())}
+            </forward>
+        </dispatch>
+    
 else if ($exist:resource eq "outline") then
     let $query := request:get-parameter("qu", ())
     let $base := request:get-parameter("base", ())

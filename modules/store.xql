@@ -55,8 +55,8 @@ let $path := request:get-parameter("path", ())
 let $split := text:groups($path, "^(.*)/([^/]+)$")
 let $collection := xmldb:encode-uri($split[2])
 let $resource := xmldb:encode-uri($split[3])
-let $mime := request:get-parameter("mime", ())
-let $data := request:get-parameter("data", ())
+let $mime := request:get-header("Content-Type")
+let $data := request:get-data()
 return
     util:catch("*",
         let $path :=

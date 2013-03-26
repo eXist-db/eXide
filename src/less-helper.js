@@ -53,16 +53,12 @@ eXide.edit.LessModeHelper = (function () {
     Constr.prototype.saveCSS = function(doc, css) {
         var cssPath = doc.getPath().replace(/\.less$/, ".css");
         eXide.util.message("Compiling less file to " + cssPath);
-        var params = {
-    			path: cssPath,
-				data: css,
-                mime: "text/css"
-		};
 		$.ajax({
-			url: "modules/store.xql",
-			type: "POST",
-			data: params,
+            url: "store/" + cssPath,
+			type: "PUT",
+			data: css,
 			dataType: "json",
+            contentType: "text/css",
 			success: function (data) {
 			    if (data.status == "error") {
 					eXide.util.error(data.message);

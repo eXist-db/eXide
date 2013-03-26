@@ -198,12 +198,6 @@ eXide.edit.Editor = (function () {
         // enable multiple cursors
 		require("ace/multi_select").MultiSelect(this.editor);
         
-        // SnippetManager.register([{
-        //     trigger: "for",
-        //     name: "for",
-        //     content: "for (var ${1:i} = 0; i < ${2}; i++)"
-        // }], "javascript");
-        
         // register keybindings
         eXide.edit.commands.init($this);
         
@@ -567,17 +561,12 @@ eXide.edit.Editor = (function () {
 		
 		eXide.util.message("Storing resource " + $this.activeDoc.name + "...");
 		
-		var params = {
-				path: $this.activeDoc.path,
-				data: $this.activeDoc.getText()
-		};
-		if ($this.activeDoc.mime)
-			params.mime = $this.activeDoc.mime;
 		$.ajax({
-			url: "modules/store.xql",
-			type: "POST",
-			data: params,
+			url: "store" + $this.activeDoc.path,
+			type: "PUT",
+			data: $this.activeDoc.getText(),
 			dataType: "json",
+            contentType: $this.activeDoc.mime ? $this.activeDoc.mime : "application/octet-stream",
 			success: function (data) {
 			    if (data.status == "error") {
 					if (errorHandler) {
