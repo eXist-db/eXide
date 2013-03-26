@@ -29,9 +29,6 @@ eXide.edit.Outline = (function () {
 	
 	Constr = function() {
 		this.currentDoc = null;
-		this.templates = [];
-		
-		this.$loadTemplates();
         
         var self = this;
         $("#outline-filter").keyup(function() {
@@ -161,32 +158,7 @@ eXide.edit.Outline = (function () {
                     .style("opacity",0)
                     .remove();
             sel.sort(function (a, b) { return a == null || b == null ? -1  : stringCompare(a.sort, b.sort); });
-        },
-        
-		$loadTemplates: function() {
-			var $this = this;
-			$.ajax({
-				url: "templates/snippets.xml",
-				dataType: "xml",
-				type: "GET",
-				success: function (xml) {
-					$(xml).find("snippet").each(function () {
-						var snippet = $(this);
-						var abbrev = snippet.attr("abbrev");
-                        var completion = snippet.attr("completion");
-						var description = snippet.find("description").text();
-						var code = snippet.find("code").text();
-						$this.templates.push({
-							TYPE: eXide.edit.Document.TYPE_TEMPLATE,
-							name: abbrev,
-							help: description,
-							template: code,
-                            completion: completion && completion === "true"
-						});
-					});
-				}
-			});
-		}
+        }
 	};
 	
 	return Constr;
