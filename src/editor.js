@@ -720,6 +720,9 @@ eXide.edit.Editor = (function () {
         if (helper) {
             helper.activate();
         }
+        if (!this.activeDoc.ast) {
+            this.triggerCheck();
+        }
 	};
 	
 	Constr.prototype.updateTabStatus = function(oldPath, doc) {
