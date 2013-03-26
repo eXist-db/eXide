@@ -1,7 +1,7 @@
 /*
  *  eXide - web-based XQuery IDE
  *  
- *  Copyright (C) 2011 Wolfgang Meier
+ *  Copyright (C) 2011-2013 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -30,6 +30,8 @@ eXide.util.Preferences = (function () {
 		showInvisibles: false,
 		showPrintMargin: true,
 		showHScroll: false,
+	indent: -1,
+	        indentSize: 2,
         softWrap: -1
 	};
     
@@ -65,12 +67,23 @@ eXide.util.Preferences = (function () {
     };
     
     Constr.prototype.updateForm = function() {
-        $.log("Updating form %s", this.preferences.fontSize);
+        $.log("Updating preference form with fontsize %s", this.preferences.fontSize);
         var form = $("#preferences-dialog form");
         $("select[name=\"theme\"]", form).val(this.preferences.theme);
 		$("select[name=\"font-size\"]", form).val(this.preferences.fontSize);
 		$("input[name=\"show-invisibles\"]", form).attr("checked", this.preferences.showInvisibles);
 		$("input[name=\"print-margin\"]", form).attr("checked", this.preferences.showPrintMargin);
+
+        var indent = this.preferences.indent;
+        var indentSize = this.preferences.indentSize;
+        if (indent === 0) {
+            indent = "Tabs";
+        } else if (indent === -1) {
+            indent = "Spaces";
+        }
+        $("select[name=\"indent\"]", form).val(indent);
+	        $("select[name=\"indent-size\"]", form).val(indentSize);
+
         var wrap = this.preferences.softWrap;
         if (wrap === 0) {
             wrap = "off";
@@ -86,6 +99,17 @@ eXide.util.Preferences = (function () {
 		this.preferences.fontSize = parseInt($("select[name=\"font-size\"]", form).val());
 		this.preferences.showInvisibles = $("input[name=\"show-invisibles\"]", form).is(":checked");
 		this.preferences.showPrintMargin = $("input[name=\"print-margin\"]", form).is(":checked");
+
+        var indent = $("select[name=\"indent\"]", form).val();
+        var indentSize = parseInt($("select[name=\"indent-size\"]", form).val(), 10);
+        if (indent === "Spaces") {
+            indent = -1;
+        } else if (indent === "Tabs") {
+            indent = 0;
+        }
+        this.preferences.indent = parseInt(indent, 10);
+        this.preferences.indentSize = parseInt(indentSize, 10);
+
         var wrap = $("select[name=\"soft-wrap\"]", form).val();
         if (wrap === "free") {
             wrap = -1;
@@ -93,7 +117,7 @@ eXide.util.Preferences = (function () {
             wrap = 0;
         }
         this.preferences.softWrap = parseInt(wrap, 10);
-		this.applyPreferences();
+	this.applyPreferences();
     };
     
     Constr.prototype.applyPreferences = function () {
@@ -108,7 +132,16 @@ eXide.util.Preferences = (function () {
                 doc.getSession().setWrapLimitRange(null, null);
             }
             doc.getSession().setUseWrapMode($this.preferences.softWrap != 0);
+
+            if ($this.preferences.indent < 0) {
+                doc.getSession().setTabSize($this.preferences.indentSize);
+		doc.getSession().setUseSoftTabs(true);
+            } else if ($this.preferences.indent >= 0) {
+                doc.getSession().setUseSoftTabs(false);
+            }
+
         });
+
         this.editor.editor.setFontSize(this.preferences.fontSize + "px");
 		this.editor.resize();
 	};
