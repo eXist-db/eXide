@@ -186,7 +186,6 @@ eXide.util = (function () {
                     ev.preventDefault();
                     var pos = container.find("tr").index(selection);
 					var next = selection.nextAll(":visible").first();
-                    $.log("next: %d - %d", pos, next.length);
 					if (next.length > 0) {
 						selection.removeClass("selection");
 						next.addClass("selection");
