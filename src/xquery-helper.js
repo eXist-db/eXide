@@ -65,7 +65,7 @@ eXide.edit.XQueryModeHelper = (function () {
         this.menu = $("#menu-xquery").hide();
         menubar.click("#menu-xquery-format", function() {
             self.format(editor.getActiveDocument());
-        }, "formatCode");
+        }, "xquery-format");
         menubar.click("#menu-xquery-expand", function() {
             self.expandSelection(editor.getActiveDocument());
         }, "expandSelection");
@@ -599,6 +599,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 });
             }
         }
+
         if (resolutions.length > 0) {
             var self = this;
             eXide.util.popup(this.editor, $("#autocomplete-box"), null, resolutions, function(selected) {

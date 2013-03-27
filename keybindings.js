@@ -22,7 +22,7 @@
     "synchronize": ["Alt-Shift-S", "Command-Option-S"],
     "preferences": ["Alt-Shift-P", "Ctrl-Command-P"],
     "openApp": ["Ctrl-Alt-R", "Command-Option-R"],
-    "formatCode": ["Ctrl-Shift-P", "Command-Shift-P"],
+    "xqueryFormat": ["Ctrl-Shift-P", "Command-Shift-P"],
     "quickfix": ["Ctrl-Shift-Q", "Command-Ctrl-Q"],
     "expandSelection": ["Ctrl-Shift-X", "Command-Shift-X|Ctrl-Command-Up"],
     "rename": ["Ctrl-Alt-Shift-R", "Command-Option-Shift-R"]

@@ -39,14 +39,12 @@ eXide.edit.commands = (function () {
         var commands = editor.editor.commands;
         for (key in commands.commands)  {
             var command = commands.commands[key];
-            var bind;
             if (command.bindKey) {
     			if (useragent.isMac)
-				    bind = command.bindKey.mac;
+				    bindings[command.name] = command.bindKey.mac;
 				else
-					bind = command.bindKey.win;
+					bindings[command.name] = command.bindKey.win;
             }
-            bindings[command.name] = bind;
         }
     }
     
@@ -139,8 +137,8 @@ eXide.edit.commands = (function () {
         		    	}
         		    });
                     commands.addCommand({
-                        name: "formatCode",
-                        bindkey: bindKey(bindings.formatCode),
+                        name: "xquery-format",
+                        bindKey: bindKey(bindings.xqueryFormat),
                         exec: function(editor) {
                             parent.exec("format");
                         }
