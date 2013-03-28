@@ -86,6 +86,16 @@ else if ($exist:resource = 'login') then
             <status>{$err:description}</status>
         }
 
+else if (starts-with($exist:path, "/store/")) then
+    let $resource := substring-after($exist:path, "/store")
+    return
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/modules/store.xql">
+                <add-parameter name="path" value="{$resource}"/>
+                {$login("org.exist.login", (), false())}
+            </forward>
+        </dispatch>
+
 else if ($exist:resource eq "index.html") then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <view>
@@ -138,16 +148,6 @@ else if (starts-with($exist:path, '/results/')) then
             <add-parameter name="num" value="{$exist:resource}"/>
         </forward>
     </dispatch>
-
-else if (starts-with($exist:path, "/store/")) then
-    let $resource := substring-after($exist:path, "/store")
-    return
-        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-            <forward url="{$exist:controller}/modules/store.xql">
-                <add-parameter name="path" value="{$resource}"/>
-                {$login("org.exist.login", (), false())}
-            </forward>
-        </dispatch>
     
 else if ($exist:resource eq "outline") then
     let $query := request:get-parameter("qu", ())
