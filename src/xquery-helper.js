@@ -32,6 +32,7 @@ eXide.edit.XQueryModeHelper = (function () {
     var CodeFormatter = require("lib/visitors/CodeFormatter").CodeFormatter;
     var Compiler = require("lib/Compiler").Compiler;
     var Range = require("ace/range").Range;
+    var Anchor = require("ace/anchor").Anchor;
     var SnippetManager = require("ace/snippets").SnippetManager;
         
 	Constr = function(editor, menubar) {
@@ -72,6 +73,9 @@ eXide.edit.XQueryModeHelper = (function () {
         menubar.click("#menu-xquery-rename", function() {
             self.rename(editor.getActiveDocument());
         }, "rename");
+        menubar.click("#menu-xquery-extract-function", function() {
+            self.extractFunction(editor.getActiveDocument());
+        }, "xquery-extract-fun");
         
         self.validating = null;
         self.validationListeners = [];
@@ -649,6 +653,68 @@ eXide.edit.XQueryModeHelper = (function () {
         } catch(e) {
             console.log("Error parsing XQuery code: %s", parser.getErrorMessage(e));
             eXide.util.error("Code could not be parsed. Formatting skipped.");
+        }
+    };
+    
+    Constr.prototype.extractFunction = function(doc) {
+        // get text of selection
+        var range = this.editor.getSelectionRange();
+        var value = doc.getSession().getTextRange(range);   
+        if (value.length == 0) {
+            eXide.util.error("Please select code to extract.");
+            return;
+        }
+        
+        var h = new JSONParseTreeHandler(value);
+        var parser = new XQueryParser(value, h);
+        try {
+            parser.parse_XQuery();
+            var ast = h.getParseTree();
+            var translator = new Translator(ast);
+            ast = translator.translate();
+            
+            var markers = ast.markers;
+            var variables = [];
+            for (var i = 0; i < markers.length; i++) {
+                if (markers[i].type === "error") {
+                    var matches = /\[XPST0008\]\s"([^"]+)": undeclared variable.*/.exec(markers[i].message);
+                    if (matches && matches.length == 2) {
+                        variables.push(matches[1]);
+                    }
+                }
+            }
+            
+            // remove selected range and replace with parameter list
+            this.editor.remove(range);
+            var params = "(";
+            for (var i = 0; i < variables.length; i++) {
+                if (i > 0)
+                    params += ", ";
+                params += "$" + variables[i];
+            }
+            params += ")";
+            this.editor.insert(params);
+            // reset cursor
+            this.editor.gotoLine(range.start.row, range.start.column);
+            // remember cursor position
+            var anchor = new Anchor(doc.getSession().getDocument(), range.start.row, range.start.column);
+            
+            var adder = new eXide.edit.PrologAdder(this.parent, doc);
+            adder.createFunction(variables, value);
+            this.editor.focus();
+            
+            var sel = this.editor.getSelection();
+            
+            sel.toOrientedRange();
+            var pos = anchor.getPosition();
+            var callRange = new Range(pos.row, pos.column, pos.row, pos.column);
+            callRange.cursor = pos;
+            
+            sel.addRange(callRange);
+            
+            anchor.detach();
+        } catch(e) {
+            eXide.util.error("Not a valid code block: " + parser.getErrorMessage(e));
         }
     };
     

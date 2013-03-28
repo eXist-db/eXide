@@ -191,7 +191,38 @@ eXide.edit.PrologAdder = (function () {
         this.decl = decl;
     };
     
-    Constr.prototype.addFunction = function(name, params) {
+    Constr.prototype.addFunction = function(name, param) {
+        this.prepareFunction();
+        var template = "declare function " + name + "(";
+        if (params) {
+            for (var i = 0; i < params.length; i++) {
+                if (i > 0) {
+                    template += ", ";
+                }
+                template += "$${" + (i + 1) + ":" + params[i] + "}";
+            }
+        }
+        template += ") {\n\t${" + (arguments.length + 1) + ":()}\n};";
+        SnippetManager.insertSnippet(this.editor.editor, template);
+    };
+    
+    Constr.prototype.createFunction = function(params, code) {
+        var row = this.prepareFunction();
+        
+        var fn = "declare function (";
+        for (var i = 0; i < params.length; i++) {
+            if (i > 0) {
+                fn += ", ";
+            }
+            fn += "$" + params[i];
+        }
+        fn += ") {\n\t" + code + "\n};";
+        
+        this.editor.editor.insert(fn);
+        this.editor.editor.gotoLine(row, 17)
+    };
+    
+    Constr.prototype.prepareFunction = function() {
         var row = 0;
         if (this.prolog.children.length > 0) {
             row = this.prolog.pos.el;
@@ -204,17 +235,7 @@ eXide.edit.PrologAdder = (function () {
         this.editor.editor.insert("\n\n");
         this.editor.editor.gotoLine(row + 3, 0);
         
-        var template = "declare function " + name + "(";
-        if (params) {
-            for (var i = 0; i < params.length; i++) {
-                if (i > 0) {
-                    template += ", ";
-                }
-                template += "$${" + (i + 1) + ":" + params[i] + "}";
-            }
-        }
-        template += ") {\n\t${" + (arguments.length + 1) + ":()}\n};";
-        SnippetManager.insertSnippet(this.editor.editor, template);
+        return row + 3;
     };
     
     Constr.prototype.importModule = function(name) {
