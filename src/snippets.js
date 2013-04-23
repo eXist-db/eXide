@@ -24,7 +24,7 @@ eXide.namespace("eXide.util.Snippets");
  */
 eXide.util.Snippets = (function () {
     
-    var SnippetManager = require("ace/snippets").SnippetManager;
+    var SnippetManager = require("ace/snippets").snippetManager;
     
     var snippetsForMode = {};
     

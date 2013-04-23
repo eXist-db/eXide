@@ -33,7 +33,7 @@ eXide.edit.XQueryModeHelper = (function () {
     var Compiler = require("lib/Compiler").Compiler;
     var Range = require("ace/range").Range;
     var Anchor = require("ace/anchor").Anchor;
-    var SnippetManager = require("ace/snippets").SnippetManager;
+    var SnippetManager = require("ace/snippets").snippetManager;
         
 	Constr = function(editor, menubar) {
 		this.parent = editor;

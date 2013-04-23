@@ -170,7 +170,7 @@ eXide.namespace("eXide.edit.PrologAdder");
 eXide.edit.PrologAdder = (function () {
     
     var Range = require("ace/range").Range;
-    var SnippetManager = require("ace/snippets").SnippetManager;
+    var SnippetManager = require("ace/snippets").snippetManager;
     
     Constr = function(editor, doc) {
         this.editor = editor;

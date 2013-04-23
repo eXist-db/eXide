@@ -24,7 +24,7 @@ eXide.namespace("eXide.edit.commands");
 eXide.edit.commands = (function () {
 
 	var useragent = require("ace/lib/useragent");
-	var SnippetManager = require("ace/snippets").SnippetManager;
+	var SnippetManager = require("ace/snippets").snippetManager;
 	var bindings = {};
     
 	function bindKey(bindings) {

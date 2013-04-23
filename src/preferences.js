@@ -31,7 +31,7 @@ eXide.util.Preferences = (function () {
 		showPrintMargin: true,
 		showHScroll: false,
 	indent: -1,
-	        indentSize: 2,
+	        indentSize: 4,
         softWrap: -1
 	};
     
@@ -82,7 +82,7 @@ eXide.util.Preferences = (function () {
             indent = "Spaces";
         }
         $("select[name=\"indent\"]", form).val(indent);
-	        $("select[name=\"indent-size\"]", form).val(indentSize);
+        $("select[name=\"indent-size\"]", form).val(indentSize);
 
         var wrap = this.preferences.softWrap;
         if (wrap === 0) {

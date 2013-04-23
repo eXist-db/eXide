@@ -155,7 +155,7 @@ eXide.edit.Editor = (function () {
 	var Editor = require("ace/editor").Editor;
 	var EditSession = require("ace/edit_session").EditSession;
     var UndoManager = require("ace/undomanager").UndoManager;
-    var SnippetManager = require("ace/snippets").SnippetManager;
+    var SnippetManager = require("ace/snippets").snippetManager;
     
     function parseErrMsg(error) {
 		var msg;
