@@ -664,6 +664,9 @@ eXide.edit.Editor = (function () {
 		var $this = this;
 		var tabId = "t" + $this.tabCounter++;
 		var label = doc.name;
+		if (label.length > 16) {
+			label = label.substring(0, 13) + "...";
+		}
 		if (!doc.saved)
 			label += "*";
 		
