@@ -191,7 +191,7 @@ eXide.edit.PrologAdder = (function () {
         this.decl = decl;
     };
     
-    Constr.prototype.addFunction = function(name, param) {
+    Constr.prototype.addFunction = function(name, params) {
         this.prepareFunction();
         var template = "declare function " + name + "(";
         if (params) {

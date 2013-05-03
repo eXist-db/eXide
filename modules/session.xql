@@ -29,91 +29,11 @@ xquery version "1.0";
 	items from the result set stored in the session (see controller).
 :)
 
+import module namespace pretty="http://exist-db.org/eXide/deploy" at "pretty-print.xql";
+
 declare namespace sandbox="http://exist-db.org/xquery/sandbox";
 
 declare option exist:serialize "method=xml media-type=text/xml omit-xml-declaration=no indent=no";
-
-(:~
- :  Check which namespace declarations have to be output.
- :)
-declare function sandbox:namespace-decls($elem as element(), $namespaces as xs:string*) {
-    for $node in ($elem, $elem/@*)
-    let $name := node-name($node)
-    let $ns := namespace-uri-from-QName($name)
-    let $prefix := prefix-from-QName($name)
-    return
-        if ($ns and empty(index-of($namespaces, $ns))) then
-            <ns prefix="{$prefix}" uri="{$ns}"/>
-        else
-            ()
-};
-
-(:~
-	Pretty print an XML fragment. Returns HTML to highlight the XML syntax.
-:)
-declare function sandbox:pretty-print($node as item(), $namespaces as xs:string*) {
-	typeswitch ($node)
-		case $elem as element(exist:match) return
-			<span class="ace_constant">{$elem/node()}</span>
-		case $elem as element() return
-            let $nsDecls := sandbox:namespace-decls($elem, $namespaces)
-            let $newNamespaces := 
-                if (empty($nsDecls)) then
-                    $namespaces
-                else
-                    ($namespaces, $nsDecls/@uri/string())
-            return
-			<div class="xml-element">
-				<span>&lt;</span>
-				<span class="ace_keyword">{node-name($elem)}</span>
-                {
-                    for $nsDecl in $nsDecls
-                    return (
-                        ' ', 
-                        <span class="ace_keyword">
-                        {
-                            if ($nsDecl/@prefix != '') then 
-                                concat("xmlns:", $nsDecl/@prefix/string())
-                            else
-                                "xmlns"
-                                
-                        }
-                        </span>, '="',
-                        <span class="ace_string">{$nsDecl/@uri/string()}</span>,
-                        '"'
-                    )
-                }
-				{
-					for $attr in $elem/@*
-					return (
-						' ', <span class="ace_keyword">{node-name($attr)}</span>,
-						'="', <span class="ace_string">{$attr/string()}</span>, '"'
-					)
-				}
-				{
-					let $children := $elem/node()
-					return
-						if (count($children) gt 0) then (
-							<span>&gt;</span>,
-							for $child in $children
-							return
-								sandbox:pretty-print($child, $newNamespaces),
-							<span>&lt;/</span>,
-							<span class="ace_keyword">{node-name($elem)}</span>,
-							<span>&gt;</span>
-						) else
-							<span>/&gt;</span>
-				}
-			</div>
-		case $text as text() return
-			<span class="ace_identifier">{$text}</span>
-		case $comment as comment() return
-			<div class="ace_comment">&lt;-- {$comment/string()} --&gt;</div>
-		case $pi as processing-instruction() return
-			<div style="color: darkred">&lt;?{$pi/string()}?&gt;</div>
-		default return
-			$node
-};
 
 (:~ Retrieve a single query result. :)
 declare function sandbox:retrieve($num as xs:integer) as element() {
@@ -142,7 +62,7 @@ declare function sandbox:retrieve($num as xs:integer) as element() {
                     ()
             }
             <div class="item">
-            { sandbox:pretty-print($item, ()) }
+            { pretty:pretty-print($item, ()) }
             </div>
         </div>
 };

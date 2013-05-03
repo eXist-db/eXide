@@ -352,13 +352,66 @@ eXide.edit.FunctionCalls = (function () {
         var name = node.children[0].value;
         if (name === this.name) {
             this.references.push(node.children[0]);
-            $.log("call: %o", name);
         }
         return false;
     };
     
     Constr.prototype.getReferences = function() {
         return this.references;
+    };
+    
+    return Constr;
+}());
+
+eXide.edit.ModuleInfo = (function () {
+    
+    Constr = function(ast) {
+        this.modulePrefix = null;
+        this.moduleNamespace = null;
+        this.annotations = {};
+        this.visit(ast);
+    };
+    
+    eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
+    
+    Constr.prototype.isModule = function() {
+        return this.moduleNamespace !== null;
+    };
+    
+    Constr.prototype.hasTests = function() {
+        for (var anno in this.annotations) {
+            if (/test\:/.test(anno)) {
+                return true;
+            }
+        }
+        return false;
+    };
+    
+    Constr.prototype.ModuleDecl = function(node) {
+        var self = this;
+        this.visitChildren(node, {
+            NCName: function(node) {
+                self.modulePrefix = eXide.edit.XQueryUtils.getValue(node);
+                return false;
+            },
+            
+            URILiteral: function(node) {
+                self.moduleNamespace = node.value;
+                return false;
+            }
+        });
+        return false;
+    };
+    
+    Constr.prototype.Annotation = function(node) {
+        var self = this;
+        this.visitChildren(node, {
+            EQName: function(node) {
+                self.annotations[node.value] = 1;
+                return false;
+            }
+        });
+        return false;
     };
     
     return Constr;

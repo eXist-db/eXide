@@ -76,6 +76,9 @@ eXide.edit.XQueryModeHelper = (function () {
         menubar.click("#menu-xquery-extract-function", function() {
             self.extractFunction(editor.getActiveDocument());
         }, "xquery-extract-fun");
+        menubar.click("#menu-xquery-run-test", function() {
+            self.runTest(editor.getActiveDocument());
+        }, "xquery-run-test");
         
         self.validating = null;
         self.validationListeners = [];
@@ -437,8 +440,8 @@ eXide.edit.XQueryModeHelper = (function () {
 				var popupItems = [];
 				for (var i = 0; i < funcs.length; i++) {
 					var item = { 
-							label: funcs[i].signature ? funcs[i].signature : funcs[i].name,
-							type: funcs[i].type
+						label: funcs[i].signature ? funcs[i].signature : funcs[i].name,
+						type: funcs[i].type
 					};
 					if (funcs[i].help) {
 						item.tooltip = funcs[i].help;
@@ -858,6 +861,31 @@ eXide.edit.XQueryModeHelper = (function () {
             }
         } else {
             eXide.util.message("Rename failed: node not found in syntax tree, sorry.");
+        }
+    };
+    
+    Constr.prototype.runTest = function(doc) {
+        var self = this;
+        var info = new eXide.edit.ModuleInfo(doc.ast);
+        if (info.isModule() && info.hasTests()) {
+            $.ajax({
+                type: "POST",
+                url: "modules/run-test.xql",
+                data: { source: doc.getPath() },
+                dataType: "html",
+                success: function (html) {
+					self.parent.updateStatus("");
+					self.parent.clearErrors();
+					var layout = $("body").layout();
+					layout.open("south");
+					//layout.sizePane("south", 300);
+					eXide.app.resize();
+					$('#results-container .results').html(html);
+				},
+				error: function (xhr, status) {
+					eXide.util.error(xhr.responseText, "Server Error");
+				}
+            })
         }
     };
     
