@@ -250,8 +250,12 @@ eXide.edit.commands = (function () {
                         bindKey: {mac: "Tab", win: "Tab"},
                         exec: function(editor) {
                             var success = SnippetManager.expandWithTab(editor);
-                            if (!success)
+                            if (!success) {
+                                success = parent.autocomplete(false);
+                            }
+                            if (!success) {
                                 editor.execCommand("indent");
+                            }
                         }
                     });
     			    createMap(parent);

@@ -241,9 +241,13 @@ eXide.edit.XQueryModeHelper = (function () {
         return na;
     };
     
-	Constr.prototype.autocomplete = function(doc) {
+	Constr.prototype.autocomplete = function(doc, alwaysShow) {
         if (!doc.ast)
             return;
+        if (alwaysShow == undefined) {
+            alwaysShow = true;
+        }
+
         var sel   = this.editor.getSelection();
         var session   = doc.getSession();
 
@@ -349,6 +353,10 @@ eXide.edit.XQueryModeHelper = (function () {
         } else {
             mode = "templates";
             range = null;
+        }
+        if (!alwaysShow && mode === "templates") {
+            // do not show template list if showTemplates == false
+            return false;
         }
 		$.log("completing token: %s, mode: %s, range: %o", token, mode, range);
 
