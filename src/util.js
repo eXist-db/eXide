@@ -302,7 +302,7 @@ eXide.util = (function () {
 					for (var i = 0; i < vars.length; i++) {
 						if (i > 0)
 							parsed += ", ";
-						parsed += "$${" + (i + 1) + ":" + vars[i].substring(1) + "}";
+						parsed += "${" + (i + 1) + ":\\$" + vars[i].substring(1) + "}";
 					}
 				}
 				parsed += ")";
