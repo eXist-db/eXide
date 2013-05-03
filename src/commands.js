@@ -157,13 +157,13 @@ eXide.edit.commands = (function () {
         		    		parent.exec("gotoDefinition");
         		    	}
         		    });
-                    commands.addCommand({
-            	    	name: "searchIncremental",
-        		    	bindKey: bindKey(bindings.searchIncremental),
-        		    	exec: function(editor) {
-        		    		parent.quicksearch.start();
-        		    	}
-        		    });
+              //       commands.addCommand({
+            	 //    	name: "searchIncremental",
+        		    // 	bindKey: bindKey(bindings.searchIncremental),
+        		    // 	exec: function(editor) {
+        		    // 		parent.quicksearch.start();
+        		    // 	}
+        		    // });
                     commands.addCommand({
                     	name: "searchReplace",
         		    	bindKey: bindKey(bindings.searchReplace),
