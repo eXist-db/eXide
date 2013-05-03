@@ -51,6 +51,7 @@ eXide.util = (function () {
     var selection = null;
     
     $(document).ready(function() {
+    	$.pnotify.defaults.history = false;
         $.pnotify.defaults.styling = "jqueryui";
     });
     
