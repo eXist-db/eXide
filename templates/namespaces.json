@@ -1,5 +1,8 @@
 {
     "tei": "http://www.tei-c.org/ns/1.0",
     "html": "http://www.w3.org/1999/xhtml",
-    "json": "http://www.json.org"
+    "json": "http://www.json.org",
+    "atom": "http://www.w3.org/2005/Atom",
+    "templates": "http://exist-db.org/xquery/templates",
+    "expath": "http://expath.org/ns/pkg"
 }
