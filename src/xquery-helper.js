@@ -859,6 +859,11 @@ eXide.edit.XQueryModeHelper = (function () {
      * Rename variable or function call.
      */
     Constr.prototype.rename = function(doc) {
+        if (!doc.ast) {
+            this.afterValidate(this, function() { this.rename(doc); });
+            this.parent.triggerCheck();
+            return;
+        }
         var self = this;
         var sel = this.editor.getSelection();
         var lead = sel.getSelectionLead();
