@@ -829,36 +829,23 @@ eXide.app = (function() {
                 }
             });
             
+            $(".toolbar-buttons").buttonset();
+            
 			// initialize buttons and menu events
-			var button = $("#open").button({
-				icons: {
-					primary: "ui-icon-folder-open"
-				}
-			});
+            var button = $("#open").button("option", "icons", { primary: "ui-icon-folder-open" });
 			button.click(eXide.app.openDocument);
             menu.click("#menu-file-open", eXide.app.openDocument, "openDocument");
 			
-			button = $("#close").button({
-				icons: {
-					primary: "ui-icon-close"
-				}
-			});
+            button = $("#close").button("option", "icons", { primary: "ui-icon-close" });
 			button.click(eXide.app.closeDocument);
 			menu.click("#menu-file-close", eXide.app.closeDocument, "closeDocument");
 			
-			button = $("#new").button({
-				icons: {
-					primary: "ui-icon-document"
-				}
-			});
+            button = $("#new").button("option", "icons", { primary: "ui-icon-document" });
 			button.click(function() {
                 eXide.app.newDocumentFromTemplate();
 			});
-            button = $("#new-xquery").button({
-    			icons: {
-					primary: "ui-icon-document"
-				}
-			});
+            
+            button = $("#new-xquery").button("option", "icons", { primary: "ui-icon-document" });
 			button.click(function() {
                 eXide.app.newDocument(null, "xquery");
 			});
@@ -866,65 +853,37 @@ eXide.app = (function() {
     		menu.click("#menu-file-new-xquery", function() {
                 eXide.app.newDocument(null, "xquery");
     		}, "newXQuery");
-            
-			button = $("#run").button({
-				icons: {
-					primary: "ui-icon-play"
-				}
-			});
+
+            button = $("#run").button("option", "icons", { primary: "ui-icon-play" });
 			button.click(eXide.app.runQuery);
 
-            button = $("#debug").button({
-                icons: {
-                    primary: "ui-icon-seek-end"
-                }
-            });
+            button = $("#debug").button("option", "icons", { primary: "ui-icon-seek-end" });
             button.click(eXide.app.startDebug);
 
-            button = $("#debug-actions #step-over").button({
-                icons: {
-                    primary: "ui-icon-seek-end"
-                }
-            });
+            
+            button = $("#debug-actions #step-over").button("option", "icons", { primary: "ui-icon-seek-end" });
             button.click(eXide.app.stepOver);
 
-            button = $("#debug-actions #step-into").button({
-                icons: {
-                    primary: "ui-icon-seek-end"
-                }
-            });
+            button = $("#debug-actions #step-into").button("option", "icons", { primary: "ui-icon-seek-end" });
             button.click(eXide.app.stepInto);
 
-            button = $("#debug-actions #step-out").button({
-                icons: {
-                    primary: "ui-icon-seek-end"
-                }
-            });
+            button = $("#debug-actions #step-out").button("option", "icons", { primary: "ui-icon-seek-end" });
             button.click(eXide.app.startDebug);
 
-			button = $("#validate").button({
-				icons: {
-					primary: "ui-icon-check"
-				}
-			});
+            button = $("#validate").button("option", "icons", { primary: "ui-icon-check" });
+
 			button.click(eXide.app.checkQuery);
-			button = $("#save").button({
-				icons: {
-					primary: "ui-icon-disk"
-				}
-			});
+            
+            button = $("#save").button("option", "icons", { primary: "ui-icon-disk" });
 			button.click(eXide.app.saveDocument);
 			menu.click("#menu-file-save", eXide.app.saveDocument, "saveDocument");
             menu.click("#menu-file-save-as", eXide.app.saveDocumentAs);
 			
             menu.click("#menu-file-reload", eXide.app.reloadDocument);
             
-			button = $("#download").button({
-				icons: {
-					primary: "ui-icon-transferthick-e-w"
-				}
-			});
+            button = $("#download").button("option", "icons", { primary: "ui-icon-transferthick-e-w" });
 			button.click(eXide.app.download);
+            
 			menu.click("#menu-file-download", eXide.app.download);
 			menu.click("#menu-file-manager", eXide.app.manage, "dbManager");
 			// menu-only events
