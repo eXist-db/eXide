@@ -243,6 +243,7 @@ eXide.edit.Editor = (function () {
         
 	    this.lastChangeEvent = new Date().getTime();
 		this.validateTimeout = null;
+		this.validationEnabled = true;
 		
 		// register mode helpers
 		$this.modes = {
@@ -797,6 +798,9 @@ eXide.edit.Editor = (function () {
 	 * Trigger validation.
 	 */
 	Constr.prototype.triggerCheck = function() {
+		if (!this.validationEnabled) {
+			return;
+		}
 		var mode = this.activeDoc.getModeHelper();
 		if (mode) { 
 			var $this = this;

@@ -369,15 +369,17 @@ eXide.edit.ModuleInfo = (function () {
         this.modulePrefix = null;
         this.moduleNamespace = null;
         this.annotations = {};
+        this.functions = [];
+        this.prolog = null;
         this.visit(ast);
     };
-    
+
     eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
-    
+
     Constr.prototype.isModule = function() {
         return this.moduleNamespace !== null;
     };
-    
+
     Constr.prototype.hasTests = function() {
         for (var anno in this.annotations) {
             if (/test\:/.test(anno)) {
@@ -386,7 +388,15 @@ eXide.edit.ModuleInfo = (function () {
         }
         return false;
     };
-    
+
+    Constr.prototype.Prolog = function(prolog) {
+        this.prolog = prolog;
+    };
+
+    Constr.prototype.FunctionDecl = function(node) {
+        this.functions.push(node);
+    };
+
     Constr.prototype.ModuleDecl = function(node) {
         var self = this;
         this.visitChildren(node, {
@@ -394,7 +404,7 @@ eXide.edit.ModuleInfo = (function () {
                 self.modulePrefix = eXide.edit.XQueryUtils.getValue(node);
                 return false;
             },
-            
+
             URILiteral: function(node) {
                 self.moduleNamespace = node.value;
                 return false;

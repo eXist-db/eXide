@@ -242,9 +242,12 @@ eXide.edit.XQueryModeHelper = (function () {
     };
     
 	Constr.prototype.autocomplete = function(doc, alwaysShow) {
-        if (!doc.ast)
+        if (!doc.ast) {
+            this.afterValidate(this, function() { this.autocomplete(doc, alwaysShow); });
+            this.parent.triggerCheck();
             return;
-        if (alwaysShow == undefined) {
+        }
+        if (alwaysShow === undefined) {
             alwaysShow = true;
         }
 
@@ -668,6 +671,11 @@ eXide.edit.XQueryModeHelper = (function () {
     };
     
     Constr.prototype.extractFunction = function(doc) {
+        if (!doc.ast) {
+            this.afterValidate(this, function() { this.extractFunction(doc); });
+            this.parent.triggerCheck();
+            return;
+        }
         // get text of selection
         var range = this.editor.getSelectionRange();
         var value = doc.getSession().getTextRange(range);   
@@ -675,7 +683,15 @@ eXide.edit.XQueryModeHelper = (function () {
             eXide.util.error("Please select code to extract.");
             return;
         }
-        
+
+        // disable validation while refactoring
+        this.parent.validationEnabled = false;
+
+        var currentNode = eXide.edit.XQueryUtils.findNode(doc.ast, 
+            {line: range.start.row, col: range.start.column + 1});
+
+        // parse selection code to get list of variables which need to be parameters
+        var variables = [];
         var h = new JSONParseTreeHandler(value);
         var parser = new XQueryParser(value, h);
         try {
@@ -685,48 +701,59 @@ eXide.edit.XQueryModeHelper = (function () {
             ast = translator.translate();
             
             var markers = ast.markers;
-            var variables = [];
+            var vars = {};
             for (var i = 0; i < markers.length; i++) {
                 if (markers[i].type === "error") {
                     var matches = /\[XPST0008\]\s"([^"]+)": undeclared variable.*/.exec(markers[i].message);
                     if (matches && matches.length == 2) {
-                        variables.push(matches[1]);
+                        vars[matches[1]] = 0;
                     }
                 }
             }
-            
-            // remove selected range and replace with parameter list
-            this.editor.remove(range);
-            var params = "(";
-            for (var i = 0; i < variables.length; i++) {
-                if (i > 0)
-                    params += ", ";
-                params += "$" + variables[i];
+            for (var v in vars) {
+                variables.push(v);
             }
-            params += ")";
-            this.editor.insert(params);
-            // reset cursor
-            this.editor.gotoLine(range.start.row, range.start.column);
-            // remember cursor position
-            var anchor = new Anchor(doc.getSession().getDocument(), range.start.row, range.start.column);
-            
-            var adder = new eXide.edit.PrologAdder(this.parent, doc);
-            adder.createFunction(variables, value);
-            this.editor.focus();
-            
-            var sel = this.editor.getSelection();
-            
-            sel.toOrientedRange();
-            var pos = anchor.getPosition();
-            var callRange = new Range(pos.row, pos.column, pos.row, pos.column);
-            callRange.cursor = pos;
-            
-            sel.addRange(callRange);
-            
-            anchor.detach();
         } catch(e) {
             eXide.util.error("Not a valid code block: " + parser.getErrorMessage(e));
+            return;
         }
+
+        var adder = new eXide.edit.PrologAdder(this.parent, doc);
+        var insertRow = adder.getInsertionPoint(currentNode);
+        var funcAnchor = new Anchor(doc.getSession().getDocument(), insertRow, 0);
+
+        // remove selected range and replace with parameter list
+        this.editor.remove(range);
+        var params = "(";
+        for (var i = 0; i < variables.length; i++) {
+            if (i > 0)
+                params += ", ";
+            params += "$" + variables[i];
+        }
+        params += ")";
+        this.editor.insert(params);
+        // reset cursor
+        this.editor.gotoLine(range.start.row, range.start.column);
+        // remember cursor position
+        var anchor = new Anchor(doc.getSession().getDocument(), range.start.row, range.start.column);
+        
+        adder.createFunction(variables, value, funcAnchor.getPosition().row);
+
+        this.editor.focus();
+        
+        var sel = this.editor.getSelection();
+        
+        sel.toOrientedRange();
+        var pos = anchor.getPosition();
+        var callRange = new Range(pos.row, pos.column, pos.row, pos.column);
+        callRange.cursor = pos;
+        
+        sel.addRange(callRange);
+        
+        anchor.detach();
+        funcAnchor.detach();
+
+        this.parent.validationEnabled = true;
     };
     
 	Constr.prototype.gotoFunction = function (doc, name) {

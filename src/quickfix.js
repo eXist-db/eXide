@@ -191,6 +191,24 @@ eXide.edit.PrologAdder = (function () {
         this.decl = decl;
     };
     
+    Constr.prototype.getInsertionPoint = function(func) {
+        var row = 0;
+        if (func) {
+            func = eXide.edit.XQueryUtils.findAncestor(func, "FunctionDecl");
+            if (func) {
+                row = func.pos.el;
+                $.log("row = %s", row);
+            }
+        } else {
+            if (this.prolog.children.length > 0) {
+                row = this.prolog.pos.el;
+            } else if (this.decl) {
+                row = this.decl.pos.el;
+            }
+        }
+        return row;
+    };
+
     Constr.prototype.addFunction = function(name, params) {
         this.prepareFunction();
         var template = "declare function " + name + "(";
@@ -206,9 +224,9 @@ eXide.edit.PrologAdder = (function () {
         SnippetManager.insertSnippet(this.editor.editor, template);
     };
     
-    Constr.prototype.createFunction = function(params, code) {
-        var row = this.prepareFunction();
-        
+    Constr.prototype.createFunction = function(params, code, insertRow) {
+        var row = this.prepareFunction(insertRow);
+
         var fn = "declare function (";
         for (var i = 0; i < params.length; i++) {
             if (i > 0) {
@@ -219,22 +237,17 @@ eXide.edit.PrologAdder = (function () {
         fn += ") {\n\t" + code + "\n};";
         
         this.editor.editor.insert(fn);
-        this.editor.editor.gotoLine(row, 17)
+        this.editor.editor.gotoLine(row, 17);
     };
-    
-    Constr.prototype.prepareFunction = function() {
-        var row = 0;
-        if (this.prolog.children.length > 0) {
-            row = this.prolog.pos.el;
-        } else if (this.decl) {
-            row = this.decl.pos.el;
-        }
-        
+
+    Constr.prototype.prepareFunction = function(insertRow) {
+        var row = insertRow || this.getInsertionPoint();
+
         this.editor.editor.gotoLine(row + 1);
         this.editor.editor.navigateLineEnd();
         this.editor.editor.insert("\n\n");
         this.editor.editor.gotoLine(row + 3, 0);
-        
+
         return row + 3;
     };
     
