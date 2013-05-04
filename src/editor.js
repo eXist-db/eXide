@@ -220,7 +220,7 @@ eXide.edit.Editor = (function () {
 	    });
 
         // incremental search box
-        this.quicksearch = new eXide.find.IncrementalSearch($("#search-box"), this.editor);
+        //this.quicksearch = new eXide.find.IncrementalSearch($("#search-box"), this.editor);
         this.search = new eXide.find.SearchReplace(this.editor);
         
         var tabsDiv = $("#tabs-container");
@@ -516,7 +516,7 @@ eXide.edit.Editor = (function () {
                 doc.mime = "application/less";
             break;
         case "tmsnippet":
-            var SnippetMode = require("ace/mode/tmsnippet").Mode;
+            var SnippetMode = require("ace/mode/snippets").Mode;
             doc.$session.setUseSoftTabs(false);
             doc.$session.setMode(new SnippetMode());
             if (setMime)
