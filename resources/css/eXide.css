@@ -404,9 +404,12 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 .eXide-browse-toolbar, .eXide-browse-breadcrumbs {
-	background-color: #CCC;
 }
 
+.eXide-browse-panel .ui-layout-pane {
+    border: 0;
+    background-color: transparent;
+}
 .eXide-browse-breadcrumbs {
     font-weight: bold;
     padding: 2px 0;
