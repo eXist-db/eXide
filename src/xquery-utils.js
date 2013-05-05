@@ -147,7 +147,7 @@ eXide.edit.XQueryUtils = (function () {
             var refs = new eXide.edit.VariableReferences(name, node).getReferences();
             for (var i = 0; i < refs.length; i++) {
                 if (refs[i].getParent && (refs[i].getParent.name === "LetBinding") || 
-                    refs[i].getParent.name === "Param") {
+                    refs[i].getParent.name === "ForBinding" || refs[i].getParent.name === "Param") {
                     return refs[i];
                 }
             }
@@ -340,6 +340,7 @@ eXide.edit.FunctionCalls = (function () {
         this.name = funcName;
         this.arity = arity;
         this.references = [];
+        this.declaration = null;
         this.visit(ast);
     };
     
@@ -352,6 +353,21 @@ eXide.edit.FunctionCalls = (function () {
         var name = node.children[0].value;
         if (name === this.name) {
             this.references.push(node.children[0]);
+        }
+        return false;
+    };
+    
+    Constr.prototype.FunctionDecl = function(node) {
+        var self = this;
+        if (parseInt(node.arity) === this.arity) {
+            this.visitChildren(node, {
+                EQName: function(node) {
+                    if (node.value === self.name) {
+                        self.declaration = node;
+                        return true;
+                    }
+                }
+            });
         }
         return false;
     };
