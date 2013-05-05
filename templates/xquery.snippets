@@ -46,10 +46,10 @@ snippet if
 		${3:()}
 
 snippet import
-	import module namespace ${1:prefix}="${2:http://module.com}" at "${3:location}";
+	import module namespace ${1:prefix}="${2}" at "${3:location}";
 	
 snippet decns
-	declare namespace ${1:${TM_SELECTED_TEXT:prefix}}="${2:http://my.namespace.com}";
+	declare namespace ${1:${TM_SELECTED_TEXT:prefix}}="${2}";
 	
 snippet decopt
 	declare option exist:serialize "${1:method=html5 media-type=text/html}";

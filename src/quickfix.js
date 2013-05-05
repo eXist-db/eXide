@@ -197,7 +197,6 @@ eXide.edit.PrologAdder = (function () {
             func = eXide.edit.XQueryUtils.findAncestor(func, "FunctionDecl");
             if (func) {
                 row = func.pos.el;
-                $.log("row = %s", row);
             }
         } else {
             if (this.prolog.children.length > 0) {
@@ -272,6 +271,7 @@ eXide.edit.PrologAdder = (function () {
         
         var template = "import module namespace " + prefix + "=\"${1}\";";
         SnippetManager.insertSnippet(this.editor.editor, template);
+        this.editor.editor.gotoLine(row + 3, 26 + prefix.length);
     };
     
     Constr.prototype.declareNamespace = function(prefix) {
