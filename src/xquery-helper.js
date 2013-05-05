@@ -482,12 +482,18 @@ eXide.edit.XQueryModeHelper = (function () {
             if (data) {
                 var popupItems = [];
                 for (var i = 0; i < data.length; i++) {
+                    var template;
+                    if (data[i].at) {
+                        template = "import module namespace " + data[i].prefix + "=\"" + data[i].uri + 
+                            "\" at \"" + data[i].at + "\";"
+                    } else {
+                        template = "import module namespace " + data[i].prefix + "=\"" + data[i].uri + "\";"
+                    }
                     popupItems.push({
                         type: "template",
                         label: [data[i].prefix, data[i].uri],
                         tooltip: data[i].at,
-                        template: "import module namespace " + data[i].prefix + "=\"" + data[i].uri + 
-                            "\" at \"" + data[i].at + "\";"
+                        template: template
                     });
                 }
                 self.$showPopup(doc, wordrange, popupItems);
