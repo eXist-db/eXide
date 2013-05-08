@@ -108,35 +108,52 @@ else if ($exist:resource eq "index.html") then
 else if ($exist:resource eq 'execute') then
     let $query := request:get-parameter("qu", ())
     let $base := request:get-parameter("base", ())
+    let $output := request:get-parameter("output", "xml")
     let $startTime := util:system-time()
     return
-        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-	<!-- Query is executed by XQueryServlet -->
-            <forward servlet="XQueryServlet">
-                {$login("org.exist.login", (), false())}
-                <set-header name="Cache-Control" value="no-cache"/>
-                <!-- Query is passed via the attribute 'xquery.source' -->
-                <set-attribute name="xquery.source" value="{$query}"/>
-                <!-- Results should be written into attribute 'results' -->
-                <set-attribute name="xquery.attribute" value="results"/>
-		        <set-attribute name="xquery.module-load-path" value="{$base}"/>
-                <clear-attribute name="results"/>
-                <!-- Errors should be passed through instead of terminating the request -->
-                <set-attribute name="xquery.report-errors" value="yes"/>
-                <set-attribute name="start-time" value="{util:system-time()}"/>
-            </forward>
-            <view>
-            <!-- Post process the result: store it into the HTTP session
-               and return the number of hits only. -->
-            <forward url="modules/session.xql">
-               <clear-attribute name="xquery.source"/>
-               <clear-attribute name="xquery.attribute"/>
-               <set-attribute name="elapsed" 
-                   value="{string(seconds-from-duration(util:system-time() - $startTime))}"/>
-            </forward>
-	</view>
-        </dispatch>
-        
+        switch ($output)
+            case "xml" return
+                <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+                    <!-- Query is executed by XQueryServlet -->
+                    <forward servlet="XQueryServlet">
+                        {$login("org.exist.login", (), false())}
+                        <set-header name="Cache-Control" value="no-cache"/>
+                        <!-- Query is passed via the attribute 'xquery.source' -->
+                        <set-attribute name="xquery.source" value="{$query}"/>
+                        <!-- Results should be written into attribute 'results' -->
+                        <set-attribute name="xquery.attribute" value="results"/>
+        		        <set-attribute name="xquery.module-load-path" value="{$base}"/>
+                        <clear-attribute name="results"/>
+                        <!-- Errors should be passed through instead of terminating the request -->
+                        <set-attribute name="xquery.report-errors" value="yes"/>
+                        <set-attribute name="start-time" value="{util:system-time()}"/>
+                    </forward>
+                    <view>
+                        <!-- Post process the result: store it into the HTTP session
+                           and return the number of hits only. -->
+                        <forward url="modules/session.xql">
+                           <clear-attribute name="xquery.source"/>
+                           <clear-attribute name="xquery.attribute"/>
+                           <set-attribute name="elapsed" 
+                               value="{string(seconds-from-duration(util:system-time() - $startTime))}"/>
+                        </forward>
+        	        </view>
+                </dispatch>
+            default return
+                <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+                    <!-- Query is executed by XQueryServlet -->
+                    <forward servlet="XQueryServlet">
+                        {$login("org.exist.login", (), false())}
+                        <set-header name="Cache-Control" value="no-cache"/>
+                        <!-- Query is passed via the attribute 'xquery.source' -->
+                        <set-attribute name="xquery.source" value="{$query}"/>
+            	        <set-attribute name="xquery.module-load-path" value="{$base}"/>
+                        <!-- Errors should be passed through instead of terminating the request -->
+                        <set-attribute name="xquery.report-errors" value="yes"/>
+                        <set-attribute name="start-time" value="{util:system-time()}"/>
+                    </forward>
+                </dispatch>
+                
 (: Retrieve an item from the query results stored in the HTTP session. The
  : format of the URL will be /sandbox/results/X, where X is the number of the
  : item in the result set :)

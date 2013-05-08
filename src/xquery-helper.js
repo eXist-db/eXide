@@ -144,14 +144,14 @@ eXide.edit.XQueryModeHelper = (function () {
 			data: {q: code, base: basePath},
 			dataType: "json",
 			success: function (data) {
-				$this.compileError(data, doc);
+				var valid = $this.compileError(data, doc);
                 if (onComplete) {
-				    onComplete.call(this, true);
+				    onComplete.call(this, valid);
                 }
 			},
 			error: function (xhr, status) {
                 if (onComplete) {
-				    onComplete.call(this, true);
+				    onComplete.call(this, false);
                 }
 				$.log("Compile error: %s - %s", status, xhr.responseText);
 			}
@@ -174,9 +174,11 @@ eXide.edit.XQueryModeHelper = (function () {
             var annotations = this.clearAnnotations(doc, "error");
             annotations.push(annotation);
 			doc.getSession().setAnnotations(annotations);
+            return false;
 		} else {
 			doc.getSession().setAnnotations(this.clearAnnotations(doc, "error"));
 			this.parent.updateStatus("");
+            return true;
 		}
 	};
 	
@@ -886,7 +888,7 @@ eXide.edit.XQueryModeHelper = (function () {
         }
         
         if (ast != null) {
-            if (ast.getParent.name == "VarName" || ast.getParent.name == "Param") {
+            if (ast.getParent.name == "VarName") {
                 var varName = eXide.edit.XQueryUtils.getValue(ast);
                 var ancestor = eXide.edit.XQueryUtils.findVariableContext(ast, varName);
                 if (ancestor) {
@@ -895,18 +897,13 @@ eXide.edit.XQueryModeHelper = (function () {
                 } else {
                     eXide.util.message("Rename failed: unable to determine context, sorry.");
                 }
-            } else if (ast.name == "EQName" && (ast.getParent.name == "FunctionDecl" || ast.getParent.name == "FunctionCall")) {
+            } else if (ast.name == "EQName" && ast.getParent.name == "FunctionDecl") {
                 var funName = ast.value;
                 var arity = parseInt(ast.getParent.arity);
                 $.log("searching calls to function: %s#%d", funName, arity);
-                var calls = new eXide.edit.FunctionCalls(funName, arity, doc.ast);
-                var refs = calls.getReferences();
-                if (calls.declaration) {
-                    refs.push(calls.declaration);
-                    doRename(refs);
-                } else {
-                    eXide.util.message("Rename failed: function declaration not found.");
-                }
+                var refs = new eXide.edit.FunctionCalls(funName, arity, doc.ast).getReferences();
+                refs.push(ast);
+                doRename(refs);
             } else {
                 eXide.util.message("Please position cursor within variable or function name.");
             }

@@ -64,6 +64,7 @@ eXide.app = (function() {
 	var preferences;
     var templates = {};
     var menu;
+    var lastQuery = null;
 	var hitCount = 0;
 	var startOffset = 0;
 	var currentOffset = 0;
@@ -108,7 +109,12 @@ eXide.app = (function() {
             });
 		    
 		    editor.addEventListener("outlineChange", eXide.app.onOutlineChange);
-
+            editor.addEventListener("documentValid", function(doc) {
+                if (doc.isXQuery() && $("#live-preview").is(":checked")) {
+                    eXide.app.runQuery(doc.getPath());
+                }
+            });
+            
 			$(window).resize(eXide.app.resize);
 			
 			$(window).unload(function () {
@@ -127,9 +133,14 @@ eXide.app = (function() {
             return hasFocus;
         },
         
-		resize: function() {
+		resize: function(resizeIframe) {
 			var panel = $("#editor");
 			var header = $(".header");
+            if (resizeIframe) {
+                var resultsBody = $("#results-body");
+                $("#results-iframe").width(resultsBody.innerWidth());
+                $("#results-iframe").height(resultsBody.innerHeight());
+            }
 //			panel.width($(".ui-layout-center").innerWidth() - 20);
 //			panel.css("width", "100%");
 //			panel.height($(".ui-layout-center").innerHeight() - header.height());
@@ -347,45 +358,78 @@ eXide.app = (function() {
 			}
 			window.location.href = "modules/load.xql?download=true&path=" + encodeURIComponent(doc.getPath());
 		},
-		
-		runQuery: function() {
-			editor.updateStatus("Running query ...");
-			var code = editor.getText();
-			var moduleLoadPath = "xmldb:exist://" + editor.getActiveDocument().getBasePath();
-			$('#results-container .results').empty();
-			$.ajax({
-				type: "POST",
-				url: "execute",
-				dataType: "xml",
-				data: { "qu": code, "base": moduleLoadPath },
-				success: function (xml) {
-					var elem = xml.documentElement;
-					if (elem.nodeName == 'error') {
-				        var msg = $(elem).text();
-				        eXide.util.error(msg, "Compilation Error");
-				        editor.evalError(msg);
-					} else {
-						editor.updateStatus("");
-						editor.clearErrors();
-						var layout = $("body").layout();
-						layout.open("south");
-						//layout.sizePane("south", 300);
-						eXide.app.resize();
-						
-						startOffset = 1;
-						currentOffset = 1;
-						hitCount = elem.getAttribute("hits");
-						endOffset = startOffset + 10 - 1;
-						if (hitCount < endOffset)
-							endOffset = hitCount;
-						eXide.util.message("Found " + hitCount + " in " + elem.getAttribute("elapsed") + "s");
-						eXide.app.retrieveNext();
-					}
-				},
-				error: function (xhr, status) {
-					eXide.util.error(xhr.responseText, "Server Error");
-				}
-			});
+        
+		runQuery: function(path) {
+            function showResultsPanel() {
+                editor.updateStatus("");
+				editor.clearErrors();
+				var layout = $("body").layout();
+				layout.open("south");
+				//layout.sizePane("south", 300);
+				eXide.app.resize(true);
+				
+				startOffset = 1;
+				currentOffset = 1;
+            }
+
+            if (!path && editor.getActiveDocument().getSyntax() == "html") {
+                document.getElementById("results-iframe").src = editor.getActiveDocument().getExternalLink();
+            } else {
+                var code = editor.getText();
+                if (path) {
+                    var doc = editor.getDocument(path);
+                    if (doc) {
+                        code = doc.$session.getValue();
+                    } else {
+                        return;
+                    }
+                } else {
+                    lastQuery = editor.getActiveDocument().getPath();
+                }
+    			editor.updateStatus("Running query ...");
+    
+                var serializationMode = $("#serialization-mode").val();
+    			var moduleLoadPath = "xmldb:exist://" + editor.getActiveDocument().getBasePath();
+    			$('.results-container .results').empty();
+    			$.ajax({
+    				type: "POST",
+    				url: "execute",
+    				dataType: serializationMode == "xml" ? serializationMode : "text",
+    				data: { "qu": code, "base": moduleLoadPath, "output": serializationMode },
+    				success: function (data, status, xhr) {
+                        switch (serializationMode) {
+                            case "xml":
+                                $("#results-iframe").hide();
+            					var elem = data.documentElement;
+            					if (elem.nodeName == 'error') {
+            				        var msg = $(elem).text();
+            				        eXide.util.error(msg, "Compilation Error");
+            				        editor.evalError(msg);
+            					} else {
+            						showResultsPanel();
+            						hitCount = elem.getAttribute("hits");
+            						endOffset = startOffset + 10 - 1;
+            						if (hitCount < endOffset)
+            							endOffset = hitCount;
+            						eXide.util.message("Found " + hitCount + " in " + elem.getAttribute("elapsed") + "s");
+            						eXide.app.retrieveNext();
+            					}
+                                break;
+                            default:
+                                showResultsPanel();
+                                var iframe = document.getElementById("results-iframe");
+                                $(iframe).show();
+                                iframe.contentWindow.document.open('text/html', 'replace');
+                                iframe.contentWindow.document.write(data);
+                                iframe.contentWindow.document.close();
+                                break;
+                        }
+    				},
+    				error: function (xhr, status) {
+    					eXide.util.error(xhr.responseText, "Server Error");
+    				}
+    			});
+            }
 		},
 
 		checkQuery: function() {
@@ -404,10 +448,10 @@ eXide.app = (function() {
 					url: url,
 					dataType: 'html',
 					success: function (data) {
-						$('#results-container .results').append(data);
-						$("#results-container .current").text("Showing results " + startOffset + " to " + (currentOffset - 1) +
+						$('.results-container .results').append(data);
+						$(".results-container .current").text("Showing results " + startOffset + " to " + (currentOffset - 1) +
 								" of " + hitCount);
-						$("#results-container .pos:last a").click(function () {
+						$(".results-container .pos:last a").click(function () {
 							eXide.app.findDocument($(this).data("path"));
 							return false;
 						});
@@ -426,7 +470,7 @@ eXide.app = (function() {
 		        endOffset = currentOffset + howmany - 1;
 				if (hitCount < endOffset)
 					endOffset = hitCount;
-				$("#results-container .results").empty();
+				$(".results-container .results").empty();
 				eXide.app.retrieveNext();
 			}
 			return false;
@@ -443,7 +487,7 @@ eXide.app = (function() {
 				endOffset = currentOffset + (count - 1);
 				if (hitCount < endOffset)
 					endOffset = hitCount;
-				$("#results-container .results").empty();
+				$(".results-container .results").empty();
 				eXide.app.retrieveNext();
 			}
 			return false;
@@ -855,7 +899,7 @@ eXide.app = (function() {
     		}, "newXQuery");
 
             button = $("#run").button("option", "icons", { primary: "ui-icon-play" });
-			button.click(eXide.app.runQuery);
+			button.click(function(ev) { eXide.app.runQuery() });
 
             button = $("#debug").button("option", "icons", { primary: "ui-icon-seek-end" });
             button.click(eXide.app.startDebug);
@@ -957,9 +1001,13 @@ eXide.app = (function() {
 					$("#login-dialog").dialog("open");
 				}
 			});
-			$('#results-container .next').click(eXide.app.browseNext);
-			$('#results-container .previous').click(eXide.app.browsePrevious);
-            
+			$('.results-container .next').click(eXide.app.browseNext);
+			$('.results-container .previous').click(eXide.app.browsePrevious);
+            $("#serialization-mode").change(function(ev) {
+                if (lastQuery) {
+                    eXide.app.runQuery(lastQuery);
+                }
+            });
             $("#error-status").mouseover(function(ev) {
                 var error = this;
                 $("#ext-status-bar").each(function() {
@@ -970,7 +1018,6 @@ eXide.app = (function() {
             $("#ext-status-bar").mouseout(function(ev) {
                $(this).css("display", "none");
             });
-            
             $(window).blur(function() {
                 hasFocus = false;
             });

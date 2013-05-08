@@ -184,6 +184,7 @@ eXide.edit.Editor = (function () {
 		$this.tabCounter = 0;
 		$this.newDocCounter = 0;
 		$this.pendingCheck = false;
+        $this.recheck = false;
         $this.themes = {};
         $this.initializing = true;
 		
@@ -618,6 +619,7 @@ eXide.edit.Editor = (function () {
 			if (this.documents[i].path == path)
 				return this.documents[i];
 		}
+        return null;
 	};
 
 	/**
@@ -805,6 +807,8 @@ eXide.edit.Editor = (function () {
 		if (mode) { 
 			var $this = this;
 			if ($this.pendingCheck) {
+                // signal that another check was requested
+                $this.recheck = true;
 				return;
 			}
 			var time = new Date().getTime();
@@ -836,8 +840,16 @@ eXide.edit.Editor = (function () {
 		$.log("Running validation...");
 		mode.validate($this.activeDoc, $this.getText(), function (success) {
 			$this.pendingCheck = false;
+            if ($this.recheck) {
+                // another check has been requested in the meantime: re-run validation
+                $this.triggerCheck();
+            }
             $.log("Validation completed.");
+            $this.recheck = false;
             $this.$triggerEvent("validate", [$this.activeDoc]);
+            if (success) {
+                $this.$triggerEvent("documentValid", [$this.activeDoc]);
+            }
 		});
 	};
 	

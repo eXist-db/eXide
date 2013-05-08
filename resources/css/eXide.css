@@ -44,6 +44,22 @@ label {
   color: #404040;
 }
 
+label.checkbox {
+    margin-left: 1em;
+}
+select {
+    display: inline-block;
+    padding: 2px 6px;
+    color: #555555;
+    background-color: #FFFFFF;
+    vertical-align: middle;
+    border: 1px solid #CCCCCC;
+    border-radius: 4px;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    height: 20px;
+    line-height: 20px;
+}
 .ui-widget {
 	font-size: 75%;
 }
@@ -426,7 +442,7 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 .eXide-browse-breadcrumbs a:hover {
-    color: #FFF;
+    color: rgb(31, 57, 255);
 }
 
 .eXide-browse-main {
@@ -516,13 +532,29 @@ Sub level menu list items (undo style from Top level List Items)
     font-weight: bold;
 }
 
-#results-container {
+.results-container {
 	font-size: 85%;
 	padding: 0;
     overflow: hidden;
 }
 
-#results-container .results {
+#results-body {
+    position: relative;
+}
+
+#results-iframe {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    border: 0;
+    margin: 0;
+    padding: 4px 8px;
+}
+
+.results-container .results {
 	margin: 0 15px;
     white-space: pre-wrap;
 }
@@ -546,6 +578,12 @@ Sub level menu list items (undo style from Top level List Items)
 .navbar img {
     border: 0;
 }
+
+#serialization-mode {
+    margin-left: 2em;
+    vertical-align: middle;
+}
+
 .previous {
 	float: left;
     margin-left: 8px;
