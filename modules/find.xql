@@ -18,10 +18,10 @@ declare function find:xquery-scripts($root as xs:string) {
         find:xquery-scripts($path)
 };
 
-declare function find:registered-scripts($prefix as xs:string) {
+declare function find:registered-scripts($prefix as xs:string?) {
     for $uri in util:mapped-modules()
     let $module := inspect:inspect-module-uri($uri)
-    where contains($module/@prefix, $prefix)
+    where empty($prefix) or contains($module/@prefix, $prefix)
     return
         <json:value xmlns:json="http://www.json.org" json:array="true"
             prefix="{$module/@prefix}" uri="{$module/@uri}" at="{$module/@location}"/>
