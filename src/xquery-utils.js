@@ -255,11 +255,9 @@ eXide.edit.InScopeVariables = (function () {
     };
     
     Constr.prototype.FunctionDecl = function(node) {
-        $.log("Found function decl: %o", node);
         var saved = this.deepCopy(this.stack);
         this.visitChildren(node);
         this.stack = saved;
-        $.log("Restored stack to %o", this.stack);
         return true;
     };
     

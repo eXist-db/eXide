@@ -388,7 +388,10 @@ eXide.edit.XQueryModeHelper = (function () {
 	};
 	
     Constr.prototype.variableLookup = function(doc, astNode, prefix, wordrange, complete) {
-        $.log("Lookup variable %s %o", prefix, astNode);
+        if (prefix.substring(0, 1) == "$") {
+            prefix = prefix.substring(1);
+        }
+        $.log("Lookup variable %s", prefix);
         var visitor = new eXide.edit.InScopeVariables(doc.ast, astNode);
         var variables = visitor.getStack();
         
@@ -408,7 +411,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		}
 		
         for (var i = 0; i < doc.functions.length; i++) {
-            if (doc.functions[i].type == "variable") {
+            if (doc.functions[i].type == "variable" && (!prefix || prefixRegex.test(doc.functions[i].name))) {
                 popupItems.push({
                     label: doc.functions[i].name,
                     template: doc.functions[i].name,
@@ -1065,7 +1068,7 @@ eXide.edit.XQueryModeHelper = (function () {
                                 sort.splice(1,0,":$"); 
 								functions.push({
 									type: eXide.edit.Document.TYPE_VARIABLE,
-									name: "$" + vars[j],
+									name: vars[j],
 									source: modules[i].source,
                                     sort : sort.join("")
 								});
