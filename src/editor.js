@@ -591,6 +591,7 @@ eXide.edit.Editor = (function () {
                 	if (mode) {
             			mode.documentSaved($this.activeDoc);
             		}
+                    $this.$triggerEvent("saved", [$this.activeDoc]);
 				}
 			},
 			error: function (xhr, status) {
@@ -844,7 +845,7 @@ eXide.edit.Editor = (function () {
                 // another check has been requested in the meantime: re-run validation
                 $this.triggerCheck();
             }
-            $.log("Validation completed.");
+            $.log("Validation completed: valid = %s", success);
             $this.recheck = false;
             $this.$triggerEvent("validate", [$this.activeDoc]);
             if (success) {
@@ -856,16 +857,18 @@ eXide.edit.Editor = (function () {
 	/*
 	 * Cannot compile xquery: XPDY0002 : variable '$b' is not set. [at line 5, column 6, source: String]
 	 */
-	Constr.prototype.evalError = function(msg) {
+	Constr.prototype.evalError = function(msg, gotoLine) {
 		var str = /.*line\s(\d+)/i.exec(msg);
 		var line = -1;
 		if (str) {
 			line = parseInt(str[1]);
 		}
 		$.log("error in line %d", str[1]);
-		this.editor.focus();
-		this.editor.gotoLine(line);
-		
+        if (gotoLine) {
+    		this.editor.focus();
+    		this.editor.gotoLine(line);
+        }
+        
 		var annotation = [{
 				row: line - 1,
 				text: msg,
