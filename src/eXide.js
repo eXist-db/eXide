@@ -111,7 +111,7 @@ eXide.app = (function() {
 		    editor.addEventListener("outlineChange", eXide.app.onOutlineChange);
             editor.addEventListener("documentValid", function(doc) {
                 if (doc.isXQuery() && $("#live-preview").is(":checked")) {
-                    eXide.app.runQuery(doc.getPath());
+                    eXide.app.runQuery(doc.getPath(), true);
                 }
             });
             
@@ -359,7 +359,7 @@ eXide.app = (function() {
 			window.location.href = "modules/load.xql?download=true&path=" + encodeURIComponent(doc.getPath());
 		},
         
-		runQuery: function(path) {
+		runQuery: function(path, livePreview) {
             function showResultsPanel() {
                 editor.updateStatus("");
 				editor.clearErrors();
@@ -403,8 +403,8 @@ eXide.app = (function() {
             					var elem = data.documentElement;
             					if (elem.nodeName == 'error') {
             				        var msg = $(elem).text();
-            				        eXide.util.error(msg, "Compilation Error");
-            				        editor.evalError(msg);
+            				        //eXide.util.error(msg, "Compilation Error");
+            				        editor.evalError(msg, !livePreview);
             					} else {
             						showResultsPanel();
             						hitCount = elem.getAttribute("hits");
