@@ -278,11 +278,19 @@
                 <input type="search" id="outline-filter" placeholder="Filter by..."/>
             </div>
         </div>
-        <div id="results-container" class="ui-layout-south">
+        <div class="ui-layout-south results-container">
             <div class="navbar">
                 <a class="previous" href="#">
                     <img src="resources/images/control_rewind.png"/>
                 </a>
+                <select name="output-mode" id="serialization-mode">
+                    <option value="xml">XML Output</option>
+                    <option value="html">Direct Output</option>
+                </select>
+                <label class="checkbox" title="Update query results automatically while you type XQuery or when saving HTML">
+                    <input type="checkbox" id="live-preview" name="live-preview" selected="false"/>
+                    Live Preview
+                </label>
                 <a class="next" href="#">
                     <img src="resources/images/control_fastforward.png"/>
                 </a>
@@ -294,6 +302,7 @@
                         <div class="results"/>
                     </div>
                 </div>
+                <iframe id="results-iframe" style="display: none" src="JavaScript:''"/>
             </div>
         </div>
         <!--div id="debuger-container" class="ui-layout-east">
