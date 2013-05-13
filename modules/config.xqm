@@ -39,6 +39,25 @@ declare function config:expath-descriptor() as element(expath:package) {
     doc(concat($config:app-root, "/expath-pkg.xml"))/expath:package
 };
 
+declare function config:get-configuration() as element(configuration) {
+    doc(concat($config:app-root, "/configuration.xml"))/configuration
+};
+
+declare function config:access-allowed($path as xs:string, $user as xs:string) as xs:boolean {
+    if (sm:is-dba($user)) then
+        true()
+    else
+        let $deny := config:get-configuration()/restrictions/deny
+        return
+            if ($deny) then
+                not(
+                    some $denied in $deny/@collection
+                    satisfies starts-with($path, $denied)
+                )
+            else
+                true()
+};
+
 (:~
  : For debugging: generates a table showing all properties defined
  : in the application descriptors.

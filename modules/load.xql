@@ -18,6 +18,8 @@
  :)
 xquery version "3.0";
 
+import module namespace config="http://exist-db.org/xquery/apps/config" at "config.xqm";
+
 declare option exist:serialize "indent=yes expand-xincludes=no";
 
 declare function local:get-run-path($path) {
@@ -47,16 +49,17 @@ let $header2 :=
     else
         ()
 return
-    if ($isBinary) then
-        let $data := util:binary-doc($path)
-        return (
-            response:stream-binary($data, $mime, ())
-		)
-    else (
-        let $doc := doc($path)
-        return
-            if ($doc) then (
-                $doc
-            ) else
-                response:set-status-code(404)
-    )
+    if (config:access-allowed($path, xmldb:get-current-user())) then
+        if ($isBinary) then
+            let $data := util:binary-doc($path)
+            return
+                response:stream-binary($data, $mime, ())
+        else
+            let $doc := doc($path)
+            return
+                if ($doc) then
+                    $doc
+                else
+                    response:set-status-code(404)
+    else
+        response:set-status-code(404)

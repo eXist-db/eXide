@@ -18,6 +18,8 @@
  :)
 xquery version "3.0";
 
+import module namespace config="http://exist-db.org/xquery/apps/config" at "config.xqm";
+
 declare namespace json="http://www.json.org";
 
 declare option exist:serialize "method=json media-type=text/javascript";
@@ -61,7 +63,8 @@ declare function local:collections($root as xs:string, $child as xs:string,
 declare function local:list-collection-contents($collection as xs:string, $user as xs:string) {
     let $subcollections := 
         for $child in xmldb:get-child-collections($collection)
-        where sm:has-access(xs:anyURI(concat($collection, "/", $child)), "r")
+        let $collpath := concat($collection, "/", $child)
+        where sm:has-access(xs:anyURI($collpath), "r") and config:access-allowed($collpath, $user)
         return
             concat("/", $child)
     let $resources :=

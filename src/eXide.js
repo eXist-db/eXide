@@ -127,7 +127,7 @@ eXide.app = (function() {
                 if ($("#live-preview").is(":checked") && webResources[doc.getSyntax()]) {
                     document.getElementById("results-iframe").contentDocument.location.reload(true);
                 }
-            })
+            });
             
 			$(window).resize(eXide.app.resize);
 			
@@ -384,6 +384,10 @@ eXide.app = (function() {
 				currentOffset = 1;
             }
 
+            if (!eXide.configuration.allowExecution) {
+                eXide.util.error("You are not allowed to execute XQuery code.");
+                return;
+            }
             if (!path && editor.getActiveDocument().getSyntax() == "html") {
                 showResultsPanel();
                 var iframe = document.getElementById("results-iframe");
