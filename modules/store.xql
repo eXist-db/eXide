@@ -71,7 +71,7 @@ return
         } catch * {
             let $message :=
             replace(
-                replace($util:exception-message, "^.*XMLDBException:", ""),
+                replace($err:description, "^.*XMLDBException:", ""),
                 "\[at.*\]$", ""
             )
             return
