@@ -60,6 +60,11 @@ select {
     height: 20px;
     line-height: 20px;
 }
+select:disabled {
+    background-color: #C0C0C0;
+    color: #FFFFFF;
+}
+
 .ui-widget {
 	font-size: 75%;
 }
@@ -551,7 +556,7 @@ Sub level menu list items (undo style from Top level List Items)
     z-index: 1000;
     border: 0;
     margin: 0;
-    padding: 4px 8px;
+    padding: 0;
 }
 
 .results-container .results {
@@ -577,6 +582,12 @@ Sub level menu list items (undo style from Top level List Items)
 
 .navbar img {
     border: 0;
+    vertical-align: middle;
+}
+
+.navbar img.layout-switcher {
+    margin-left: 1em;
+    cursor: pointer;
 }
 
 #serialization-mode {

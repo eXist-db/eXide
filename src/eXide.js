@@ -75,6 +75,15 @@ eXide.app = (function() {
     // used to detect when window looses focus
     var hasFocus = true;
     
+    var resultPanel = "south";
+    
+    var webResources = {
+        "html": 1,
+        "javascript": 1,
+        "css": 1,
+        "less": 1
+    };
+    
 	return {
         
 		init: function(afterInitCallback) {
@@ -114,6 +123,11 @@ eXide.app = (function() {
                     eXide.app.runQuery(doc.getPath(), true);
                 }
             });
+            editor.addEventListener("saved", function(doc) {
+                if ($("#live-preview").is(":checked") && webResources[doc.getSyntax()]) {
+                    document.getElementById("results-iframe").contentDocument.location.reload(true);
+                }
+            })
             
 			$(window).resize(eXide.app.resize);
 			
@@ -137,9 +151,10 @@ eXide.app = (function() {
 			var panel = $("#editor");
 			var header = $(".header");
             if (resizeIframe) {
+                var resultsContainer = $(".ui-layout-" + resultPanel);
                 var resultsBody = $("#results-body");
                 $("#results-iframe").width(resultsBody.innerWidth());
-                $("#results-iframe").height(resultsBody.innerHeight());
+                $("#results-iframe").height(resultsContainer.innerHeight());
             }
 //			panel.width($(".ui-layout-center").innerWidth() - 20);
 //			panel.css("width", "100%");
@@ -363,17 +378,18 @@ eXide.app = (function() {
             function showResultsPanel() {
                 editor.updateStatus("");
 				editor.clearErrors();
-				var layout = $("body").layout();
-				layout.open("south");
-				//layout.sizePane("south", 300);
-				eXide.app.resize(true);
+				eXide.app.showResultsPanel();
 				
 				startOffset = 1;
 				currentOffset = 1;
             }
 
             if (!path && editor.getActiveDocument().getSyntax() == "html") {
-                document.getElementById("results-iframe").src = editor.getActiveDocument().getExternalLink();
+                showResultsPanel();
+                var iframe = document.getElementById("results-iframe");
+                $(iframe).show();
+                iframe.src = editor.getActiveDocument().getExternalLink();
+                $("#serialization-mode").attr("disabled", "disabled").val("html");
             } else {
                 var code = editor.getText();
                 if (path) {
@@ -388,6 +404,7 @@ eXide.app = (function() {
                 }
     			editor.updateStatus("Running query ...");
     
+                $("#serialization-mode").removeAttr("disabled");
                 var serializationMode = $("#serialization-mode").val();
     			var moduleLoadPath = "xmldb:exist://" + editor.getActiveDocument().getBasePath();
     			$('.results-container .results').empty();
@@ -720,6 +737,26 @@ eXide.app = (function() {
             }
         },
         
+        showResultsPanel: function() {
+            $("body").layout().open(resultPanel);
+			//layout.sizePane("south", 300);
+			eXide.app.resize(true);
+        },
+        
+        switchResultsPanel: function() {
+            var target = resultPanel === "south" ? "east" : "south";
+            var contents = $("#results-body").parent().contents().detach();
+            contents.appendTo(".ui-layout-" + target);
+            $("body").layout().close(resultPanel);
+            resultPanel = target;
+            if (resultPanel === "south") {
+                $(".layout-switcher").attr("src", "resources/images/layouts_split.png");
+            } else {
+                $(".layout-switcher").attr("src", "resources/images/layouts_split_vertical.png");
+            }
+            eXide.app.showResultsPanel();
+        },
+        
         initStatus: function(msg) {
             $("#splash-status").text(msg);
         },
@@ -741,6 +778,8 @@ eXide.app = (function() {
 				west__size: 200,
 				west__initClosed: false,
 				west__contentSelector: ".content",
+                east__minSize: 300,
+                east__size: 450,
                 east__initClosed: true,
 				center__minSize: 300,
 			    center__onresize: eXide.app.resize,
@@ -1001,6 +1040,7 @@ eXide.app = (function() {
 					$("#login-dialog").dialog("open");
 				}
 			});
+            $(".results-container .layout-switcher").click(eXide.app.switchResultsPanel);
 			$('.results-container .next').click(eXide.app.browseNext);
 			$('.results-container .previous').click(eXide.app.browsePrevious);
             $("#serialization-mode").change(function(ev) {
