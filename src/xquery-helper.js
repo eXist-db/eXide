@@ -271,6 +271,9 @@ eXide.edit.XQueryModeHelper = (function () {
             $.log("Autocomplete AST node: %o", astNode);
             
             if (!astNode) {
+                if (!alwaysShow) {
+                    return false;
+                }
                 // no ast node: scan preceding text
                 mode = "functions";
                 row = lead.row;
@@ -420,7 +423,7 @@ eXide.edit.XQueryModeHelper = (function () {
             }
         }
 		
-		this.$showPopup(doc, wordrange, popupItems);
+		this.$showPopup(doc, wordrange, popupItems, complete);
     };
     
 	Constr.prototype.functionLookup = function(doc, prefix, wordrange, complete) {
@@ -467,7 +470,7 @@ eXide.edit.XQueryModeHelper = (function () {
 				
 				$this.$addTemplates(doc, prefix, popupItems);
 				
-				$this.$showPopup(doc, wordrange, popupItems);
+				$this.$showPopup(doc, wordrange, popupItems, complete);
 			},
 			error: function(xhr, msg) {
 				eXide.util.error(msg);
@@ -478,7 +481,7 @@ eXide.edit.XQueryModeHelper = (function () {
 	Constr.prototype.templateLookup = function(doc, prefix, wordrange, complete) {
 		var popupItems = [];
 		this.$addTemplates(doc, prefix, popupItems);
-		this.$showPopup(doc, wordrange, popupItems);
+		this.$showPopup(doc, wordrange, popupItems, complete);
 	};
     
     Constr.prototype.moduleLookup = function(doc, prefix, wordrange, complete) {
@@ -501,7 +504,7 @@ eXide.edit.XQueryModeHelper = (function () {
                         template: template
                     });
                 }
-                self.$showPopup(doc, wordrange, popupItems);
+                self.$showPopup(doc, wordrange, popupItems, complete);
             }
         });
     };
@@ -520,7 +523,7 @@ eXide.edit.XQueryModeHelper = (function () {
                         });
                     }
                 }
-                self.$showPopup(doc, wordrange, popupItems);
+                self.$showPopup(doc, wordrange, popupItems, complete);
             }
         });
     };
@@ -539,29 +542,31 @@ eXide.edit.XQueryModeHelper = (function () {
 		}
 	}
 	
-	Constr.prototype.$showPopup = function (doc, wordrange, popupItems) {
+	Constr.prototype.$showPopup = function (doc, wordrange, popupItems, complete) {
 		// display popup
 		var $this = this;
         function apply(selected) {
-            var expansion = selected.label;
-            if (selected.type == "function") {
-				expansion = eXide.util.parseSignature(expansion);
-			} else {
-                expansion = selected.template;   
-			}
-            if (wordrange) {
-                $this.editor.getSession().remove(wordrange);
-            }
-            if (selected.type === "variable") {
-                $this.editor.insert(expansion);
-            } else {
-                SnippetManager.insertSnippet($this.editor, expansion);
-            }
-            if (selected.completion) {
-                $this.autocomplete(doc);
+            if (complete) {
+                var expansion = selected.label;
+                if (selected.type == "function") {
+    				expansion = eXide.util.parseSignature(expansion);
+    			} else {
+                    expansion = selected.template;   
+    			}
+                if (wordrange) {
+                    $this.editor.getSession().remove(wordrange);
+                }
+                if (selected.type === "variable") {
+                    $this.editor.insert(expansion);
+                } else {
+                    SnippetManager.insertSnippet($this.editor, expansion);
+                }
+                if (selected.completion) {
+                    $this.autocomplete(doc);
+                }
             }
         }
-        if (popupItems.length > 1) {
+        if (popupItems.length > 1 || !complete) {
             eXide.util.popup(this.editor, $("#autocomplete-box"), $("#autocomplete-help"), popupItems,
                 function (selected) {
                     if (selected) {
