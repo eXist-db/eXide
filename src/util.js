@@ -243,9 +243,19 @@ eXide.util = (function () {
 				}
 			});
             $(container).keypress(function (ev) {
-                filter = filter + String.fromCharCode(ev.which);
-    		    $(filterInfo).text(filter);
-                filterEntries();
+                var key = ev.which == 0 ? ev.keyCode : ev.which;
+                switch(key) {
+                    case 40:
+                    case 38:
+                    case 13:
+                    case 27:
+                    case 8:
+                        break;
+                    default:
+                        filter = filter + String.fromCharCode(ev.which);
+                	    $(filterInfo).text(filter);
+                        filterEntries();
+                }
             });
             container.fadeIn(80, function() {
                 container.focus();
