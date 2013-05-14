@@ -154,7 +154,7 @@ eXide.app = (function() {
                 var resultsContainer = $(".ui-layout-" + resultPanel);
                 var resultsBody = $("#results-body");
                 $("#results-iframe").width(resultsBody.innerWidth());
-                $("#results-iframe").height(resultsContainer.innerHeight());
+                $("#results-iframe").height(resultsContainer.innerHeight() - $(".navbar", resultsContainer).height() - 8);
             }
 //			panel.width($(".ui-layout-center").innerWidth() - 20);
 //			panel.css("width", "100%");

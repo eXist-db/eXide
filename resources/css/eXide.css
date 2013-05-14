@@ -585,6 +585,10 @@ Sub level menu list items (undo style from Top level List Items)
     vertical-align: middle;
 }
 
+.navbar .navbar-controls {
+    overflow: hidden;
+}
+
 .navbar img.layout-switcher {
     margin-left: 1em;
     cursor: pointer;
@@ -601,7 +605,7 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 .current {
-	text-align: center;
+    margin-left: 1em;
 	font-weight: bold;
 }
 
