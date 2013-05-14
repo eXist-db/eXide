@@ -384,7 +384,7 @@ eXide.app = (function() {
 				currentOffset = 1;
             }
 
-            if (!eXide.configuration.allowExecution) {
+            if (!(eXide.configuration.allowExecution || eXide.app.login.isAdmin)) {
                 eXide.util.error("You are not allowed to execute XQuery code.");
                 return;
             }
