@@ -49,13 +49,19 @@ declare function local:get-run-path($path) {
         )
 };
 
+declare function local:get-mime-type() {
+    let $contentType := request:get-header("Content-Type")
+    return
+        replace($contentType, "\s*;.*$", "")
+};
+
 (:~ Called by the editor to store a document :)
 
 let $path := request:get-parameter("path", ())
 let $split := text:groups($path, "^(.*)/([^/]+)$")
 let $collection := xmldb:encode-uri($split[2])
 let $resource := xmldb:encode-uri($split[3])
-let $mime := request:get-header("Content-Type")
+let $mime := local:get-mime-type()
 let $data := request:get-data()
 return
         try {
