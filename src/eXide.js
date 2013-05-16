@@ -454,7 +454,7 @@ eXide.app = (function() {
 		},
 
 		checkQuery: function() {
-			editor.validate();
+			editor.validator.triggerNow(editor.getActiveDocument());
 		},
 
 		/** If there are more query results to load, retrieve
@@ -627,7 +627,7 @@ eXide.app = (function() {
                 if (!editor.getActiveDocument()) {
                     eXide.app.newDocument("", "xquery");
                 }
-                editor.triggerCheck();
+                editor.validator.triggerNow(editor.getActiveDocument());
                 if (callback) callback(restoring);
             });
 			deploymentEditor.restoreState();

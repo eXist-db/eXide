@@ -66,6 +66,7 @@
                 <file name="javascript-helper.js"/>
                 <file name="css-helper.js"/>
                 <file name="outline.js"/>
+                <file name="codevalidator.js"/>
                 <file name="editor.js"/>
                 <file name="eXide.js"/>
                 <file name="deployment.js"/>

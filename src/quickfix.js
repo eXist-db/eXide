@@ -74,24 +74,24 @@ eXide.edit.XQueryQuickFix = (function () {
                     if (ast && ast.getParent.name === "FunctionCall") {
                         return [{
                             resolve: function(helper, editor, doc, annotation) {
-                                helper.parent.setValidation(false);
+                                helper.parent.validator.setEnabled(false);
                                 var adder = new eXide.edit.PrologAdder(editor, doc);
                                 adder.importModule(matches[1]);
                                 helper.xqlint(doc);
                                 helper.autocomplete(doc);
-                                helper.parent.setValidation(true);
+                                helper.parent.validator.setEnabled(true);
                             },
                             action: "Import module \"" + matches[1] + "\""
                         }];
                     } else if (ast && ast.name === "EQName") {
                         return [{
                             resolve: function(helper, editor, doc, annotation) {
-                                helper.parent.setValidation(false);
+                                helper.parent.validator.setEnabled(false);
                                 var adder = new eXide.edit.PrologAdder(editor, doc);
                                 adder.declareNamespace(matches[1]);
                                 helper.xqlint(doc);
                                 helper.autocomplete(doc);
-                                helper.parent.setValidation(true);
+                                helper.parent.validator.setEnabled(true);
                             },
                             action: "Declare namespace \"" + matches[1] + "\""
                         }];
@@ -102,7 +102,6 @@ eXide.edit.XQueryQuickFix = (function () {
         {
             regex: /variable.*not set/,
             getResolutions: function(helper, editor, doc, annotation, ast) {
-                $.log("quickfix ast: %o", ast);
                 if (ast.getParent.name === "VarName") {
                     return [{
                         resolve: function(helper, editor, doc, annotation) {

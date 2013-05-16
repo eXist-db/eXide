@@ -90,8 +90,6 @@ eXide.edit.XQueryModeHelper = (function () {
     Constr.prototype.activate = function() {
         this.menu.show();
         this.parent.updateStatus("");
-//        this.parent.triggerCheck();
-        // this.xqlint(this.parent.getActiveDocument());
     };
     
     Constr.prototype.deactivate = function() {
@@ -127,7 +125,6 @@ eXide.edit.XQueryModeHelper = (function () {
 	}
 		
 	Constr.prototype.validate = function(doc, code, onComplete) {
-		$.log("Running validation on %s", doc.getName());
 		var $this = this;
 		var basePath = "xmldb:exist://" + doc.getBasePath();
 		
@@ -196,40 +193,43 @@ eXide.edit.XQueryModeHelper = (function () {
                 h.closeParseTree();
             }
         }
-        var ast = h.getParseTree();
-        
-        var highlighter = new SemanticHighlighter(ast, value);
-  
-        var mode = doc.getSession().getMode();
-
-        mode.$tokenizer.tokens = highlighter.getTokens();
-        mode.$tokenizer.lines  = session.getDocument().getAllLines();
-        session.bgTokenizer.lines = [];
-        session.bgTokenizer.states = [];
-        
-        var rows = Object.keys(mode.$tokenizer.tokens);
-        for(var i=0; i < rows.length; i++) {
-            var row = parseInt(rows[i]);
-            session.bgTokenizer.fireUpdateEvent(row, row);
-        }
-
-        var translator = new Translator(ast);
-        doc.ast = translator.translate();
-        
-        var markers = doc.ast.markers;
-        var annotations = this.clearAnnotations(doc, "warning");
-        for (var i = 0; i < markers.length; i++) {
-            if (markers[i].type !== "error") {
-                annotations.push({
-                    row: markers[i].pos.sl,
-                    column: markers[i].pos.sc,
-                    text: markers[i].message,
-                    type: markers[i].type,
-                    pos: markers[i].pos
-                });
+        try {
+            var ast = h.getParseTree();
+            var translator = new Translator(ast);
+            doc.ast = translator.translate();
+            
+            var highlighter = new SemanticHighlighter(ast, value);
+      
+            var mode = doc.getSession().getMode();
+    
+            mode.$tokenizer.tokens = highlighter.getTokens();
+            mode.$tokenizer.lines  = session.getDocument().getAllLines();
+            session.bgTokenizer.lines = [];
+            session.bgTokenizer.states = [];
+            
+            var rows = Object.keys(mode.$tokenizer.tokens);
+            for(var i=0; i < rows.length; i++) {
+                var row = parseInt(rows[i]);
+                session.bgTokenizer.fireUpdateEvent(row, row);
             }
+            
+            var markers = doc.ast.markers;
+            var annotations = this.clearAnnotations(doc, "warning");
+            for (var i = 0; i < markers.length; i++) {
+                if (markers[i].type !== "error") {
+                    annotations.push({
+                        row: markers[i].pos.sl,
+                        column: markers[i].pos.sc,
+                        text: markers[i].message,
+                        type: markers[i].type,
+                        pos: markers[i].pos
+                    });
+                }
+            }
+            session.setAnnotations(annotations);
+        } catch(e) {
+            $.log("Error while processing ast: %s", e.message);
         }
-        session.setAnnotations(annotations);
     };
     
     Constr.prototype.clearAnnotations = function(doc, type) {
@@ -246,7 +246,7 @@ eXide.edit.XQueryModeHelper = (function () {
 	Constr.prototype.autocomplete = function(doc, alwaysShow) {
         if (!doc.ast) {
             this.afterValidate(this, function() { this.autocomplete(doc, alwaysShow); });
-            this.parent.triggerCheck();
+            this.parent.validator.triggerNow(doc);
             return;
         }
         if (alwaysShow === undefined) {
@@ -268,7 +268,7 @@ eXide.edit.XQueryModeHelper = (function () {
             // try to determine the ast node where the cursor is located
             var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
             
-            $.log("Autocomplete AST node: %o", astNode);
+            $.log("Autocomplete AST node: %o; doc: %o", astNode, doc.ast);
             
             if (!astNode) {
                 if (!alwaysShow) {
@@ -351,6 +351,9 @@ eXide.edit.XQueryModeHelper = (function () {
                         start = astNode.pos.sc;
                         end = astNode.pos.ec;
                     } else {
+                        if (!alwaysShow) {
+                            return false;
+                        }
                         row = lead.row;
                         start = lead.column;
                         end = lead.column;
@@ -689,7 +692,7 @@ eXide.edit.XQueryModeHelper = (function () {
     Constr.prototype.extractFunction = function(doc) {
         if (!doc.ast) {
             this.afterValidate(this, function() { this.extractFunction(doc); });
-            this.parent.triggerCheck();
+            this.parent.validator.triggerNow(doc);
             return;
         }
         // get text of selection
@@ -877,7 +880,7 @@ eXide.edit.XQueryModeHelper = (function () {
     Constr.prototype.rename = function(doc) {
         if (!doc.ast) {
             this.afterValidate(this, function() { this.rename(doc); });
-            this.parent.triggerCheck();
+            this.parent.validator.triggerNow(doc);
             return;
         }
         var self = this;

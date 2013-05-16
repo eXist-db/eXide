@@ -37,6 +37,7 @@ eXide.edit.Document = (function() {
 		this.$session = session;
         this.externalLink = null;
         this.lastChangeEvent = new Date().getTime();
+        this.lastValidation = 0;
         this.ast = null;
         var wrap = eXide.app.getPreference("softWrap");
         this.$session.setUseWrapMode(wrap != 0);
@@ -52,6 +53,10 @@ eXide.edit.Document = (function() {
     Constr.TYPE_VARIABLE = "variable";
     Constr.TYPE_TEMPLATE = "template";
     
+    Constr.prototype.needsValidation = function() {
+    	return !this.ast || this.lastChangeEvent > this.lastValidation;
+    };
+
 	Constr.prototype.getText = function() {
 		return this.$session.getValue();
 	};
@@ -183,8 +188,10 @@ eXide.edit.Editor = (function () {
 		$this.activeDoc = null;
 		$this.tabCounter = 0;
 		$this.newDocCounter = 0;
+
 		$this.pendingCheck = false;
         $this.recheck = false;
+
         $this.themes = {};
         $this.initializing = true;
 		
@@ -203,8 +210,9 @@ eXide.edit.Editor = (function () {
         eXide.edit.commands.init($this);
         
 	    this.outline = new eXide.edit.Outline();
+	    this.validator = new eXide.edit.CodeValidator(this);
 	    this.addEventListener("activate", this.outline, this.outline.updateOutline);
-    	this.addEventListener("validate", this.outline, this.outline.updateOutline);
+    	this.validator.addEventListener("validate", this.outline, this.outline.updateOutline);
 		this.addEventListener("close", this.outline, this.outline.clearOutline);
         
 	    // Set up the status bar
@@ -242,7 +250,6 @@ eXide.edit.Editor = (function () {
             tabsDiv.scrollLeft(left);
         });
         
-	    this.lastChangeEvent = new Date().getTime();
 		this.validateTimeout = null;
 		this.validationEnabled = true;
 		
@@ -437,7 +444,8 @@ eXide.edit.Editor = (function () {
 				doc.saved = false;
 				$this.updateTabStatus(doc.path, doc);
 			}
-			$this.triggerCheck();
+			doc.lastChangeEvent = new Date().getTime();
+			$this.validator.triggerDelayed(doc);
 		});
 		$this.addTab(doc);
 		
@@ -729,7 +737,7 @@ eXide.edit.Editor = (function () {
             helper.activate();
         }
         if (!this.activeDoc.ast) {
-            this.triggerCheck();
+            this.validator.triggerNow(this.activeDoc);
         }
 	};
 	
@@ -795,63 +803,6 @@ eXide.edit.Editor = (function () {
 		if (href) {
 			this.status.href = href;
 		}
-	};
-	
-	/**
-	 * Trigger validation.
-	 */
-	Constr.prototype.triggerCheck = function() {
-		if (!this.validationEnabled) {
-			return;
-		}
-		var mode = this.activeDoc.getModeHelper();
-		if (mode) { 
-			var $this = this;
-			if ($this.pendingCheck) {
-                // signal that another check was requested
-                $this.recheck = true;
-				return;
-			}
-			var time = new Date().getTime();
-			if ($this.validateTimeout && time - this.activeDoc.lastChangeEvent < VALIDATE_TIMEOUT) {
-				clearTimeout($this.validateTimeout);
-			}
-			this.activeDoc.lastChangeEvent = time;
-			this.validateTimeout = setTimeout(function() { 
-				$this.validate.apply($this); 
-			}, VALIDATE_TIMEOUT);
-		}
-	};
-
-    Constr.prototype.setValidation = function(enable) {
-        this.pendingCheck = !enable;
-    };
-    
-	/**
-	 * Validate the current document's text by calling validate on the
-	 * mode helper.
-	 */
-	Constr.prototype.validate = function() {
-		var $this = this;
-		var mode = $this.activeDoc.getModeHelper();
-		if (!(mode && mode.validate)) {
-			return;
-		}
-		$this.pendingCheck = true;
-		$.log("Running validation...");
-		mode.validate($this.activeDoc, $this.getText(), function (success) {
-			$this.pendingCheck = false;
-            if ($this.recheck) {
-                // another check has been requested in the meantime: re-run validation
-                $this.triggerCheck();
-            }
-            $.log("Validation completed: valid = %s", success);
-            $this.recheck = false;
-            $this.$triggerEvent("validate", [$this.activeDoc]);
-            if (success) {
-                $this.$triggerEvent("documentValid", [$this.activeDoc]);
-            }
-		});
 	};
 	
 	/*
