@@ -55,6 +55,7 @@ eXide.edit.XQueryModeHelper = (function () {
         this.addCommand("extractFunction", this.extractFunction);
 		this.addCommand("showFunctionDoc", this.showFunctionDoc);
 		this.addCommand("gotoDefinition", this.gotoDefinition);
+        this.addCommand("gotoSymbol", this.gotoSymbol);
 		this.addCommand("locate", this.locate);
 		this.addCommand("closeTag", this.closeTag);
         this.addCommand("importModule", this.importModule);
@@ -533,6 +534,36 @@ eXide.edit.XQueryModeHelper = (function () {
         });
     };
 	
+    Constr.prototype.gotoSymbol = function(doc) {
+        var self = this;
+        var popupItems = [];
+        for (var i = 0; i < doc.functions.length; i++) {
+            item = { 
+                label: doc.functions[i].signature ? doc.functions[i].signature : doc.functions[i].name,
+                name: doc.functions[i].name,
+                type: doc.functions[i].type
+            };
+            if (doc.functions[i].help) {
+                item.tooltip = doc.functions[i].help;
+            }
+            popupItems.push(item);
+        };
+        if (popupItems.length > 1) {
+            var editorWidth = this.parent.getWidth();
+            var left = this.parent.getOffset().left;
+            $.log("left: %d", left);
+            $("#autocomplete-box").css({ left: left + "px", top: "20px" });
+            eXide.util.popup(this.editor, $("#autocomplete-box"), null, popupItems,
+                function (selected) {
+                    if (selected) {
+                        self.parent.outline.gotoDefinition(doc, selected.name);
+                    }
+                    self.editor.focus();
+                }
+            );
+        }
+    };
+
 	Constr.prototype.$addTemplates = function (doc, prefix, popupItems) {
         var templates = eXide.util.Snippets.getTemplates(doc, prefix);
 		// add templates

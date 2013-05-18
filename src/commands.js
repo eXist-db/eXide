@@ -157,6 +157,14 @@ eXide.edit.commands = (function () {
         		    		parent.exec("gotoDefinition");
         		    	}
         		    });
+                    commands.addCommand({
+                        name: "gotoSymbol",
+                        hint: "Goto symbol",
+                        bindKey: bindKey(bindings.gotoSymbol),
+                        exec: function(editor) {
+                            parent.exec("gotoSymbol");
+                        }
+                    });
               //       commands.addCommand({
             	 //    	name: "searchIncremental",
         		    // 	bindKey: bindKey(bindings.searchIncremental),
@@ -251,7 +259,8 @@ eXide.edit.commands = (function () {
                         exec: function(editor) {
                             parent.exec("extractFunction");
                         }
-                    })
+                    });
+
                     commands.addCommand({
                         name: "snippet",
                         hint: "code snippet",

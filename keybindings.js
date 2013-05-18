@@ -26,5 +26,6 @@
     "quickfix": ["Ctrl-Shift-Q", "Command-Ctrl-Q"],
     "expandSelection": ["Ctrl-Shift-Up", "Ctrl-Command-Up"],
     "rename": ["Ctrl-Alt-Shift-R", "Command-Ctrl-R"],
-    "extractFunction": ["Ctrl-Shift-X", "Command-Shift-X"]
+    "extractFunction": ["Ctrl-Shift-X", "Command-Shift-X"],
+    "gotoSymbol": ["Ctrl-Shift-U", "Command-Shift-U"]
 }

@@ -654,6 +654,14 @@ eXide.edit.Editor = (function () {
 		return $(this.container).height();
 	};
 	
+	Constr.prototype.getWidth = function () {
+		return $(this.container).width();
+	};
+
+	Constr.prototype.getOffset = function() {
+		return $(this.container).offset();
+	};
+
 	Constr.prototype.resize = function () {
 		this.editor.resize();
 	};
