@@ -18,6 +18,8 @@
  :)
 xquery version "3.0";
 
+
+import module namespace apputil="http://exist-db.org/apps/eXide/apputil" at "util.xql";
 import module namespace tmpl="http://exist-db.org/xquery/template" at "tmpl.xql";
 
 (:~ 
@@ -46,19 +48,6 @@ declare function deploy:select-option($value as xs:string, $current as xs:string
     <option value="{$value}">
     { if (exists($current) and $value eq $current) then attribute selected { "selected" } else (), $label }
     </option>
-};
-
-declare function deploy:get-app-root($collection as xs:string) {
-    if (not(starts-with($collection, "/"))) then
-        ()
-    else if (doc(concat($collection, "/expath-pkg.xml"))) then
-        $collection
-    else if (not(matches($collection, "^/db/?$"))) then
-        let $parent := replace($collection, "^(.*)/+[^/]+$", "$1")
-        return
-            deploy:get-app-root($parent)
-    else
-        ()
 };
 
 declare function deploy:store-expath($collection as xs:string?, $userData as xs:string*, $permissions as xs:string?) {
@@ -611,7 +600,7 @@ declare function deploy:get-info-from-descriptor($collection as xs:string) {
 
 declare function deploy:get-info($collection as xs:string) {
     let $null := util:declare-option("exist:serialize", "method=json media-type=application/json")
-    let $root := deploy:get-app-root($collection)
+    let $root := apputil:get-app-root($collection)
     return
         if ($root) then
             deploy:get-info-from-descriptor($root)
@@ -623,7 +612,7 @@ let $target := request:get-parameter("target", ())
 let $collectionParam := request:get-parameter("collection", ())
 let $collection :=
     if ($collectionParam) then
-        let $root := deploy:get-app-root($collectionParam)
+        let $root := apputil:get-app-root($collectionParam)
         return
             if ($root) then $root else $collectionParam
     else
