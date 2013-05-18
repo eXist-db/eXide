@@ -5,7 +5,7 @@ eXide.namespace("eXide.edit.CodeValidator");
  */
 eXide.edit.CodeValidator = (function () {
 
-    var VALIDATE_TIMEOUT = 2000;
+    var VALIDATE_TIMEOUT = 700;
 
     function canValidate(doc) {
         var mode = doc.getModeHelper();
