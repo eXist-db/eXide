@@ -52,6 +52,7 @@ eXide.edit.XQueryModeHelper = (function () {
         this.addCommand("format", this.format);
         this.addCommand("expandSelection", this.expandSelection);
         this.addCommand("rename", this.rename);
+        this.addCommand("extractFunction", this.extractFunction);
 		this.addCommand("showFunctionDoc", this.showFunctionDoc);
 		this.addCommand("gotoDefinition", this.gotoDefinition);
 		this.addCommand("locate", this.locate);
@@ -75,7 +76,7 @@ eXide.edit.XQueryModeHelper = (function () {
         }, "rename");
         menubar.click("#menu-xquery-extract-function", function() {
             self.extractFunction(editor.getActiveDocument());
-        }, "xquery-extract-fun");
+        }, "extractFunction");
         menubar.click("#menu-xquery-run-test", function() {
             self.runTest(editor.getActiveDocument());
         }, "xquery-run-test");

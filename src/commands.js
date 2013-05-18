@@ -245,6 +245,14 @@ eXide.edit.commands = (function () {
                         }
                     });
                     commands.addCommand({
+                        name: "extractFunction",
+                        hint: "Extract Function",
+                        bindKey: bindKey(bindings.extractFunction),
+                        exec: function(editor) {
+                            parent.exec("extractFunction");
+                        }
+                    })
+                    commands.addCommand({
                         name: "snippet",
                         hint: "code snippet",
                         bindKey: {mac: "Tab", win: "Tab"},
