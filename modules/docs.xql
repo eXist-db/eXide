@@ -121,7 +121,7 @@ let $prefix := request:get-parameter("prefix", ())
 return
     <functions xmlns:json="http://json.org/">
     {
-        local:builtin-modules($prefix),
-        local:mapped-modules($prefix)
+        local:builtin-modules($prefix)
+(:        local:mapped-modules($prefix):)
     }
     </functions>

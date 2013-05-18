@@ -94,6 +94,7 @@ eXide.edit.PackageEditor = (function () {
         this.currentProject = null;
 		this.container = $("#dialog-deploy");
 		this.container.dialog({
+            appendTo: "#layout-container",
 			title: "Deployment Editor",
 			modal: false,
 			autoOpen: false,
@@ -103,6 +104,7 @@ eXide.edit.PackageEditor = (function () {
 		
 		this.syncDialog = $("#synchronize-dialog");
 		this.syncDialog.dialog({
+            appendTo: "#layout-container",
 			title: "Synchronize to Directory",
 			modal: false,
 			autoOpen: false,

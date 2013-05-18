@@ -6,6 +6,15 @@ body {
     font-family: "Verdana", "Helvetica", "Arial", sans-serif;
 }
 
+#layout-container {
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+}
+
 #splash {
     position: absolute;
     top: 0;
@@ -131,7 +140,21 @@ a:link,a:visited {
     padding-left: 18px;
     border-left: 1px solid #bbb;
 }
-    
+
+#toggle-fullscreen {
+    display: inline-block;
+    margin: 0 0 0 10px;
+}
+
+#toggle-fullscreen:hover {
+    background: transparent;
+}
+
+#toggle-fullscreen img {
+    height: 16px;
+    vertical-align: middle;
+}
+
 #login-error {
 	color: red;
 	text-align: center;
@@ -317,6 +340,11 @@ Sub level menu list items (undo style from Top level List Items)
 	font-size: 75%;
 	color: #666;
 	padding-right: 4px;
+}
+
+#toolbar .options {
+    height: 24px;
+    line-height: 24px;
 }
 
 #toolbar .options label {
@@ -557,6 +585,7 @@ Sub level menu list items (undo style from Top level List Items)
     border: 0;
     margin: 0;
     padding: 0;
+    background: #FFF;
 }
 
 .results-container .results {

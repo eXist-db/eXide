@@ -106,7 +106,6 @@ eXide.edit.Document = (function() {
 	};
 	
     Constr.prototype.isNew = function() {
-        $.log("doc name: %s", this.path);
         return /__new__/.test(this.path);
     };
     
@@ -139,6 +138,10 @@ eXide.edit.Document = (function() {
 		var lead = sel.getSelectionLead();
 		return lead.row;
 	};
+
+	Constr.prototype.getLastChanged = function() {
+		return this.lastChangeEvent;
+	};
     
     Constr.prototype.getExternalLink = function() {
         return this.externalLink;
@@ -153,8 +156,6 @@ eXide.namespace("eXide.edit.Editor");
  * The main editor component. Handles the ACE editor as well as tabs, keybindings, commands...
  */
 eXide.edit.Editor = (function () {
-
-    var VALIDATE_TIMEOUT = 300;
     
 	var Renderer = require("ace/virtual_renderer").VirtualRenderer;
 	var Editor = require("ace/editor").Editor;

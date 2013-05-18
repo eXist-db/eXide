@@ -180,6 +180,9 @@ eXide.edit.XQueryModeHelper = (function () {
 	};
 	
     Constr.prototype.xqlint = function(doc) {
+        if (doc.ast && doc.lastValidation >= doc.getLastChanged()) {
+            return;
+        }
         $.log("Running xqlint...");
         var session = doc.getSession();
         var value = doc.getText();    
@@ -197,7 +200,8 @@ eXide.edit.XQueryModeHelper = (function () {
             var ast = h.getParseTree();
             var translator = new Translator(ast);
             doc.ast = translator.translate();
-            
+            doc.lastValidation = new Date().getTime();
+
             var highlighter = new SemanticHighlighter(ast, value);
       
             var mode = doc.getSession().getMode();
@@ -242,13 +246,10 @@ eXide.edit.XQueryModeHelper = (function () {
         }
         return na;
     };
-    
+
 	Constr.prototype.autocomplete = function(doc, alwaysShow) {
-        if (!doc.ast) {
-            this.afterValidate(this, function() { this.autocomplete(doc, alwaysShow); });
-            this.parent.validator.triggerNow(doc);
-            return;
-        }
+        this.xqlint(doc);
+
         if (alwaysShow === undefined) {
             alwaysShow = true;
         }
@@ -568,6 +569,7 @@ eXide.edit.XQueryModeHelper = (function () {
                     $this.autocomplete(doc);
                 }
             }
+            $.log("template applied");
         }
         if (popupItems.length > 1 || !complete) {
             eXide.util.popup(this.editor, $("#autocomplete-box"), $("#autocomplete-help"), popupItems,
@@ -690,11 +692,7 @@ eXide.edit.XQueryModeHelper = (function () {
     };
     
     Constr.prototype.extractFunction = function(doc) {
-        if (!doc.ast) {
-            this.afterValidate(this, function() { this.extractFunction(doc); });
-            this.parent.validator.triggerNow(doc);
-            return;
-        }
+        this.xqlint(doc);
         // get text of selection
         var range = this.editor.getSelectionRange();
         var value = doc.getSession().getTextRange(range);   
@@ -836,17 +834,21 @@ eXide.edit.XQueryModeHelper = (function () {
 	
     Constr.prototype.importModule = function (doc, prefix, uri, location) {
         $.log("location = %s path = %s", location, doc.path);
-        var base = doc.getBasePath();
-        if (location.lastIndexOf(base, 0) === 0) {
-            location = location.substring(base.length + 1);
-        } else {
-            location = "xmldb:exist://" + location;
+        var code;
+        if (location) {
+            var base = doc.getBasePath();
+            if (location.lastIndexOf(base, 0) === 0) {
+                location = location.substring(base.length + 1);
+            } else {
+                location = "xmldb:exist://" + location;
+            }
         }
-        var code = "import module namespace " + prefix + "=\"" + uri + "\" at \"" + location + "\";\n";
-        this.editor.insert(code);
+        var adder = new eXide.edit.PrologAdder(this.parent, doc);
+        adder.importModule(prefix, uri, location);
     }
     
     Constr.prototype.expandSelection = function(doc) {
+        this.xqlint(doc);
         var sel   = this.editor.getSelection();
         var selRange = sel.getRange();
 
@@ -878,11 +880,7 @@ eXide.edit.XQueryModeHelper = (function () {
      * Rename variable or function call.
      */
     Constr.prototype.rename = function(doc) {
-        if (!doc.ast) {
-            this.afterValidate(this, function() { this.rename(doc); });
-            this.parent.validator.triggerNow(doc);
-            return;
-        }
+        this.xqlint(doc);
         var self = this;
         var sel = this.editor.getSelection();
         var lead = sel.getSelectionLead();
@@ -925,6 +923,7 @@ eXide.edit.XQueryModeHelper = (function () {
     
     Constr.prototype.runTest = function(doc) {
         var self = this;
+        this.xqlint(doc);
         var info = new eXide.edit.ModuleInfo(doc.ast);
         if (info.isModule() && info.hasTests()) {
             $.ajax({

@@ -249,7 +249,7 @@ eXide.edit.PrologAdder = (function () {
         return row + 3;
     };
     
-    Constr.prototype.importModule = function(name) {
+    Constr.prototype.importModule = function(name, namespace, location) {
         var prefix = name.indexOf(":") > -1 ? name.substring(0, name.indexOf(":")) : name;
         var row = 0;
         if (this.decl) {
@@ -268,7 +268,17 @@ eXide.edit.PrologAdder = (function () {
         this.editor.editor.insert("\n\n");
         this.editor.editor.gotoLine(row + 3, 0);
         
-        var template = "import module namespace " + prefix + "=\"${1}\";";
+        var template;
+        if (namespace) {
+            template = "import module namespace " + prefix + "=\"" + namespace + "\"";
+            if (location) {
+                template += " at \"" + location + "\";";
+            } else {
+                template += ";"
+            }
+        } else {
+            template = "import module namespace " + prefix + "=\"${1}\";";
+        }
         SnippetManager.insertSnippet(this.editor.editor, template);
         this.editor.editor.gotoLine(row + 3, 26 + prefix.length);
     };

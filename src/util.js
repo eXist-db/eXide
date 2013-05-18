@@ -278,6 +278,29 @@ eXide.util = (function () {
 			}
 		},
 		
+		supportsFullScreen: function() {
+			if (document["cancelFullScreen"] || document["webkitCancelFullScreen"] || document["mozCancelFullScreen"]) {
+				return true;
+			}
+			return false;
+		},
+
+		requestFullScreen: function(el) {
+			var state = document["fullScreen"] || document["webkitIsFullScreen"] || document["mozfullScreen"];
+			if (state) {
+				var func = document["cancelFullScreen"] || document["webkitCancelFullScreen"] || document["mozCancelFullScreen"];
+				func.call(document);
+			} else {
+				var func = (el["requestFullScreen"])
+	            || (el["webkitRequestFullScreen"])
+	            || (el["mozRequestFullScreen"]);
+	            $.log("supports fullscreen mode: %o", func);
+	            if (func) {
+	            	func.call(el, true);
+	            }
+	        }
+		},
+
 		/**
 		 * Normalize a collection path. Remove xmldb: part, resolve ..
 		 */
@@ -395,6 +418,7 @@ eXide.util.Dialog = (function () {
 		messageDialog = $("#eXide-dialog-message");
 		
 		messageDialog.dialog({
+			appendTo: "#layout-container",
 			modal: true,
 			autoOpen: false,
 			buttons: {

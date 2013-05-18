@@ -24,7 +24,14 @@ declare function find:registered-scripts($prefix as xs:string?) {
     where empty($prefix) or contains($module/@prefix, $prefix)
     return
         <json:value xmlns:json="http://www.json.org" json:array="true"
-            prefix="{$module/@prefix}" uri="{$module/@uri}" at="{$module/@location}"/>
+            prefix="{$module/@prefix}" uri="{$module/@uri}">
+        {
+            if ($module/@location) then
+                attribute at { $module/@location }
+            else
+                ()
+        }
+        </json:value>
 };
 
 declare function find:modules($root as xs:string, $callback as function(xs:string, xs:string, xs:string) as item()*) {

@@ -111,7 +111,7 @@ eXide.app = (function() {
                         afterInitCallback(restored);
                     }
                     // dirty workaround to fix editor height
-                    $("body").layout().toggle("south");
+                    $("#layout-container").layout().toggle("south");
                     
                     $("#splash").fadeOut(400);
                 });
@@ -742,7 +742,7 @@ eXide.app = (function() {
         },
         
         showResultsPanel: function() {
-            $("body").layout().open(resultPanel);
+            $("#layout-container").layout().open(resultPanel);
 			//layout.sizePane("south", 300);
 			eXide.app.resize(true);
         },
@@ -751,7 +751,7 @@ eXide.app = (function() {
             var target = resultPanel === "south" ? "east" : "south";
             var contents = $("#results-body").parent().contents().detach();
             contents.appendTo(".ui-layout-" + target);
-            $("body").layout().close(resultPanel);
+            $("#layout-container").layout().close(resultPanel);
             resultPanel = target;
             if (resultPanel === "south") {
                 $(".layout-switcher").attr("src", "resources/images/layouts_split.png");
@@ -766,7 +766,7 @@ eXide.app = (function() {
         },
         
 		initGUI: function(menu) {
-			var layout = $("body").layout({
+			var layout = $("#layout-container").layout({
 				enableCursorHotkey: false,
                 spacing_open: 6,
                 spacing_closed: 8,
@@ -791,6 +791,7 @@ eXide.app = (function() {
 			});
             
 			$("#open-dialog").dialog({
+                appendTo: "#layout-container",
 				title: "Open file",
 				modal: false,
 		        autoOpen: false,
@@ -800,6 +801,7 @@ eXide.app = (function() {
 				resize: function() { dbBrowser.resize(); }
 			});
 			$("#login-dialog").dialog({
+                appendTo: "#layout-container",
 				title: "Login",
 				modal: true,
 				autoOpen: false,
@@ -847,10 +849,12 @@ eXide.app = (function() {
 				}
 			});
 			$("#keyboard-help").dialog({
+                appendTo: "#layout-container",
 				title: "Keyboard Shortcuts",
 				modal: false,
 				autoOpen: false,
 				height: 400,
+                width: 350,
 				buttons: {
 					"Close": function () { $(this).dialog("close"); }
 				},
@@ -859,6 +863,7 @@ eXide.app = (function() {
 				}
 			});
             $("#about-dialog").dialog({
+                appendTo: "#layout-container",
                 title: "About",
                 modal: false,
                 autoOpen: false,
@@ -869,6 +874,7 @@ eXide.app = (function() {
 				}
             });
             $("#dialog-templates").dialog({
+                appendTo: "#layout-container",
     			title: "New document",
 				modal: false,
 		        autoOpen: false,
@@ -1044,6 +1050,13 @@ eXide.app = (function() {
 					$("#login-dialog").dialog("open");
 				}
 			});
+            if (!eXide.util.supportsFullScreen()) {
+                $("#toggle-fullscreen").hide();
+            }
+            $("#toggle-fullscreen").click(function(ev) {
+                ev.preventDefault();
+                eXide.util.requestFullScreen(document.getElementById("layout-container"));
+            });
             $(".results-container .layout-switcher").click(eXide.app.switchResultsPanel);
 			$('.results-container .next').click(eXide.app.browseNext);
 			$('.results-container .previous').click(eXide.app.browsePrevious);

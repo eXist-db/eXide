@@ -36,6 +36,7 @@ eXide.util.Help = (function () {
 		helpDialog = $("#eXide-dialog-help");
 		
 		helpDialog.dialog({
+            appendTo: "#layout-container",
 			modal: false,
             title: "Quick Start",
 			autoOpen: false,
