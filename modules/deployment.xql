@@ -61,7 +61,7 @@ declare function deploy:get-app-root($collection as xs:string) {
         ()
 };
 
-declare function deploy:store-expath($collection as xs:string?, $userData as xs:string*, $permissions as xs:int?) {
+declare function deploy:store-expath($collection as xs:string?, $userData as xs:string*, $permissions as xs:string?) {
     let $includeAll := request:get-parameter("includeall", ())
     let $descriptor :=
         <package xmlns="http://expath.org/ns/pkg"
@@ -77,7 +77,12 @@ declare function deploy:store-expath($collection as xs:string?, $userData as xs:
         </package>
     return (
         xmldb:store($collection, "expath-pkg.xml", $descriptor, "text/xml"),
-        xmldb:set-resource-permissions($collection, "expath-pkg.xml", $userData[1], $userData[2], $permissions)
+        let $targetPath := xs:anyURI($collection || "/expath-pkg.xml")
+        return (
+            sm:chmod($targetPath, $permissions),
+            sm:chown($targetPath, $userData[1]),
+            sm:chgrp($targetPath, $userData[2])
+        )
     )
 };
 
@@ -124,26 +129,33 @@ declare function deploy:repo-descriptor() {
     </meta>
 };
 
-declare function deploy:store-repo($descriptor as element(), $collection as xs:string?, $userData as xs:string*, $permissions as xs:int?) {
+declare function deploy:store-repo($descriptor as element(), $collection as xs:string?, $userData as xs:string*, $permissions as xs:string?) {
     (
         xmldb:store($collection, "repo.xml", $descriptor, "text/xml"),
-        xmldb:set-resource-permissions($collection, "repo.xml", $userData[1], $userData[2], $permissions)
+        let $targetPath := xs:anyURI($collection || "/repo.xml")
+        return (
+            sm:chmod($targetPath, $permissions),
+            sm:chown($targetPath, $userData[1]),
+            sm:chgrp($targetPath, $userData[2])
+        )
     )
 };
 
-declare function deploy:mkcol-recursive($collection, $components, $userData as xs:string*, $permissions as xs:int?) {
+declare function deploy:mkcol-recursive($collection, $components, $userData as xs:string*, $permissions as xs:string?) {
     if (exists($components)) then
         let $permissions := 
             if ($permissions) then
-                xmldb:string-to-permissions(deploy:set-execute-bit($permissions))
+                deploy:set-execute-bit($permissions)
             else
-                ()
-        let $newColl := concat($collection, "/", $components[1])
+                "rwxr-x---"
+        let $newColl := xs:anyURI(concat($collection, "/", $components[1]))
         return (
             xmldb:create-collection($collection, $components[1]),
-            if (exists($userData)) then
-                xmldb:set-collection-permissions($newColl, $userData[1], $userData[2], $permissions)
-            else
+            if (exists($userData)) then (
+                sm:chmod($newColl, $permissions),
+                sm:chown($newColl, $userData[1]),
+                sm:chgrp($newColl, $userData[2])
+            ) else
                 (),
             deploy:mkcol-recursive($newColl, subsequence($components, 2), $userData, $permissions)
         )
@@ -151,13 +163,13 @@ declare function deploy:mkcol-recursive($collection, $components, $userData as x
         ()
 };
 
-declare function deploy:mkcol($path, $userData as xs:string*, $permissions as xs:int?) {
+declare function deploy:mkcol($path, $userData as xs:string*, $permissions as xs:string?) {
     let $path := if (starts-with($path, "/db/")) then substring-after($path, "/db/") else $path
     return
         deploy:mkcol-recursive("/db", tokenize($path, "/"), $userData, $permissions)
 };
 
-declare function deploy:create-collection($collection as xs:string, $userData as xs:string+, $permissions as xs:int) {
+declare function deploy:create-collection($collection as xs:string, $userData as xs:string+, $permissions as xs:string) {
     let $target := collection($collection)
     return
         if ($target) then
@@ -193,25 +205,23 @@ declare function deploy:check-user($repoConf as element()) as xs:string+ {
         ($user, $group)
 };
 
-declare function deploy:target-permissions($repoConf as element()) as xs:int {
+declare function deploy:target-permissions($repoConf as element()) as xs:string {
     let $permissions := $repoConf/repo:permissions/@mode/string()
     return
         if ($permissions) then
             if ($permissions castable as xs:int) then
-                util:base-to-integer(xs:int($permissions), 8)
+                xmldb:permissions-to-string(util:base-to-integer(xs:int($permissions), 8))
             else
-                xmldb:string-to-permissions($permissions)
+                $permissions
         else
-            util:base-to-integer(0775, 8)
+            "rw-rw-r--"
 };
 
-declare function deploy:set-execute-bit($permissions as xs:int) {
-    let $mode := xmldb:permissions-to-string($permissions)
-    return
-        replace($mode, "(..).(..).(..).", "$1x$2x$3x")
+declare function deploy:set-execute-bit($permissions as xs:string) {
+    replace($permissions, "(..).(..).(..).", "$1x$2x$3x")
 };
 
-declare function deploy:copy-templates($target as xs:string, $source as xs:string, $userData as xs:string+, $permissions as xs:int) {
+declare function deploy:copy-templates($target as xs:string, $source as xs:string, $userData as xs:string+, $permissions as xs:string) {
     let $null := deploy:mkcol($target, $userData, $permissions)
     return
     if (exists(collection($source))) then (
@@ -222,10 +232,13 @@ declare function deploy:copy-templates($target as xs:string, $source as xs:strin
             let $mime := xmldb:get-mime-type($targetPath)
             let $perms := 
                 if ($mime eq "application/xquery") then
-                    xmldb:string-to-permissions(deploy:set-execute-bit($permissions))
+                    deploy:set-execute-bit($permissions)
                 else $permissions
-            return
-                xmldb:set-resource-permissions($target, $resource, $userData[1], $userData[2], $perms)
+            return (
+                sm:chmod($targetPath, $perms),
+                sm:chown($targetPath, $userData[1]),
+                sm:chgrp($targetPath, $userData[2])
+            )
         ),
         for $childColl in xmldb:get-child-collections($source)
         return
@@ -234,32 +247,42 @@ declare function deploy:copy-templates($target as xs:string, $source as xs:strin
         ()
 };
 
-declare function deploy:store-templates-from-db($target as xs:string, $base as xs:string, $userData as xs:string+, $permissions as xs:int) {
+declare function deploy:store-templates-from-db($target as xs:string, $base as xs:string, $userData as xs:string+, $permissions as xs:string) {
     let $template := request:get-parameter("template", "basic")
     let $templateColl := concat($base, "/templates/", $template)
     return
         deploy:copy-templates($target, $templateColl, $userData, $permissions)
 };
 
-declare function deploy:chmod($collection as xs:string, $userData as xs:string+, $permissions as xs:int) {
+declare function deploy:chmod($collection as xs:string, $userData as xs:string+, $permissions as xs:string) {
     (
-        xmldb:set-collection-permissions($collection, $userData[1], $userData[2], $permissions),
+        let $collURI := xs:anyURI($collection)
+        return (
+            sm:chmod($collURI, $permissions),
+            sm:chown($collURI, $userData[1]),
+            sm:chgrp($collURI, $userData[2])
+        ),
         for $resource in xmldb:get-child-resources($collection)
         let $path := concat($collection, "/", $resource)
+        let $targetPath := xs:anyURI($path)
         let $mime := xmldb:get-mime-type($path)
         let $perms := 
             if ($mime eq "application/xquery") then
-                xmldb:string-to-permissions(deploy:set-execute-bit($permissions))
-            else $permissions
-        return
-            xmldb:set-resource-permissions($collection, $resource, $userData[1], $userData[2], $perms),
+                deploy:set-execute-bit($permissions)
+            else
+                $permissions
+        return (
+            sm:chmod($targetPath, $permissions),
+            sm:chown($targetPath, $userData[1]),
+            sm:chgrp($targetPath, $userData[2])
+        ),
         for $child in xmldb:get-child-collections($collection)
         return
             deploy:chmod(concat($collection, "/", $child), $userData, $permissions)
     )
 };
 
-declare function deploy:store-ant($target as xs:string, $permissions as xs:int) {
+declare function deploy:store-ant($target as xs:string, $permissions as xs:string) {
     let $abbrev := request:get-parameter("abbrev", "")
     let $version := request:get-parameter("version", "1.0")
     let $parameters :=
@@ -309,7 +332,7 @@ declare function deploy:expand-xql($target as xs:string) {
         deploy:expand($target || "/modules", $module, $parameters)
 };
 
-declare function deploy:store-templates-from-fs($target as xs:string, $base as xs:string, $userData as xs:string+, $permissions as xs:int) {
+declare function deploy:store-templates-from-fs($target as xs:string, $base as xs:string, $userData as xs:string+, $permissions as xs:string) {
     let $pathSep := util:system-property("file.separator")
     let $template := request:get-parameter("template", "basic")
     let $templatesDir := concat($base, $pathSep, "templates", $pathSep, $template)
@@ -319,7 +342,7 @@ declare function deploy:store-templates-from-fs($target as xs:string, $base as x
     )
 };
 
-declare function deploy:store-templates($target as xs:string, $userData as xs:string+, $permissions as xs:int) {
+declare function deploy:store-templates($target as xs:string, $userData as xs:string+, $permissions as xs:string) {
     let $base := substring-before(system:get-module-load-path(), "/modules")
     return
         if (starts-with($base, "xmldb:exist://")) then
@@ -357,18 +380,19 @@ declare function deploy:store($collection as xs:string?, $expathConf as element(
 };
 
 declare function deploy:create-app($collection as xs:string?, $expathConf as element()?) {
-    let $null := util:declare-option("exist:serialize", "method=json media-type=application/json")
     let $collection := deploy:store($collection, $expathConf)
     return
         if (empty($expathConf)) then
             let $expathConf := doc($collection || "/expath-pkg.xml")/*
             return (
-                util:declare-option("exist:serialize", "method=json media-type=application/json"),
                 deploy:deploy($collection, $expathConf),
+                util:declare-option("exist:serialize", "method=json media-type=application/json"),
                 <ok>{ $collection }</ok>
             )
-        else
+        else (
+            util:declare-option("exist:serialize", "method=json media-type=application/json"),
             <ok>{ $collection }</ok>
+        )
 };
 
 declare function deploy:view($collection as xs:string?, $expathConf as element()?, $repoConf as element()?) {
@@ -628,6 +652,5 @@ return
         response:set-status-code(404),
         <p>Failed to install application.</p>
     } catch * {
-        response:set-status-code(500),
-        <span>Unknown error: {$err:description}</span>
+        response:set-status-code(500)
     }
