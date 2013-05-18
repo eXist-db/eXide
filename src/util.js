@@ -70,7 +70,7 @@ eXide.util = (function () {
 			var filter = "";
             
 			function updateTooltip(node) {
-				if (tooltips) {
+				if (node && tooltips) {
 					tooltips.empty();
 					node.find(".tooltip").each(function () {
 						tooltips.html($(this).html());
