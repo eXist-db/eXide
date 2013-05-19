@@ -10,8 +10,11 @@ body {
 }
 
 #fullscreen {
-    height: 100%;
-    width: 100%;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
 }
 
 #body {
@@ -21,6 +24,7 @@ body {
     bottom: 0;
     right: 0;
 }
+
 #layout-container {
     position: absolute;
     top: 0;
@@ -70,6 +74,7 @@ label {
 label.checkbox {
     margin-left: 1em;
 }
+
 select {
     display: inline-block;
     padding: 2px 6px;
@@ -80,8 +85,8 @@ select {
     border-radius: 4px;
     -webkit-border-radius: 4px;
     -moz-border-radius: 4px;
-    height: 20px;
-    line-height: 20px;
+    height: 22px;
+    line-height: 22px;
 }
 select:disabled {
     background-color: #C0C0C0;
