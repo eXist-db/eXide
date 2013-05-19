@@ -47,6 +47,7 @@ eXide.util.Preferences = (function () {
         });
         
         $("#preferences-dialog").dialog({
+            appendTo: "#layout-container",
     		title: "Preferences",
 			modal: false,
 			autoOpen: false,
