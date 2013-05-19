@@ -715,18 +715,24 @@ eXide.edit.XQueryModeHelper = (function () {
             eXide.util.error("Please select code to format.");
             return;
         }
+        var line = doc.getSession().doc.getLine(range.start.row);
+        var startIndent = line.match(/^\s*/)[0];
         var h = new JSONParseTreeHandler(value);
         var parser = new XQueryParser(value, h);
         try {
             parser.parse_XQuery();
             var ast = h.getParseTree();
             
-            var codeFormatter = new CodeFormatter(ast);
+            var codeFormatter = new CodeFormatter(ast, true);
             var formatted = codeFormatter.format();
-            doc.getSession().replace(range, formatted);
+            var lines = formatted.split(/\n/);
+            for (var i = 0; i < lines.length; i++) {
+                lines[i] = startIndent + lines[i];
+            }
+            doc.getSession().replace(range, lines.join("\n"));
         } catch(e) {
             console.log("Error parsing XQuery code: %s", parser.getErrorMessage(e));
-            eXide.util.error("Code could not be parsed. Formatting skipped.");
+            eXide.util.error("Code could not be parsed. Please select a valid code block.");
         }
     };
     
@@ -748,7 +754,7 @@ eXide.edit.XQueryModeHelper = (function () {
         var template;
         var currentNode = eXide.edit.XQueryUtils.findNode(doc.ast, 
             {line: range.start.row, col: range.start.column + 1});
-        var contextNode = eXide.edit.XQueryUtils.findAncestor(currentNode, ["IntermediateClause", "InitialClause"]);
+        var contextNode = eXide.edit.XQueryUtils.findAncestor(currentNode, ["IntermediateClause", "InitialClause", "ReturnClause"]);
         if (contextNode) {
             template = "let $${1} := " + value.replace("$", "\\$");
         } else {
