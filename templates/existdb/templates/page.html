@@ -1,45 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
-        <title class="config:app-title">Demo App</title>
+        <title class="config:app-title">App Title</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
         <meta class="config:app-meta"/>
         <link rel="shortcut icon" href="resources/images/favicon.ico"/>
         <link rel="stylesheet" type="text/css" href="resources/css/exist.css"/>
         <script type="text/javascript" src="$shared/resources/scripts/jquery/jquery-1.7.1.min.js"/>
         <script type="text/javascript" src="$shared/resources/scripts/loadsource.js"/>
     </head>
-    <body id="body">
-        <div id="grey-top">
-            <div id="grey-bot">
-                <div id="container">
-                    <div id="header">
-                        <a href="" id="logo">eXistDB</a>
-                    </div><!--/header-->
-                    <div id="navigation">
+    <body id="grey-top">
+        <div class="grey-bot">
+            <div class="container-fluid" id="main-container">
+                <div class="row-fluid">
+                    <div class="span12" id="header">
+                        <a href="/" id="logo">eXistDB</a>
+                    </div>
+                </div>
+                <div class="row-fluid">
+                    <div class="span12" id="navigation">
                         <ul id="nav" class="dropdown dropdown-horizontal">
                             <li class="dir" id="about">
                                 <span>Home</span>
                                 <ul>
                                     <li>
-                                        <a href="">Home</a>
+                                        <a href="index.html">Home</a>
                                     </li>
                                 </ul>
                             </li>
                         </ul>
                     </div>
-                    <div id="content" class="container"/>
                 </div>
+                <div id="content" class="row-fluid"/>
             </div>
         </div>
         <div id="footer">
-            <ul>
-                <li>
-                    <a href="">Homepage</a>
-                </li>
-            </ul>
             <div id="copyright">
                 <p>Copyright eXist-db Project 2013</p>
-            </div><!--/copyright-->
-        </div><!--/footer-->
+            </div>
+        </div>
     </body>
 </html>

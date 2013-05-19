@@ -3,7 +3,7 @@
 /**
  * Horizontal CSS Drop-Down Menu Module
  *
- * @file		dropdown.css
+ * @file    	dropdown.css
  * @package		Dropdown
  * @version		0.7.1
  * @type		Transitional
@@ -76,7 +76,6 @@ ul.dropdown li span {
     display: block;
     text-align: center;
     font: 1.2em/1em "QuicksandBook", "Arial", Helvetica, sans-serif;
-    font-weight: bold;
 }
 
 ul.dropdown li:hover {
@@ -95,6 +94,7 @@ ul.dropdown ul {
     left: 0;
     z-index: 598;
     width: 100%; width: 160px;
+    font-size: 0.92em;
 }
 
 ul.dropdown ul li {
