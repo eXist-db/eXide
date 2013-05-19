@@ -29,6 +29,7 @@ eXide.edit.CssModeHelper = (function () {
     	this.parent = editor;
 		this.editor = this.parent.editor;
         this.addCommand("locate", this.locate);
+        this.addCommand("gotoSymbol", this.gotoSymbol);
 	};
 	
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
@@ -61,6 +62,35 @@ eXide.edit.CssModeHelper = (function () {
         }
         if (onComplete)
             onComplete(doc);
+    };
+
+    Constr.prototype.gotoSymbol = function(doc) {
+        var self = this;
+        var popupItems = [];
+        for (var i = 0; i < doc.functions.length; i++) {
+            if (doc.functions[i].name !== "") {
+                item = { 
+                    label: doc.functions[i].name,
+                    name: doc.functions[i].name,
+                    type: doc.functions[i].type,
+                    row: doc.functions[i].row
+                };
+                popupItems.push(item);
+            }
+        };
+        if (popupItems.length > 1) {
+            var editorWidth = this.parent.getWidth();
+            var left = this.parent.getOffset().left;
+            $("#autocomplete-box").css({ left: left + "px", top: "20px" });
+            eXide.util.popup(this.editor, $("#autocomplete-box"), null, popupItems,
+                function (selected) {
+                    if (selected) {
+                        self.editor.gotoLine(selected.row + 1);
+                    }
+                    self.editor.focus();
+                }
+            );
+        }
     };
     
     return Constr;
