@@ -993,7 +993,8 @@ eXide.app = (function() {
 				editor.editor.redo();
 			}, "redo");
             menu.click("#menu-edit-find", function() {
-                editor.quicksearch.start();
+                var config = require("ace/config");
+                config.loadModule("ace/ext/searchbox", function(e) {e.Search(editor.editor)});
             }, "searchIncremental");
             menu.click("#menu-edit-toggle-comment", function () {
                 editor.editor.toggleCommentLines();
@@ -1011,6 +1012,9 @@ eXide.app = (function() {
             menu.click("#menu-navigate-info", function() {
                 editor.exec("showFunctionDoc");
             }, "functionDoc");
+            menu.click("#menu-navigate-symbol", function() {
+                editor.exec("gotoSymbol");
+            }, "gotoSymbol");
 			menu.click("#menu-deploy-run", eXide.app.openApp, "openApp");
 			
             menu.click("#menu-help-keyboard", function (ev) {

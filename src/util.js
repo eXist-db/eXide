@@ -294,7 +294,6 @@ eXide.util = (function () {
 				var func = (el["requestFullScreen"])
 	            || (el["webkitRequestFullScreen"])
 	            || (el["mozRequestFullScreen"]);
-	            $.log("supports fullscreen mode: %o", func);
 	            if (func) {
 	            	func.call(el, true);
 	            }
