@@ -16,7 +16,9 @@ body { color: #222; background: url(../images/body.gif) repeat 50% 100%; }
 
 #container { margin: 0 auto 30px auto; }
 
-#header { background: #F3F3F3 url(../images/header.gif) top right no-repeat; height: 120px; width: 100%; }
+@media (min-width: 767px) {
+    #header { background: #F3F3F3 url(../images/header.gif) top right no-repeat; height: 120px; width: 100%; }
+}
 
 #header a#logo { background: url(../images/existdb.png) center left no-repeat; display: block; width: 220px; height: 100px; text-indent: -999em; outline: 0; margin: 10px 0; }
 
