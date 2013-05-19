@@ -903,8 +903,13 @@ fieldset input[type="checkbox"] {
 }
 
 fieldset legend {
+    background: url("../images/bubble.gif") top right no-repeat;
+    overflow: hidden;
+    width: 100%;
 	font-size: 133%;
-	padding-bottom: 1em;
+    font-weight: bold;
+	padding: 12px 8px;
+    margin-bottom: 8px;
 }
 
 fieldset ol {
@@ -975,6 +980,15 @@ fieldset input:required:valid {
 	margin-left: 10px;
 }
 
+#synchronize-dialog h3 {
+    background: url("../images/bubble.gif") top right no-repeat;
+    overflow: hidden;
+    font-size: 133%;
+    font-weight: bold;
+	padding: 12px 8px;
+    margin: 0;
+}
+
 #synchronize-report {
 	heigth: 200px;
 	overflow: auto;
@@ -990,6 +1004,15 @@ fieldset input:required:valid {
 
 #eXide-dialog-help-body {
     line-height: 1.66em;
+}
+
+#eXide-dialog-help-body h1 {
+    font-size: 1.66em;
+    font-weight: normal;
+}
+
+#eXide-dialog-help-body h2 {
+    font-size: 1.25em;
 }
 
 #eXide-dialog-help-body code {
