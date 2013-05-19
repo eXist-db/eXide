@@ -34,7 +34,7 @@ eXide.edit.XQueryModeHelper = (function () {
     var Range = require("ace/range").Range;
     var Anchor = require("ace/anchor").Anchor;
     var SnippetManager = require("ace/snippets").snippetManager;
-        
+    
 	Constr = function(editor, menubar) {
 		this.parent = editor;
 		this.editor = this.parent.editor;
@@ -984,11 +984,6 @@ eXide.edit.XQueryModeHelper = (function () {
      * Rename variable or function call.
      */
     Constr.prototype.rename = function(doc) {
-        this.xqlint(doc);
-        var self = this;
-        var sel = this.editor.getSelection();
-        var lead = sel.getSelectionLead();
-        var ast = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
         
         function doRename(references) {
             sel.toOrientedRange();
@@ -1000,8 +995,13 @@ eXide.edit.XQueryModeHelper = (function () {
             self.editor.focus();
         }
         
-        if (ast != null) {
-            if (ast.getParent.name == "VarName") {
+        this.xqlint(doc);
+        var self = this;
+        var sel = this.editor.getSelection();
+        var lead = sel.getSelectionLead();
+        var ast = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+        if (ast) {
+            if (ast.getParent.name == "VarName" || ast.getParent.name == "Param") {
                 var varName = eXide.edit.XQueryUtils.getValue(ast);
                 var ancestor = eXide.edit.XQueryUtils.findVariableContext(ast, varName);
                 if (ancestor) {
@@ -1010,13 +1010,19 @@ eXide.edit.XQueryModeHelper = (function () {
                 } else {
                     eXide.util.message("Rename failed: unable to determine context, sorry.");
                 }
-            } else if (ast.name == "EQName" && ast.getParent.name == "FunctionDecl") {
+            } else if (ast.name == "EQName" && (ast.getParent.name == "FunctionDecl" || ast.getParent.name == "FunctionCall")) {
                 var funName = ast.value;
                 var arity = parseInt(ast.getParent.arity);
                 $.log("searching calls to function: %s#%d", funName, arity);
-                var refs = new eXide.edit.FunctionCalls(funName, arity, doc.ast).getReferences();
-                refs.push(ast);
-                doRename(refs);
+                var calls = new eXide.edit.FunctionCalls(funName, arity, doc.ast);
+                var refs = calls.getReferences();
+                if (calls.declaration) {
+                    refs.push(calls.declaration);
+                    doRename(refs);
+                } else {
+                    eXide.util.message("Rename failed: function declaration not found.");
+                }
+
             } else {
                 eXide.util.message("Please position cursor within variable or function name.");
             }
