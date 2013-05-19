@@ -53,6 +53,7 @@ eXide.edit.XQueryModeHelper = (function () {
         this.addCommand("expandSelection", this.expandSelection);
         this.addCommand("rename", this.rename);
         this.addCommand("extractFunction", this.extractFunction);
+        this.addCommand("extractVariable", this.extractVariable);
 		this.addCommand("showFunctionDoc", this.showFunctionDoc);
 		this.addCommand("gotoDefinition", this.gotoDefinition);
         this.addCommand("gotoSymbol", this.gotoSymbol);
@@ -78,6 +79,9 @@ eXide.edit.XQueryModeHelper = (function () {
         menubar.click("#menu-xquery-extract-function", function() {
             self.extractFunction(editor.getActiveDocument());
         }, "extractFunction");
+        menubar.click("#menu-xquery-extract-variable", function() {
+            self.extractVariable(editor.getActiveDocument());
+        }, "extractVariable");
         menubar.click("#menu-xquery-run-test", function() {
             self.runTest(editor.getActiveDocument());
         }, "xquery-run-test");
@@ -724,6 +728,59 @@ eXide.edit.XQueryModeHelper = (function () {
             console.log("Error parsing XQuery code: %s", parser.getErrorMessage(e));
             eXide.util.error("Code could not be parsed. Formatting skipped.");
         }
+    };
+    
+    Constr.prototype.extractVariable = function(doc) {
+        this.xqlint(doc);
+        // get text of selection
+        var range = this.editor.getSelectionRange();
+        var value = doc.getSession().getTextRange(range);   
+        if (value.length == 0) {
+            eXide.util.error("Please select code to extract.");
+            return;
+        }
+
+        var anchor = new Anchor(doc.getSession().getDocument(), range.start.row, range.start.column);
+        
+        // disable validation while refactoring
+        this.parent.validationEnabled = false;
+
+        var template;
+        var currentNode = eXide.edit.XQueryUtils.findNode(doc.ast, 
+            {line: range.start.row, col: range.start.column + 1});
+        var contextNode = eXide.edit.XQueryUtils.findAncestor(currentNode, ["IntermediateClause", "InitialClause"]);
+        if (contextNode) {
+            template = "let $${1} := " + value.replace("$", "\\$");
+        } else {
+            contextNode = eXide.edit.XQueryUtils.findAncestor(currentNode, "StatementsAndOptionalExpr");
+            contextNode = eXide.edit.XQueryUtils.findChild(contextNode, "Expr");
+            if (!contextNode) {
+                eXide.util.error("Extract variable: unable to determine context. Giving up.")
+                return;
+            }
+            template = "let $${1} := " + value.replace("$", "\\$") + "\nreturn\n";
+            
+        }
+        $.log("extract variable: context: %o", contextNode);
+        
+        this.editor.insert("$");
+        
+        this.editor.gotoLine(contextNode.pos.sl + 1, contextNode.pos.sc);
+        this.editor.insert("\n");
+        
+        SnippetManager.insertSnippet(this.editor, template);
+        this.editor.focus();
+        
+        var sel = this.editor.getSelection();
+        
+        sel.toOrientedRange();
+        var pos = anchor.getPosition();
+        var callRange = new Range(pos.row, pos.column, pos.row, pos.column);
+        callRange.cursor = pos;
+        
+        sel.addRange(callRange);
+        
+        anchor.detach();
     };
     
     Constr.prototype.extractFunction = function(doc) {

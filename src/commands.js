@@ -260,7 +260,14 @@ eXide.edit.commands = (function () {
                             parent.exec("extractFunction");
                         }
                     });
-
+                    commands.addCommand({
+                        name: "extractVariable",
+                        hint: "Extract Variable",
+                        bindKey: bindKey(bindings.extractVariable),
+                        exec: function(editor) {
+                            parent.exec("extractVariable");
+                        }
+                    });
                     commands.addCommand({
                         name: "snippet",
                         hint: "code snippet",

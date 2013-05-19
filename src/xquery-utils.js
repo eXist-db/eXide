@@ -73,6 +73,16 @@ eXide.edit.XQueryUtils = (function () {
                 pos1.ec == pos2.ec;
         },
         
+        findChild: function(node, type) {
+            var children = node.children;
+            for (var i = 0; i < children.length; i++) {
+                if (children[i].name == type) {
+                    return children[i];
+                }
+            }
+            return null;
+        },
+        
         findNext: function(node, type) {
             var children = node.getParent.children;
             for (var i = 0; i < children.length; i++) {
@@ -152,6 +162,16 @@ eXide.edit.XQueryUtils = (function () {
                 }
             }
             return null;
+        },
+        
+        getPath: function(node) {
+            var parts = [ node.name ];
+            node = node.getParent;
+            while (node) {
+                parts.push(node.name);
+                node = node.getParent;
+            }
+            return parts.reverse().join("/");
         }
     };
 }());
