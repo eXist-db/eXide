@@ -144,13 +144,12 @@ eXide.util.Preferences = (function () {
 
         });
 
-        var font = "";
-        if (this.preferences.font != "Default") {
-            font = this.preferences.font + ", monospace";
+        if (this.preferences.font) {
+            var font = this.preferences.font + ", monospace";
+            $("#editor").css("font-family", font);
+            $("#outline").css("font-family", font);
+            $("#results-body .ace_scroller").css("font-family", font);
         }
-        $("#editor").css("font-family", font);
-        $("#outline").css("font-family", font);
-        $("#results-body .ace_scroller").css("font-family", font);
             
         this.editor.editor.setFontSize(this.preferences.fontSize + "px");
 		this.editor.resize();
