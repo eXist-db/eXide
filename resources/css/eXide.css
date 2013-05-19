@@ -4,10 +4,24 @@
 
 body {
     font-family: "Verdana", "Helvetica", "Arial", sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #F3F3F3;
 }
 
-#layout-container {
+#fullscreen {
+    height: 100%;
     width: 100%;
+}
+
+#body {
+    position: absolute;
+    top: 63px;
+    left: 0;
+    bottom: 0;
+    right: 0;
+}
+#layout-container {
     position: absolute;
     top: 0;
     left: 0;
@@ -173,10 +187,23 @@ a:link,a:visited {
 	border-left: 1px solid #bbb;
 }
 
+.header {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: url("../images/bubble.gif") fixed no-repeat top right;
+    background-color: #F3F3F3;
+    overflow: hidden;
+    z-index: -1;
+}
+
 .editor-header {
     background-image: url("../images/logo.png");
     background-repeat: no-repeat;
-    background-position: 8px 4px;
+    background-position: 4px 0px;
+    margin: 0 0 2px 0;
 }
 
 .menu {
@@ -464,6 +491,12 @@ Sub level menu list items (undo style from Top level List Items)
     border: 0;
     background-color: transparent;
 }
+
+.eXide-browse-panel .ui-layout-north {
+    background: url("../images/bubble.gif") top right no-repeat;
+    overflow: hidden;
+}
+
 .eXide-browse-breadcrumbs {
     font-weight: bold;
     padding: 2px 0;
@@ -683,7 +716,7 @@ Sub level menu list items (undo style from Top level List Items)
 
 #autocomplete-box .items {
     background-color: #E8E8E8;
-	margin: 8px 0;
+	margin: 4px 0 16px 0;
 	padding: 0;
 	height: 220px;
     width: 100%;
@@ -754,9 +787,10 @@ Sub level menu list items (undo style from Top level List Items)
 #outline-container h3 {
 	margin: 0;
 	padding: 4px 8px;
-	background-color: #F3F3F3;
+	background-color: #CFE2ED;
 	color: #606060;
 	font-weight: normal;
+    font-size: 85%;
 }
 
 #outline-body {

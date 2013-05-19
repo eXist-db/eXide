@@ -771,7 +771,7 @@ eXide.app = (function() {
 				enableCursorHotkey: false,
                 spacing_open: 6,
                 spacing_closed: 8,
-				north__size: 70,
+				north__size: 72,
 				north__resizable: false,
 				north__closable: false,
                 north__showOverflowOnHover: true,
@@ -1056,7 +1056,7 @@ eXide.app = (function() {
             }
             $("#toggle-fullscreen").click(function(ev) {
                 ev.preventDefault();
-                eXide.util.requestFullScreen(document.getElementById("layout-container"));
+                eXide.util.requestFullScreen(document.getElementById("fullscreen"));
             });
             $(".results-container .layout-switcher").click(eXide.app.switchResultsPanel);
 			$('.results-container .next').click(eXide.app.browseNext);

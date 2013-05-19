@@ -286,7 +286,7 @@ eXide.util = (function () {
 		},
 
 		requestFullScreen: function(el) {
-			var state = document["fullScreen"] || document["webkitIsFullScreen"] || document["mozfullScreen"];
+			var state = document["fullScreen"] || document["webkitIsFullScreen"] || document["mozFullScreen"];
 			if (state) {
 				var func = document["cancelFullScreen"] || document["webkitCancelFullScreen"] || document["mozCancelFullScreen"];
 				func.call(document);
