@@ -113,11 +113,14 @@ eXide.edit.XQueryModeHelper = (function () {
 			success: function (data) {
 				if (data.result == "fail") {
 					var err = parseErrMsg(data.error);
-					if (err.line <= row) {
-						var tag = /constructor:\s(.*)$/.exec(err.msg);
-						if (tag && tag.length > 0) {
-							$this.editor.insert(tag[1] + ">");
-						}
+					var tag = /constructor:\s(.*)$/.exec(err.msg);
+					if (tag && tag.length > 0) {
+						$this.editor.insert(tag[1] + ">");
+					} else {
+					    tag = /tag:.*;\sexpected:\s(.*)$/.exec(err.msg);
+                        if (tag && tag.length > 0) {
+						    $this.editor.insert(tag[1] + ">");
+                        }
 					}
 				}
 			},

@@ -118,7 +118,7 @@ eXide.app = (function() {
             });
 		    
 		    editor.addEventListener("outlineChange", eXide.app.onOutlineChange);
-            editor.addEventListener("documentValid", function(doc) {
+            editor.validator.addEventListener("documentValid", function(doc) {
                 if (doc.isXQuery() && $("#live-preview").is(":checked")) {
                     eXide.app.runQuery(doc.getPath(), true);
                 }
