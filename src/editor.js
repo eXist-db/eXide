@@ -651,7 +651,7 @@ eXide.edit.Editor = (function () {
 	};
 	
 	Constr.prototype.getHeight = function () {
-		return $(this.container).height();
+		return $("#fullscreen").height();
 	};
 	
 	Constr.prototype.getWidth = function () {

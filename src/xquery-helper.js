@@ -383,8 +383,8 @@ eXide.edit.XQueryModeHelper = (function () {
 
 		var pos = this.editor.renderer.textToScreenCoordinates(lead.row, lead.column);
 		var editorHeight = this.parent.getHeight();
-		if (pos.pageY + 150 > editorHeight) {
-			pos.pageY = editorHeight - 150;
+		if (pos.pageY + 260 > editorHeight) {
+			pos.pageY = editorHeight - 260;
 		}
 		$("#autocomplete-box").css({ left: pos.pageX + "px", top: (pos.pageY + 10) + "px" });
 		$("#autocomplete-help").css({ left: (pos.pageX + 324) + "px", top: (pos.pageY + 10) + "px" });
@@ -645,6 +645,10 @@ eXide.edit.XQueryModeHelper = (function () {
 		var lead = sel.getSelectionLead();
 		
 		var pos = this.editor.renderer.textToScreenCoordinates(lead.row, lead.column);
+        var editorHeight = this.parent.getHeight();
+    	if (pos.pageY + 260 > editorHeight) {
+			pos.pageY = editorHeight - 260;
+		}
 		$("#autocomplete-box").css({ left: pos.pageX + "px", top: (pos.pageY + 20) + "px" });
 		$("#autocomplete-help").css({ left: (pos.pageX + 324) + "px", top: (pos.pageY + 20) + "px" });
 		var func = this.getFunctionAtCursor(lead);
@@ -658,8 +662,8 @@ eXide.edit.XQueryModeHelper = (function () {
         $.log("Requesting quick fix for %s at %d", doc.getName(), row);
         var pos = this.editor.renderer.textToScreenCoordinates(row, 0);
     	var editorHeight = this.parent.getHeight();
-		if (pos.pageY + 150 > editorHeight) {
-			pos.pageY = editorHeight - 150;
+		if (pos.pageY + 260 > editorHeight) {
+			pos.pageY = editorHeight - 260;
 		}
 		$("#autocomplete-box").css({ left: pos.pageX + "px", top: (pos.pageY + 10) + "px" });
         
@@ -764,7 +768,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 eXide.util.error("Extract variable: unable to determine context. Giving up.")
                 return;
             }
-            template = "let $${1} := " + value.replace("$", "\\$") + "\nreturn\n";
+            template = "let $${1} := " + value.replace("$", "\\$") + "\nreturn";
             
         }
         $.log("extract variable: context: %o", contextNode);
@@ -773,7 +777,7 @@ eXide.edit.XQueryModeHelper = (function () {
         
         this.editor.gotoLine(contextNode.pos.sl + 1, contextNode.pos.sc);
         this.editor.insert("\n");
-        
+        this.editor.gotoLine(contextNode.pos.sl + 1, contextNode.pos.sc);
         SnippetManager.insertSnippet(this.editor, template);
         this.editor.focus();
         
@@ -787,6 +791,8 @@ eXide.edit.XQueryModeHelper = (function () {
         sel.addRange(callRange);
         
         anchor.detach();
+        
+        this.parent.validationEnabled = true;
     };
     
     Constr.prototype.extractFunction = function(doc) {

@@ -23,6 +23,8 @@ eXide.namespace("eXide.edit.XQueryQuickFix");
  */
 eXide.edit.XQueryQuickFix = (function () {
     
+    var SnippetManager = require("ace/snippets").snippetManager;
+    
     var quickFixes = [
         {
             regex: /Call to undeclared function/,
@@ -103,13 +105,41 @@ eXide.edit.XQueryQuickFix = (function () {
             regex: /variable.*not set/,
             getResolutions: function(helper, editor, doc, annotation, ast) {
                 if (ast.getParent.name === "VarName") {
-                    return [{
-                        resolve: function(helper, editor, doc, annotation) {
-                            var adder = new eXide.edit.PrologAdder(editor, doc);
-                            adder.declareVariable(ast.value);
+                    return [
+                        {
+                            resolve: function(helper, editor, doc, annotation) {
+                                var adder = new eXide.edit.PrologAdder(editor, doc);
+                                adder.declareVariable(ast.value);
+                            },
+                            action: "Declare global variable \"" + ast.value + "\""
                         },
-                        action: "Declare global variable \"" + ast.value + "\""
-                    }];
+                        {
+                            resolve: function(helper, editor, doc, annotation) {
+                                var template;
+                                var contextNode = eXide.edit.XQueryUtils.findAncestor(ast, ["IntermediateClause", "InitialClause", "ReturnClause"]);
+                                if (contextNode) {
+                                    template = "let \\$" + ast.value + " := ${1:()}";
+                                } else {
+                                    contextNode = eXide.edit.XQueryUtils.findAncestor(ast, "StatementsAndOptionalExpr");
+                                    contextNode = eXide.edit.XQueryUtils.findChild(contextNode, "Expr");
+                                    if (!contextNode) {
+                                        eXide.util.error("Extract variable: unable to determine context. Giving up.")
+                                        return;
+                                    }
+                                    template = "let \\$" + ast.value + " := ${1:()}" + "\nreturn";
+                                }
+                                helper.parent.validator.setEnabled(false);
+                                $.log("extract variable: context: %o", contextNode);
+                                editor.editor.gotoLine(contextNode.pos.sl + 1, contextNode.pos.sc);
+                                editor.editor.insert("\n");
+                                editor.editor.gotoLine(contextNode.pos.sl + 1, contextNode.pos.sc);
+                                SnippetManager.insertSnippet(editor.editor, template);
+                                editor.editor.focus();
+                                helper.parent.validator.setEnabled(true);
+                            },
+                            action: "Create let statement"
+                        }
+                    ];
                 }
             }
         }
