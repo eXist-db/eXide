@@ -281,9 +281,6 @@ eXide.edit.XQueryModeHelper = (function () {
             $.log("Autocomplete AST node: %o; doc: %o", astNode, doc.ast);
             
             if (!astNode) {
-                if (!alwaysShow) {
-                    return false;
-                }
                 // no ast node: scan preceding text
                 mode = "functions";
                 row = lead.row;
@@ -303,6 +300,9 @@ eXide.edit.XQueryModeHelper = (function () {
                 }
                 token = line.substring(start, end);
                 end++;
+                if (token === "" && !alwaysShow) {
+                    return false;
+                }
             } else {
                 var parent = astNode.getParent;
                 if (parent.name === "VarRef" || parent.name === "VarName") {
