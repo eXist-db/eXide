@@ -117,7 +117,7 @@ eXide.edit.XQueryModeHelper = (function () {
 			success: function (data) {
 				if (data.result == "fail") {
 					var err = parseErrMsg(data.error);
-					var tag = /constructor:\s(.*)$/.exec(err.msg);
+					var tag = /constructor:\s([^\)]+)\)?$/.exec(err.msg);
 					if (tag && tag.length > 0) {
 						$this.editor.insert(tag[1] + ">");
 					} else {
