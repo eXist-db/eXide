@@ -87,6 +87,16 @@ eXide.edit.XQueryUtils = (function () {
             return null;
         },
         
+        findChild: function(node, type) {
+            var children = node.children;
+            for (var i = 0; i < children.length; i++) {
+                if (children[i].name == type) {
+                    return children[i];
+                }
+            }
+            return null;
+        },
+        
         findSibling: function(node, type) {
             var children = node.getParent.children;
             for (var i = 0; i < children.length; i++) {
