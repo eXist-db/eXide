@@ -27,6 +27,6 @@
     "expandSelection": ["Ctrl-Shift-Up", "Ctrl-Command-Up"],
     "rename": ["Ctrl-Alt-Shift-R", "Command-Ctrl-R"],
     "extractFunction": ["Ctrl-Shift-X", "Command-Shift-X"],
-    "extractVariable": ["Ctrl-Shift-V", "Command-Shift-V"],
+    "extractVariable": ["Ctrl-Shift-E", "Command-Shift-E"],
     "gotoSymbol": ["Ctrl-Shift-U", "Command-Shift-U"]
 }
