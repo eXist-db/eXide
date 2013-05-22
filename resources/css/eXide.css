@@ -705,32 +705,54 @@ Sub level menu list items (undo style from Top level List Items)
 
 /* Auto-complete box */
 #autocomplete-box {
-	position: relative;
-	min-width: 320px;
-    max-width: 500px;
+	position: absolute;
 	display: none;
 	z-index: 1000;
-    background-color: #E0E0E0;
-    border: 1px solid #BBB;
-    border-width: 1px 1px 1px 1px;
-    border-radius: 0;
-    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.3);
-	font-size: 85%;
-    outline: none;
+    font-size: 85%;
+    -webkit-box-shadow: 2px 3px 5px rgba(0,0,0,.2);
+    -moz-box-shadow: 2px 3px 5px rgba(0,0,0,.2);
+    box-shadow: 2px 3px 5px rgba(0,0,0,.2);
+    -webkit-border-radius: 6px;
+    -moz-border-radius: 6px;
+    border-radius: 6px;
+    background: white;
+    outline: 0;
+    border: 1px solid silver;
 }
 
 #autocomplete-box .items {
-    background-color: #E8E8E8;
-	margin: 4px 0 16px 0;
-	padding: 0;
-	height: 220px;
-    width: 100%;
+    float: left;
+    margin: 4px 0 16px 0;
+    width: 320px;
+    padding: 0;
+    height: 220px;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+#autocomplete-box .tooltips {
+    float: left;
+    width: 320px;
+    height: 220px;
     overflow: auto;
+    margin: 0 8px 0 8px;
+    padding: 0 0 0 8px;
+    border-left: 1px solid #C0C0C0;
+}
+
+#autocomplete-box .tooltips.hide {
+    width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+#autocomplete-box .tooltips p {
+    margin-top: 0;
 }
 
 #autocomplete-box table {
     width: 100%;
-    padding: 0;
 }
 
 #autocomplete-box td {
@@ -746,12 +768,18 @@ Sub level menu list items (undo style from Top level List Items)
 #autocomplete-box .title {
     font-size: 85%;
     padding: 4px;
-    text-align: right;
-	background-color: #404040;
+    color: #C0C0C0;
+    height: 1em;
 }
 
-#autocomplete-box .popup-close {
-    color: white;
+#autocomplete-box .title a {
+    float: right;
+}
+
+#autocomplete-box .tooltip {
+    width: 280px;
+    height: 220px;
+    float: right;
 }
 
 #autocomplete-box .selection {

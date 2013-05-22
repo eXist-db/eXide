@@ -87,8 +87,8 @@ eXide.app = (function() {
 	return {
         
 		init: function(afterInitCallback) {
-            menu = new eXide.util.Menubar($(".menu"));
             projects = new eXide.edit.Projects();
+            menu = new eXide.util.Menubar($(".menu"));
 			editor = new eXide.edit.Editor(document.getElementById("editor"), menu);
 			deploymentEditor = new eXide.edit.PackageEditor(projects);
 			dbBrowser = new eXide.browse.Browser(document.getElementById("open-dialog"));
@@ -922,6 +922,8 @@ eXide.app = (function() {
                     templ.hide();
                 }
             });
+            
+            eXide.util.Popup.init("#autocomplete-box", editor);
             
             $(".toolbar-buttons").buttonset();
             

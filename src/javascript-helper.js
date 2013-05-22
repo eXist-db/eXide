@@ -70,17 +70,14 @@ eXide.edit.JavascriptModeHelper = (function () {
             popupItems.push(item);
         };
         if (popupItems.length > 1) {
-            var editorWidth = this.parent.getWidth();
             var left = this.parent.getOffset().left;
-            $("#autocomplete-box").css({ left: left + "px", top: "20px" });
-            eXide.util.popup(this.editor, $("#autocomplete-box"), null, popupItems,
-                function (selected) {
-                    if (selected) {
-                        self.editor.gotoLine(selected.row + 1);
-                    }
-                    self.editor.focus();
+            eXide.util.Popup.position({pageX: left, pageY: 20});
+            eXide.util.Popup.show(popupItems, function (selected) {
+                if (selected) {
+                    self.editor.gotoLine(selected.row + 1);
                 }
-            );
+                self.editor.focus();
+            });
         }
     };
 

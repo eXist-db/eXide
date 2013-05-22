@@ -26,6 +26,7 @@ eXide.util.Menubar = (function() {
     Constr = function (container) {
         var $this = this;
         this.container = container;
+        this.editor = null;
         
         var menuVisible = false;
         
@@ -65,6 +66,10 @@ eXide.util.Menubar = (function() {
             ev.preventDefault();
             $("ul li ul", $this.container).css({display: "none"});
             callback();
+            if ($this.editor) {
+                $this.editor.focus();
+            }
+            
         });
     };
     

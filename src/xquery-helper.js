@@ -382,12 +382,8 @@ eXide.edit.XQueryModeHelper = (function () {
 		$.log("completing token: %s, mode: %s, range: %o", token, mode, range);
 
 		var pos = this.editor.renderer.textToScreenCoordinates(lead.row, lead.column);
-		var editorHeight = this.parent.getHeight();
-		if (pos.pageY + 260 > editorHeight) {
-			pos.pageY = editorHeight - 260;
-		}
-		$("#autocomplete-box").css({ left: pos.pageX + "px", top: (pos.pageY + 10) + "px" });
-		$("#autocomplete-help").css({ left: (pos.pageX + 324) + "px", top: (pos.pageY + 10) + "px" });
+        eXide.util.Popup.position(pos);
+        
 		
 		if (mode == "templates") {
 			this.templateLookup(doc, token, range, true);
@@ -558,16 +554,12 @@ eXide.edit.XQueryModeHelper = (function () {
         if (popupItems.length > 1) {
             var editorWidth = this.parent.getWidth();
             var left = this.parent.getOffset().left;
-            $.log("left: %d", left);
-            $("#autocomplete-box").css({ left: left + "px", top: "20px" });
-            eXide.util.popup(this.editor, $("#autocomplete-box"), null, popupItems,
-                function (selected) {
-                    if (selected) {
-                        self.parent.outline.gotoDefinition(doc, selected.name);
-                    }
-                    self.editor.focus();
+            eXide.util.Popup.position({ pageX: left, pageY: 40 });
+            eXide.util.Popup.show(popupItems, function (selected) {
+                if (selected) {
+                    self.parent.outline.gotoDefinition(doc, selected.name);
                 }
-            );
+            });
         }
     };
 
@@ -611,14 +603,11 @@ eXide.edit.XQueryModeHelper = (function () {
             $.log("template applied");
         }
         if (popupItems.length > 1 || !complete) {
-            eXide.util.popup(this.editor, $("#autocomplete-box"), $("#autocomplete-help"), popupItems,
-                function (selected) {
-                    if (selected) {
-                        apply(selected);
-                    }
-                    $this.editor.focus();
+            eXide.util.Popup.show(popupItems, function(selected) {
+                if (selected) {
+                    apply(selected);
                 }
-            );
+            });
         } else if (popupItems.length == 1) {
             apply(popupItems[0]);
         }
@@ -645,12 +634,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		var lead = sel.getSelectionLead();
 		
 		var pos = this.editor.renderer.textToScreenCoordinates(lead.row, lead.column);
-        var editorHeight = this.parent.getHeight();
-    	if (pos.pageY + 260 > editorHeight) {
-			pos.pageY = editorHeight - 260;
-		}
-		$("#autocomplete-box").css({ left: pos.pageX + "px", top: (pos.pageY + 20) + "px" });
-		$("#autocomplete-help").css({ left: (pos.pageX + 324) + "px", top: (pos.pageY + 20) + "px" });
+        eXide.util.Popup.position(pos);
 		var func = this.getFunctionAtCursor(lead);
 		this.functionLookup(doc, func, null, false);
 	}
@@ -661,11 +645,7 @@ eXide.edit.XQueryModeHelper = (function () {
         }
         $.log("Requesting quick fix for %s at %d", doc.getName(), row);
         var pos = this.editor.renderer.textToScreenCoordinates(row, 0);
-    	var editorHeight = this.parent.getHeight();
-		if (pos.pageY + 260 > editorHeight) {
-			pos.pageY = editorHeight - 260;
-		}
-		$("#autocomplete-box").css({ left: pos.pageX + "px", top: (pos.pageY + 10) + "px" });
+    	eXide.util.Popup.position(pos);
         
         var resolutions = [];
         var an = doc.getSession().getAnnotations();
@@ -684,7 +664,7 @@ eXide.edit.XQueryModeHelper = (function () {
 
         if (resolutions.length > 0) {
             var self = this;
-            eXide.util.popup(this.editor, $("#autocomplete-box"), null, resolutions, function(selected) {
+            eXide.util.Popup.show(resolutions, function(selected) {
                 if (selected) {
                     selected.resolve(self, self.parent, doc, selected.annotation);
                     self.editor.focus();

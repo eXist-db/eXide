@@ -210,6 +210,9 @@ eXide.edit.Editor = (function () {
         // register keybindings
         eXide.edit.commands.init($this);
         
+        // register editor on menubar to allow regaining focus
+        menubar.editor = this;
+        
 	    this.outline = new eXide.edit.Outline();
 	    this.validator = new eXide.edit.CodeValidator(this);
 	    this.addEventListener("activate", this.outline, this.outline.updateOutline);
