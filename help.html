@@ -2,15 +2,24 @@
 <article>
     <section>
         <img src="resources/images/help1.png"/>
-        <h1>Auto-completion</h1>
+        <h1>Auto-completion and Templates</h1>
         <p>To select a template, complete a variable reference or a function call, press the <code>Tab</code> key after 
-            a character sequence. Alternatively press <code>Ctrl-Space</code> (or <code>Option-Space</code> on Firefox for Mac), which
+            a character sequence. The suggestions shown depend on the current context. For example, to complete a variable reference, 
+            type $ followed by the first characters of the variable and press <code>Tab</code>.
+            To enforce auto-complete and see all suggestions, press <code>Ctrl-Space</code> (or <code>Option-Space</code> on Firefox for Mac), which
             will also show a list of all available templates when activated on a new line or after whitespace.</p>
         <p>If there's only one suggestion, it will be inserted immediately. Otherwise, a popup is shown. In the popup, use the cursor 
             keys to choose a suggested code or function template. Press
             <code>Enter</code> to select the current template.</p>
-        <p>For example, to add a new function, enter "fun" and press <code>Tab</code>. To complete a variable, type $ followed by the
-        first characters of the variable and press <code>Tab</code>.</p>
+    </section>
+    <section>
+        <h1>Code Templates</h1>
+        <p>eXide supports the same code templates as the textmate editor (a well-known editor on the Mac). To see all available code
+            templates in a mode, place the cursor after whitespace and press <code>Ctrl-Space</code> (or <code>Option-Space</code>).</p>
+        <p>For example, to add a new function, enter "fun" and press <code>Tab</code>. Some templates also respect the current text
+            selection: to transform a block of code into a "let" statement, select the block, call autocomplete and choose the
+            "let" template.
+        </p>
         <h3>Adding Templates</h3>
         <p>New templates can be added by editing the <code>.snippets</code> files which can be found in the <code>eXide/templates</code> 
             collection.</p>
