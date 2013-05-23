@@ -4,5 +4,12 @@
     "json": "http://www.json.org",
     "atom": "http://www.w3.org/2005/Atom",
     "templates": "http://exist-db.org/xquery/templates",
-    "expath": "http://expath.org/ns/pkg"
+    "expath": "http://expath.org/ns/pkg",
+    "xsi": "http://www.w3.org/2001/XMLSchema-instance",
+    "xlink": "http://www.w3.org/1999/xlink",
+    "xs": "http://www.w3.org/2001/XMLSchema",
+    "svg": "http://www.w3.org/2000/svg",
+    "fo": "http://www.w3.org/1999/XSL/Format",
+    "mods": "http://www.loc.gov/mods/v3",
+    "mads": "http://www.loc.gov/mads/"
 }
