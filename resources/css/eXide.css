@@ -244,12 +244,12 @@ a:link,a:visited {
 
 .menu ul li a:hover {
 	background: #CFE2ED; /*tab link background during hover state*/
-	/*color: white;*/
+	color: #101010;
 }
 
 .menu ul li a.open {
-    background: black; /*tab link background during hover state*/
-    color: white;
+    background: #CFE2ED; /*tab link background during hover state*/
+    color: #101010;
 }
 
 /*1st sub level menu*/
@@ -293,15 +293,15 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 .menu ul li ul li a:hover { /*sub menus hover style*/
-	background: black;
-	color: white;
+	background: #CFE2ED;
+	color: #101010;
 }
 
 .menu .separator {
     display: block;
     font-size: 75%;
     padding: 5px;
-	background-image: #F0F0F0;
+	background: #F0F0F0;
     color: #AAA;
     padding-bottom: 2px;
     margin-bottom: 2px;
