@@ -2,6 +2,7 @@
     "tei": "http://www.tei-c.org/ns/1.0",
     "html": "http://www.w3.org/1999/xhtml",
     "json": "http://www.json.org",
+    "output": "http://www.w3.org/2010/xslt-xquery-serialization",
     "atom": "http://www.w3.org/2005/Atom",
     "templates": "http://exist-db.org/xquery/templates",
     "expath": "http://expath.org/ns/pkg",
