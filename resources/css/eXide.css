@@ -255,14 +255,15 @@ a:link,a:visited {
 /*1st sub level menu*/
 .menu ul li ul {
 	position: absolute;
+    background: #FFFFFF;
 	left: 0;
 	display: none;
 	z-index: 1000;
     padding: 8px 0;
 	border: 1px solid #AAA;
-	-moz-box-shadow: 10px 10px 5px #888;
-	-webkit-box-shadow: 10px 10px 5px #888;
-	box-shadow: 10px 10px 5px #888;
+	-webkit-box-shadow: 2px 3px 5px rgba(0,0,0,.2);
+    -moz-box-shadow: 2px 3px 5px rgba(0,0,0,.2);
+    box-shadow: 2px 3px 5px rgba(0,0,0,.2);
     -webkit-border-radius: 6px;
     -webkit-border-top-left-radius: 0;
     -moz-border-radius: 6px;
@@ -796,27 +797,6 @@ Sub level menu list items (undo style from Top level List Items)
 
 #autocomplete-box .selection {
 	background-color: #C0C0C0;
-}
-
-#autocomplete-help {
-	display: none;
-	z-index: 1000;
-	width: 320px;
-	height: 228px;
-	overflow: auto;
-	position: absolute;
-    background-color: #E8E8E8;
-    border: 1px solid #BBB;
-    border-width: 1px 1px 1px 1px;
-    border-radius: 0;
-    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.3);
-	font-size: 85%;
-	padding: 4px 8px;
-    margin: 0;
-}
-
-#autocomplete-help dt {
-    font-weight: bold;
 }
 
 #autocomplete-box .tooltip {
