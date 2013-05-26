@@ -1174,9 +1174,9 @@ eXide.edit.XQueryModeHelper = (function () {
 					}
 					doc.functions = doc.functions.concat(functions);
 					$this.$sortFunctions(doc);
-                    if (onComplete)
-                        onComplete(doc);
 				}
+                if (onComplete)
+                    onComplete(doc);
 			}
 		});
 		return functions;
