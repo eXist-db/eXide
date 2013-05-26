@@ -71,7 +71,7 @@ eXide.edit.XQueryQuickFix = (function () {
         {
             regex: /No namespace defined/,
             getResolutions: function(helper, editor, doc, annotation, ast) {
-                var matches = /for prefix (\w+)$/.exec(annotation.text);
+                var matches = /for prefix (\w+)/.exec(annotation.text);
                 if (matches.length === 2) {
                     if (ast && ast.getParent.name === "FunctionCall") {
                         return [{
@@ -85,7 +85,8 @@ eXide.edit.XQueryQuickFix = (function () {
                             },
                             action: "Import module \"" + matches[1] + "\""
                         }];
-                    } else if (ast && ast.name === "EQName") {
+                    } else if (ast && (ast.name === "EQName" || ast.getParent.name === "ElementTest" 
+                        || ast.getParent.name === "OptionDecl")) {
                         return [{
                             resolve: function(helper, editor, doc, annotation) {
                                 helper.parent.validator.setEnabled(false);
