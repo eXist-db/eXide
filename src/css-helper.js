@@ -46,7 +46,7 @@ eXide.edit.CssModeHelper = (function () {
                 lastVar += next.value;
             } else if (next.type == "paren.rparen") {
                 lastVar = "";
-            } else if (next.type == "paren.lparen") {
+            } else if (next.type == "paren.lparen" && lastVar !== "") {
                 doc.functions.push({
                 	type: eXide.edit.Document.TYPE_FUNCTION,
     				name: lastVar,
