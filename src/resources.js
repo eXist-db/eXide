@@ -128,10 +128,10 @@ eXide.browse.ResourceBrowser = (function () {
     		            }
                         break;
     				case 8:
+                        e.stopPropagation();
+    		            e.preventDefault();
     					var p = $this.collection.lastIndexOf("/");
     					if (p > 0) {
-    						e.stopPropagation();
-    			            e.preventDefault();
     			            if ($this.collection != "/db") {
     			            	var parent = $this.collection.substring(0, p);
     						
