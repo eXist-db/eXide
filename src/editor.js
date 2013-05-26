@@ -26,7 +26,7 @@ eXide.edit.Document = (function() {
     
 	Constr = function(name, path, session) {
 		this.name = name;
-		this.path = path;
+        this.path = path.replace(/\/{2,}/g, "/");
 		this.mime = null;
 		this.syntax = "xquery";
 		this.saved = false;
@@ -162,6 +162,7 @@ eXide.edit.Editor = (function () {
 	var EditSession = require("ace/edit_session").EditSession;
     var UndoManager = require("ace/undomanager").UndoManager;
     var SnippetManager = require("ace/snippets").snippetManager;
+    var net = require("ace/lib/net");
     
     function parseErrMsg(error) {
 		var msg;
@@ -312,6 +313,12 @@ eXide.edit.Editor = (function () {
             var row = ev.getDocumentPosition().row;
             $this.exec("quickFix", row);
         });
+        
+        // var Emmet = require("ace/ext/emmet");
+        // net.loadScript("https://rawgithub.com/nightwing/emmet-core/master/emmet.js", function() {
+        //     Emmet.setCore(window.emmet);
+        //     $this.editor.setOption("enableEmmet", true);
+        // });
 	};
 
     // Extend eXide.events.Sender for event support

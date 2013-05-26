@@ -53,7 +53,7 @@ eXide.edit.Outline = (function () {
 			$.each(doc.functions, function (i, func) {
 				if (name == func.name) {
 					eXide.app.locate(func.type, func.source == '' ? null : func.source, name);
-					return;
+					return false;
 				}
 			});
 		},
