@@ -1,6 +1,6 @@
 @import url('../../../shared-resources/resources/css/exist.css');
-#header a#logo{background:url(../images/logo.png) center left no-repeat;}
-@media (min-width:767px){#header{background-image:url(../images/bubble.gif);}}#main{font:16px/22px "Open Sans";}
+#header a#logo{width:300px;height:90px;background:url(../images/exide.png) center left no-repeat;background-size:auto 100%;}
+@media (min-width:767px){#header{background-image:url(../images/bubble.gif);background-size:auto 100%;}}#main{font:16px/22px "Open Sans";}
 .thumb{padding-left:10px;}
 .thumb p{text-align:left;}
 h1{margin-bottom:1em;font-family:"Open Sans";font-weight:normal;}
