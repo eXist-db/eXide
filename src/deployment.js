@@ -109,7 +109,7 @@ eXide.edit.PackageEditor = (function () {
 			modal: false,
 			autoOpen: false,
 			width: 500,
-			height: 400,
+			height: 440,
 			buttons: {
                 "Apply": function() {
                     var dir = $this.syncDialog.find("input[name=\"dir\"]").val();

@@ -291,7 +291,8 @@ eXide.util.mimeTypes = (function () {
         'javascript': ['application/x-javascript'],
         'text': ['text/text'],
         'less': ['application/less'],
-        'tmsnippet': ['application/tmsnippet']
+        'tmsnippet': ['application/tmsnippet'],
+        'json': ['application/json']
     };
 
     return {

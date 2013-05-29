@@ -542,6 +542,13 @@ eXide.edit.Editor = (function () {
             if (setMime)
                 doc.mime = "application/tmsnippet";
             break;
+        case "json":
+            var JSONMode = require("ace/mode/json").Mode;
+            doc.$session.setUseSoftTabs(false);
+            doc.$session.setMode(new JSONMode());
+            if (setMime)
+                doc.mime = "application/json";
+            break;
 		}
         eXide.util.Snippets.init(doc.getSyntax());
         mode = this.modes[doc.getSyntax()];
