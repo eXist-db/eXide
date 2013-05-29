@@ -613,20 +613,32 @@ eXide.edit.XQueryModeHelper = (function () {
         }
 	};
 	
-	Constr.prototype.getFunctionAtCursor = function (lead) {
-		var row = lead.row;
-	    var session = this.editor.getSession();
-		var line = session.getDisplayLine(row);
-		var start = lead.column;
-		do {
-			start--;
-		} while (start >= 0 && line.charAt(start).match(RE_FUNC_NAME));
-		start++;
-		var end = lead.column;
-		while (end < line.length && line.charAt(end).match(RE_FUNC_NAME)) {
-			end++;
-		}
-		return line.substring(start, end);
+	Constr.prototype.getFunctionAtCursor = function (doc, lead) {
+        var name;
+        var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+        if (astNode) {
+            var fcall = eXide.edit.XQueryUtils.findAncestor(astNode, "FunctionCall");
+            if (fcall) {
+                name = fcall.children[0].value
+            }
+        }
+        
+        if (!name) {
+    		var row = lead.row;
+    	    var session = this.editor.getSession();
+    		var line = session.getDisplayLine(row);
+    		var start = lead.column;
+    		do {
+    			start--;
+    		} while (start >= 0 && line.charAt(start).match(RE_FUNC_NAME));
+    		start++;
+    		var end = lead.column;
+    		while (end < line.length && line.charAt(end).match(RE_FUNC_NAME)) {
+    			end++;
+    		}
+    		name = line.substring(start, end);
+        }
+        return name;
 	}
 	
 	Constr.prototype.showFunctionDoc = function (doc) {
@@ -635,7 +647,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		
 		var pos = this.editor.renderer.textToScreenCoordinates(lead.row, lead.column);
         eXide.util.Popup.position(pos);
-		var func = this.getFunctionAtCursor(lead);
+		var func = this.getFunctionAtCursor(doc, lead);
 		this.functionLookup(doc, func, null, false);
 	}
 	
@@ -676,7 +688,7 @@ eXide.edit.XQueryModeHelper = (function () {
 	Constr.prototype.gotoDefinition = function (doc) {
 		var sel = this.editor.getSelection();
 		var lead = sel.getSelectionLead();
-		var funcName = this.getFunctionAtCursor(lead);
+		var funcName = this.getFunctionAtCursor(doc, lead);
 		if (funcName) {
 			this.parent.outline.gotoDefinition(doc, funcName);
 		}
