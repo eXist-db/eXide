@@ -2,6 +2,8 @@ xquery version "3.0";
 
 declare namespace json="http://www.json.org";
 
+import module namespace config="http://exist-db.org/xquery/apps/config" at "/db/apps/eXide/modules/config.xqm";
+
 declare variable $exist:path external;
 declare variable $exist:resource external;
 declare variable $exist:prefix external;
@@ -59,6 +61,11 @@ declare function local:fallback-login($domain as xs:string, $maxAge as xs:dayTim
                 )
 };
 
+declare function local:user-allowed() {
+    request:get-attribute("org.exist.login.user") and
+        (config:get-configuration()/restrictions/guest = "yes" or request:get-attribute("org.exist.login.user") != "guest")
+};
+
 if ($exist:path eq '/') then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <redirect url="index.html"/>
@@ -69,10 +76,11 @@ if ($exist:path eq '/') then
  :)
 else if ($exist:resource = 'login') then
     let $loggedIn := $login("org.exist.login", (), false())
+    let $userAllowed := local:user-allowed()
     return
         try {
             util:declare-option("exist:serialize", "method=json"),
-            if (request:get-attribute("org.exist.login.user")) then
+            if ($userAllowed) then
                 <status>
                     <user>{request:get-attribute("org.exist.login.user")}</user>
                     <isAdmin json:literal="true">{ xmldb:is-admin-user(request:get-attribute("org.exist.login.user")) }</isAdmin>
@@ -96,7 +104,7 @@ else if (starts-with($exist:path, "/store/")) then
             </forward>
         </dispatch>
 
-else if ($exist:resource eq "index.html") then
+else if ($exist:resource = "index.html") then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <view>
             <forward url="modules/view.xql">
@@ -105,55 +113,70 @@ else if ($exist:resource eq "index.html") then
         </view>
     </dispatch>
 
+(: Documentation :)
+else if (matches($exist:path, "/docs/.*\.html")) then
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <view>
+            <!-- pass the results through documentation.xql -->
+    		<forward url="{$exist:controller}/modules/documentation.xql">
+            </forward>
+        </view>
+    </dispatch>
+    
 else if ($exist:resource eq 'execute') then
     let $query := request:get-parameter("qu", ())
     let $base := request:get-parameter("base", ())
     let $output := request:get-parameter("output", "xml")
     let $startTime := util:system-time()
+    let $doLogin := $login("org.exist.login", (), false())
+    let $userAllowed := local:user-allowed()
     return
-        switch ($output)
-            case "xml" return
-                <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-                    <!-- Query is executed by XQueryServlet -->
-                    <forward servlet="XQueryServlet">
-                        {$login("org.exist.login", (), false())}
-                        <set-header name="Cache-Control" value="no-cache"/>
-                        <!-- Query is passed via the attribute 'xquery.source' -->
-                        <set-attribute name="xquery.source" value="{$query}"/>
-                        <!-- Results should be written into attribute 'results' -->
-                        <set-attribute name="xquery.attribute" value="results"/>
-        		        <set-attribute name="xquery.module-load-path" value="{$base}"/>
-                        <clear-attribute name="results"/>
-                        <!-- Errors should be passed through instead of terminating the request -->
-                        <set-attribute name="xquery.report-errors" value="yes"/>
-                        <set-attribute name="start-time" value="{util:system-time()}"/>
-                    </forward>
-                    <view>
-                        <!-- Post process the result: store it into the HTTP session
-                           and return the number of hits only. -->
-                        <forward url="modules/session.xql">
-                           <clear-attribute name="xquery.source"/>
-                           <clear-attribute name="xquery.attribute"/>
-                           <set-attribute name="elapsed" 
-                               value="{string(seconds-from-duration(util:system-time() - $startTime))}"/>
+        if ($userAllowed) then
+            switch ($output)
+                case "xml" return
+                    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+                        <!-- Query is executed by XQueryServlet -->
+                        <forward servlet="XQueryServlet">
+                            {$login("org.exist.login", (), false())}
+                            <set-header name="Cache-Control" value="no-cache"/>
+                            <!-- Query is passed via the attribute 'xquery.source' -->
+                            <set-attribute name="xquery.source" value="{$query}"/>
+                            <!-- Results should be written into attribute 'results' -->
+                            <set-attribute name="xquery.attribute" value="results"/>
+            		        <set-attribute name="xquery.module-load-path" value="{$base}"/>
+                            <clear-attribute name="results"/>
+                            <!-- Errors should be passed through instead of terminating the request -->
+                            <set-attribute name="xquery.report-errors" value="yes"/>
+                            <set-attribute name="start-time" value="{util:system-time()}"/>
                         </forward>
-        	        </view>
-                </dispatch>
-            default return
-                <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-                    <!-- Query is executed by XQueryServlet -->
-                    <forward servlet="XQueryServlet">
-                        {$login("org.exist.login", (), false())}
-                        <set-header name="Cache-Control" value="no-cache"/>
-                        <!-- Query is passed via the attribute 'xquery.source' -->
-                        <set-attribute name="xquery.source" value="{$query}"/>
-            	        <set-attribute name="xquery.module-load-path" value="{$base}"/>
-                        <!-- Errors should be passed through instead of terminating the request -->
-                        <set-attribute name="xquery.report-errors" value="yes"/>
-                        <set-attribute name="start-time" value="{util:system-time()}"/>
-                    </forward>
-                </dispatch>
-                
+                        <view>
+                            <!-- Post process the result: store it into the HTTP session
+                               and return the number of hits only. -->
+                            <forward url="modules/session.xql">
+                               <clear-attribute name="xquery.source"/>
+                               <clear-attribute name="xquery.attribute"/>
+                               <set-attribute name="elapsed" 
+                                   value="{string(seconds-from-duration(util:system-time() - $startTime))}"/>
+                            </forward>
+            	        </view>
+                    </dispatch>
+                default return
+                    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+                        <!-- Query is executed by XQueryServlet -->
+                        <forward servlet="XQueryServlet">
+                            {$login("org.exist.login", (), false())}
+                            <set-header name="Cache-Control" value="no-cache"/>
+                            <!-- Query is passed via the attribute 'xquery.source' -->
+                            <set-attribute name="xquery.source" value="{$query}"/>
+                	        <set-attribute name="xquery.module-load-path" value="{$base}"/>
+                            <!-- Errors should be passed through instead of terminating the request -->
+                            <set-attribute name="xquery.report-errors" value="yes"/>
+                            <set-attribute name="start-time" value="{util:system-time()}"/>
+                        </forward>
+                    </dispatch>
+        else
+            response:set-status-code(401)
+            
 (: Retrieve an item from the query results stored in the HTTP session. The
  : format of the URL will be /sandbox/results/X, where X is the number of the
  : item in the result set :)

@@ -58,6 +58,14 @@ body {
     text-shadow: 1px 1px 1px #666;
 }
 
+#login-dialog {
+	z-index: 10001;
+}
+
+.ui-front {
+	z-index: 10001;
+}
+
 table {
     font-size: 100%;
     border-collapse: collapse;
@@ -235,6 +243,7 @@ a:link,a:visited {
 	display: block;
 	padding: 4px 8px;
 	text-decoration: none;
+	outline: 0;
 }
 
 * html .menu ul li a {
@@ -923,13 +932,16 @@ fieldset input[type="checkbox"] {
 }
 
 fieldset legend {
-    background: url("../images/bubble.gif") top right no-repeat;
     overflow: hidden;
     width: 100%;
 	font-size: 133%;
     font-weight: bold;
 	padding: 12px 8px;
     margin-bottom: 8px;
+}
+
+#dialog-deploy legend {
+    background: url("../images/bubble.gif") top right no-repeat;
 }
 
 fieldset ol {
@@ -1206,9 +1218,21 @@ div#debuger-container {
 }
 
 div#valueHighLight { 
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
-    }
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+#dialog-startup h1 {
+	background: url("../images/bubble.gif") top right no-repeat;
+}
+
+#dialog-startup p {
+	font-size: 125%;
+}
+
+#dialog-startup a:link, #dialog-startup a:visited {
+	color: #0083CB;
+}

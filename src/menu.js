@@ -32,7 +32,6 @@ eXide.util.Menubar = (function() {
         
         // Display sub menu on click
 		$("ul li>a", this.container).click(function (ev) {
-            $.log("Clicked...");
             var link = $(this);
             var openMenu = $("ul li>a.open", $this.container);
             if (openMenu.length > 0) {
@@ -103,7 +102,6 @@ eXide.util.Menubar = (function() {
     };
     
     Constr.prototype.remove = function(menu, title) {
-        $.log("Removing menu entry %s", title);
         var menu = $(this.container).find("ul li[title=\"" + menu + "\"]");
         menu.find("ul li a[title = \"" + title + "\"]").remove();
     };

@@ -23,7 +23,9 @@ import module namespace config="http://exist-db.org/xquery/apps/config" at "conf
 declare option exist:serialize "method=html5 media-type=text/html";
 
 declare function local:expand-html($html as element()) {
-    let $execAllowed := config:get-configuration()/restrictions/@execute-query = "yes"
+    let $config := config:get-configuration()
+    let $execAllowed := $config/restrictions/@execute-query = "yes"
+    let $guestAllowed := $config/restrictions/@guest = "yes"
     return
         <html>
             <head>
@@ -31,6 +33,7 @@ declare function local:expand-html($html as element()) {
                 <script type="text/javascript">
                     eXide.namespace("eXide.configuration");
                     eXide.configuration.allowExecution = { $execAllowed };
+                    eXide.configuration.allowGuest = { $guestAllowed };
                 </script>
             </head>
             { $html/body }

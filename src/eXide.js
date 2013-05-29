@@ -111,9 +111,12 @@ eXide.app = (function() {
                         afterInitCallback(restored);
                     }
                     // dirty workaround to fix editor height
+                    var southStatus = localStorage.getItem("eXide.layout.south");
                     $("#layout-container").layout().toggle("south");
                     
-                    $("#splash").fadeOut(400);
+                    eXide.app.requireLogin(function() {
+                        $("#splash").fadeOut(400);
+                    });
                 });
             });
 		    
@@ -632,6 +635,7 @@ eXide.app = (function() {
                 if (callback) callback(restoring);
             });
 			deploymentEditor.restoreState();
+            
 			return restoring;
 		},
 		
@@ -653,6 +657,11 @@ eXide.app = (function() {
 			localStorage.clear();
 			preferences.save();
 			
+            var layout = $('#layout-container').layout();
+            localStorage["eXide.layout.south"] = layout.state.south.isClosed ? "closed" : "open";
+            localStorage["eXide.layout.west"] = layout.state.west.isClosed ? "closed" : "open";
+            localStorage["eXide.layout.east"] = layout.state.east.isClosed ? "closed" : "open";
+            
 			editor.saveState();
 			deploymentEditor.saveState();
 		},
@@ -664,14 +673,22 @@ eXide.app = (function() {
                 success: function(data) {
                     eXide.app.login = data;
                     $("#user").text("Logged in as " + eXide.app.login.user + ". ");
-                    if (callback) callback();
+                    if (callback) callback(eXide.app.login.user);
                 },
                 error: function (xhr, textStatus) {
                     eXide.app.login = null;
                     $("#user").text("Login");
-                    if (callback) callback();
+                    if (callback) callback(null);
                 }
             })
+        },
+        
+        enforceLogin: function() {
+            eXide.app.requireLogin(function() {
+                if (!eXide.app.login || eXide.app.login.user === "guest") {
+                    eXide.app.enforceLogin();
+                }
+            });
         },
         
 		$checkLogin: function () {
@@ -767,6 +784,16 @@ eXide.app = (function() {
         },
         
 		initGUI: function(menu) {
+            var layoutState = {
+                south: "closed",
+                west: "open",
+                east: "closed"
+            };
+            if (eXide.util.supportsHtml5Storage) {
+                layoutState.west = localStorage.getItem("eXide.layout.west");
+                layoutState.east = localStorage.getItem("eXide.layout.east");
+                layoutState.south = localStorage.getItem("eXide.layout.south");
+            }
 			var layout = $("#layout-container").layout({
 				enableCursorHotkey: false,
                 spacing_open: 6,
@@ -778,14 +805,19 @@ eXide.app = (function() {
                 north__spacing_open: 0,
 				south__minSize: 200,
                 south__size: 300,
-				south__initClosed: false,
+				south__initClosed: layoutState.south !== "closed",
                 south__contentSelector: "#results-body",
+                south__onresize: eXide.app.resize,
+                south__onopen: eXide.app.resize,
 				west__size: 200,
-				west__initClosed: false,
+				west__initClosed: layoutState.west == "closed",
 				west__contentSelector: ".content",
+                west__onopen: eXide.app.resize,
                 east__minSize: 300,
                 east__size: 450,
-                east__initClosed: true,
+                east__initClosed: layoutState.east == "closed",
+                east__onresize: eXide.app.resize,
+                east__onopen: eXide.app.resize,
 				center__minSize: 300,
 			    center__onresize: eXide.app.resize,
 				center__contentSelector: ".content"
@@ -1025,8 +1057,11 @@ eXide.app = (function() {
             menu.click("#menu-help-about", function (ev) {
 				$("#about-dialog").dialog("open");
 			});
-            menu.click("#menu-help-hints", function(ev) {
-                eXide.util.Help.show();
+            // menu.click("#menu-help-documentation", function(ev) {
+            //     eXide.util.Help.show();
+            // });
+            menu.click("#menu-help-documentation", function(ev) {
+                window.open("docs/doc.html");
             });
 			// syntax drop down
 			$("#syntax").change(function () {
@@ -1092,6 +1127,27 @@ eXide.app = (function() {
                    eXide.app.getLogin();
                 } 
             });
+            
+            // first time startup dialog
+            $("#dialog-startup").dialog({
+                appendTo: "#layout-container",
+        		modal: false,
+                title: "Quick Start",
+    			autoOpen: false,
+                width: 400,
+                height: 300,
+    			buttons: {
+                    "OK" : function() { $(this).dialog("close"); }
+    			}
+    		});
+            if (!eXide.util.supportsHtml5Storage)
+    		    return;
+            // if local storage contains eXide properties, the app has already
+            // been started before and we do not show the welcome dialog
+            var showHints = localStorage.getItem("eXide.firstTime");
+            if (!showHints || showHints == 1) {
+                $("#dialog-startup").dialog("open");
+            }
 		}
 	};
 }());

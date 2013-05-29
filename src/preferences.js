@@ -169,7 +169,7 @@ eXide.util.Preferences = (function () {
     
     Constr.prototype.save = function() {
         localStorage.setItem("eXide.preferences", JSON.stringify(this.preferences));
-        localStorage.setItem("eXide.hints", 0);
+        localStorage.setItem("eXide.firstTime", 0);
     };
     
     return Constr;

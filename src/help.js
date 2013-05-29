@@ -49,7 +49,7 @@ eXide.util.Help = (function () {
 			}
 		});
         
-        eXide.util.Help.showFirstTime();
+        // eXide.util.Help.showFirstTime();
     });
     
     return {
