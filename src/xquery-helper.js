@@ -993,7 +993,10 @@ eXide.edit.XQueryModeHelper = (function () {
         var lead = sel.getSelectionLead();
         var ast = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
         if (ast) {
-            if (ast.getParent.name == "VarName" || ast.getParent.name == "Param") {
+            if (ast.name == "QName" && ast.getParent.name == "DirElemConstructor") {
+                var closeTag = eXide.edit.XQueryUtils.findNext(ast, "QName");
+                doRename([ast, closeTag]);
+            } else if (ast.getParent.name == "VarName" || ast.getParent.name == "Param") {
                 var varName = eXide.edit.XQueryUtils.getValue(ast);
                 var ancestor = eXide.edit.XQueryUtils.findVariableContext(ast, varName);
                 if (ancestor) {

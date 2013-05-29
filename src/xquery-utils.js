@@ -77,7 +77,7 @@ eXide.edit.XQueryUtils = (function () {
             var children = node.getParent.children;
             for (var i = 0; i < children.length; i++) {
                 if (children[i] == node) {
-                    for (var j = i; j < children.length; j++) {
+                    for (var j = i + 1; j < children.length; j++) {
                         if (children[j].name == type) {
                             return children[j];
                         }
