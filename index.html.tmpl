@@ -24,6 +24,7 @@
         <script src="$shared/resources/scripts/ace/mode-css.js" type="text/javascript" charset="utf-8"/>
         <script src="$shared/resources/scripts/ace/mode-less.js" type="text/javascript" charset="utf-8"/>
         <script src="$shared/resources/scripts/ace/mode-snippets.js" type="text/javascript"/>
+        <script src="$shared/resources/scripts/ace/mode-json.js" type="text/javascript" charset="utf-8"/>
         <script src="$shared/resources/scripts/ace/demo.js" type="text/javascript"/>
         <script type="text/javascript" src="resources/scripts/xqlint.min.js"/>
         <script type="text/javascript" src="src/ace-modes.js"/>
@@ -190,7 +191,7 @@
                             <a href="#">Help</a>
                             <ul>
                                 <li>
-                                    <a href="#" id="menu-help-hints">Hints</a>
+                                    <a href="docs/doc.html" id="menu-help-documentation">Documentation</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-help-keyboard">Keyboard shortcuts</a>
@@ -219,6 +220,7 @@
                             <option value="javascript">Javascript</option>
                             <option value="css">CSS</option>
                             <option value="less">Less</option>
+                            <option value="json">JSON</option>
                         </select>
                         <a id="toggle-fullscreen" href="#" title="Toggle Fullscreen Mode">
                             <img src="resources/images/fullscreen.png"/>
@@ -597,6 +599,11 @@
                 </div>
             </div>
             <div id="autocomplete-box" tabindex="100"/>
+            <div id="dialog-startup">
+                <h1>Getting Help</h1>
+                <p>eXide 2.0 has many new features. Make sure you read the <a href="docs/doc.html" target="_new">documentation</a>
+                to understand code completion, refactorings and keyboard shortcuts.</p>
+            </div>
         </div>
     </body>
 </html>

@@ -1,0 +1,9 @@
+@import url('../../../shared-resources/resources/css/exist.css');
+#header a#logo{background:url(../images/logo.png) center left no-repeat;}
+@media (min-width:767px){#header{background-image:url(../images/bubble.gif);}}#main{font:16px/22px "Open Sans";}
+.thumb{padding-left:10px;}
+.thumb p{text-align:left;}
+h1{margin-bottom:1em;font-family:"Open Sans";font-weight:normal;}
+h2{font-family:"Open Sans";font-weight:normal;font-size:24.5px;color:#0083CB;padding:0;margin-bottom:0;}
+p,li{text-align:justify;}
+.feature{background-color:#fff;padding:4px 20px 4px 4px;border:1px solid #d0d0d0;border-radius:4px;position:relative;margin-bottom:40px;}
