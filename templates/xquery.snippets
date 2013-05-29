@@ -21,6 +21,9 @@ snippet letr
 snippet order
 	order by ${1:${TM_SELECTED_TEXT:()}}
 
+snippet group
+	group by \$${1} := ${2:${TM_SELECTED_TEXT:()}}
+
 # function
 snippet fun
 	declare function ${1:name}(${2:\$param}) {
