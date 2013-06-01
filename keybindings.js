@@ -25,7 +25,7 @@
     "xqueryFormat": ["Ctrl-Shift-P", "Command-Shift-P"],
     "quickfix": ["Ctrl-Shift-Q", "Command-Ctrl-Q"],
     "expandSelection": ["Ctrl-Shift-Up", "Ctrl-Command-Up"],
-    "rename": ["Ctrl-Alt-Shift-R", "Command-Ctrl-R"],
+    "rename": ["Ctrl-Alt-R", "Command-Ctrl-R"],
     "extractFunction": ["Ctrl-Shift-X", "Command-Shift-X"],
     "extractVariable": ["Ctrl-Shift-E", "Command-Shift-E"],
     "gotoSymbol": ["Ctrl-Shift-U", "Command-Shift-U"]
