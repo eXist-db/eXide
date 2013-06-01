@@ -22,15 +22,24 @@ declare function local:mkcol($collection, $path) {
 
 let $collection := request:get-parameter("collection", ())
 let $xconf := request:get-parameter("config", ())
-let $target := local:mkcol("/db/system/config", $collection)
 let $target := "/db/system/config" || $collection
 return
     if (xmldb:is-admin-user(xmldb:get-current-user())) then
         try {
             (
                 <response json:literal="true">true</response>,
-                xmldb:copy($collection, $target, $xconf),
-                xmldb:reindex($collection)
+                if (not(starts-with($collection, "/db/system/config/"))) then (
+                    local:mkcol("/db/system/config", $collection),
+                    xmldb:copy($collection, $target, $xconf)
+                ) else
+                    (),
+                let $reindex :=
+                    if (starts-with($collection, "/db/system/config")) then
+                        substring-after($collection, "/db/system/config")
+                    else
+                        $collection
+                return
+                    xmldb:reindex($reindex)
             )[1]
         } catch * {
             <response>
