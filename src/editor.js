@@ -261,8 +261,8 @@ eXide.edit.Editor = (function () {
 		// register mode helpers
 		$this.modes = {
 			"xquery": new eXide.edit.XQueryModeHelper($this, menubar),
-			"xml": new eXide.edit.XMLModeHelper($this),
-            "html": new eXide.edit.XMLModeHelper($this),
+			"xml": new eXide.edit.XMLModeHelper($this, menubar),
+            "html": new eXide.edit.XMLModeHelper($this, menubar),
             "less": new eXide.edit.LessModeHelper($this),
             "javascript": new eXide.edit.JavascriptModeHelper($this),
             "css": new eXide.edit.CssModeHelper($this),

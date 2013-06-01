@@ -22,17 +22,35 @@ eXide.namespace("eXide.edit.XMLModeHelper");
  * XML specific helper methods.
  */
 eXide.edit.XMLModeHelper = (function () {
-	
-	Constr = function(editor) {
+    
+    var TokenIterator = require("ace/token_iterator").TokenIterator;
+    var Range = require("ace/range").Range;
+    
+	Constr = function(editor, menubar) {
+        var self = this;
 		this.parent = editor;
 		this.editor = this.parent.editor;
 		
+        this.menu = $("#menu-xml").hide();
+        menubar.click("#menu-xml-rename", function() {
+            self.rename(editor.getActiveDocument());
+        }, "rename");
+        
 		this.addCommand("closeTag", this.closeTag);
         this.addCommand("suggest", this.suggest);
+        this.addCommand("rename", this.rename);
 	}
 	
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
-	
+    
+    Constr.prototype.activate = function() {
+        this.menu.show();
+    };
+    
+    Constr.prototype.deactivate = function() {
+        this.menu.hide();
+    };
+    
 	Constr.prototype.closeTag = function (doc, text, row) {
 		var basePath = "xmldb:exist://" + doc.getBasePath();
 		var $this = this;
@@ -44,7 +62,6 @@ eXide.edit.XMLModeHelper = (function () {
 			success: function (data) {
 				if (data.status && data.status == "invalid") {
 					var line = parseInt(data.message.line) - 1;
-                    $.log("Message: %s", line);
 					if (line <= row) {
 						var tag = /element type \"([^\"]+)\"/.exec(data.message["#text"]);
 						if (tag.length > 0) {
@@ -126,7 +143,7 @@ eXide.edit.XMLModeHelper = (function () {
         if (/.*\.xconf$/.test(doc.getName())) {
             var collection = doc.getBasePath();
             eXide.util.Dialog.input("Apply Configuration?", "You have saved a collection configuration file. Would you like to " +
-                "apply it to collection " + collection + " now?", function() {
+                "apply it to collection " + collection.replace(/^\/db\/system\/config/, "") + " now?", function() {
                     eXide.util.message("Apply configuration and reindex...");
                     $.ajax({
                         type: "POST",
@@ -149,7 +166,70 @@ eXide.edit.XMLModeHelper = (function () {
                     });
             });
         }
-    }
+    };
+    
+    Constr.prototype.rename = function(doc) {
+        
+        function matches(iterator, position) {
+            var column = iterator.getCurrentTokenColumn();
+            return (iterator.getCurrentTokenRow() == position.row && position.column >= column && 
+                position.column <= column + iterator.getCurrentToken().value.length);
+        }
+        
+        var position = this.editor.getCursorPosition();
+        var iterator = new TokenIterator(doc.getSession(), 0, 0);
+        var stack = [];
+        var inClosingTag = false;
+        var token = iterator.stepForward();
+        var startTag, endTag;
+        while(token) {
+            if (token.type === "meta.tag.tag-name") {
+                if (!inClosingTag) {
+                    var tag = {
+                        name: token.value,
+                        row: iterator.getCurrentTokenRow(),
+                        column: iterator.getCurrentTokenColumn()
+                    };
+                    stack.push(tag);
+                    if (matches(iterator, position)) {
+                        startTag = tag;
+                    }
+                } else {
+                    var last = stack.pop();
+                    if (startTag == last || matches(iterator, position)) {
+                        startTag = last;
+                        endTag = {
+                            name: token.value,
+                            row: iterator.getCurrentTokenRow(),
+                            column: iterator.getCurrentTokenColumn()
+                        };
+                    }
+                }
+                inClosingTag = false;
+            } else if (token.value === "</") {
+                inClosingTag = true;
+            } else if (token.value === "/>") {
+                stack.pop();
+            }
+            token = iterator.stepForward();
+        }
+
+        if (!startTag) {
+            return;
+        }
+        
+        var sel = this.editor.getSelection();
+        sel.toOrientedRange();
+        var range = new Range(startTag.row, startTag.column, startTag.row, startTag.column + startTag.name.length);
+        range.cursor = range.end;
+        sel.addRange(range);
+        if (endTag) {
+            range = new Range(endTag.row, endTag.column, endTag.row, endTag.column + endTag.name.length);
+            range.cursor = range.end;
+            sel.addRange(range);
+        }
+        this.editor.focus();
+    };
     
 	return Constr;
 }());

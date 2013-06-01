@@ -107,6 +107,17 @@ eXide.edit.XQueryUtils = (function () {
             return null;
         },
         
+        findSiblings: function(node, type) {
+            var children = node.getParent.children;
+            var siblings = [];
+            for (var i = 0; i < children.length; i++) {
+                if (children[i] != node && children[i].name == type) {
+                    siblings.push(children[i]);
+                }
+            }
+            return siblings;
+        },
+        
         findAncestor: function(node, type) {
             if (type instanceof Array) {
                 while (node !== null) {

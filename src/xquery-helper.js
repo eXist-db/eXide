@@ -477,7 +477,7 @@ eXide.edit.XQueryModeHelper = (function () {
 					popupItems.push(item);
 				}
 				
-				$this.$addTemplates(doc, prefix, popupItems);
+				$this.getTemplates(doc, prefix, popupItems);
 				
 				$this.$showPopup(doc, wordrange, popupItems, complete);
 			},
@@ -489,7 +489,7 @@ eXide.edit.XQueryModeHelper = (function () {
 	
 	Constr.prototype.templateLookup = function(doc, prefix, wordrange, complete) {
 		var popupItems = [];
-		this.$addTemplates(doc, prefix, popupItems);
+		this.getTemplates(doc, prefix, popupItems);
 		this.$showPopup(doc, wordrange, popupItems, complete);
 	};
     
@@ -562,20 +562,6 @@ eXide.edit.XQueryModeHelper = (function () {
             });
         }
     };
-
-	Constr.prototype.$addTemplates = function (doc, prefix, popupItems) {
-        var templates = eXide.util.Snippets.getTemplates(doc, prefix);
-		// add templates
-		for (var i = 0; i < templates.length; i++) {
-			var item = {
-				type: "template",
-				label: "[S] " + templates[i].name,
-				template: templates[i].template,
-                completion: templates[i].completion
-			};
-			popupItems.push(item);
-		}
-	}
 	
 	Constr.prototype.$showPopup = function (doc, wordrange, popupItems, complete) {
 		// display popup
@@ -994,8 +980,9 @@ eXide.edit.XQueryModeHelper = (function () {
         var ast = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
         if (ast) {
             if (ast.name == "QName" && ast.getParent.name == "DirElemConstructor") {
-                var closeTag = eXide.edit.XQueryUtils.findNext(ast, "QName");
-                doRename([ast, closeTag]);
+                var tags = eXide.edit.XQueryUtils.findSiblings(ast, "QName");
+                tags.push(ast);
+                doRename(tags);
             } else if (ast.getParent.name == "VarName" || ast.getParent.name == "Param") {
                 var varName = eXide.edit.XQueryUtils.getValue(ast);
                 var ancestor = eXide.edit.XQueryUtils.findVariableContext(ast, varName);
