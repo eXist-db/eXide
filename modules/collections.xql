@@ -383,7 +383,11 @@ declare %private function local:get-users() {
     distinct-values(
         for $group in sm:get-groups()
         return
-            sm:get-group-members($group)
+            try {
+                sm:get-group-members($group)
+            } catch * {
+                ()
+            }
     )
 };
 
