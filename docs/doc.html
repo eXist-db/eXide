@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <div xmlns="http://www.w3.org/1999/xhtml" data-template="templates:surround" data-template-with="docs/page.html" data-template-at="main">
-    <section section="features">
+    <div class="row-fluid video">
+        <div class="span4 header">
+            <h1>Introducing<br/>eXide 2.0</h1>
+            <p>The XQuery IDE</p>
+        </div>
+        <div class="span8">
+            <div class="video-container">
+                <iframe id="ytplayer" type="text/html" width="853" height="480" src="http://www.youtube.com/embed/U7Cd9h6UPoc?autoplay=0&amp;theme=light&amp;showinfo=0&amp;vq=hd720" frameborder="0"/>
+            </div>
+        </div>
+    </div>
+    <section id="features">
         <h1>XQuery Editor Features</h1>
         <div class="feature">
             <div class="row-fluid">
@@ -14,8 +25,7 @@
                     the errors reported by the eXist-db server.</p>
                     <p>Validation on the server finds errors across all related modules,
                     while the client-side parsing provides the syntax tree required for sophisticated refactoring, context-sensitive
-                    code completion etc.
-                </p>
+                    code completion etc.</p>
                 </div>
             </div>
         </div>
@@ -97,7 +107,9 @@
                 the same name are not affected) and creates a new cursor for each of them. Start changing the name and you'll see how all
                 other occurrences change as well!
             </p>
-                    <p>To rename an XML element, place the cursor inside the tag name of the start or end tag.</p>
+                    <p>To rename an XML element, place the cursor inside the tag name of the start or end tag. This also works in
+                        XML and HTML mode!
+                    </p>
                     <p>Press <code>ESC</code> when you are done.</p>
                 </div>
             </div>
