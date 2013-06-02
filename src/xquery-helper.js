@@ -628,6 +628,7 @@ eXide.edit.XQueryModeHelper = (function () {
 	}
 	
 	Constr.prototype.showFunctionDoc = function (doc) {
+        this.xqlint(doc);
 		var sel = this.editor.getSelection();
 		var lead = sel.getSelectionLead();
 		
@@ -672,6 +673,7 @@ eXide.edit.XQueryModeHelper = (function () {
     };
     
 	Constr.prototype.gotoDefinition = function (doc) {
+        this.xqlint(doc);
 		var sel = this.editor.getSelection();
 		var lead = sel.getSelectionLead();
 		var funcName = this.getFunctionAtCursor(doc, lead);
