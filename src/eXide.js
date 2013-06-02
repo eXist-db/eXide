@@ -114,9 +114,13 @@ eXide.app = (function() {
                     var southStatus = localStorage.getItem("eXide.layout.south");
                     $("#layout-container").layout().toggle("south");
                     
-                    eXide.app.requireLogin(function() {
+                    if (eXide.configuration.allowGuest) {
                         $("#splash").fadeOut(400);
-                    });
+                    } else {
+                        eXide.app.requireLogin(function() {
+                            $("#splash").fadeOut(400);
+                        });
+                    }
                 });
             });
 		    
@@ -789,7 +793,7 @@ eXide.app = (function() {
                 west: "open",
                 east: "closed"
             };
-            if (eXide.util.supportsHtml5Storage) {
+            if (eXide.util.supportsHtml5Storage && localStorage.getItem("eXide.firstTime")) {
                 layoutState.west = localStorage.getItem("eXide.layout.west");
                 layoutState.east = localStorage.getItem("eXide.layout.east");
                 layoutState.south = localStorage.getItem("eXide.layout.south");
