@@ -123,30 +123,33 @@ eXide.edit.ModeHelper = (function () {
             var sel   = this.editor.getSelection();
             var lead = sel.getSelectionLead();
             var pos = this.editor.renderer.textToScreenCoordinates(lead.row, lead.column);
-            
-            var row = lead.row;
-            var line = this.editor.getSession().getDisplayLine(lead.row);
-            var start = lead.column - 1;
-            var end = lead.column;
-            while (start >= 0) {
-               var ch = line.substring(start, end);
-               if (ch.match(/^\$[\w:\-_\.]+$/)) {
-                   break;
-               }
-               if (!ch.match(/^[\w:\-_\.]+$/)) {
-                   start++;
-                   break;
-               }
-               start--;
+            var token;
+            if (sel.isEmpty()) {
+                var row = lead.row;
+                var line = this.editor.getSession().getDisplayLine(lead.row);
+                var start = lead.column - 1;
+                var end = lead.column;
+                while (start >= 0) {
+                   var ch = line.substring(start, end);
+                   if (ch.match(/^\$[\w:\-_\.]+$/)) {
+                       break;
+                   }
+                   if (!ch.match(/^[\w:\-_\.]+$/)) {
+                       start++;
+                       break;
+                   }
+                   start--;
+                }
+                token = line.substring(start, end);
+                end++;
+                
+                if (token === "" && !alwaysShow) {
+                    return false;
+                } else {
+                    range = new Range(row, start, row, end);
+                }
             }
-            var token = line.substring(start, end);
-            end++;
             
-            if (token === "" && !alwaysShow) {
-                return false;
-            } else {
-                range = new Range(row, start, row, end);
-            }
             eXide.util.Popup.position(pos);
     
             var popupItems = this.getTemplates(doc, token, []);
