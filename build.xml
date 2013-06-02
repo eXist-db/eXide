@@ -147,6 +147,7 @@
                 <include name="resources/**"/>
                 <include name="templates/**"/>
                 <include name="src/**"/>
+                <include name="docs/**"/>
                 <exclude name=".git*"/>
                 <exclude name="*.tmpl"/>
                 <exclude name="*.properties"/>
