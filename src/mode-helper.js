@@ -108,6 +108,9 @@ eXide.edit.ModeHelper = (function () {
         autocomplete : function(doc, alwaysShow) {
             var self = this;
             var range;
+            if (alwaysShow === undefined) {
+                alwaysShow = true;
+            }
             
             function apply(selected) {
                 if (range) {
@@ -148,6 +151,8 @@ eXide.edit.ModeHelper = (function () {
                 } else {
                     range = new Range(row, start, row, end);
                 }
+            } else if (!alwaysShow) {
+                return false;
             }
             
             eXide.util.Popup.position(pos);
