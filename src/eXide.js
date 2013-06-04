@@ -162,6 +162,7 @@ eXide.app = (function() {
                 var resultsBody = $("#results-body");
                 $("#results-iframe").width(resultsBody.innerWidth());
                 $("#results-iframe").height(resultsContainer.innerHeight() - $(".navbar", resultsContainer).height() - 8);
+                $("#results-body").height(resultsContainer.innerHeight() - $(".navbar", resultsContainer).height() - 8);
             }
 //			panel.width($(".ui-layout-center").innerWidth() - 20);
 //			panel.css("width", "100%");
@@ -665,7 +666,7 @@ eXide.app = (function() {
             localStorage["eXide.layout.south"] = layout.state.south.isClosed ? "closed" : "open";
             localStorage["eXide.layout.west"] = layout.state.west.isClosed ? "closed" : "open";
             localStorage["eXide.layout.east"] = layout.state.east.isClosed ? "closed" : "open";
-            
+            localStorage["eXide.layout.resultPanel"] = resultPanel;
 			editor.saveState();
 			deploymentEditor.saveState();
 		},
@@ -769,10 +770,14 @@ eXide.app = (function() {
 			eXide.app.resize(true);
         },
         
-        switchResultsPanel: function() {
-            var target = resultPanel === "south" ? "east" : "south";
+        prepareResultsPanel: function(target) {
             var contents = $("#results-body").parent().contents().detach();
             contents.appendTo(".ui-layout-" + target);
+        },
+        
+        switchResultsPanel: function() {
+            var target = resultPanel === "south" ? "east" : "south";
+            eXide.app.prepareResultsPanel(target);
             $("#layout-container").layout().close(resultPanel);
             resultPanel = target;
             if (resultPanel === "south") {
@@ -797,7 +802,9 @@ eXide.app = (function() {
                 layoutState.west = localStorage.getItem("eXide.layout.west");
                 layoutState.east = localStorage.getItem("eXide.layout.east");
                 layoutState.south = localStorage.getItem("eXide.layout.south");
+                resultPanel = localStorage["eXide.layout.resultPanel"] || "south";
             }
+            $.log("resultPanel: %s", resultPanel);
 			var layout = $("#layout-container").layout({
 				enableCursorHotkey: false,
                 spacing_open: 6,
@@ -826,7 +833,7 @@ eXide.app = (function() {
 			    center__onresize: eXide.app.resize,
 				center__contentSelector: ".content"
 			});
-            
+            eXide.app.prepareResultsPanel(resultPanel);
 			$("#open-dialog").dialog({
                 appendTo: "#layout-container",
 				title: "Open file",
