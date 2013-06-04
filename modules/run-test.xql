@@ -9,12 +9,12 @@ declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 
 declare option output:method "html5";
 declare option output:media-type "text/html";
+declare option output:indent "no";
 
 let $source := request:get-parameter("source", ())
 let $result := test:suite(inspect:module-functions(xs:anyURI("xmldb:exist://" || $source)))
 return
     <div class="uneven">
-        <div class="pos">1</div>
         <div class="item">{pretty:pretty-print($result, ())}</div>
     </div>
     

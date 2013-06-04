@@ -1028,11 +1028,8 @@ eXide.edit.XQueryModeHelper = (function () {
                 success: function (html) {
 					self.parent.updateStatus("");
 					self.parent.clearErrors();
-					var layout = $("body").layout();
-					layout.open("south");
-					//layout.sizePane("south", 300);
-					eXide.app.resize();
-					$('#results-container .results').html(html);
+					eXide.app.showResultsPanel();
+                    $('.results-container .results').empty().append(html);
 				},
 				error: function (xhr, status) {
 					eXide.util.error(xhr.responseText, "Server Error");
