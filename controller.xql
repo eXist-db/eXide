@@ -62,8 +62,16 @@ declare function local:fallback-login($domain as xs:string, $maxAge as xs:dayTim
 };
 
 declare function local:user-allowed() {
-    request:get-attribute("org.exist.login.user") and
-        (config:get-configuration()/restrictions/guest = "yes" or request:get-attribute("org.exist.login.user") != "guest")
+    (
+        request:get-attribute("org.exist.login.user") and
+        request:get-attribute("org.exist.login.user") != "guest"
+    ) or config:get-configuration()/restrictions/@guest = "yes"
+};
+
+declare function local:query-execution-allowed() {
+    config:get-configuration()/restrictions/@execute-query = "yes"
+        and
+    local:user-allowed()
 };
 
 if ($exist:path eq '/') then
@@ -129,7 +137,7 @@ else if ($exist:resource eq 'execute') then
     let $output := request:get-parameter("output", "xml")
     let $startTime := util:system-time()
     let $doLogin := $login("org.exist.login", (), false())
-    let $userAllowed := local:user-allowed()
+    let $userAllowed := local:query-execution-allowed()
     return
         if ($userAllowed) then
             switch ($output)
