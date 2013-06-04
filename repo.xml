@@ -3,16 +3,26 @@
     <description>eXide - a web based XQuery IDE</description>
     <author>Wolfgang Meier</author>
     <website/>
-    <status>beta</status>
-    <license>GNU-LGPL</license>
+    <status>stable</status>
+    <license>GNU-GPLv3</license>
     <copyright>true</copyright>
     <type>application</type>
     <target>eXide</target>
     <prepare>pre-install.xql</prepare>
     <finish/>
     <permissions user="admin" password="" group="dba" mode="rw-rw-r--"/>
-    <note>If you are updating to this version of eXide, you may need to bypass the browser's cache (and cookies). On most browsers, hold Ctrl (IE) or Shift (Firefox, Safari, Chrome) and click the reload button.</note>
+    <note>When upgrading, please make sure you also updated the shared-resources package to &gt; 0.3.5.</note>
     <changelog>
+        <change version="2.0">
+            <ul xmlns="">
+                <li>Context-sensitive code completion</li>
+                <li>Refactoring: extract function/variable</li>
+                <li>Refactoring: rename function/variable/XML tag</li>
+                <li>Quick fixes and code hints</li>
+                <li>Show raw result of queries in embedded browser</li>
+                <li>And more ...</li>
+            </ul>
+        </change>
         <change version="1.0.14">
             <ul xmlns="">
                 <li>Improved outline view</li>
@@ -30,5 +40,5 @@
             </ul>
         </change>
     </changelog>
-    <deployed>2013-02-06T11:58:26.451+01:00</deployed>
+    <deployed>2013-06-04T23:22:18.855+02:00</deployed>
 </meta>
