@@ -26,7 +26,7 @@ eXide.edit.Document = (function() {
     
 	Constr = function(name, path, session) {
 		this.name = name;
-		this.path = path;
+        this.path = path.replace(/\/{2,}/g, "/");
 		this.mime = null;
 		this.syntax = "xquery";
 		this.saved = false;
@@ -37,6 +37,7 @@ eXide.edit.Document = (function() {
 		this.$session = session;
         this.externalLink = null;
         this.lastChangeEvent = new Date().getTime();
+        this.lastValidation = 0;
         this.ast = null;
         var wrap = eXide.app.getPreference("softWrap");
         this.$session.setUseWrapMode(wrap != 0);
@@ -52,6 +53,10 @@ eXide.edit.Document = (function() {
     Constr.TYPE_VARIABLE = "variable";
     Constr.TYPE_TEMPLATE = "template";
     
+    Constr.prototype.needsValidation = function() {
+    	return !this.ast || this.lastChangeEvent > this.lastValidation;
+    };
+
 	Constr.prototype.getText = function() {
 		return this.$session.getValue();
 	};
@@ -101,7 +106,6 @@ eXide.edit.Document = (function() {
 	};
 	
     Constr.prototype.isNew = function() {
-        $.log("doc name: %s", this.path);
         return /__new__/.test(this.path);
     };
     
@@ -134,6 +138,10 @@ eXide.edit.Document = (function() {
 		var lead = sel.getSelectionLead();
 		return lead.row;
 	};
+
+	Constr.prototype.getLastChanged = function() {
+		return this.lastChangeEvent;
+	};
     
     Constr.prototype.getExternalLink = function() {
         return this.externalLink;
@@ -148,14 +156,13 @@ eXide.namespace("eXide.edit.Editor");
  * The main editor component. Handles the ACE editor as well as tabs, keybindings, commands...
  */
 eXide.edit.Editor = (function () {
-
-    var VALIDATE_TIMEOUT = 300;
     
 	var Renderer = require("ace/virtual_renderer").VirtualRenderer;
 	var Editor = require("ace/editor").Editor;
 	var EditSession = require("ace/edit_session").EditSession;
     var UndoManager = require("ace/undomanager").UndoManager;
-    var SnippetManager = require("ace/snippets").SnippetManager;
+    var SnippetManager = require("ace/snippets").snippetManager;
+    var net = require("ace/lib/net");
     
     function parseErrMsg(error) {
 		var msg;
@@ -183,7 +190,10 @@ eXide.edit.Editor = (function () {
 		$this.activeDoc = null;
 		$this.tabCounter = 0;
 		$this.newDocCounter = 0;
+
 		$this.pendingCheck = false;
+        $this.recheck = false;
+
         $this.themes = {};
         $this.initializing = true;
 		
@@ -201,9 +211,13 @@ eXide.edit.Editor = (function () {
         // register keybindings
         eXide.edit.commands.init($this);
         
+        // register editor on menubar to allow regaining focus
+        menubar.editor = this;
+        
 	    this.outline = new eXide.edit.Outline();
+	    this.validator = new eXide.edit.CodeValidator(this);
 	    this.addEventListener("activate", this.outline, this.outline.updateOutline);
-    	this.addEventListener("validate", this.outline, this.outline.updateOutline);
+    	this.validator.addEventListener("validate", this.outline, this.outline.updateOutline);
 		this.addEventListener("close", this.outline, this.outline.clearOutline);
         
 	    // Set up the status bar
@@ -220,7 +234,7 @@ eXide.edit.Editor = (function () {
 	    });
 
         // incremental search box
-        this.quicksearch = new eXide.find.IncrementalSearch($("#search-box"), this.editor);
+        //this.quicksearch = new eXide.find.IncrementalSearch($("#search-box"), this.editor);
         this.search = new eXide.find.SearchReplace(this.editor);
         
         var tabsDiv = $("#tabs-container");
@@ -241,14 +255,14 @@ eXide.edit.Editor = (function () {
             tabsDiv.scrollLeft(left);
         });
         
-	    this.lastChangeEvent = new Date().getTime();
 		this.validateTimeout = null;
+		this.validationEnabled = true;
 		
 		// register mode helpers
 		$this.modes = {
 			"xquery": new eXide.edit.XQueryModeHelper($this, menubar),
-			"xml": new eXide.edit.XMLModeHelper($this),
-            "html": new eXide.edit.XMLModeHelper($this),
+			"xml": new eXide.edit.XMLModeHelper($this, menubar),
+            "html": new eXide.edit.XMLModeHelper($this, menubar),
             "less": new eXide.edit.LessModeHelper($this),
             "javascript": new eXide.edit.JavascriptModeHelper($this),
             "css": new eXide.edit.CssModeHelper($this),
@@ -299,6 +313,12 @@ eXide.edit.Editor = (function () {
             var row = ev.getDocumentPosition().row;
             $this.exec("quickFix", row);
         });
+        
+        // var Emmet = require("ace/ext/emmet");
+        // net.loadScript("https://rawgithub.com/nightwing/emmet-core/master/emmet.js", function() {
+        //     Emmet.setCore(window.emmet);
+        //     $this.editor.setOption("enableEmmet", true);
+        // });
 	};
 
     // Extend eXide.events.Sender for event support
@@ -435,7 +455,8 @@ eXide.edit.Editor = (function () {
 				doc.saved = false;
 				$this.updateTabStatus(doc.path, doc);
 			}
-			$this.triggerCheck();
+			doc.lastChangeEvent = new Date().getTime();
+			$this.validator.triggerDelayed(doc);
 		});
 		$this.addTab(doc);
 		
@@ -515,11 +536,18 @@ eXide.edit.Editor = (function () {
                 doc.mime = "application/less";
             break;
         case "tmsnippet":
-            var SnippetMode = require("ace/mode/tmsnippet").Mode;
+            var SnippetMode = require("ace/mode/snippets").Mode;
             doc.$session.setUseSoftTabs(false);
             doc.$session.setMode(new SnippetMode());
             if (setMime)
                 doc.mime = "application/tmsnippet";
+            break;
+        case "json":
+            var JSONMode = require("ace/mode/json").Mode;
+            doc.$session.setUseSoftTabs(false);
+            doc.$session.setMode(new JSONMode());
+            if (setMime)
+                doc.mime = "application/json";
             break;
 		}
         eXide.util.Snippets.init(doc.getSyntax());
@@ -589,6 +617,7 @@ eXide.edit.Editor = (function () {
                 	if (mode) {
             			mode.documentSaved($this.activeDoc);
             		}
+                    $this.$triggerEvent("saved", [$this.activeDoc]);
 				}
 			},
 			error: function (xhr, status) {
@@ -617,6 +646,7 @@ eXide.edit.Editor = (function () {
 			if (this.documents[i].path == path)
 				return this.documents[i];
 		}
+        return null;
 	};
 
 	/**
@@ -629,17 +659,26 @@ eXide.edit.Editor = (function () {
 		}
 	};
 	
-	Constr.prototype.autocomplete = function() {
+	Constr.prototype.autocomplete = function(alwaysShow) {
 		var mode = this.activeDoc.getModeHelper();
 		if (mode && mode.autocomplete) {
-			mode.autocomplete(this.activeDoc);
+			return mode.autocomplete(this.activeDoc, alwaysShow);
 		}
+		return false;
 	};
 	
 	Constr.prototype.getHeight = function () {
-		return $(this.container).height();
+		return $("#fullscreen").height();
 	};
 	
+	Constr.prototype.getWidth = function () {
+		return $(this.container).width();
+	};
+
+	Constr.prototype.getOffset = function() {
+		return $(this.container).offset();
+	};
+
 	Constr.prototype.resize = function () {
 		this.editor.resize();
 	};
@@ -664,6 +703,9 @@ eXide.edit.Editor = (function () {
 		var $this = this;
 		var tabId = "t" + $this.tabCounter++;
 		var label = doc.name;
+		if (label.length > 16) {
+			label = label.substring(0, 13) + "...";
+		}
 		if (!doc.saved)
 			label += "*";
 		
@@ -721,7 +763,7 @@ eXide.edit.Editor = (function () {
             helper.activate();
         }
         if (!this.activeDoc.ast) {
-            this.triggerCheck();
+            this.validator.triggerNow(this.activeDoc);
         }
 	};
 	
@@ -789,63 +831,21 @@ eXide.edit.Editor = (function () {
 		}
 	};
 	
-	/**
-	 * Trigger validation.
-	 */
-	Constr.prototype.triggerCheck = function() {
-		var mode = this.activeDoc.getModeHelper();
-		if (mode) { 
-			var $this = this;
-			if ($this.pendingCheck) {
-				return;
-			}
-			var time = new Date().getTime();
-			if ($this.validateTimeout && time - this.activeDoc.lastChangeEvent < VALIDATE_TIMEOUT) {
-				clearTimeout($this.validateTimeout);
-			}
-			this.activeDoc.lastChangeEvent = time;
-			this.validateTimeout = setTimeout(function() { 
-				$this.validate.apply($this); 
-			}, VALIDATE_TIMEOUT);
-		}
-	};
-
-    Constr.prototype.setValidation = function(enable) {
-        this.pendingCheck = !enable;
-    };
-    
-	/**
-	 * Validate the current document's text by calling validate on the
-	 * mode helper.
-	 */
-	Constr.prototype.validate = function() {
-		var $this = this;
-		var mode = $this.activeDoc.getModeHelper();
-		if (!(mode && mode.validate)) {
-			return;
-		}
-		$this.pendingCheck = true;
-		$.log("Running validation...");
-		mode.validate($this.activeDoc, $this.getText(), function (success) {
-			$this.pendingCheck = false;
-            $.log("Validation completed.");
-            $this.$triggerEvent("validate", [$this.activeDoc]);
-		});
-	};
-	
 	/*
 	 * Cannot compile xquery: XPDY0002 : variable '$b' is not set. [at line 5, column 6, source: String]
 	 */
-	Constr.prototype.evalError = function(msg) {
+	Constr.prototype.evalError = function(msg, gotoLine) {
 		var str = /.*line\s(\d+)/i.exec(msg);
 		var line = -1;
 		if (str) {
 			line = parseInt(str[1]);
 		}
 		$.log("error in line %d", str[1]);
-		this.editor.focus();
-		this.editor.gotoLine(line);
-		
+        if (gotoLine) {
+    		this.editor.focus();
+    		this.editor.gotoLine(line);
+        }
+        
 		var annotation = [{
 				row: line - 1,
 				text: msg,

@@ -128,10 +128,10 @@ eXide.browse.ResourceBrowser = (function () {
     		            }
                         break;
     				case 8:
+                        e.stopPropagation();
+    		            e.preventDefault();
     					var p = $this.collection.lastIndexOf("/");
     					if (p > 0) {
-    						e.stopPropagation();
-    			            e.preventDefault();
     			            if ($this.collection != "/db") {
     			            	var parent = $this.collection.substring(0, p);
     						
@@ -184,7 +184,7 @@ eXide.browse.ResourceBrowser = (function () {
             title: "Resource/collection properties",
 			modal: true,
 	        autoOpen: false,
-	        height: 320,
+	        height: 340,
 	        width: 460,
             buttons: {
                 "Cancel": function () { $(this).dialog("close"); },
@@ -397,10 +397,14 @@ eXide.browse.ResourceBrowser = (function () {
 		}
 		var resources = [];
 		for (var i = 0; i < selected.length; i++) {
-			resources.push(this.collection + "/" + this.data[selected[i]].name);
+            if (this.data[selected[i]].name != "..") {
+			    resources.push(this.collection + "/" + this.data[selected[i]].name);
+            }
 		}
-        $("#resource-properties-content").load("modules/collections.xql", { "properties": resources });
-        $("#resource-properties-dialog").dialog("open");
+        if (resources.length > 0) {
+            $("#resource-properties-content").load("modules/collections.xql", { "properties": resources });
+            $("#resource-properties-dialog").dialog("open");
+        }
     };
     
     Constr.prototype.cut = function() {

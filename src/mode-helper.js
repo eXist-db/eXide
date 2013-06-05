@@ -1,7 +1,7 @@
 /*
  *  eXide - web-based XQuery IDE
  *  
- *  Copyright (C) 2011 Wolfgang Meier
+ *  Copyright (C) 2013 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -24,6 +24,9 @@ eXide.namespace("eXide.edit.ModeHelper");
  */
 eXide.edit.ModeHelper = (function () {
 	
+    var SnippetManager = require("ace/snippets").snippetManager;
+    var Range = require("ace/range").Range;
+    
 	Constr = function(editor) {
 		this.parent = editor;
 		this.editor = this.parent.editor;
@@ -66,6 +69,11 @@ eXide.edit.ModeHelper = (function () {
             }
 		},
         
+        validate: function(doc, code, onComplete) {
+            if (onComplete)
+                onComplete(doc);
+        },
+        
         /**
          * Parse the document and add functions to the
          * document for the outline view.
@@ -92,7 +100,92 @@ eXide.edit.ModeHelper = (function () {
             	this.editor.focus();
             }
             return false;
-        }
+        },
+        
+        /**
+         * General autocomplete method: shows template popup.
+         */
+        autocomplete : function(doc, alwaysShow) {
+            var self = this;
+            var range;
+            if (alwaysShow === undefined) {
+                alwaysShow = true;
+            }
+            
+            function apply(selected) {
+                if (range) {
+                    self.editor.getSession().remove(range);
+                }
+                SnippetManager.insertSnippet(self.editor, selected.template);
+            }
+            
+            if (alwaysShow === undefined) {
+                alwaysShow = true;
+            }
+            
+            var sel   = this.editor.getSelection();
+            var lead = sel.getSelectionLead();
+            var pos = this.editor.renderer.textToScreenCoordinates(lead.row, lead.column);
+            var token;
+            if (sel.isEmpty()) {
+                var row = lead.row;
+                var line = this.editor.getSession().getDisplayLine(lead.row);
+                var start = lead.column - 1;
+                var end = lead.column;
+                while (start >= 0) {
+                   var ch = line.substring(start, end);
+                   if (ch.match(/^\$[\w:\-_\.]+$/)) {
+                       break;
+                   }
+                   if (!ch.match(/^[\w:\-_\.]+$/)) {
+                       start++;
+                       break;
+                   }
+                   start--;
+                }
+                token = line.substring(start, end);
+                end++;
+                
+                if (token === "" && !alwaysShow) {
+                    return false;
+                } else {
+                    range = new Range(row, start, row, end);
+                }
+            } else if (!alwaysShow) {
+                return false;
+            }
+            
+            eXide.util.Popup.position(pos);
+    
+            var popupItems = this.getTemplates(doc, token, []);
+            if (popupItems.length == 0) {
+                return false;
+            } else if (popupItems.length > 1) {
+                eXide.util.Popup.show(popupItems, function(selected) {
+                    if (selected) {
+                        apply(selected);
+                    }
+                });
+            } else if (popupItems.length == 1) {
+                apply(popupItems[0]);
+            }
+            return true;
+        },
+        
+        getTemplates: function (doc, prefix, popupItems) {
+            var templates = eXide.util.Snippets.getTemplates(doc, prefix);
+        	// add templates
+    		for (var i = 0; i < templates.length; i++) {
+    			var item = {
+    				type: "template",
+    				label: "[S] " + templates[i].name,
+    				template: templates[i].template,
+                    completion: templates[i].completion
+    			};
+    			popupItems.push(item);
+    		}
+            return popupItems;
+    	}
 	};
 	
 	return Constr;

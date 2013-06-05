@@ -10,7 +10,8 @@
     </template>
     <template name="html5-div" mode="html">
         <description>HTML5 Div Using Templating</description>
-        <code>&lt;div xmlns="http://www.w3.org/1999/xhtml" class="templates:surround?with=templates/page.html&amp;amp;at=content"&gt;
+        <code>&lt;div xmlns="http://www.w3.org/1999/xhtml" data-template="templates:surround" 
+    data-template-with="templates/page.html" data-template-at="content"&gt;
 &lt;/div&gt;</code>
     </template>
     <template name="xhtml5" mode="html">

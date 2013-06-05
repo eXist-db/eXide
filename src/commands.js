@@ -24,7 +24,7 @@ eXide.namespace("eXide.edit.commands");
 eXide.edit.commands = (function () {
 
 	var useragent = require("ace/lib/useragent");
-	var SnippetManager = require("ace/snippets").SnippetManager;
+	var SnippetManager = require("ace/snippets").snippetManager;
 	var bindings = {};
     
 	function bindKey(bindings) {
@@ -158,12 +158,20 @@ eXide.edit.commands = (function () {
         		    	}
         		    });
                     commands.addCommand({
-            	    	name: "searchIncremental",
-        		    	bindKey: bindKey(bindings.searchIncremental),
-        		    	exec: function(editor) {
-        		    		parent.quicksearch.start();
-        		    	}
-        		    });
+                        name: "gotoSymbol",
+                        hint: "Goto symbol",
+                        bindKey: bindKey(bindings.gotoSymbol),
+                        exec: function(editor) {
+                            parent.exec("gotoSymbol");
+                        }
+                    });
+              //       commands.addCommand({
+            	 //    	name: "searchIncremental",
+        		    // 	bindKey: bindKey(bindings.searchIncremental),
+        		    // 	exec: function(editor) {
+        		    // 		parent.quicksearch.start();
+        		    // 	}
+        		    // });
                     commands.addCommand({
                     	name: "searchReplace",
         		    	bindKey: bindKey(bindings.searchReplace),
@@ -245,13 +253,33 @@ eXide.edit.commands = (function () {
                         }
                     });
                     commands.addCommand({
+                        name: "extractFunction",
+                        hint: "Extract Function",
+                        bindKey: bindKey(bindings.extractFunction),
+                        exec: function(editor) {
+                            parent.exec("extractFunction");
+                        }
+                    });
+                    commands.addCommand({
+                        name: "extractVariable",
+                        hint: "Extract Variable",
+                        bindKey: bindKey(bindings.extractVariable),
+                        exec: function(editor) {
+                            parent.exec("extractVariable");
+                        }
+                    });
+                    commands.addCommand({
                         name: "snippet",
                         hint: "code snippet",
                         bindKey: {mac: "Tab", win: "Tab"},
                         exec: function(editor) {
                             var success = SnippetManager.expandWithTab(editor);
-                            if (!success)
+                            if (!success) {
+                                success = parent.autocomplete(false);
+                            }
+                            if (!success) {
                                 editor.execCommand("indent");
+                            }
                         }
                     });
     			    createMap(parent);

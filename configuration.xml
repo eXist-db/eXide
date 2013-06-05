@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <restrictions execute-query="yes" guest="yes">
+        <!-- 
+            Disallow access to certain collections. When using this,
+            you always (!) want to deny access to the eXide collection as
+            well.
+        -->
+        <!--deny collection="/db/apps/eXide"/-->
+    </restrictions>
+</configuration>

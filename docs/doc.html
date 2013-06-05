@@ -1,0 +1,208 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<div xmlns="http://www.w3.org/1999/xhtml" data-template="templates:surround" data-template-with="docs/page.html" data-template-at="main">
+    <div class="row-fluid video">
+        <div class="span4 header">
+            <h1>Introducing<br/>eXide 2.0</h1>
+            <p>The XQuery IDE</p>
+        </div>
+        <div class="span8">
+            <div class="video-container">
+                <iframe id="ytplayer" type="text/html" width="853" height="480" src="http://www.youtube.com/embed/U7Cd9h6UPoc?autoplay=0&amp;theme=light&amp;showinfo=0&amp;vq=hd720" frameborder="0"/>
+            </div>
+        </div>
+    </div>
+    <section id="features">
+        <h1>XQuery Editor Features</h1>
+        <div class="feature">
+            <div class="row-fluid">
+                <div class="span3 thumb">
+                    <h2>Syntax-aware</h2>
+                    <p>Validation as you type</p>
+                </div>
+                <div class="span9">
+                    <p>eXide constantly validates code while you edit an XQuery. It combines a client-side XQuery parser 
+                    (<a href="https://github.com/wcandillon/xqlint">xqlint</a>) with
+                    the errors reported by the eXist-db server.</p>
+                    <p>Validation on the server finds errors across all related modules,
+                    while the client-side parsing provides the syntax tree required for sophisticated refactoring, context-sensitive
+                    code completion etc.</p>
+                </div>
+            </div>
+        </div>
+        <div class="feature">
+            <div class="row-fluid">
+                <div class="span3 thumb">
+                    <h2>IntelliCode</h2>
+                    <p>Context-sensitive code completion</p>
+                </div>
+                <div class="span9">
+                    <p>In XQuery mode, pressing the <code>tab</code> key after typing a few characters calls context-sensitive code completion. 
+            The suggestions shown depend on the context:</p>
+                    <ul>
+                        <li>if the character sequence starts with a $, search for possible variable expansions</li>
+                        <li>if it matches a code snippet, insert it</li>
+                        <li>all other cases: show functions matching the entered prefix</li>
+                    </ul>
+                    <p>A popup will be shown if there's more than one possible completion. Otherwise the code is just inserted.</p>
+                    <p>As an alternative to the <code>tab</code> key, you can also press <code>Ctrl-Space</code>, <code>Cmd-Space</code> or
+                <code>Option-Space</code> (Mac). Unlike <code>tab</code>, this will also work if the cursor is placed in white space
+                or inside the prefix or namespace declarations of an <i>import module</i> or <i>declare namespace</i> expression.</p>
+                </div>
+            </div>
+        </div>
+        <div class="feature">
+            <div class="row-fluid">
+                <div class="span3 thumb">
+                    <h2>Code Snippets</h2>
+                    <p>Code templates to save you some typing</p>
+                </div>
+                <div class="span9">
+                    <p>Snippets are triggered by pressing
+                <code>tab</code> after typing a known keyword. For example, to create a new XQuery function, type
+                <i>fun</i> and press <code>tab</code>. A snippet may have one or more parameters to change: after insertion, 
+                the function name will be selected so you can edit it. Pressing <code>tab</code> will move to the next snippet parameter.
+                Press <code>ESC</code> when you are done editing parameters.
+            </p>
+                    <p>Code snippets are available in XQuery, HTML, Javascript, CSS and Less mode. To see all snippet keywords in
+                XQuery mode, press <code>Ctrl-Space</code> or <code>Cmd-Space</code> after a whitespace.
+            </p>
+                    <p>The snippet definitions use the same syntax as the textmate editor (a well-known editor on the mac). Feel free
+                to edit them. All snippet files reside in the templates collection inside the eXide collection.
+            </p>
+                </div>
+            </div>
+        </div>
+        <div class="feature">
+            <div class="row-fluid">
+                <div class="span3 thumb">
+                    <h2>Refactoring</h2>
+                    <p>Extract function or variable from selected block</p>
+                </div>
+                <div class="span9">
+                    <p>When writing XQuery code, one often ends up with long FLWOR expressions or markup with lots of enclosed XQuery.
+            In good functional style you want to clean this up and extract code into functions. eXide 2.0 simplifies this by
+            providing refactorings for functions and variables.
+            </p>
+                    <p>To extract code into a function, select it in the editor (the block has to be syntactically valid) and choose
+                <span class="guimenuitem">XQuery/Extract function</span> from the menu or press <code>Ctrl-Shift-X</code> or
+                <code>Cmd-Ctrl-X</code> (Mac). A new function will be created with all dependant variables transformed into parameters.
+                At the same time the code block is replace with a matching function call and your cursor is duplicated and placed
+                at the function names, so you can just start typing and edit both. Press <code>ESC</code> once you are done.
+            </p>
+                    <p>Extracting a variable works in a similar way. Just press <code>Ctrl-Shift-E</code> or <code>Cmd-Ctrl-E</code>
+                after selecting a valid code block.
+            </p>
+                </div>
+            </div>
+        </div>
+        <div class="feature">
+            <div class="row-fluid">
+                <div class="span3 thumb">
+                    <h2>Rename</h2>
+                    <p>Rename a variable, function or XML element without breaking code</p>
+                </div>
+                <div class="span9">
+                    <p>To rename a variable or function, just place the cursor inside a variable or function name, either in its declaration
+                or any reference to it. Press <code>Ctrl-Alt-R</code> or <code>Cmd-Ctrl-R</code>. eXide finds all occurrences of the variable or function in the current scope (other variables with
+                the same name are not affected) and creates a new cursor for each of them. Start changing the name and you'll see how all
+                other occurrences change as well!
+            </p>
+                    <p>To rename an XML element, place the cursor inside the tag name of the start or end tag. This also works in
+                        XML and HTML mode!
+                    </p>
+                    <p>Press <code>ESC</code> when you are done.</p>
+                </div>
+            </div>
+        </div>
+        <div class="feature">
+            <div class="row-fluid">
+                <div class="span3 thumb">
+                    <h2>Quick Fixes</h2>
+                    <p>for some frequent issues</p>
+                </div>
+                <div class="span9">
+                    <p>eXide continually parses the XQuery code while you type and displays an error or warning icon in the gutter of
+                the corresponding line. But instead of just complaining, eXide is able to suggest a quick fix for some types
+                of warnings or errors. To see if a quick fix is available, click on the icon or press the quick fix shortcut
+                (<code>Ctrl-Shift-Q</code> or <code>Command-Ctrl-Q</code>) to see a list of suggestions. Quick fixes are available for
+                (we'll add more over time):
+            </p>
+                    <ul>
+                        <li>undeclared namespaces</li>
+                        <li>calls to unknown functions</li>
+                        <li>unknown variables</li>
+                        <li>unused namespaces or module imports</li>
+                    </ul>
+                    <div class="alert">
+                        Note: Some quick fixes require updates to the XQuery parser which will be available
+                        in eXist 2.0.1.
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="feature">
+            <div class="row-fluid">
+                <div class="span3 thumb">
+                    <h2>Code Navigation</h2>
+                    <p>Quickly navigate XQuery code</p>
+                </div>
+                <div class="span9">
+                    <p>In XQuery mode, eXide knows all reachable functions either in the current module or any imported one.
+                    To navigate to a function declaration, place the cursor inside the function name of a call and press
+                    <code>Ctrl-F3</code> or <code>Cmd-F3</code>.
+                </p>
+                    <p>To quickly navigate to any known function or variable declaration, press <code>Ctrl-Shift-U</code>
+                    or <code>Cmd-Shift-U</code> and choose a target from the popup. Btw, within the popup, just type to
+                    limit the displayed list to items containing the typed string.
+                </p>
+                </div>
+            </div>
+        </div>
+        <div class="feature">
+            <div class="row-fluid">
+                <div class="span3 thumb">
+                    <h2>Module Import</h2>
+                    <p>Importing modules into an XQuery</p>
+                </div>
+                <div class="span9">
+                    <p>There are two ways to quickly import another XQuery module into the current code:</p>
+                    <ol>
+                        <li>Choose the "Import Module" dialog from the menu or type <code>F4</code>
+                        </li>
+                        <li>Create an "import module" statement (type "import" and press <code>tab</code>) and enter the prefix. When you are within the quotes for 
+                        the namespace URI, press <code>Ctrl-Space</code> or <code>Cmd-Space</code> to call autocomplete.
+                        This should pop up any module currently stored in the db which matches the prefix you entered.</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+    <section id="security">
+        <h1>Security</h1>
+        <p>Keeping eXide installed on a production server can pose a security risk. eXide fully respects eXist's security model, 
+        so users will only see resources they have the appropriate permissions on. However, if a query is exposed to the web, it
+        needs to be publicly readable, so users will be able to see at least parts of the application code via eXide.</p>
+        <p>eXide thus provides additional security checks, so one can hide any valuable source code while still allowing 
+            some users to access specific parts of the db via eXide. Security settings are read from the configuration.xml file
+            within the eXide app collection:</p>
+        <pre>&lt;configuration&gt;
+    &lt;restrictions execute-query="yes" guest="no"&gt;
+        &lt;!-- disallow access to certain collections --&gt;
+        &lt;!--deny collection="/db/apps/dashboard"/--&gt;
+    &lt;/restrictions&gt;
+&lt;/configuration&gt;</pre>
+        <ul>
+            <li>The <strong>execute-query=yes|no</strong> attribute controls if non-dba users are allowed to execute XQuery code 
+            from within eXide.</li>
+            <li>
+                <strong>guest=yes|no</strong>: if set to "no", the default guest user will not be able to log in. eXide will
+                thus always show a login window before the editor is loaded - unless you already provided credentials during
+                a previous, still valid session.</li>
+            <li>One or more <strong>&lt;deny&gt;</strong> elements can be specified to block access to particular collections, even if the user
+                has the appropriate database permissions to see those collections.</li>
+        </ul>
+        <p>The additional security checks are done on the server, so hacking the client won't be fruitful. However, if you use
+            the &lt;deny&gt; feature, <strong>you must make sure</strong> that access to eXide's own collection is denied as well.
+            If not, logged in users could simply change eXide's code.</p>
+    </section>
+</div>

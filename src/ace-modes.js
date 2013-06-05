@@ -188,7 +188,6 @@ define("eXide/mode/behaviour/xquery", function(require, exports, module) {
             if (text == ":") {
                 var leftChar = line.substring(cursor.column - 1, 1);
                 if (leftChar == "(") {
-                    $.log("cursor: %d", cursor.column);
                     return {
                         text: ":  :",
                         selection: [2, 2]
@@ -203,7 +202,7 @@ define("eXide/mode/behaviour/xquery", function(require, exports, module) {
 	    		var cursor = editor.getCursorPosition();
 				var line = session.doc.getLine(cursor.row);
 				if (cursor.column > 0 && line.charAt(cursor.column - 1) == "<") {
-					line = line.substring(0, cursor.column) + "/" + line.substring(cursor.column);
+					line = line.substring(0, cursor.column) + '/' + line.substring(cursor.column + 1, line.length);
 					var lines = session.doc.getAllLines();
 					lines[cursor.row] = line;
 					// call mode helper to close the tag if possible

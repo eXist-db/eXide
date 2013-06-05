@@ -1,5 +1,17 @@
 {
     "tei": "http://www.tei-c.org/ns/1.0",
     "html": "http://www.w3.org/1999/xhtml",
-    "json": "http://www.json.org"
+    "json": "http://www.json.org",
+    "output": "http://www.w3.org/2010/xslt-xquery-serialization",
+    "atom": "http://www.w3.org/2005/Atom",
+    "templates": "http://exist-db.org/xquery/templates",
+    "expath": "http://expath.org/ns/pkg",
+    "xsi": "http://www.w3.org/2001/XMLSchema-instance",
+    "xlink": "http://www.w3.org/1999/xlink",
+    "xs": "http://www.w3.org/2001/XMLSchema",
+    "svg": "http://www.w3.org/2000/svg",
+    "fo": "http://www.w3.org/1999/XSL/Format",
+    "mods": "http://www.loc.gov/mods/v3",
+    "mads": "http://www.loc.gov/mads/",
+    "test": "http://exist-db.org/xquery/xqsuite"
 }

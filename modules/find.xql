@@ -18,6 +18,22 @@ declare function find:xquery-scripts($root as xs:string) {
         find:xquery-scripts($path)
 };
 
+declare function find:registered-scripts($prefix as xs:string?) {
+    for $uri in util:mapped-modules()
+    let $module := inspect:inspect-module-uri($uri)
+    where empty($prefix) or contains($module/@prefix, $prefix)
+    return
+        <json:value xmlns:json="http://www.json.org" json:array="true"
+            prefix="{$module/@prefix}" uri="{$module/@uri}">
+        {
+            if ($module/@location) then
+                attribute at { $module/@location }
+            else
+                ()
+        }
+        </json:value>
+};
+
 declare function find:modules($root as xs:string, $callback as function(xs:string, xs:string, xs:string) as item()*) {
     for $script in find:xquery-scripts($root)
     let $data := util:binary-doc($script)
@@ -40,6 +56,7 @@ let $modules := find:modules("/db", function($prefix, $uri, $source) {
 return
     <json:value xmlns:json="http://www.json.org">
     { 
+        for $module in find:registered-scripts($prefixParam) order by $module/@at return $module,
         for $module in $modules order by $module/@at return $module
     }
     </json:value>

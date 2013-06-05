@@ -18,6 +18,12 @@ snippet letr
 	return
 		${3:${TM_SELECTED_TEXT:()}}
 
+snippet order
+	order by ${1:${TM_SELECTED_TEXT:()}}
+
+snippet group
+	group by \$${1} := ${2:${TM_SELECTED_TEXT:()}}
+
 # function
 snippet fun
 	declare function ${1:name}(${2:\$param}) {
@@ -43,17 +49,19 @@ snippet if
 		${3:()}
 
 snippet import
-	import module namespace ${1:prefix}="${2:http://module.com}" at "${3:location}";
+	import module namespace ${1:prefix}="${2}" at "${3:location}";
 	
 snippet decns
-	declare namespace ${1:${TM_SELECTED_TEXT:prefix}}="${2:http://my.namespace.com}";
+	declare namespace ${1:${TM_SELECTED_TEXT:prefix}}="${2}";
 	
 snippet decopt
-	declare option exist:serialize "${1:method=html5 media-type=text/html}";
+	declare option output:${1:method} "${2:html5}";
 
-snippet html5
-	declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
+snippet json
+	declare option output:method "json";
+	declare option output:media-type "application/json";
 	
+snippet html5
 	declare option output:method "html5";
 	declare option output:media-type "text/html";
 
@@ -94,9 +102,11 @@ snippet case
 
 snippet xq
 	xquery version="3.0";
-
-snippet json
-	declare namespace json="http://www.json.org";
 	
 snippet tei
 	declare namespace tei="http://www.tei-c.org/ns/1.0";
+	
+snippet fc
+	(:~
+	 : ${1}
+	 :)

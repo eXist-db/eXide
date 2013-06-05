@@ -51,210 +51,11 @@ eXide.util = (function () {
     var selection = null;
     
     $(document).ready(function() {
+    	$.pnotify.defaults.history = false;
         $.pnotify.defaults.styling = "jqueryui";
     });
     
 	return {
-		
-		/**
-		 * Display popup window for selecting an entry from a HTML ul list.
-		 * The user can cycle through the entries using the up/down keys.
-		 * Pressing return selects an item and passes it to the onSelect
-		 * callback function. Pressing any other key closes the popup and
-		 * calls onSelect with a null argument.
-		 */
-		popup: function (editor, div, tooltipDiv, data, onSelect) {
-			var container = $(div);
-			var tooltips = tooltipDiv ? $(tooltipDiv) : null;
-			var filter = "";
-            
-			function updateTooltip(node) {
-				if (tooltips) {
-					tooltips.empty();
-					node.find(".tooltip").each(function () {
-						tooltips.html($(this).html());
-					});
-				}
-			}
-			
-            function filterEntries() {
-                if (filter.length == 0) {
-                    container.find("table tr").css("display", "");
-                } else {
-                    container.find("table tr").removeClass("selection").css("display", "none");
-                    container.find("table tr").each(function(pos) {
-                        var label = data[pos] instanceof Array ? data[pos].label[0] : data[pos].label;
-                        if (label.indexOf(filter) > -1) {
-                            $(this).css("display", "");
-                        }
-                    });
-                }
-                selection = container.find("table tr:visible").first().addClass('selection');
-                if (selection.length > 0) {
-                    selection.get(0).scrollIntoView();
-                }
-            }
-            
-			function compareLabels (a, b) {
-				return (a.label == b.label) ? 0 : (a.label > b.label) ? 1 : -1;
-			}
-			
-			data.sort(compareLabels);
-			
-			container.empty();
-            var titlebar = document.createElement("div");
-            titlebar.className = "title";
-			var closeLink = document.createElement("a");
-			closeLink.href = "#";
-			closeLink.className = "popup-close";
-			closeLink.appendChild(document.createTextNode("Close"));
-            titlebar.appendChild(closeLink);
-			container.append(titlebar);
-			$(closeLink).click(function (ev) {
-				ev.preventDefault();
-				// close container and unbind event
-				container.css("display", "none");
-				if (tooltips)
-					tooltips.css("display", "none");
-			});
-			
-            var div = document.createElement("div");
-            div.className = "items";
-            
-			var table = document.createElement("table");
-            div.appendChild(table);
-            
-            var filterInfo = document.createElement("div");
-            filterInfo.appendChild(document.createTextNode("Type to filter"));
-            $(filterInfo).css({ position: "absolute", bottom: 0, "font-size": "11px" });
-            div.appendChild(filterInfo);
-            
-			for (var i = 0; i < data.length; i++) {
-				var li = document.createElement("tr");
-				if (i == 0) {
-					li.className = "selection";
-                    selection = $(li);
-				}
-                var td;
-                if (data[i].label instanceof Array) {
-                    for (var j = 0; j < data[i].label.length; j++) {
-                        td = document.createElement("td");
-                        td.appendChild(document.createTextNode(data[i].label[j]));
-                        li.appendChild(td);
-                    }
-                } else {
-                    td = document.createElement("td");
-				    td.appendChild(document.createTextNode(data[i].label));
-                    li.appendChild(td);
-                }
-				if (data[i].tooltip) {
-					var help = document.createElement("span");
-					help.className = "tooltip";
-                    help.innerHTML = data[i].tooltip;
-					
-					td.appendChild(help);
-				}
-				table.appendChild(li);
-				
-				$(li).click(function () {
-					selection.removeClass("selection");
-					$(this).addClass("selection");
-					selection = $(this);
-					updateTooltip(selection);
-				});
-				$(li).dblclick(function () {
-					var pos = container.find("tr").index(selection);
-					
-					// close container and unbind event
-					container.css("display", "none");
-					if (tooltips)
-						tooltips.css("display", "none");
-					
-					// pass content to callback function
-					onSelect.call(null, data[pos]);
-				});
-			}
-			container.append(div);
-			
-			updateTooltip(selection);
-			
-			var list = $(div).scrollTop(0);
-			var ch = list.innerHeight();
-
-			$(container).keydown(function (ev) {
-				if (ev.which == 40) {
-                    ev.preventDefault();
-                    var pos = container.find("tr").index(selection);
-					var next = selection.nextAll(":visible").first();
-					if (next.length > 0) {
-						selection.removeClass("selection");
-						next.addClass("selection");
-						selection = next;
-						if (next.position().top + next.height() >= ch) {
-							next.get(0).scrollIntoView();
-						}
-						updateTooltip(next);
-					}
-				} else if (ev.which == 38) {
-                    ev.preventDefault();
-					var prev = selection.prevAll(":visible").first();
-					if (prev.length > 0) {
-						selection.removeClass("selection");
-						prev.addClass("selection");
-						selection = prev;
-						if (prev.prevAll(":visible").length == 0) {
-							list.scrollTop(0);
-						} else if (prev.position().top < 0) {
-							prev.get(0).scrollIntoView();
-						}
-						updateTooltip(prev);
-					}
-				} else if (ev.which == 13) {
-                    ev.preventDefault();
-					var pos = container.find("tr").index(selection);
-					
-					// close container and unbind event
-					container.css("display", "none");
-					if (tooltips)
-						tooltips.css("display", "none");
-					$(container).off();
-					
-					// pass content to callback function
-					onSelect.call(null, data[pos]);
-					
-				} else if (ev.which == 27) {
-                    ev.preventDefault();
-					// ESC key pressed: close container and unbind event
-					container.css("display", "none");
-					if (tooltips)
-						tooltips.css("display", "none");
-					$(container).off();
-					
-					// apply callback with null argument 
-					onSelect.call(null, null);
-				} else if (ev.which == 8) {
-                    ev.preventDefault();
-    			    if (filter.length > 0) {
-        		        filter = filter.substring(0, filter.length - 1);   
-                        $(filterInfo).text(filter);
-                        filterEntries();
-    			    }
-				}
-			});
-            $(container).keypress(function (ev) {
-                filter = filter + String.fromCharCode(ev.which);
-    		    $(filterInfo).text(filter);
-                filterEntries();
-            });
-            container.fadeIn(80, function() {
-                container.focus();
-                var offset = list.offset();
-                if (tooltips) {
-                    tooltips.css({ top: (offset.top - 8) + "px", left: (offset.left + list.width()+ 4) + "px" });
-                    tooltips.fadeIn();
-                }
-            });
-		},
 		
 		/**
 		 * Check if browser supports HTML5 local storage
@@ -267,6 +68,28 @@ eXide.util = (function () {
 			}
 		},
 		
+		supportsFullScreen: function() {
+			if (document["cancelFullScreen"] || document["webkitCancelFullScreen"] || document["mozCancelFullScreen"]) {
+				return true;
+			}
+			return false;
+		},
+
+		requestFullScreen: function(el) {
+			var state = document["fullScreen"] || document["webkitIsFullScreen"] || document["mozFullScreen"];
+			if (state) {
+				var func = document["cancelFullScreen"] || document["webkitCancelFullScreen"] || document["mozCancelFullScreen"];
+				func.call(document);
+			} else {
+				var func = (el["requestFullScreen"])
+	            || (el["webkitRequestFullScreen"])
+	            || (el["mozRequestFullScreen"]);
+	            if (func) {
+	            	func.call(el, true);
+	            }
+	        }
+		},
+
 		/**
 		 * Normalize a collection path. Remove xmldb: part, resolve ..
 		 */
@@ -302,7 +125,7 @@ eXide.util = (function () {
 					for (var i = 0; i < vars.length; i++) {
 						if (i > 0)
 							parsed += ", ";
-						parsed += "$${" + (i + 1) + ":" + vars[i].substring(1) + "}";
+						parsed += "${" + (i + 1) + ":\\$" + vars[i].substring(1) + "}";
 					}
 				}
 				parsed += ")";
@@ -384,6 +207,7 @@ eXide.util.Dialog = (function () {
 		messageDialog = $("#eXide-dialog-message");
 		
 		messageDialog.dialog({
+			appendTo: "#layout-container",
 			modal: true,
 			autoOpen: false,
 			buttons: {
@@ -467,7 +291,8 @@ eXide.util.mimeTypes = (function () {
         'javascript': ['application/x-javascript'],
         'text': ['text/text'],
         'less': ['application/less'],
-        'tmsnippet': ['application/tmsnippet']
+        'tmsnippet': ['application/tmsnippet'],
+        'json': ['application/json']
     };
 
     return {

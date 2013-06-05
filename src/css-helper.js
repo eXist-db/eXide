@@ -29,6 +29,7 @@ eXide.edit.CssModeHelper = (function () {
     	this.parent = editor;
 		this.editor = this.parent.editor;
         this.addCommand("locate", this.locate);
+        this.addCommand("gotoSymbol", this.gotoSymbol);
 	};
 	
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
@@ -45,7 +46,7 @@ eXide.edit.CssModeHelper = (function () {
                 lastVar += next.value;
             } else if (next.type == "paren.rparen") {
                 lastVar = "";
-            } else if (next.type == "paren.lparen") {
+            } else if (next.type == "paren.lparen" && lastVar !== "") {
                 doc.functions.push({
                 	type: eXide.edit.Document.TYPE_FUNCTION,
     				name: lastVar,
@@ -61,6 +62,31 @@ eXide.edit.CssModeHelper = (function () {
         }
         if (onComplete)
             onComplete(doc);
+    };
+
+    Constr.prototype.gotoSymbol = function(doc) {
+        var self = this;
+        var popupItems = [];
+        for (var i = 0; i < doc.functions.length; i++) {
+            if (doc.functions[i].name !== "") {
+                item = { 
+                    label: doc.functions[i].name,
+                    name: doc.functions[i].name,
+                    type: doc.functions[i].type,
+                    row: doc.functions[i].row
+                };
+                popupItems.push(item);
+            }
+        };
+        if (popupItems.length > 1) {
+            var left = this.parent.getOffset().left;
+            eXide.util.Popup.position({pageX: left, pageY: 40});
+            eXide.util.Popup.show(popupItems, function (selected) {
+                if (selected) {
+                    self.editor.gotoLine(selected.row + 1);
+                }
+            });
+        }
     };
     
     return Constr;

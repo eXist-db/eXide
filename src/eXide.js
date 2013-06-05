@@ -64,6 +64,7 @@ eXide.app = (function() {
 	var preferences;
     var templates = {};
     var menu;
+    var lastQuery = null;
 	var hitCount = 0;
 	var startOffset = 0;
 	var currentOffset = 0;
@@ -74,11 +75,20 @@ eXide.app = (function() {
     // used to detect when window looses focus
     var hasFocus = true;
     
+    var resultPanel = "south";
+    
+    var webResources = {
+        "html": 1,
+        "javascript": 1,
+        "css": 1,
+        "less": 1
+    };
+    
 	return {
         
 		init: function(afterInitCallback) {
-            menu = new eXide.util.Menubar($(".menu"));
             projects = new eXide.edit.Projects();
+            menu = new eXide.util.Menubar($(".menu"));
 			editor = new eXide.edit.Editor(document.getElementById("editor"), menu);
 			deploymentEditor = new eXide.edit.PackageEditor(projects);
 			dbBrowser = new eXide.browse.Browser(document.getElementById("open-dialog"));
@@ -101,14 +111,31 @@ eXide.app = (function() {
                         afterInitCallback(restored);
                     }
                     // dirty workaround to fix editor height
-                    $("body").layout().toggle("south");
+                    var southStatus = localStorage.getItem("eXide.layout.south");
+                    $("#layout-container").layout().toggle("south");
                     
-                    $("#splash").fadeOut(400);
+                    if (eXide.configuration.allowGuest) {
+                        $("#splash").fadeOut(400);
+                    } else {
+                        eXide.app.requireLogin(function() {
+                            $("#splash").fadeOut(400);
+                        });
+                    }
                 });
             });
 		    
 		    editor.addEventListener("outlineChange", eXide.app.onOutlineChange);
-
+            editor.validator.addEventListener("documentValid", function(doc) {
+                if (doc.isXQuery() && $("#live-preview").is(":checked")) {
+                    eXide.app.runQuery(doc.getPath(), true);
+                }
+            });
+            editor.addEventListener("saved", function(doc) {
+                if ($("#live-preview").is(":checked") && webResources[doc.getSyntax()]) {
+                    document.getElementById("results-iframe").contentDocument.location.reload(true);
+                }
+            });
+            
 			$(window).resize(eXide.app.resize);
 			
 			$(window).unload(function () {
@@ -127,9 +154,16 @@ eXide.app = (function() {
             return hasFocus;
         },
         
-		resize: function() {
+		resize: function(resizeIframe) {
 			var panel = $("#editor");
 			var header = $(".header");
+            if (resizeIframe) {
+                var resultsContainer = $(".ui-layout-" + resultPanel);
+                var resultsBody = $("#results-body");
+                $("#results-iframe").width(resultsBody.innerWidth());
+                $("#results-iframe").height(resultsContainer.innerHeight() - $(".navbar", resultsContainer).height() - 8);
+                $("#results-body").height(resultsContainer.innerHeight() - $(".navbar", resultsContainer).height() - 8);
+            }
 //			panel.width($(".ui-layout-center").innerWidth() - 20);
 //			panel.css("width", "100%");
 //			panel.height($(".ui-layout-center").innerHeight() - header.height());
@@ -258,6 +292,7 @@ eXide.app = (function() {
 		closeDocument: function() {
 			if (!editor.getActiveDocument().isSaved()) {
 				$("#dialog-confirm-close").dialog({
+                    appendTo: "#layout-container",
 					resizable: false,
 					height:140,
 					modal: true,
@@ -347,49 +382,88 @@ eXide.app = (function() {
 			}
 			window.location.href = "modules/load.xql?download=true&path=" + encodeURIComponent(doc.getPath());
 		},
-		
-		runQuery: function() {
-			editor.updateStatus("Running query ...");
-			var code = editor.getText();
-			var moduleLoadPath = "xmldb:exist://" + editor.getActiveDocument().getBasePath();
-			$('#results-container .results').empty();
-			$.ajax({
-				type: "POST",
-				url: "execute",
-				dataType: "xml",
-				data: { "qu": code, "base": moduleLoadPath },
-				success: function (xml) {
-					var elem = xml.documentElement;
-					if (elem.nodeName == 'error') {
-				        var msg = $(elem).text();
-				        eXide.util.error(msg, "Compilation Error");
-				        editor.evalError(msg);
-					} else {
-						editor.updateStatus("");
-						editor.clearErrors();
-						var layout = $("body").layout();
-						layout.open("south");
-						//layout.sizePane("south", 300);
-						eXide.app.resize();
-						
-						startOffset = 1;
-						currentOffset = 1;
-						hitCount = elem.getAttribute("hits");
-						endOffset = startOffset + 10 - 1;
-						if (hitCount < endOffset)
-							endOffset = hitCount;
-						eXide.util.message("Found " + hitCount + " in " + elem.getAttribute("elapsed") + "s");
-						eXide.app.retrieveNext();
-					}
-				},
-				error: function (xhr, status) {
-					eXide.util.error(xhr.responseText, "Server Error");
-				}
-			});
+        
+		runQuery: function(path, livePreview) {
+            function showResultsPanel() {
+                editor.updateStatus("");
+				editor.clearErrors();
+				eXide.app.showResultsPanel();
+				
+				startOffset = 1;
+				currentOffset = 1;
+            }
+
+            if (!(eXide.configuration.allowExecution || eXide.app.login.isAdmin)) {
+                eXide.util.error("You are not allowed to execute XQuery code.");
+                return;
+            }
+            if (!path && editor.getActiveDocument().getSyntax() == "html") {
+                showResultsPanel();
+                var iframe = document.getElementById("results-iframe");
+                $(iframe).show();
+                iframe.src = editor.getActiveDocument().getExternalLink();
+                $("#serialization-mode").attr("disabled", "disabled").val("html");
+            } else {
+                var code = editor.getText();
+                if (path) {
+                    var doc = editor.getDocument(path);
+                    if (doc) {
+                        code = doc.$session.getValue();
+                    } else {
+                        return;
+                    }
+                } else {
+                    lastQuery = editor.getActiveDocument().getPath();
+                }
+    			editor.updateStatus("Running query ...");
+    
+                $("#serialization-mode").removeAttr("disabled");
+                var serializationMode = $("#serialization-mode").val();
+    			var moduleLoadPath = "xmldb:exist://" + editor.getActiveDocument().getBasePath();
+    			$('.results-container .results').empty();
+    			$.ajax({
+    				type: "POST",
+    				url: "execute",
+    				dataType: serializationMode == "xml" ? serializationMode : "text",
+    				data: { "qu": code, "base": moduleLoadPath, "output": serializationMode },
+    				success: function (data, status, xhr) {
+                        switch (serializationMode) {
+                            case "xml":
+                                $("#results-iframe").hide();
+            					var elem = data.documentElement;
+            					if (elem.nodeName == 'error') {
+            				        var msg = $(elem).text();
+            				        //eXide.util.error(msg, "Compilation Error");
+            				        editor.evalError(msg, !livePreview);
+            					} else {
+            						showResultsPanel();
+            						hitCount = elem.getAttribute("hits");
+            						endOffset = startOffset + 10 - 1;
+            						if (hitCount < endOffset)
+            							endOffset = hitCount;
+            						eXide.util.message("Found " + hitCount + " in " + elem.getAttribute("elapsed") + "s");
+            						eXide.app.retrieveNext();
+            					}
+                                break;
+                            default:
+                                showResultsPanel();
+                                var iframe = document.getElementById("results-iframe");
+                                $(iframe).show();
+                                iframe.contentWindow.document.open('text/html', 'replace');
+                                iframe.contentWindow.document.write(data);
+                                iframe.contentWindow.document.close();
+                                break;
+                        }
+    				},
+    				error: function (xhr, status) {
+    					eXide.util.error(xhr.responseText, "Server Error");
+    				}
+    			});
+            }
 		},
 
 		checkQuery: function() {
-			editor.validate();
+			editor.validator.triggerNow(editor.getActiveDocument());
 		},
 
 		/** If there are more query results to load, retrieve
@@ -404,10 +478,10 @@ eXide.app = (function() {
 					url: url,
 					dataType: 'html',
 					success: function (data) {
-						$('#results-container .results').append(data);
-						$("#results-container .current").text("Showing results " + startOffset + " to " + (currentOffset - 1) +
+						$('.results-container .results').append(data);
+						$(".results-container .current").text("Showing results " + startOffset + " to " + (currentOffset - 1) +
 								" of " + hitCount);
-						$("#results-container .pos:last a").click(function () {
+						$(".results-container .pos:last a").click(function () {
 							eXide.app.findDocument($(this).data("path"));
 							return false;
 						});
@@ -426,7 +500,7 @@ eXide.app = (function() {
 		        endOffset = currentOffset + howmany - 1;
 				if (hitCount < endOffset)
 					endOffset = hitCount;
-				$("#results-container .results").empty();
+				$(".results-container .results").empty();
 				eXide.app.retrieveNext();
 			}
 			return false;
@@ -443,7 +517,7 @@ eXide.app = (function() {
 				endOffset = currentOffset + (count - 1);
 				if (hitCount < endOffset)
 					endOffset = hitCount;
-				$("#results-container .results").empty();
+				$(".results-container .results").empty();
 				eXide.app.retrieveNext();
 			}
 			return false;
@@ -562,10 +636,11 @@ eXide.app = (function() {
                 if (!editor.getActiveDocument()) {
                     eXide.app.newDocument("", "xquery");
                 }
-                editor.triggerCheck();
+                editor.validator.triggerNow(editor.getActiveDocument());
                 if (callback) callback(restoring);
             });
 			deploymentEditor.restoreState();
+            
 			return restoring;
 		},
 		
@@ -587,6 +662,11 @@ eXide.app = (function() {
 			localStorage.clear();
 			preferences.save();
 			
+            var layout = $('#layout-container').layout();
+            localStorage["eXide.layout.south"] = layout.state.south.isClosed ? "closed" : "open";
+            localStorage["eXide.layout.west"] = layout.state.west.isClosed ? "closed" : "open";
+            localStorage["eXide.layout.east"] = layout.state.east.isClosed ? "closed" : "open";
+            localStorage["eXide.layout.resultPanel"] = resultPanel;
 			editor.saveState();
 			deploymentEditor.saveState();
 		},
@@ -598,14 +678,22 @@ eXide.app = (function() {
                 success: function(data) {
                     eXide.app.login = data;
                     $("#user").text("Logged in as " + eXide.app.login.user + ". ");
-                    if (callback) callback();
+                    if (callback) callback(eXide.app.login.user);
                 },
                 error: function (xhr, textStatus) {
                     eXide.app.login = null;
                     $("#user").text("Login");
-                    if (callback) callback();
+                    if (callback) callback(null);
                 }
             })
+        },
+        
+        enforceLogin: function() {
+            eXide.app.requireLogin(function() {
+                if (!eXide.app.login || eXide.app.login.user === "guest") {
+                    eXide.app.enforceLogin();
+                }
+            });
         },
         
 		$checkLogin: function () {
@@ -676,34 +764,78 @@ eXide.app = (function() {
             }
         },
         
+        showResultsPanel: function() {
+            $("#layout-container").layout().open(resultPanel);
+			//layout.sizePane("south", 300);
+			eXide.app.resize(true);
+        },
+        
+        prepareResultsPanel: function(target) {
+            var contents = $("#results-body").parent().contents().detach();
+            contents.appendTo(".ui-layout-" + target);
+        },
+        
+        switchResultsPanel: function() {
+            var target = resultPanel === "south" ? "east" : "south";
+            eXide.app.prepareResultsPanel(target);
+            $("#layout-container").layout().close(resultPanel);
+            resultPanel = target;
+            if (resultPanel === "south") {
+                $(".layout-switcher").attr("src", "resources/images/layouts_split.png");
+            } else {
+                $(".layout-switcher").attr("src", "resources/images/layouts_split_vertical.png");
+            }
+            eXide.app.showResultsPanel();
+        },
+        
         initStatus: function(msg) {
             $("#splash-status").text(msg);
         },
         
 		initGUI: function(menu) {
-			var layout = $("body").layout({
+            var layoutState = {
+                south: "closed",
+                west: "open",
+                east: "closed"
+            };
+            if (eXide.util.supportsHtml5Storage && localStorage.getItem("eXide.firstTime")) {
+                layoutState.west = localStorage.getItem("eXide.layout.west");
+                layoutState.east = localStorage.getItem("eXide.layout.east");
+                layoutState.south = localStorage.getItem("eXide.layout.south");
+                resultPanel = localStorage["eXide.layout.resultPanel"] || "south";
+            }
+            $.log("resultPanel: %s", resultPanel);
+			var layout = $("#layout-container").layout({
 				enableCursorHotkey: false,
                 spacing_open: 6,
                 spacing_closed: 8,
-				north__size: 70,
+				north__size: 72,
 				north__resizable: false,
 				north__closable: false,
                 north__showOverflowOnHover: true,
                 north__spacing_open: 0,
 				south__minSize: 200,
                 south__size: 300,
-				south__initClosed: false,
+				south__initClosed: layoutState.south !== "closed",
                 south__contentSelector: "#results-body",
+                south__onresize: eXide.app.resize,
+                south__onopen: eXide.app.resize,
 				west__size: 200,
-				west__initClosed: false,
+				west__initClosed: layoutState.west == "closed",
 				west__contentSelector: ".content",
-                east__initClosed: true,
+                west__onopen: eXide.app.resize,
+                east__minSize: 300,
+                east__size: 450,
+                east__initClosed: layoutState.east == "closed",
+                east__onresize: eXide.app.resize,
+                east__onopen: eXide.app.resize,
 				center__minSize: 300,
 			    center__onresize: eXide.app.resize,
 				center__contentSelector: ".content"
 			});
-            
+            eXide.app.prepareResultsPanel(resultPanel);
 			$("#open-dialog").dialog({
+                appendTo: "#layout-container",
 				title: "Open file",
 				modal: false,
 		        autoOpen: false,
@@ -713,6 +845,7 @@ eXide.app = (function() {
 				resize: function() { dbBrowser.resize(); }
 			});
 			$("#login-dialog").dialog({
+                appendTo: "#layout-container",
 				title: "Login",
 				modal: true,
 				autoOpen: false,
@@ -760,10 +893,12 @@ eXide.app = (function() {
 				}
 			});
 			$("#keyboard-help").dialog({
+                appendTo: "#layout-container",
 				title: "Keyboard Shortcuts",
 				modal: false,
 				autoOpen: false,
 				height: 400,
+                width: 350,
 				buttons: {
 					"Close": function () { $(this).dialog("close"); }
 				},
@@ -772,6 +907,7 @@ eXide.app = (function() {
 				}
 			});
             $("#about-dialog").dialog({
+                appendTo: "#layout-container",
                 title: "About",
                 modal: false,
                 autoOpen: false,
@@ -782,6 +918,7 @@ eXide.app = (function() {
 				}
             });
             $("#dialog-templates").dialog({
+                appendTo: "#layout-container",
     			title: "New document",
 				modal: false,
 		        autoOpen: false,
@@ -829,36 +966,25 @@ eXide.app = (function() {
                 }
             });
             
+            eXide.util.Popup.init("#autocomplete-box", editor);
+            
+            $(".toolbar-buttons").buttonset();
+            
 			// initialize buttons and menu events
-			var button = $("#open").button({
-				icons: {
-					primary: "ui-icon-folder-open"
-				}
-			});
+            var button = $("#open").button("option", "icons", { primary: "ui-icon-folder-open" });
 			button.click(eXide.app.openDocument);
             menu.click("#menu-file-open", eXide.app.openDocument, "openDocument");
 			
-			button = $("#close").button({
-				icons: {
-					primary: "ui-icon-close"
-				}
-			});
+            button = $("#close").button("option", "icons", { primary: "ui-icon-close" });
 			button.click(eXide.app.closeDocument);
 			menu.click("#menu-file-close", eXide.app.closeDocument, "closeDocument");
 			
-			button = $("#new").button({
-				icons: {
-					primary: "ui-icon-document"
-				}
-			});
+            button = $("#new").button("option", "icons", { primary: "ui-icon-document" });
 			button.click(function() {
                 eXide.app.newDocumentFromTemplate();
 			});
-            button = $("#new-xquery").button({
-    			icons: {
-					primary: "ui-icon-document"
-				}
-			});
+            
+            button = $("#new-xquery").button("option", "icons", { primary: "ui-icon-document" });
 			button.click(function() {
                 eXide.app.newDocument(null, "xquery");
 			});
@@ -866,65 +992,37 @@ eXide.app = (function() {
     		menu.click("#menu-file-new-xquery", function() {
                 eXide.app.newDocument(null, "xquery");
     		}, "newXQuery");
-            
-			button = $("#run").button({
-				icons: {
-					primary: "ui-icon-play"
-				}
-			});
-			button.click(eXide.app.runQuery);
 
-            button = $("#debug").button({
-                icons: {
-                    primary: "ui-icon-seek-end"
-                }
-            });
+            button = $("#run").button("option", "icons", { primary: "ui-icon-play" });
+			button.click(function(ev) { eXide.app.runQuery() });
+
+            button = $("#debug").button("option", "icons", { primary: "ui-icon-seek-end" });
             button.click(eXide.app.startDebug);
 
-            button = $("#debug-actions #step-over").button({
-                icons: {
-                    primary: "ui-icon-seek-end"
-                }
-            });
+            
+            button = $("#debug-actions #step-over").button("option", "icons", { primary: "ui-icon-seek-end" });
             button.click(eXide.app.stepOver);
 
-            button = $("#debug-actions #step-into").button({
-                icons: {
-                    primary: "ui-icon-seek-end"
-                }
-            });
+            button = $("#debug-actions #step-into").button("option", "icons", { primary: "ui-icon-seek-end" });
             button.click(eXide.app.stepInto);
 
-            button = $("#debug-actions #step-out").button({
-                icons: {
-                    primary: "ui-icon-seek-end"
-                }
-            });
+            button = $("#debug-actions #step-out").button("option", "icons", { primary: "ui-icon-seek-end" });
             button.click(eXide.app.startDebug);
 
-			button = $("#validate").button({
-				icons: {
-					primary: "ui-icon-check"
-				}
-			});
+            button = $("#validate").button("option", "icons", { primary: "ui-icon-check" });
+
 			button.click(eXide.app.checkQuery);
-			button = $("#save").button({
-				icons: {
-					primary: "ui-icon-disk"
-				}
-			});
+            
+            button = $("#save").button("option", "icons", { primary: "ui-icon-disk" });
 			button.click(eXide.app.saveDocument);
 			menu.click("#menu-file-save", eXide.app.saveDocument, "saveDocument");
             menu.click("#menu-file-save-as", eXide.app.saveDocumentAs);
 			
             menu.click("#menu-file-reload", eXide.app.reloadDocument);
             
-			button = $("#download").button({
-				icons: {
-					primary: "ui-icon-transferthick-e-w"
-				}
-			});
+            button = $("#download").button("option", "icons", { primary: "ui-icon-transferthick-e-w" });
 			button.click(eXide.app.download);
+            
 			menu.click("#menu-file-download", eXide.app.download);
 			menu.click("#menu-file-manager", eXide.app.manage, "dbManager");
 			// menu-only events
@@ -940,7 +1038,8 @@ eXide.app = (function() {
 				editor.editor.redo();
 			}, "redo");
             menu.click("#menu-edit-find", function() {
-                editor.quicksearch.start();
+                var config = require("ace/config");
+                config.loadModule("ace/ext/searchbox", function(e) {e.Search(editor.editor)});
             }, "searchIncremental");
             menu.click("#menu-edit-toggle-comment", function () {
                 editor.editor.toggleCommentLines();
@@ -958,6 +1057,9 @@ eXide.app = (function() {
             menu.click("#menu-navigate-info", function() {
                 editor.exec("showFunctionDoc");
             }, "functionDoc");
+            menu.click("#menu-navigate-symbol", function() {
+                editor.exec("gotoSymbol");
+            }, "gotoSymbol");
 			menu.click("#menu-deploy-run", eXide.app.openApp, "openApp");
 			
             menu.click("#menu-help-keyboard", function (ev) {
@@ -966,8 +1068,11 @@ eXide.app = (function() {
             menu.click("#menu-help-about", function (ev) {
 				$("#about-dialog").dialog("open");
 			});
-            menu.click("#menu-help-hints", function(ev) {
-                eXide.util.Help.show();
+            // menu.click("#menu-help-documentation", function(ev) {
+            //     eXide.util.Help.show();
+            // });
+            menu.click("#menu-help-documentation", function(ev) {
+                window.open("docs/doc.html");
             });
 			// syntax drop down
 			$("#syntax").change(function () {
@@ -998,9 +1103,21 @@ eXide.app = (function() {
 					$("#login-dialog").dialog("open");
 				}
 			});
-			$('#results-container .next').click(eXide.app.browseNext);
-			$('#results-container .previous').click(eXide.app.browsePrevious);
-            
+            if (!eXide.util.supportsFullScreen()) {
+                $("#toggle-fullscreen").hide();
+            }
+            $("#toggle-fullscreen").click(function(ev) {
+                ev.preventDefault();
+                eXide.util.requestFullScreen(document.getElementById("fullscreen"));
+            });
+            $(".results-container .layout-switcher").click(eXide.app.switchResultsPanel);
+			$('.results-container .next').click(eXide.app.browseNext);
+			$('.results-container .previous').click(eXide.app.browsePrevious);
+            $("#serialization-mode").change(function(ev) {
+                if (lastQuery) {
+                    eXide.app.runQuery(lastQuery);
+                }
+            });
             $("#error-status").mouseover(function(ev) {
                 var error = this;
                 $("#ext-status-bar").each(function() {
@@ -1011,7 +1128,6 @@ eXide.app = (function() {
             $("#ext-status-bar").mouseout(function(ev) {
                $(this).css("display", "none");
             });
-            
             $(window).blur(function() {
                 hasFocus = false;
             });
@@ -1022,6 +1138,27 @@ eXide.app = (function() {
                    eXide.app.getLogin();
                 } 
             });
+            
+            // first time startup dialog
+            $("#dialog-startup").dialog({
+                appendTo: "#layout-container",
+        		modal: false,
+                title: "Quick Start",
+    			autoOpen: false,
+                width: 400,
+                height: 300,
+    			buttons: {
+                    "OK" : function() { $(this).dialog("close"); }
+    			}
+    		});
+            if (!eXide.util.supportsHtml5Storage)
+    		    return;
+            // if local storage contains eXide properties, the app has already
+            // been started before and we do not show the welcome dialog
+            var showHints = localStorage.getItem("eXide.firstTime");
+            if (!showHints || showHints == 1) {
+                $("#dialog-startup").dialog("open");
+            }
 		}
 	};
 }());

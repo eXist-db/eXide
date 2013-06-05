@@ -24,7 +24,7 @@ eXide.namespace("eXide.util.Snippets");
  */
 eXide.util.Snippets = (function () {
     
-    var SnippetManager = require("ace/snippets").SnippetManager;
+    var SnippetManager = require("ace/snippets").snippetManager;
     
     var snippetsForMode = {};
     
@@ -55,7 +55,7 @@ eXide.util.Snippets = (function () {
         var snippets = snippetsForMode[doc.getSyntax()];
         var templates = [];
         for (var i = 0; i < snippets.length; i++) {
-            if (snippets[i].name.indexOf(prefix) == 0) {
+            if (!prefix || snippets[i].name.indexOf(prefix) == 0) {
                 templates.push({
                     TYPE: eXide.edit.Document.TYPE_TEMPLATE,
                     name: snippets[i].name,

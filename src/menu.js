@@ -26,19 +26,31 @@ eXide.util.Menubar = (function() {
     Constr = function (container) {
         var $this = this;
         this.container = container;
+        this.editor = null;
         
         var menuVisible = false;
         
         // Display sub menu on click
-		$("ul li", this.container).click(function (ev) {
-            ev.stopPropagation();
-            $("ul li ul", $this.container).css({display: "none"});
-            $("ul", this).css({display: "block"});
+		$("ul li>a", this.container).click(function (ev) {
+            var link = $(this);
+            var openMenu = $("ul li>a.open", $this.container);
+            if (openMenu.length > 0) {
+                openMenu.removeClass("open");
+                openMenu.next("ul").fadeOut(100, function() {
+                    link.addClass("open");
+                    link.next("ul").fadeIn(100);
+                });
+            } else {
+                link.addClass("open");
+                link.next("ul").fadeIn(200);
+            }
             menuVisible = true;
+            return false;
 		});
         $("body").click(function () {
             if (menuVisible) {
-                $("ul li ul", $this.container).css({display: "none"});
+                $("ul li ul", $this.container).fadeOut(100);
+                $("ul li>a", $this.container).removeClass("open");
             }
         });
     };
@@ -63,8 +75,12 @@ eXide.util.Menubar = (function() {
         }
         $(selector).click(function(ev) {
             ev.preventDefault();
-            $("ul li ul", $this.container).css({display: "none"});
             callback();
+            if ($this.editor) {
+                $this.editor.focus();
+            }
+            $("ul li ul", $this.container).fadeOut(100);
+            $("ul li>a", $this.container).removeClass("open");
         });
     };
     
@@ -76,13 +92,16 @@ eXide.util.Menubar = (function() {
         var item = ul.find("li:last-child a");
         item.click(function(ev) {
             ev.preventDefault();
+            ul.fadeOut(100);
+            $("ul li>a", $this.container).removeClass("open");
             onclick();
-            $("ul li ul", $this.container).css({display: "none"});
+            if ($this.editor) {
+                $this.editor.focus();
+            }
         });
     };
     
     Constr.prototype.remove = function(menu, title) {
-        $.log("Removing menu entry %s", title);
         var menu = $(this.container).find("ul li[title=\"" + menu + "\"]");
         menu.find("ul li a[title = \"" + title + "\"]").remove();
     };

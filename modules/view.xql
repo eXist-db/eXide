@@ -18,6 +18,28 @@
  :)
 xquery version "3.0";
 
+import module namespace config="http://exist-db.org/xquery/apps/config" at "config.xqm";
+
 declare option exist:serialize "method=html5 media-type=text/html";
 
-request:get-data()
+declare function local:expand-html($html as element()) {
+    let $config := config:get-configuration()
+    let $execAllowed := $config/restrictions/@execute-query = "yes"
+    let $guestAllowed := $config/restrictions/@guest = "yes"
+    return
+        <html>
+            <head>
+                { $html/head/* }
+                <script type="text/javascript">
+                    eXide.namespace("eXide.configuration");
+                    eXide.configuration.allowExecution = { $execAllowed };
+                    eXide.configuration.allowGuest = { $guestAllowed };
+                </script>
+            </head>
+            { $html/body }
+        </html>
+};
+
+let $html := request:get-data()
+return
+    local:expand-html($html/*)

@@ -77,11 +77,21 @@ eXide.edit.XQueryUtils = (function () {
             var children = node.getParent.children;
             for (var i = 0; i < children.length; i++) {
                 if (children[i] == node) {
-                    for (var j = i; j < children.length; j++) {
+                    for (var j = i + 1; j < children.length; j++) {
                         if (children[j].name == type) {
                             return children[j];
                         }
                     }
+                }
+            }
+            return null;
+        },
+        
+        findChild: function(node, type) {
+            var children = node.children;
+            for (var i = 0; i < children.length; i++) {
+                if (children[i].name == type) {
+                    return children[i];
                 }
             }
             return null;
@@ -95,6 +105,17 @@ eXide.edit.XQueryUtils = (function () {
                 }
             }
             return null;
+        },
+        
+        findSiblings: function(node, type) {
+            var children = node.getParent.children;
+            var siblings = [];
+            for (var i = 0; i < children.length; i++) {
+                if (children[i] != node && children[i].name == type) {
+                    siblings.push(children[i]);
+                }
+            }
+            return siblings;
         },
         
         findAncestor: function(node, type) {
@@ -147,11 +168,21 @@ eXide.edit.XQueryUtils = (function () {
             var refs = new eXide.edit.VariableReferences(name, node).getReferences();
             for (var i = 0; i < refs.length; i++) {
                 if (refs[i].getParent && (refs[i].getParent.name === "LetBinding") || 
-                    refs[i].getParent.name === "Param") {
+                    refs[i].getParent.name === "ForBinding" || refs[i].getParent.name === "Param") {
                     return refs[i];
                 }
             }
             return null;
+        },
+        
+        getPath: function(node) {
+            var parts = [ node.name ];
+            node = node.getParent;
+            while (node) {
+                parts.push(node.name);
+                node = node.getParent;
+            }
+            return parts.reverse().join("/");
         }
     };
 }());
@@ -255,11 +286,9 @@ eXide.edit.InScopeVariables = (function () {
     };
     
     Constr.prototype.FunctionDecl = function(node) {
-        $.log("Found function decl: %o", node);
         var saved = this.deepCopy(this.stack);
         this.visitChildren(node);
         this.stack = saved;
-        $.log("Restored stack to %o", this.stack);
         return true;
     };
     
@@ -340,6 +369,7 @@ eXide.edit.FunctionCalls = (function () {
         this.name = funcName;
         this.arity = arity;
         this.references = [];
+        this.declaration = null;
         this.visit(ast);
     };
     
@@ -352,13 +382,91 @@ eXide.edit.FunctionCalls = (function () {
         var name = node.children[0].value;
         if (name === this.name) {
             this.references.push(node.children[0]);
-            $.log("call: %o", name);
+        }
+        return false;
+    };
+    
+    Constr.prototype.FunctionDecl = function(node) {
+        var self = this;
+        if (parseInt(node.arity) === this.arity) {
+            this.visitChildren(node, {
+                EQName: function(node) {
+                    if (node.value === self.name) {
+                        self.declaration = node;
+                        return true;
+                    }
+                }
+            });
         }
         return false;
     };
     
     Constr.prototype.getReferences = function() {
         return this.references;
+    };
+    
+    return Constr;
+}());
+
+eXide.edit.ModuleInfo = (function () {
+    
+    Constr = function(ast) {
+        this.modulePrefix = null;
+        this.moduleNamespace = null;
+        this.annotations = {};
+        this.functions = [];
+        this.prolog = null;
+        this.visit(ast);
+    };
+
+    eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
+
+    Constr.prototype.isModule = function() {
+        return this.moduleNamespace !== null;
+    };
+
+    Constr.prototype.hasTests = function() {
+        for (var anno in this.annotations) {
+            if (/test\:/.test(anno)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    Constr.prototype.Prolog = function(prolog) {
+        this.prolog = prolog;
+    };
+
+    Constr.prototype.FunctionDecl = function(node) {
+        this.functions.push(node);
+    };
+
+    Constr.prototype.ModuleDecl = function(node) {
+        var self = this;
+        this.visitChildren(node, {
+            NCName: function(node) {
+                self.modulePrefix = eXide.edit.XQueryUtils.getValue(node);
+                return false;
+            },
+
+            URILiteral: function(node) {
+                self.moduleNamespace = node.value;
+                return false;
+            }
+        });
+        return false;
+    };
+    
+    Constr.prototype.Annotation = function(node) {
+        var self = this;
+        this.visitChildren(node, {
+            EQName: function(node) {
+                self.annotations[node.value] = 1;
+                return false;
+            }
+        });
+        return false;
     };
     
     return Constr;

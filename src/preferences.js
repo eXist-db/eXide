@@ -27,11 +27,12 @@ eXide.util.Preferences = (function () {
     var defaultPreferences = {
         theme: "tomorrow",
 		fontSize: 14,
+        font: "Default",
 		showInvisibles: false,
 		showPrintMargin: true,
 		showHScroll: false,
-	indent: -1,
-	        indentSize: 2,
+        indent: -1,
+        indentSize: 4,
         softWrap: -1
 	};
     
@@ -46,6 +47,7 @@ eXide.util.Preferences = (function () {
         });
         
         $("#preferences-dialog").dialog({
+            appendTo: "#layout-container",
     		title: "Preferences",
 			modal: false,
 			autoOpen: false,
@@ -67,10 +69,10 @@ eXide.util.Preferences = (function () {
     };
     
     Constr.prototype.updateForm = function() {
-        $.log("Updating preference form with fontsize %s", this.preferences.fontSize);
         var form = $("#preferences-dialog form");
         $("select[name=\"theme\"]", form).val(this.preferences.theme);
 		$("select[name=\"font-size\"]", form).val(this.preferences.fontSize);
+        $("select[name=\"font\"]", form).val(this.preferences.font);
 		$("input[name=\"show-invisibles\"]", form).attr("checked", this.preferences.showInvisibles);
 		$("input[name=\"print-margin\"]", form).attr("checked", this.preferences.showPrintMargin);
 
@@ -82,7 +84,7 @@ eXide.util.Preferences = (function () {
             indent = "Spaces";
         }
         $("select[name=\"indent\"]", form).val(indent);
-	        $("select[name=\"indent-size\"]", form).val(indentSize);
+        $("select[name=\"indent-size\"]", form).val(indentSize);
 
         var wrap = this.preferences.softWrap;
         if (wrap === 0) {
@@ -97,6 +99,7 @@ eXide.util.Preferences = (function () {
         var form = $("#preferences-dialog form");
         this.preferences.theme = $("select[name=\"theme\"]", form).val();
 		this.preferences.fontSize = parseInt($("select[name=\"font-size\"]", form).val());
+        this.preferences.font = $("select[name=\"font\"]", form).val();
 		this.preferences.showInvisibles = $("input[name=\"show-invisibles\"]", form).is(":checked");
 		this.preferences.showPrintMargin = $("input[name=\"print-margin\"]", form).is(":checked");
 
@@ -142,6 +145,13 @@ eXide.util.Preferences = (function () {
 
         });
 
+        if (this.preferences.font) {
+            var font = this.preferences.font + ", monospace";
+            $("#editor").css("font-family", font);
+            $("#outline").css("font-family", font);
+            $("#results-body .ace_scroller").css("font-family", font);
+        }
+            
         this.editor.editor.setFontSize(this.preferences.fontSize + "px");
 		this.editor.resize();
 	};
@@ -159,7 +169,7 @@ eXide.util.Preferences = (function () {
     
     Constr.prototype.save = function() {
         localStorage.setItem("eXide.preferences", JSON.stringify(this.preferences));
-        localStorage.setItem("eXide.hints", 0);
+        localStorage.setItem("eXide.firstTime", 0);
     };
     
     return Constr;

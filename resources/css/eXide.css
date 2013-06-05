@@ -4,6 +4,33 @@
 
 body {
     font-family: "Verdana", "Helvetica", "Arial", sans-serif;
+    margin: 0;
+    padding: 0;
+    background: #F3F3F3;
+}
+
+#fullscreen {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+}
+
+#body {
+    position: absolute;
+    top: 63px;
+    left: 0;
+    bottom: 0;
+    right: 0;
+}
+
+#layout-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
 }
 
 #splash {
@@ -24,11 +51,19 @@ body {
     display: block;
     top: 50%;
     left: 50%;
-    margin: -27px 0 0 -74px;
+    margin: -32px 0 0 -126px;
 }
 
 #splash p {
     text-shadow: 1px 1px 1px #666;
+}
+
+#login-dialog {
+	z-index: 10001;
+}
+
+.ui-front {
+	z-index: 10001;
 }
 
 table {
@@ -42,6 +77,28 @@ label {
   font-size: 13px;
   line-height: 18px;
   color: #404040;
+}
+
+label.checkbox {
+    margin-left: 1em;
+}
+
+select {
+    display: inline-block;
+    padding: 2px 6px;
+    color: #555555;
+    background-color: #FFFFFF;
+    vertical-align: middle;
+    border: 1px solid #CCCCCC;
+    border-radius: 4px;
+    -webkit-border-radius: 4px;
+    -moz-border-radius: 4px;
+    height: 22px;
+    line-height: 22px;
+}
+select:disabled {
+    background-color: #C0C0C0;
+    color: #FFFFFF;
 }
 
 .ui-widget {
@@ -110,7 +167,21 @@ a:link,a:visited {
     padding-left: 18px;
     border-left: 1px solid #bbb;
 }
-    
+
+#toggle-fullscreen {
+    display: inline-block;
+    margin: 0 0 0 10px;
+}
+
+#toggle-fullscreen:hover {
+    background: transparent;
+}
+
+#toggle-fullscreen img {
+    height: 16px;
+    vertical-align: middle;
+}
+
 #login-error {
 	color: red;
 	text-align: center;
@@ -129,10 +200,23 @@ a:link,a:visited {
 	border-left: 1px solid #bbb;
 }
 
+.header {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: url("../images/bubble.gif") fixed no-repeat top right;
+    background-color: #F3F3F3;
+    overflow: hidden;
+    z-index: -1;
+}
+
 .editor-header {
     background-image: url("../images/logo.png");
     background-repeat: no-repeat;
-    background-position: 8px 4px;
+    background-position: 4px 0px;
+    margin: 0 0 2px 0;
 }
 
 .menu {
@@ -159,6 +243,7 @@ a:link,a:visited {
 	display: block;
 	padding: 4px 8px;
 	text-decoration: none;
+	outline: 0;
 }
 
 * html .menu ul li a {
@@ -167,20 +252,33 @@ a:link,a:visited {
 }
 
 .menu ul li a:hover {
-	background: black; /*tab link background during hover state*/
-	color: white;
+	background: #CFE2ED; /*tab link background during hover state*/
+	color: #101010;
+}
+
+.menu ul li a.open {
+    background: #CFE2ED; /*tab link background during hover state*/
+    color: #101010;
 }
 
 /*1st sub level menu*/
 .menu ul li ul {
 	position: absolute;
+    background: #FFFFFF;
 	left: 0;
 	display: none;
 	z-index: 1000;
+    padding: 8px 0;
 	border: 1px solid #AAA;
-	-moz-box-shadow: 10px 10px 5px #888;
-	-webkit-box-shadow: 10px 10px 5px #888;
-	box-shadow: 10px 10px 5px #888;
+	-webkit-box-shadow: 2px 3px 5px rgba(0,0,0,.2);
+    -moz-box-shadow: 2px 3px 5px rgba(0,0,0,.2);
+    box-shadow: 2px 3px 5px rgba(0,0,0,.2);
+    -webkit-border-radius: 6px;
+    -webkit-border-top-left-radius: 0;
+    -moz-border-radius: 6px;
+    -moz-border-radius-topleft: 0;
+    border-radius: 6px;
+    border-top-left-radius: 0;
 }
 
 /*.menu ul li:hover ul {
@@ -204,15 +302,15 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 .menu ul li ul li a:hover { /*sub menus hover style*/
-	background: black;
-	color: white;
+	background: #CFE2ED;
+	color: #101010;
 }
 
 .menu .separator {
     display: block;
     font-size: 75%;
     padding: 5px;
-	background-image: #F0F0F0;
+	background: #F0F0F0;
     color: #AAA;
     padding-bottom: 2px;
     margin-bottom: 2px;
@@ -296,6 +394,16 @@ Sub level menu list items (undo style from Top level List Items)
 	font-size: 75%;
 	color: #666;
 	padding-right: 4px;
+}
+
+#toolbar .options {
+    height: 24px;
+    line-height: 24px;
+}
+
+#toolbar .options label {
+    font-size: inherit;
+    color: #666;
 }
 
 #toolbar .current-app {
@@ -404,7 +512,16 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 .eXide-browse-toolbar, .eXide-browse-breadcrumbs {
-	background-color: #CCC;
+}
+
+.eXide-browse-panel .ui-layout-pane {
+    border: 0;
+    background-color: transparent;
+}
+
+.eXide-browse-panel .ui-layout-north {
+    background: url("../images/bubble.gif") top right no-repeat;
+    overflow: hidden;
 }
 
 .eXide-browse-breadcrumbs {
@@ -418,7 +535,7 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 .eXide-browse-breadcrumbs a:hover {
-    color: #FFF;
+    color: rgb(31, 57, 255);
 }
 
 .eXide-browse-main {
@@ -508,13 +625,30 @@ Sub level menu list items (undo style from Top level List Items)
     font-weight: bold;
 }
 
-#results-container {
+.results-container {
 	font-size: 85%;
 	padding: 0;
     overflow: hidden;
 }
 
-#results-container .results {
+#results-body {
+    position: relative;
+}
+
+#results-iframe {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    background: #FFF;
+}
+
+.results-container .results {
 	margin: 0 15px;
     white-space: pre-wrap;
 }
@@ -537,14 +671,30 @@ Sub level menu list items (undo style from Top level List Items)
 
 .navbar img {
     border: 0;
+    vertical-align: middle;
 }
+
+.navbar .navbar-controls {
+    overflow: hidden;
+}
+
+.navbar img.layout-switcher {
+    margin-left: 1em;
+    cursor: pointer;
+}
+
+#serialization-mode {
+    margin-left: 2em;
+    vertical-align: middle;
+}
+
 .previous {
 	float: left;
     margin-left: 8px;
 }
 
 .current {
-	text-align: center;
+    margin-left: 1em;
 	font-weight: bold;
 }
 
@@ -577,32 +727,54 @@ Sub level menu list items (undo style from Top level List Items)
 
 /* Auto-complete box */
 #autocomplete-box {
-	position: relative;
-	min-width: 320px;
-    max-width: 500px;
+	position: absolute;
 	display: none;
 	z-index: 1000;
-    background-color: #E0E0E0;
-    border: 1px solid #BBB;
-    border-width: 1px 1px 1px 1px;
-    border-radius: 0;
-    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.3);
-	font-size: 85%;
-    outline: none;
+    font-size: 85%;
+    -webkit-box-shadow: 2px 3px 5px rgba(0,0,0,.2);
+    -moz-box-shadow: 2px 3px 5px rgba(0,0,0,.2);
+    box-shadow: 2px 3px 5px rgba(0,0,0,.2);
+    -webkit-border-radius: 6px;
+    -moz-border-radius: 6px;
+    border-radius: 6px;
+    background: white;
+    outline: 0;
+    border: 1px solid silver;
 }
 
 #autocomplete-box .items {
-    background-color: #E8E8E8;
-	margin: 8px 0;
-	padding: 0;
-	height: 220px;
-    width: 100%;
+    float: left;
+    margin: 4px 0 16px 0;
+    width: 320px;
+    padding: 0;
+    height: 220px;
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+#autocomplete-box .tooltips {
+    float: left;
+    width: 320px;
+    height: 220px;
     overflow: auto;
+    margin: 0 8px 0 8px;
+    padding: 0 0 0 8px;
+    border-left: 1px solid #C0C0C0;
+}
+
+#autocomplete-box .tooltips.hide {
+    width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+#autocomplete-box .tooltips p {
+    margin-top: 0;
 }
 
 #autocomplete-box table {
     width: 100%;
-    padding: 0;
 }
 
 #autocomplete-box td {
@@ -618,37 +790,22 @@ Sub level menu list items (undo style from Top level List Items)
 #autocomplete-box .title {
     font-size: 85%;
     padding: 4px;
-    text-align: right;
-	background-color: #404040;
+    color: #C0C0C0;
+    height: 1em;
 }
 
-#autocomplete-box .popup-close {
-    color: white;
+#autocomplete-box .title a {
+    float: right;
+}
+
+#autocomplete-box .tooltip {
+    width: 280px;
+    height: 220px;
+    float: right;
 }
 
 #autocomplete-box .selection {
 	background-color: #C0C0C0;
-}
-
-#autocomplete-help {
-	display: none;
-	z-index: 1000;
-	width: 320px;
-	height: 228px;
-	overflow: auto;
-	position: absolute;
-    background-color: #E8E8E8;
-    border: 1px solid #BBB;
-    border-width: 1px 1px 1px 1px;
-    border-radius: 0;
-    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.3);
-	font-size: 85%;
-	padding: 4px 8px;
-    margin: 0;
-}
-
-#autocomplete-help dt {
-    font-weight: bold;
 }
 
 #autocomplete-box .tooltip {
@@ -664,9 +821,10 @@ Sub level menu list items (undo style from Top level List Items)
 #outline-container h3 {
 	margin: 0;
 	padding: 4px 8px;
-	background-color: #F3F3F3;
+	background-color: #CFE2ED;
 	color: #606060;
 	font-weight: normal;
+    font-size: 85%;
 }
 
 #outline-body {
@@ -774,8 +932,16 @@ fieldset input[type="checkbox"] {
 }
 
 fieldset legend {
+    overflow: hidden;
+    width: 100%;
 	font-size: 133%;
-	padding-bottom: 1em;
+    font-weight: bold;
+	padding: 12px 8px;
+    margin-bottom: 8px;
+}
+
+#dialog-deploy legend {
+    background: url("../images/bubble.gif") top right no-repeat;
 }
 
 fieldset ol {
@@ -846,6 +1012,15 @@ fieldset input:required:valid {
 	margin-left: 10px;
 }
 
+#synchronize-dialog h3 {
+    background: url("../images/bubble.gif") top right no-repeat;
+    overflow: hidden;
+    font-size: 133%;
+    font-weight: bold;
+	padding: 12px 8px;
+    margin: 0;
+}
+
 #synchronize-report {
 	heigth: 200px;
 	overflow: auto;
@@ -861,6 +1036,15 @@ fieldset input:required:valid {
 
 #eXide-dialog-help-body {
     line-height: 1.66em;
+}
+
+#eXide-dialog-help-body h1 {
+    font-size: 1.66em;
+    font-weight: normal;
+}
+
+#eXide-dialog-help-body h2 {
+    font-size: 1.25em;
 }
 
 #eXide-dialog-help-body code {
@@ -1034,9 +1218,21 @@ div#debuger-container {
 }
 
 div#valueHighLight { 
-        position: absolute;
-        top: 0;
-        right: 0;
-        bottom: 0;
-        left: 0;
-    }
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+}
+
+#dialog-startup h1 {
+	background: url("../images/bubble.gif") top right no-repeat;
+}
+
+#dialog-startup p {
+	font-size: 125%;
+}
+
+#dialog-startup a:link, #dialog-startup a:visited {
+	color: #0083CB;
+}

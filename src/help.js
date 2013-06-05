@@ -36,6 +36,7 @@ eXide.util.Help = (function () {
 		helpDialog = $("#eXide-dialog-help");
 		
 		helpDialog.dialog({
+            appendTo: "#layout-container",
 			modal: false,
             title: "Quick Start",
 			autoOpen: false,
@@ -48,7 +49,7 @@ eXide.util.Help = (function () {
 			}
 		});
         
-        eXide.util.Help.showFirstTime();
+        // eXide.util.Help.showFirstTime();
     });
     
     return {

@@ -23,6 +23,8 @@ eXide.namespace("eXide.edit.XQueryQuickFix");
  */
 eXide.edit.XQueryQuickFix = (function () {
     
+    var SnippetManager = require("ace/snippets").snippetManager;
+    
     var quickFixes = [
         {
             regex: /Call to undeclared function/,
@@ -69,29 +71,30 @@ eXide.edit.XQueryQuickFix = (function () {
         {
             regex: /No namespace defined/,
             getResolutions: function(helper, editor, doc, annotation, ast) {
-                var matches = /for prefix (\w+)$/.exec(annotation.text);
+                var matches = /for prefix (\w+)/.exec(annotation.text);
                 if (matches.length === 2) {
                     if (ast && ast.getParent.name === "FunctionCall") {
                         return [{
                             resolve: function(helper, editor, doc, annotation) {
-                                helper.parent.setValidation(false);
+                                helper.parent.validator.setEnabled(false);
                                 var adder = new eXide.edit.PrologAdder(editor, doc);
                                 adder.importModule(matches[1]);
                                 helper.xqlint(doc);
                                 helper.autocomplete(doc);
-                                helper.parent.setValidation(true);
+                                helper.parent.validator.setEnabled(true);
                             },
                             action: "Import module \"" + matches[1] + "\""
                         }];
-                    } else if (ast && ast.name === "EQName") {
+                    } else if (ast && (ast.name === "EQName" || ast.getParent.name === "ElementTest" 
+                        || ast.getParent.name === "OptionDecl")) {
                         return [{
                             resolve: function(helper, editor, doc, annotation) {
-                                helper.parent.setValidation(false);
+                                helper.parent.validator.setEnabled(false);
                                 var adder = new eXide.edit.PrologAdder(editor, doc);
                                 adder.declareNamespace(matches[1]);
                                 helper.xqlint(doc);
                                 helper.autocomplete(doc);
-                                helper.parent.setValidation(true);
+                                helper.parent.validator.setEnabled(true);
                             },
                             action: "Declare namespace \"" + matches[1] + "\""
                         }];
@@ -102,15 +105,42 @@ eXide.edit.XQueryQuickFix = (function () {
         {
             regex: /variable.*not set/,
             getResolutions: function(helper, editor, doc, annotation, ast) {
-                $.log("quickfix ast: %o", ast);
                 if (ast.getParent.name === "VarName") {
-                    return [{
-                        resolve: function(helper, editor, doc, annotation) {
-                            var adder = new eXide.edit.PrologAdder(editor, doc);
-                            adder.declareVariable(ast.value);
+                    return [
+                        {
+                            resolve: function(helper, editor, doc, annotation) {
+                                var adder = new eXide.edit.PrologAdder(editor, doc);
+                                adder.declareVariable(ast.value);
+                            },
+                            action: "Declare global variable \"" + ast.value + "\""
                         },
-                        action: "Declare global variable \"" + ast.value + "\""
-                    }];
+                        {
+                            resolve: function(helper, editor, doc, annotation) {
+                                var template;
+                                var contextNode = eXide.edit.XQueryUtils.findAncestor(ast, ["IntermediateClause", "InitialClause", "ReturnClause"]);
+                                if (contextNode) {
+                                    template = "let \\$" + ast.value + " := ${1:()}";
+                                } else {
+                                    contextNode = eXide.edit.XQueryUtils.findAncestor(ast, "StatementsAndOptionalExpr");
+                                    contextNode = eXide.edit.XQueryUtils.findChild(contextNode, "Expr");
+                                    if (!contextNode) {
+                                        eXide.util.error("Extract variable: unable to determine context. Giving up.")
+                                        return;
+                                    }
+                                    template = "let \\$" + ast.value + " := ${1:()}" + "\nreturn";
+                                }
+                                helper.parent.validator.setEnabled(false);
+                                $.log("extract variable: context: %o", contextNode);
+                                editor.editor.gotoLine(contextNode.pos.sl + 1, contextNode.pos.sc);
+                                editor.editor.insert("\n");
+                                editor.editor.gotoLine(contextNode.pos.sl + 1, contextNode.pos.sc);
+                                SnippetManager.insertSnippet(editor.editor, template);
+                                editor.editor.focus();
+                                helper.parent.validator.setEnabled(true);
+                            },
+                            action: "Create let statement"
+                        }
+                    ];
                 }
             }
         }
@@ -170,7 +200,7 @@ eXide.namespace("eXide.edit.PrologAdder");
 eXide.edit.PrologAdder = (function () {
     
     var Range = require("ace/range").Range;
-    var SnippetManager = require("ace/snippets").SnippetManager;
+    var SnippetManager = require("ace/snippets").snippetManager;
     
     Constr = function(editor, doc) {
         this.editor = editor;
@@ -191,7 +221,24 @@ eXide.edit.PrologAdder = (function () {
         this.decl = decl;
     };
     
-    Constr.prototype.addFunction = function(name, param) {
+    Constr.prototype.getInsertionPoint = function(func) {
+        var row = 0;
+        if (func) {
+            func = eXide.edit.XQueryUtils.findAncestor(func, "FunctionDecl");
+            if (func) {
+                row = func.pos.el;
+            }
+        } else {
+            if (this.prolog.children.length > 0) {
+                row = this.prolog.pos.el;
+            } else if (this.decl) {
+                row = this.decl.pos.el;
+            }
+        }
+        return row;
+    };
+
+    Constr.prototype.addFunction = function(name, params) {
         this.prepareFunction();
         var template = "declare function " + name + "(";
         if (params) {
@@ -206,9 +253,9 @@ eXide.edit.PrologAdder = (function () {
         SnippetManager.insertSnippet(this.editor.editor, template);
     };
     
-    Constr.prototype.createFunction = function(params, code) {
-        var row = this.prepareFunction();
-        
+    Constr.prototype.createFunction = function(params, code, insertRow) {
+        var row = this.prepareFunction(insertRow);
+
         var fn = "declare function (";
         for (var i = 0; i < params.length; i++) {
             if (i > 0) {
@@ -219,26 +266,21 @@ eXide.edit.PrologAdder = (function () {
         fn += ") {\n\t" + code + "\n};";
         
         this.editor.editor.insert(fn);
-        this.editor.editor.gotoLine(row, 17)
+        this.editor.editor.gotoLine(row, 17);
     };
-    
-    Constr.prototype.prepareFunction = function() {
-        var row = 0;
-        if (this.prolog.children.length > 0) {
-            row = this.prolog.pos.el;
-        } else if (this.decl) {
-            row = this.decl.pos.el;
-        }
-        
+
+    Constr.prototype.prepareFunction = function(insertRow) {
+        var row = insertRow || this.getInsertionPoint();
+
         this.editor.editor.gotoLine(row + 1);
         this.editor.editor.navigateLineEnd();
         this.editor.editor.insert("\n\n");
         this.editor.editor.gotoLine(row + 3, 0);
-        
+
         return row + 3;
     };
     
-    Constr.prototype.importModule = function(name) {
+    Constr.prototype.importModule = function(name, namespace, location) {
         var prefix = name.indexOf(":") > -1 ? name.substring(0, name.indexOf(":")) : name;
         var row = 0;
         if (this.decl) {
@@ -257,8 +299,19 @@ eXide.edit.PrologAdder = (function () {
         this.editor.editor.insert("\n\n");
         this.editor.editor.gotoLine(row + 3, 0);
         
-        var template = "import module namespace " + prefix + "=\"${1}\";";
+        var template;
+        if (namespace) {
+            template = "import module namespace " + prefix + "=\"" + namespace + "\"";
+            if (location) {
+                template += " at \"" + location + "\";";
+            } else {
+                template += ";"
+            }
+        } else {
+            template = "import module namespace " + prefix + "=\"${1}\";";
+        }
         SnippetManager.insertSnippet(this.editor.editor, template);
+        this.editor.editor.gotoLine(row + 3, 26 + prefix.length);
     };
     
     Constr.prototype.declareNamespace = function(prefix) {
