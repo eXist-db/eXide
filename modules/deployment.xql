@@ -311,14 +311,20 @@ declare function deploy:expand-xql($target as xs:string) {
             <param name="namespace" value="{$name}/templates"/>
             <param name="config-namespace" value="{$name}/config"/>
         </parameters>
-    let $cleanup :=
-        if (empty($includeTmpl) and util:binary-doc-available($target || "/modules/templates.xql")) then
-            xmldb:remove($target || "/modules", "templates.xql")
-        else
-            ()
+    let $storeTemplates := deploy:shared-modules($includeTmpl, $target)
     for $module in ("view.xql", "app.xql", "config.xqm")
     return
         deploy:expand($target || "/modules", $module, $parameters)
+};
+
+declare function deploy:shared-modules($includeTmpl, $target) {
+    if ($includeTmpl) then
+        let $templatesFile := repo:get-resource("http://exist-db.org/apps/shared", "content/templates.xql")
+        let $templates := util:binary-to-string($templatesFile)
+        return
+                xmldb:store($target || "/modules", "templates.xql", $templates, "application/xquery")
+    else
+        ()
 };
 
 declare function deploy:store-templates-from-fs($target as xs:string, $base as xs:string, $userData as xs:string+, $permissions as xs:string) {
