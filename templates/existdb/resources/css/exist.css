@@ -2,9 +2,8 @@
 /* CSS Document */
 
 @import url('$shared/resources/css/fonts.css');
-@import url('bootstrap.min.css');
-@import url('bootstrap-responsive.min.css');
-@import url('dropdowns.css');
+@import url('$shared/resources/css/bootstrap.min.css');
+@import url('$shared/resources/css/bootstrap-responsive.min.css');
 
 
 /* ---------------------------------------- LAYOUT ---------------------------------------- */
