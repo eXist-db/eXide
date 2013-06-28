@@ -118,7 +118,7 @@
                 <include name="r.js"/>
             </fileset>
         </delete>
-        <delete>
+        <delete failonerror="false">
             <fileset dir="${build}">
                 <include name="*.xar"/>
             </fileset>
