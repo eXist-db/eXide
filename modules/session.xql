@@ -71,7 +71,14 @@ declare function sandbox:retrieve($num as xs:integer) as element() {
 declare function sandbox:store-in-session($results as item()*) as element(result) {
 	let $null := session:set-attribute('cached', $results)
     let $startTime := request:get-attribute("start-time")
-    let $elapsed := if ($startTime) then seconds-from-duration(current-time() - xs:time($startTime)) else 0
+    let $elapsed := 
+      if ($startTime) then
+	let $current-time := current-time()
+	let $hours :=  hours-from-duration($current-time - xs:time($startTime))
+	let $minutes :=  minutes-from-duration($current-time - xs:time($startTime))
+	let $seconds := seconds-from-duration($current-time - xs:time($startTime))
+	return ($hours * 3600) + ($minutes * 60) + $seconds
+      else 0
 	return
 		<result hits="{count($results)}" elapsed="{$elapsed}"/>
 };
