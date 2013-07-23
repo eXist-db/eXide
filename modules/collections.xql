@@ -137,7 +137,7 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
                             if ($isCollection) then
                                 xmldb:created($path)
                             else
-                                xmldb:created($collection, $resource)
+                                xmldb:last-modified($collection, $resource)
                         return
                             if (xs:date($date) = current-date()) then
                                 format-dateTime($date, "Today [H00]:[m00]:[s00]")
@@ -309,7 +309,7 @@ declare %private function local:get-property-map($resource as xs:string) as map(
                     "owner" := xmldb:get-owner($components[2], $components[3]),
                     "group" := xmldb:get-group($components[2], $components[3]),
                     "last-modified" := 
-                        format-dateTime(xmldb:created($components[2], $components[3]), "[MNn] [D00] [Y0000] [H00]:[m00]:[s00]"),
+                        format-dateTime(xmldb:last-modified($components[2], $components[3]), "[MNn] [D00] [Y0000] [H00]:[m00]:[s00]"),
                     "permissions" := xmldb:permissions-to-string(xmldb:get-permissions($components[2], $components[3])),
                     "mime" := xmldb:get-mime-type(xs:anyURI($resource))
                 }
