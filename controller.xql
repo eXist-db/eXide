@@ -74,7 +74,12 @@ declare function local:query-execution-allowed() {
     local:user-allowed()
 };
 
-if ($exist:path eq '/') then
+if ($exist:path eq '') then
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <redirect url="{concat($exist:prefix, $exist:controller, '/')}"/>
+    </dispatch>
+
+else if ($exist:path eq '/') then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <redirect url="index.html"/>
     </dispatch>
