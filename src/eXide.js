@@ -153,6 +153,9 @@ eXide.app = (function() {
         hasFocus: function() {
             return hasFocus;
         },
+        getEditor: function() {
+        	return editor;
+        },
         
 		resize: function(resizeIframe) {
 			var panel = $("#editor");
