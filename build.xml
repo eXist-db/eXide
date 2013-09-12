@@ -52,11 +52,11 @@
     <target name="rebuild" depends="clean,all"/>
     <target name="compress" depends="prepare">
         <echo message="Optimizing eXide sources"/>
-        <jscomp compilationLevel="simple" debug="false" output="${scripts}/eXide.min.js">
+        <jscomp compilationLevel="simple" debug="false" output="${scripts}/eXide.min.js" languageIn="ECMASCRIPT5">
             <sources dir="${basedir}/src">
+                <file name="ace-modes.js"/>
                 <file name="util.js"/>
                 <file name="popup.js"/>
-                <file name="ace-modes.js"/>
                 <file name="events.js"/>
                 <file name="commands.js"/>
                 <file name="mode-helper.js"/>
@@ -66,16 +66,20 @@
                 <file name="javascript-helper.js"/>
                 <file name="css-helper.js"/>
                 <file name="outline.js"/>
+                <file name="debuger.js"/>
                 <file name="codevalidator.js"/>
                 <file name="editor.js"/>
-                <file name="eXide.js"/>
                 <file name="deployment.js"/>
-                <file name="templates.js"/>
+                <file name="menu.js"/>
                 <file name="help.js"/>
                 <file name="preferences.js"/>
+                <file name="eXide.js"/>
+                <file name="templates.js"/>
                 <file name="resources.js"/>
                 <file name="find.js"/>
-                <file name="menu.js"/>
+                <file name="visitor.js"/>
+                <file name="xquery-utils.js"/>
+                <file name="quickfix.js"/>
                 <file name="snippets.js"/>
                 <file name="snippet-helper.js"/>
             </sources>
@@ -118,7 +122,7 @@
                 <include name="r.js"/>
             </fileset>
         </delete>
-        <delete>
+        <delete failonerror="false">
             <fileset dir="${build}">
                 <include name="*.xar"/>
             </fileset>

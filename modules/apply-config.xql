@@ -30,7 +30,9 @@ return
                 <response json:literal="true">true</response>,
                 if (not(starts-with($collection, "/db/system/config/"))) then (
                     local:mkcol("/db/system/config", $collection),
-                    xmldb:copy($collection, $target, $xconf)
+                    let $config := doc($collection || "/" || $xconf)
+                    return
+                        xmldb:store($target, $xconf, $config)
                 ) else
                     (),
                 let $reindex :=

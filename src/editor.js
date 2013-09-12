@@ -363,7 +363,7 @@ eXide.edit.Editor = (function () {
         if (data && typeof data == "string") {
             session = new EditSession(data);
         } else if (type && type === "xquery") {
-            session = new EditSession("xquery version \"3.0\";\n");
+            session = new EditSession("xquery version \"3.0\";\n1");
         } else {
             session = new EditSession("");
         }
