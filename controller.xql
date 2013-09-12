@@ -24,7 +24,7 @@ declare variable $login :=
         else
             local:fallback-login#3
 ;
-
+ 
 (:~
     Fallback login function used when the persistent login module is not available.
     Stores user/password in the HTTP session.
@@ -34,6 +34,8 @@ declare function local:fallback-login($domain as xs:string, $maxAge as xs:dayTim
     let $user := request:get-parameter("user", ())
     let $password := request:get-parameter("password", ())
     let $logout := request:get-parameter("logout", ())
+    let $log := util:log-system-out(('user:', $user))
+    let $log := util:log-system-out(('user:', $password))
     return
         if ($durationParam) then
             error(xs:QName("login"), "Persistent login module not enabled in this version of eXist-db")
@@ -87,15 +89,17 @@ else if ($exist:resource = 'login') then
     let $userAllowed := local:user-allowed()
     return
         try {
+        (
             util:declare-option("exist:serialize", "method=json"),
             if ($userAllowed) then
                 <status>
                     <user>{request:get-attribute("org.exist.login.user")}</user>
-                    <isAdmin json:literal="true">{ xmldb:is-admin-user(request:get-attribute("org.exist.login.user")) }</isAdmin>
+                    <isAdmin json:literal="true">{ xmldb:is-admin-user((request:get-attribute("org.exist.login.user"),request:get-attribute("xquery.user"), 'nobody')[1]) }</isAdmin>
                 </status>
             else (
                 response:set-status-code(401),
                 <status>fail</status>
+            )
             )
         } catch * {
             response:set-status-code(401),

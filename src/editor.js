@@ -343,7 +343,7 @@ eXide.edit.Editor = (function () {
 	
 	Constr.prototype.getActiveDocument = function() {
 		return this.activeDoc;
-	};
+	}; 
 	
 	Constr.prototype.getText = function() {
 		return this.activeDoc.getText();

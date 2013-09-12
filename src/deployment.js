@@ -162,7 +162,7 @@ eXide.edit.PackageEditor = (function () {
                 },
                 "Cancel": function () { $(this).dialog("close"); }
 			}
-		});
+		}); 
         
         this.gitCommitDialog = $("#dialog-git-commit");
 		this.gitCommitDialog.dialog({
