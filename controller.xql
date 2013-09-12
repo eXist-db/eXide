@@ -34,8 +34,6 @@ declare function local:fallback-login($domain as xs:string, $maxAge as xs:dayTim
     let $user := request:get-parameter("user", ())
     let $password := request:get-parameter("password", ())
     let $logout := request:get-parameter("logout", ())
-    let $log := util:log-system-out(('user:', $user))
-    let $log := util:log-system-out(('user:', $password))
     return
         if ($durationParam) then
             error(xs:QName("login"), "Persistent login module not enabled in this version of eXist-db")
