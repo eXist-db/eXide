@@ -193,6 +193,25 @@
                                 </li>
                             </ul>
                         </li>
+                        <li id="menu-git">
+                            <a href="#">Git</a>
+                            <ul>
+                                <li>
+                                    <span class="inactive">git working directory: <span id="menu-git-working-dir">unknown</span>
+                                    </span>
+                                </li>
+                                <li>
+                                    <span class="separator">Branch: <span id="menu-git-active">unknown</span>
+                                    </span>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-git-checkout">Checkout</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-git-commit">Synchronize and commit</a>
+                                </li>
+                            </ul>
+                        </li>
                         <li id="menu-xml">
                             <a href="#">XML</a>
                             <ul>
@@ -617,6 +636,52 @@
                 <h1>Getting Help</h1>
                 <p>eXide 2.0 has many new features. Make sure you read the <a href="docs/doc.html" target="_new">documentation</a>
                 to understand code completion, refactorings and keyboard shortcuts.</p>
+            </div>
+            <div id="dialog-git-checkout">
+                <p>Checkout git working directory to another branch</p>
+                <form>
+                    <fieldset>
+                        <ol>
+                            <li>
+                                <div class="hint">Select a new branch</div>
+                                <select name="git-checkout" id="git-checkout-select">
+                                    <option value="noValue">noValue</option>
+                                </select>
+                                <label for="git-checkout">checkout to branch:</label>
+                            </li>
+                        </ol>
+                    </fieldset>
+                    <input type="hidden" name="git-command" value="checkout"/>
+                    <div id="git-checkout-status"/>
+                </form>
+            </div>
+            <div id="dialog-git-commit">
+                <p>Sync with the git working directory and run a git commit once done</p>
+                <form>
+                    <fieldset>
+                        <ol>
+                            <li>
+                                <div class="hint">Start date/time in xs:dateTime notation. Only resources modified after this date will
+                              be synchronized. This field is filled automatically from the application descriptor
+                              (if available).</div>
+                                <input type="dateTime" name="start" size="36"/>
+                                <label for="start">Start time:</label>
+                            </li>
+                            <li>
+                                <div class="hint">title (first line) for the commit message</div>
+                                <input name="git-commit-title" required="required" size="36"/>
+                                <label for="git-commit-title">title:</label>
+                            </li>
+                            <li>
+                                <div class="hint">commit description</div>
+                                <textarea name="git-commit-desc" rows="4" cols="35"/>
+                                <label for="git-commit-desc">description:</label>
+                            </li>
+                        </ol>
+                    </fieldset>
+                    <input type="hidden" name="git-command" value="commit"/>
+                    <div id="git-commit-status"/>
+                </form>
             </div>
         </div>
     </body>
