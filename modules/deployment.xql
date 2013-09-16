@@ -2,7 +2,7 @@
  :  eXide - web-based XQuery IDE
  :  
  :  Copyright (C) 2011 Wolfgang Meier
- :
+ : 
  :  This program is free software: you can redistribute it and/or modify
  :  it under the terms of the GNU General Public License as published by
  :  the Free Software Foundation, either version 3 of the License, or
@@ -27,10 +27,11 @@ import module namespace tmpl="http://exist-db.org/xquery/template" at "tmpl.xql"
     Functions to read, update the descriptors and deploy an app.
 :)
 declare namespace deploy="http://exist-db.org/eXide/deploy";
+declare namespace git="http://exist-db.org/eXide/git";
 declare namespace expath="http://expath.org/ns/pkg";
 declare namespace repo="http://exist-db.org/xquery/repo";
 
-declare variable $app-root := request:get-attribute("app-root");
+declare variable $deploy:app-root := request:get-attribute("app-root");
 
 declare variable $deploy:ANT_FILE :=
     <project default="xar" name="$$app$$">
@@ -590,29 +591,6 @@ declare function deploy:deploy($collection as xs:string, $expathConf as element(
         ()
 };
 
-declare function deploy:get-info-from-descriptor($collection as xs:string) {
-    let $expathConf := doc(concat($collection, "/expath-pkg.xml"))/expath:package
-    let $repoConf := doc(concat($collection, "/repo.xml"))/repo:meta
-    let $user := xmldb:get-current-user()
-    let $auth := if ($user) then xmldb:is-admin-user($user) else false()
-    return
-        <info xmlns:json="http://json.org" root="{$collection}" abbrev="{$expathConf/@abbrev}">
-            <target>{$repoConf/repo:target/string()}</target>
-            <deployed>{$repoConf/repo:deployed/string()}</deployed>
-            <isAdmin json:literal="true">{$auth}</isAdmin>
-            <url>{ request:get-attribute("$exist:prefix") || "/" || substring-after($collection, repo:get-root()) }</url>
-        </info>
-};
-
-declare function deploy:get-info($collection as xs:string) {
-    let $null := util:declare-option("exist:serialize", "method=json media-type=application/json")
-    let $root := apputil:get-app-root($collection)
-    return
-        if ($root) then
-            deploy:get-info-from-descriptor($root)
-        else
-            <info/>
-};
 
 let $target := request:get-parameter("target", ())
 let $collectionParam := request:get-parameter("collection", ())
@@ -634,7 +612,7 @@ return
         if ($download) then
             deploy:download($collection, $expathConf)
         else if ($info) then
-            deploy:get-info($info)
+            apputil:get-info($info)
         else if ($abbrev) then
             deploy:create-app($collection, $expathConf)
         else

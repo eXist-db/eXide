@@ -71,11 +71,19 @@ eXide.edit.Projects = (function() {
 	};
 			
 	Constr.prototype.restoreState = function() {
+        var $this = this;
         if (localStorage["eXide.projects"]) {
             this.projects = JSON.parse(localStorage["eXide.projects"]);
             if (typeof this.projects != 'object')
                 this.projects = {};
         }
+        // refresh state to see if app package config has chaged in the db (e.g added Git)
+        $.each(this.projects, function(project) {
+            if(this.root) {
+               $this.getProject(this.root)
+            }
+        })
+        
 	};
     
     return Constr;
@@ -134,6 +142,63 @@ eXide.edit.PackageEditor = (function () {
 				"Close": function () { $(this).dialog("close"); }
 			}
 		});
+        
+        this.gitCheckoutDialog = $("#dialog-git-checkout");
+		this.gitCheckoutDialog.dialog({
+            appendTo: "#layout-container",
+			title: "Git Checkout",
+			modal: false,
+			autoOpen: false,
+			width: 500,
+			height: 240, 
+			buttons: {
+                "Switch Branch": function() {
+                    var branch = $("[name='git-checkout']", $this.gitCheckoutDialog.find("form")).val();
+                    eXide.app.git.command($this.currentProject, 'checkout', branch, function(data){
+                         $("#toolbar-current-branch").text(branch);
+                         $("#menu-git-active").text(branch);
+                    });
+                    $(this).dialog("close");
+                },
+                "Cancel": function () { $(this).dialog("close"); }
+			}
+		}); 
+        
+        this.gitCommitDialog = $("#dialog-git-commit");
+		this.gitCommitDialog.dialog({
+            appendTo: "#layout-container",
+			title: "Synchonize and Commit",
+			modal: false,
+			autoOpen: false,
+			width: 500,
+			height: 360,
+			buttons: {
+                "Sync and Commit": function() {
+                    var form = $this.gitCommitDialog.find("form"),
+                        title = $("[name='git-commit-title']", form).val(),
+                        desc = $("[name='git-commit-desc']", form).val(),
+                        option =  title + '\n\n' + desc ,
+                        start = $("[name='start']", form).val(),
+                        statusAnchor = "#git-commit-status";
+                        
+                    if (!title || title.length == 0) {
+						$(statusAnchor).text("title for commit message is required");
+						return;
+					}
+                    
+                    $(statusAnchor).text("Synchronization in progress ...");
+					$(statusAnchor).load(
+                        "modules/synchronize.xql", 
+                        { collection : $this.currentProject.root, start :start},
+                        function(responseText, status){if(status == 'success') {eXide.app.git.command($this.currentProject, 'commit', option);}}
+                        );
+                    
+                    $(this).dialog("close");
+                },
+                "Cancel": function () { $(this).dialog("close"); }
+			}
+		});
+        
 	};
 	
     // Extend eXide.events.Sender for event support
@@ -302,5 +367,60 @@ eXide.edit.PackageEditor = (function () {
         this.projects.restoreState();
     };
 
+    /**
+	 * Git Checkout.
+	 */
+	Constr.prototype.gitCheckout = function (collection) {
+		var $this = this;
+        $this.projects.findProject(collection, function (project) {
+            if (!project) {
+               eXide.util.error("Application not found: The document currently opened in the editor " +
+                    "should belong to an application package.");
+                return;
+            }
+			if (!eXide.app.login.isAdmin) {
+				eXide.util.error("You need to be logged in as an admin user with dba role " +
+						"to use this feature.");
+				return;
+			}
+            $this.currentProject = project;
+            
+            var options = d3.select("#git-checkout-select").selectAll("option")
+                .data(project.gitBranch)
+                .attr('value', function(d){return d})
+                .text(String);
+                
+                options.enter()
+                    .append('option')
+                    .attr('value', function(d){return d})
+                    .text(String);
+                
+                options.exit().remove();
+                
+            $this.gitCheckoutDialog.dialog("open");
+        })
+	}
+    /**
+	 * Git Commit.
+	 */
+	Constr.prototype.gitCommit = function (collection) {
+		var $this = this;
+         $this.projects.findProject(collection, function (project) {
+            if (!project) {
+               eXide.util.error("Application not found: The document currently opened in the editor " +
+                    "should belong to an application package.");
+                return;
+            }
+			if (!eXide.app.login.isAdmin) {
+				eXide.util.error("You need to be logged in as an admin user with dba role " +
+						"to use this feature.");
+				return;
+			}
+            $this.currentProject = project;
+            $this.gitCommitDialog.dialog("open");
+         })
+	}
+
+    
 	return Constr;
 }());

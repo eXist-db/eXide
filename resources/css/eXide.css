@@ -16,7 +16,7 @@ body {
     left: 0;
     right: 0;
 }
-
+ 
 #body {
     position: absolute;
     top: 63px;
@@ -315,6 +315,14 @@ Sub level menu list items (undo style from Top level List Items)
     padding-bottom: 2px;
     margin-bottom: 2px;
     border-bottom: 1px solid #777;
+    width: 220px;
+}
+.menu .inactive {
+    display: block;
+    font-size: 75%;
+    padding: 5px;
+	background: #F0F0F0;
+    color: #AAA;
     width: 220px;
 }
 
@@ -846,15 +854,22 @@ Sub level menu list items (undo style from Top level List Items)
 #outline {
     font-family: 'Ubuntu Mono', 'Monaco','Menlo','Droid Sans Mono','Courier New',monospace;
     line-height: 1.5em;
-	list-style: none;
-	margin: 8px 4px 16px 4px;
-	padding: 0;
+    list-style: none;
+    margin: 8px 4px 16px 4px;
+    padding: 0;
     height: 100%;
     white-space: pre-wrap;
+    /*  Added by CG  */
+    font-size : 75%;
+    /*  End Added */
+    
 }
 
 #outline li {
-	margin: 0px 0px 4px 0px;
+    /*  Added by CG  */
+    margin: 0px 0px 2px 0px;
+    /*  End Added */
+
 }
 
 #outline .private, #outline .public {
