@@ -155,6 +155,10 @@ eXide.app = (function() {
             return hasFocus;
         },
         
+        getEditor: function() {
+            return editor;
+        },
+        
 		resize: function(resizeIframe) {
 			var panel = $("#editor");
 			var header = $(".header");
