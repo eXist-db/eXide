@@ -24,7 +24,7 @@ declare variable $login :=
         else
             local:fallback-login#3
 ;
-
+ 
 (:~
     Fallback login function used when the persistent login module is not available.
     Stores user/password in the HTTP session.
@@ -92,15 +92,17 @@ else if ($exist:resource = 'login') then
     let $userAllowed := local:user-allowed()
     return
         try {
+        (
             util:declare-option("exist:serialize", "method=json"),
             if ($userAllowed) then
                 <status>
                     <user>{request:get-attribute("org.exist.login.user")}</user>
-                    <isAdmin json:literal="true">{ xmldb:is-admin-user(request:get-attribute("org.exist.login.user")) }</isAdmin>
+                    <isAdmin json:literal="true">{ xmldb:is-admin-user((request:get-attribute("org.exist.login.user"),request:get-attribute("xquery.user"), 'nobody')[1]) }</isAdmin>
                 </status>
             else (
                 response:set-status-code(401),
                 <status>fail</status>
+            )
             )
         } catch * {
             response:set-status-code(401),

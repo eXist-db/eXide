@@ -18,6 +18,7 @@
  */
 
 // main entry point
+// test 
 $(document).ready(function() {
     window.name = "eXide";
     
@@ -578,6 +579,29 @@ eXide.app = (function() {
             });
 		},
 		
+        gitCheckout: function() {
+            eXide.app.requireLogin(function () {
+                var path = editor.getActiveDocument().getPath();
+        		var collection = /^(.*)\/[^\/]+$/.exec(path);
+    			if (!collection) {
+                    eXide.util.error("The file open in the editor does not belong to an application package!");
+    				return;
+    			}
+    			deploymentEditor.gitCheckout(collection[1]);
+            });
+		},
+        gitCommit: function() {
+            eXide.app.requireLogin(function () {
+                var path = editor.getActiveDocument().getPath();
+        		var collection = /^(.*)\/[^\/]+$/.exec(path);
+    			if (!collection) {
+                    eXide.util.error("The file open in the editor does not belong to an application package!");
+    				return;
+    			}
+    			deploymentEditor.gitCommit(collection[1]);
+            });
+		},
+        
         downloadApp: function () {
             eXide.app.requireLogin(function() {
                 var path = editor.getActiveDocument().getPath();
@@ -763,7 +787,7 @@ eXide.app = (function() {
                 $("#status a").css("visibility", "hidden");
             }
         },
-        
+       
         showResultsPanel: function() {
             $("#layout-container").layout().open(resultPanel);
 			//layout.sizePane("south", 300);
@@ -791,7 +815,75 @@ eXide.app = (function() {
         initStatus: function(msg) {
             $("#splash-status").text(msg);
         },
-        
+       
+        git: function() {
+            var gitUrl ='modules/git.xql',
+                gitError = function(xhr, status) {
+                           eXide.util.error("Failed to apply configuration: " + xhr.responseText);
+                       },
+                showResultsPanel = function() {
+                    editor.updateStatus("");
+				    editor.clearErrors();
+				    eXide.app.showResultsPanel();
+				    startOffset = 1;
+				    currentOffset = 1;
+                },       
+                gitShow = function (data, status, xhr) {
+                                showResultsPanel();
+                                var iframe = document.getElementById("results-iframe");
+                                $(iframe).show();
+                                iframe.contentWindow.document.open('text/html', 'replace');
+                                iframe.contentWindow.document.write(JSON.stringify(data));
+                                iframe.contentWindow.document.close();
+                             };       
+            
+            return {
+                 branch: function(app)   {
+                     console.info('git.branch');
+                     if(!eXide.app.login.isAdmin) {return}
+                     $.ajax({ 
+                        type: "GET",
+                        url: gitUrl,
+                        data: { target: app.root, "git-command": "branch" },
+                        dataType: "json",
+                        success: function (data) {
+                            var lines = data.stdout
+                                    ? $.isArray(data.stdout.line)
+                                        ? data.stdout.line 
+                                        : [data.stdout.line]
+                                            : [];
+                            app.gitBranch = $.map(lines,function(l, index){
+                                var current = l.split(' ').pop()
+                                if(/^\*/.test(l)) {
+                                   app.gitCurrentBranch = current ;
+                                   app.gitCurrentBranchIndex = index;
+                                   }
+                                 return current  
+                                });
+                            $("#toolbar-current-branch").text(app.gitCurrentBranch);
+                            $("#menu-git-active").text(app.gitCurrentBranch);
+                            $("#menu-git-working-dir").text(app.workingDir);
+                        },
+                        error : gitError 
+                     });   
+                 },
+                 command : function(app, command,option, success){
+                      if(!eXide.app.login.isAdmin) {return}
+                     $.ajax({
+                        type: "GET",
+                        url: gitUrl,
+                        data: { target: app.root, "git-command": command, "git-option" : option },
+                        dataType: "json",
+                        success: function (data) {
+                            if(typeof success =='function'){success(data)}
+                            gitShow(data)
+                        },
+                        error : gitError 
+                     });   
+                 }
+             }
+        }(), 
+       
 		initGUI: function(menu) {
             var layoutState = {
                 south: "closed",
@@ -1031,6 +1123,10 @@ eXide.app = (function() {
 			menu.click("#menu-deploy-deploy", eXide.app.deploy);
 			menu.click("#menu-deploy-sync", eXide.app.synchronize, "synchronize");
             menu.click("#menu-deploy-download", eXide.app.downloadApp);
+            
+            menu.click("#menu-git-checkout", eXide.app.gitCheckout);
+            menu.click("#menu-git-commit", eXide.app.gitCommit);
+            
 			menu.click("#menu-edit-undo", function () {
 				editor.editor.undo();
 			}, "undo");
@@ -1085,13 +1181,27 @@ eXide.app = (function() {
                     if (app) {
                         $("#toolbar-current-app").text(app.abbrev);
                         $("#menu-deploy-active").text(app.abbrev);
+                        // update show/hide git stuff
+                        if(app.git == "true" || app.git == true) {
+                            $(".current-branch").show();
+                            $("#menu-git").show();
+                            // update git-status
+                            eXide.app.git.branch(app);
+                        } else {
+                            $(".current-branch").hide();
+                            $("#menu-git").hide();
+                        }
+                        
                     } else {
                         $("#toolbar-current-app").text("unknown");
                         $("#menu-deploy-active").text("unknown");
+                        $(".current-branch").hide();
+                        $("#menu-git").hide();
                     }
                 });
 			});
 			
+            
 			$("#user").click(function (ev) {
 				ev.preventDefault();
 				if (eXide.app.login) {

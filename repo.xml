@@ -14,7 +14,7 @@
     <note>When upgrading, please make sure you also updated the shared-resources package to &gt; 0.3.5.</note>
     <changelog>
         <change version="2.0">
-            <ul xmlns="">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Context-sensitive code completion</li>
                 <li>Refactoring: extract function/variable</li>
                 <li>Refactoring: rename function/variable/XML tag</li>
@@ -24,7 +24,7 @@
             </ul>
         </change>
         <change version="1.0.14">
-            <ul xmlns="">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Improved outline view</li>
                 <li>Fixed quicksearch</li>
                 <li>Outline for CSS files</li>
@@ -33,7 +33,7 @@
             </ul>
         </change>
         <change version="1.0.15">
-            <ul xmlns="">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fixed new app templates</li>
                 <li>Removed annoying log output</li>
                 <li>Updated code snippets</li>
