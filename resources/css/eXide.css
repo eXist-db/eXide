@@ -195,7 +195,7 @@ a:link,a:visited {
     font-family: 'Ubuntu Mono', 'Monaco','Menlo','Droid Sans Mono','Courier New',monospace;
 	height: 200px;
 	margin: 0 4px;
-	background-color: #E8E8E8;
+	/* background-color: #E8E8E8; */
 	padding: 0 0 0 0;
 	border-left: 1px solid #bbb;
 }
@@ -860,7 +860,7 @@ Sub level menu list items (undo style from Top level List Items)
     height: 100%;
     white-space: pre-wrap;
     /*  Added by CG  */
-    font-size : 75%;
+    font-size : 85%;
     /*  End Added */
     
 }
