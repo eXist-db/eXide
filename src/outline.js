@@ -136,7 +136,13 @@ eXide.edit.Outline = (function () {
                             var cl =  d.type == eXide.edit.Document.TYPE_FUNCTION ?  "t.function" : "t_variable";
                             return cl + " " + (d.visibility === "private" ? "private" : "public" );
                         })
-                       .text(function(d) {return d.name})
+                       .text(function(d) {
+                            if (d.type == eXide.edit.Document.TYPE_VARIABLE) {
+                                return "$" + d.name;
+                            } else {
+                                return d.name;
+                            }    
+                       })
 
                        .on("click", function(d) {
                             var path = this.hash.substring(1);

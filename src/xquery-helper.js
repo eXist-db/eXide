@@ -303,6 +303,10 @@ eXide.edit.XQueryModeHelper = (function () {
                 if (token === "" && !alwaysShow) {
                     return false;
                 }
+                if (token.substring(0, 1) == "$") {
+                    mode = "variables";
+                    token = token.substring(1);
+                }
             } else {
                 var parent = astNode.getParent;
                 if (parent.name === "VarRef" || parent.name === "VarName") {
@@ -405,33 +409,32 @@ eXide.edit.XQueryModeHelper = (function () {
         }
         $.log("Lookup variable %s", prefix);
         var visitor = new eXide.edit.InScopeVariables(doc.ast, astNode);
-        var variables = visitor.getStack();
-        
         // Create popup menu
 		// add function defs
 		var popupItems = [];
-        var prefixRegex = prefix ? new RegExp("^" + prefix) : null;
-		for (var i = 0; i < variables.length; i++) {
-            if (!prefix || prefixRegex.test(variables[i])) {
-    			var item = { 
-    				label: variables[i],
-                    template: "$" + variables[i],
-    				type: "variable"
-    			};
-    			popupItems.push(item);
-            }
-		}
-		
+        var prefixRegex = prefix ? new RegExp("^\\$?" + prefix) : null;
+        var variables = visitor.getStack();
+        if (variables) {
+    		for (var i = 0; i < variables.length; i++) {
+                if (!prefix || prefixRegex.test(variables[i])) {
+        			var item = { 
+        				label: variables[i],
+                        template: "$" + variables[i],
+        				type: "variable"
+        			};
+        			popupItems.push(item);
+                }
+    		}
+        }
         for (var i = 0; i < doc.functions.length; i++) {
             if (doc.functions[i].type == "variable" && (!prefix || prefixRegex.test(doc.functions[i].name))) {
                 popupItems.push({
                     label: doc.functions[i].name,
-                    template: doc.functions[i].name,
+                    template: "$" + doc.functions[i].name,
                     type: "variable"
                 });
             }
         }
-		
 		this.$showPopup(doc, wordrange, popupItems, complete);
     };
     
@@ -1047,7 +1050,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		if (imports)
 			this.$resolveImports(doc, imports, onComplete);
         else
-        onComplete(doc);
+            onComplete(doc);
     }
     
     Constr.prototype.$sortFunctions = function(doc) {
@@ -1090,10 +1093,13 @@ eXide.edit.XQueryModeHelper = (function () {
 				var v = this.varRe.exec(varDefs[i]);
                 var sort = v[1].substr(1).split(":");
                 sort.splice(1,0,":$");
-                
+                var name = v[1];
+                if (name.substring(0, 1) == "$") {
+                    name = name.substring(1);
+                }
 				doc.functions.push({
 					type: eXide.edit.Document.TYPE_VARIABLE,
-					name: v[1],
+					name: name,
                     sort: "$$" + sort.join("")
 				});
 			}
@@ -1163,7 +1169,7 @@ eXide.edit.XQueryModeHelper = (function () {
 						if (vars) {
 							for (var j = 0; j < vars.length; j++) {
                                 var  sort = vars[j].split(":");
-                                sort.splice(1,0,":$"); 
+                                sort.splice(1,0,":$");
 								functions.push({
 									type: eXide.edit.Document.TYPE_VARIABLE,
 									name: vars[j],
