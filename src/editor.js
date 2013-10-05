@@ -314,11 +314,12 @@ eXide.edit.Editor = (function () {
             $this.exec("quickFix", row);
         });
         
-        // var Emmet = require("ace/ext/emmet");
-        // net.loadScript("https://rawgithub.com/nightwing/emmet-core/master/emmet.js", function() {
-        //     Emmet.setCore(window.emmet);
-        //     $this.editor.setOption("enableEmmet", true);
-        // });
+         var Emmet = require("ace/ext/emmet");
+         //net.loadScript("https://rawgithub.com/nightwing/emmet-core/master/emmet.js", function() {
+         net.loadScript("$shared/resources/scripts/ace/emmet.js", function() {
+             Emmet.setCore(window.emmet);
+             $this.editor.setOption("enableEmmet", true);
+         });
 	};
 
     // Extend eXide.events.Sender for event support
@@ -363,7 +364,7 @@ eXide.edit.Editor = (function () {
         if (data && typeof data == "string") {
             session = new EditSession(data);
         } else if (type && type === "xquery") {
-            session = new EditSession("xquery version \"3.0\";\n1");
+            session = new EditSession("xquery version \"3.0\";\n");
         } else {
             session = new EditSession("");
         }
@@ -500,8 +501,8 @@ eXide.edit.Editor = (function () {
 		case "html":
 			var HtmlMode = require("eXide/mode/html").Mode;
             mode = new HtmlMode(this);
-			doc.$session.setMode(mode);
-            mode.$id = "html";
+			mode.$id = "html";
+            doc.$session.setMode(mode);
 			if (setMime)
 				doc.mime = "text/html";
 			break;
