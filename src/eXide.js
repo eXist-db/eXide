@@ -704,9 +704,14 @@ eXide.app = (function() {
                 url: "login",
                 dataType: "json",
                 success: function(data) {
-                    eXide.app.login = data;
-                    $("#user").text("Logged in as " + eXide.app.login.user + ". ");
-                    if (callback) callback(eXide.app.login.user);
+                    if (data && data.user) {
+                        eXide.app.login = data;
+                        $("#user").text("Logged in as " + eXide.app.login.user + ". ");
+                        if (callback) callback(eXide.app.login.user);
+                    } else {
+                        eXide.app.login = null;
+                        if (callback) callback(null);
+                    }
                 },
                 error: function (xhr, textStatus) {
                     eXide.app.login = null;
