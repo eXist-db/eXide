@@ -97,7 +97,7 @@ declare function pretty:pretty-print($node as item(), $namespaces as xs:string*)
 		case $comment as comment() return
 			<div class="ace_comment">&lt;-- {$comment/string()} --&gt;</div>
 		case $pi as processing-instruction() return
-			<div style="color: darkred">&lt;?{$pi/string()}?&gt;</div>
+			<div style="color: darkred">&lt;?{node-name($pi)}{if ($pi/string()) then " " || $pi/string() else ()}?&gt;</div>
 		default return
 			$node
 };
