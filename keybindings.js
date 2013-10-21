@@ -28,5 +28,7 @@
     "rename": ["Ctrl-Alt-R", "Command-Ctrl-R"],
     "extractFunction": ["Ctrl-Shift-X", "Command-Ctrl-X"],
     "extractVariable": ["Ctrl-Shift-E", "Command-Ctrl-E"],
-    "gotoSymbol": ["Ctrl-Shift-U", "Command-Shift-U"]
+    "gotoSymbol": ["Ctrl-Shift-U", "Command-Shift-U"],
+    "openTab": ["Ctr-Alt-O", "Command-Ctrl-O"],
+    "commandPalette": ["Ctr-Alt-K", "Command-Shift-K"]
 }

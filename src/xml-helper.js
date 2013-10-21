@@ -34,7 +34,7 @@ eXide.edit.XMLModeHelper = (function () {
         this.menu = $("#menu-xml").hide();
         menubar.click("#menu-xml-rename", function() {
             self.rename(editor.getActiveDocument());
-        }, "rename");
+        });
         
 		this.addCommand("closeTag", this.closeTag);
         this.addCommand("suggest", this.suggest);

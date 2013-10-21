@@ -72,6 +72,18 @@ eXide.edit.commands = (function () {
         				},
         			    readOnly: true
         			});
+                    commands.addCommand({
+                        name: "selectMoreBefore",
+                        exec: function(editor) { editor.selectMore(-1); },
+                        bindKey: {win: "Ctrl-Alt-Left", mac: "Ctrl-Alt-Command-Left"},
+                        readOnly: true
+                    });
+                    commands.addCommand({
+                        name: "selectMoreAfter",
+                        exec: function(editor) { editor.selectMore(1); },
+                        bindKey: {win: "Ctrl-Alt-Right", mac: "Ctrl-Alt-Command-Right"},
+                        readOnly: true
+                    });
         			commands.addCommand({
         				name: "unfold",
         			    bindKey: bindKey(bindings.unfold),
@@ -280,6 +292,22 @@ eXide.edit.commands = (function () {
                             if (!success) {
                                 editor.execCommand("indent");
                             }
+                        }
+                    });
+                    commands.addCommand({
+                        name: "openTab",
+                        hint: "select open tab",
+                        bindKey: bindKey(bindings.openTab),
+                        exec: function(editor) {
+                            parent.selectTab();
+                        }
+                    });
+                    commands.addCommand({
+                        name: "commandPalette",
+                        hint: "Command Palette",
+                        bindKey: bindKey(bindings.commandPalette),
+                        exec: function(editor) {
+                            eXide.app.getMenu().commandPalette();
                         }
                     });
     			    createMap(parent);

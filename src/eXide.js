@@ -159,6 +159,10 @@ eXide.app = (function() {
             return editor;
         },
         
+        getMenu: function() {
+            return menu;
+        },
+        
 		resize: function(resizeIframe) {
 			var panel = $("#editor");
 			var header = $(".header");
@@ -1074,11 +1078,11 @@ eXide.app = (function() {
 			// initialize buttons and menu events
             var button = $("#open").button("option", "icons", { primary: "ui-icon-folder-open" });
 			button.click(eXide.app.openDocument);
-            menu.click("#menu-file-open", eXide.app.openDocument, "openDocument");
+            menu.click("#menu-file-open", eXide.app.openDocument);
 			
             button = $("#close").button("option", "icons", { primary: "ui-icon-close" });
 			button.click(eXide.app.closeDocument);
-			menu.click("#menu-file-close", eXide.app.closeDocument, "closeDocument");
+			menu.click("#menu-file-close", eXide.app.closeDocument);
 			
             button = $("#new").button("option", "icons", { primary: "ui-icon-document" });
 			button.click(function() {
@@ -1089,10 +1093,10 @@ eXide.app = (function() {
 			button.click(function() {
                 eXide.app.newDocument(null, "xquery");
 			});
-			menu.click("#menu-file-new", eXide.app.newDocumentFromTemplate, "newDocumentFromTemplate");
+			menu.click("#menu-file-new", eXide.app.newDocumentFromTemplate);
     		menu.click("#menu-file-new-xquery", function() {
                 eXide.app.newDocument(null, "xquery");
-    		}, "newXQuery");
+    		});
 
             button = $("#run").button("option", "icons", { primary: "ui-icon-play" });
 			button.click(function(ev) { eXide.app.runQuery() });
@@ -1116,7 +1120,7 @@ eXide.app = (function() {
             
             button = $("#save").button("option", "icons", { primary: "ui-icon-disk" });
 			button.click(eXide.app.saveDocument);
-			menu.click("#menu-file-save", eXide.app.saveDocument, "saveDocument");
+			menu.click("#menu-file-save", eXide.app.saveDocument);
             menu.click("#menu-file-save-as", eXide.app.saveDocumentAs);
 			
             menu.click("#menu-file-reload", eXide.app.reloadDocument);
@@ -1125,12 +1129,12 @@ eXide.app = (function() {
 			button.click(eXide.app.download);
             
 			menu.click("#menu-file-download", eXide.app.download);
-			menu.click("#menu-file-manager", eXide.app.manage, "dbManager");
+			menu.click("#menu-file-manager", eXide.app.manage);
 			// menu-only events
 			menu.click("#menu-deploy-new", eXide.app.newDeployment);
 			menu.click("#menu-deploy-edit", eXide.app.deploymentSettings);
 			menu.click("#menu-deploy-deploy", eXide.app.deploy);
-			menu.click("#menu-deploy-sync", eXide.app.synchronize, "synchronize");
+			menu.click("#menu-deploy-sync", eXide.app.synchronize);
             menu.click("#menu-deploy-download", eXide.app.downloadApp);
             
             menu.click("#menu-git-checkout", eXide.app.gitCheckout);
@@ -1138,34 +1142,40 @@ eXide.app = (function() {
             
 			menu.click("#menu-edit-undo", function () {
 				editor.editor.undo();
-			}, "undo");
+			});
 			menu.click("#menu-edit-redo", function () {
 				editor.editor.redo();
-			}, "redo");
+			});
             menu.click("#menu-edit-find", function() {
                 var config = require("ace/config");
                 config.loadModule("ace/ext/searchbox", function(e) {e.Search(editor.editor)});
-            }, "searchIncremental");
+            });
             menu.click("#menu-edit-toggle-comment", function () {
                 editor.editor.toggleCommentLines();
-            }, "toggleComment");
+            });
 			menu.click("#menu-edit-preferences", function() {
                 preferences.show(); 		
-			}, "preferences");
+			});
             menu.click("#menu-navigate-definition", function () {
                 editor.exec("gotoDefinition");
-            }, "gotoDefinition");
+            });
             menu.click("#menu-navigate-modules", function () {
                 var doc = editor.getActiveDocument();
 	    		eXide.find.Modules.select(doc.syntax);
-            }, "findModule");
+            });
             menu.click("#menu-navigate-info", function() {
                 editor.exec("showFunctionDoc");
-            }, "functionDoc");
+            });
             menu.click("#menu-navigate-symbol", function() {
                 editor.exec("gotoSymbol");
-            }, "gotoSymbol");
-			menu.click("#menu-deploy-run", eXide.app.openApp, "openApp");
+            });
+            menu.click("#menu-navigate-buffer", function() {
+                editor.selectTab();
+            });
+            menu.click("#menu-navigate-commands", function() {
+                eXide.app.getMenu().commandPalette();
+            });
+			menu.click("#menu-deploy-run", eXide.app.openApp);
 			
             menu.click("#menu-help-keyboard", function (ev) {
 				$("#keyboard-help").dialog("open");

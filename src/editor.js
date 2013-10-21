@@ -737,6 +737,27 @@ eXide.edit.Editor = (function () {
         $this.scrollToTab($(tab));
 	};
 	
+	Constr.prototype.selectTab = function() {
+	    var self = this;
+	    var popupItems = [];
+        for (var i = 0; i < this.documents.length; i++) {
+            item = { 
+                label: this.documents[i].name,
+                pos: i
+            };
+            popupItems.push(item);
+        };
+        if (popupItems.length > 1) {
+            var left = this.getOffset().left;
+            eXide.util.Popup.position({ pageX: left, pageY: 40 });
+            eXide.util.Popup.show(popupItems, function (selected) {
+                if (selected) {
+                    self.switchTo(self.documents[selected.pos]);
+                }
+            });
+        }
+	};
+	
 	Constr.prototype.switchTo = function(doc) {
         var helper = this.activeDoc.getModeHelper();
         if (helper) {

@@ -27,6 +27,7 @@ eXide.util.Menubar = (function() {
         var $this = this;
         this.container = container;
         this.editor = null;
+        this.commands = {};
         
         var menuVisible = false;
         
@@ -55,8 +56,35 @@ eXide.util.Menubar = (function() {
         });
     };
     
+    Constr.prototype.commandPalette = function() {
+        var self = this;
+	    var popupItems = [];
+	    for (var key in self.commands) {
+	        var command = self.commands[key];
+	        popupItems.push(command);
+	    }
+
+        if (popupItems.length > 1) {
+            var left = this.editor.getOffset().left;
+            eXide.util.Popup.position({ pageX: left, pageY: 40 });
+            eXide.util.Popup.show(popupItems, function (selected) {
+                if (selected) {
+                    selected.callback();
+                    if ($this.editor) {
+                        $this.editor.focus();
+                    }
+                }
+            });
+        }
+    };
+    
     Constr.prototype.click = function(selector, callback, action) {
         var $this = this;
+        var item = $(selector);
+        var label = item.text();
+        if (!action) {
+            action = item.attr("data-command");
+        }
         if (action) {
             var shortcut = eXide.edit.commands.getShortcut(action);
             if (shortcut) {
@@ -65,7 +93,7 @@ eXide.util.Menubar = (function() {
                 shortcut = shortcut.replace(/Shift/g, String.fromCharCode(8679));
                 shortcut = shortcut.replace(/Option/g, String.fromCharCode(8997));
                 shortcut = shortcut.replace(/Control/g, "^");
-                $(selector).each(function() {
+                item.each(function() {
                     var span = document.createElement("span");
                     span.className = "shortcut";
                     span.appendChild(document.createTextNode(shortcut));
@@ -73,7 +101,13 @@ eXide.util.Menubar = (function() {
                 });
             }
         }
-        $(selector).click(function(ev) {
+        if (item.attr("id")) {
+            $this.commands[item.attr("id")] = {
+                label: [label, item.find(".shortcut").text()],
+                callback: callback
+            };
+        }
+        item.click(function(ev) {
             ev.preventDefault();
             callback();
             if ($this.editor) {

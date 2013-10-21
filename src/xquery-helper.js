@@ -69,22 +69,22 @@ eXide.edit.XQueryModeHelper = (function () {
         this.menu = $("#menu-xquery").hide();
         menubar.click("#menu-xquery-format", function() {
             self.format(editor.getActiveDocument());
-        }, "xquery-format");
+        });
         menubar.click("#menu-xquery-expand", function() {
             self.expandSelection(editor.getActiveDocument());
-        }, "expandSelection");
+        });
         menubar.click("#menu-xquery-rename", function() {
             self.rename(editor.getActiveDocument());
-        }, "rename");
+        });
         menubar.click("#menu-xquery-extract-function", function() {
             self.extractFunction(editor.getActiveDocument());
-        }, "extractFunction");
+        });
         menubar.click("#menu-xquery-extract-variable", function() {
             self.extractVariable(editor.getActiveDocument());
-        }, "extractVariable");
+        });
         menubar.click("#menu-xquery-run-test", function() {
             self.runTest(editor.getActiveDocument());
-        }, "xquery-run-test");
+        });
         
         self.validating = null;
         self.validationListeners = [];
