@@ -314,11 +314,11 @@ eXide.edit.Editor = (function () {
             $this.exec("quickFix", row);
         });
         
-        // var Emmet = require("ace/ext/emmet");
-        // net.loadScript("https://rawgithub.com/nightwing/emmet-core/master/emmet.js", function() {
-        //     Emmet.setCore(window.emmet);
-        //     $this.editor.setOption("enableEmmet", true);
-        // });
+        var Emmet = require("ace/ext/emmet");
+        net.loadScript("$shared/resources/scripts/ace/emmet.js", function() {
+            Emmet.setCore(window.emmet);
+            $this.editor.setOption("enableEmmet", true);
+        });
 	};
 
     // Extend eXide.events.Sender for event support
@@ -500,8 +500,8 @@ eXide.edit.Editor = (function () {
 		case "html":
 			var HtmlMode = require("eXide/mode/html").Mode;
             mode = new HtmlMode(this);
-			doc.$session.setMode(mode);
             mode.$id = "html";
+			doc.$session.setMode(mode);
 			if (setMime)
 				doc.mime = "text/html";
 			break;
