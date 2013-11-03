@@ -13,7 +13,20 @@
     <permissions user="admin" password="" group="dba" mode="rw-rw-r--"/>
     <note>When upgrading, please make sure you also updated the shared-resources package to &gt; 0.3.5.</note>
     <changelog>
-        <change version="2.0">
+        <change version="2.0.3">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Added navigation shortcuts to quickly switch to buffer; navigate available commands</li>
+                <li>Use emmet for HTML/XML/CSS</li>
+                <li>Updates and bug fixes for ace, slick grid</li>
+            </ul>
+        </change>
+        <change version="2.0.2">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Small fixes to variable completion</li>
+                <li>Experimental support for <a href="https://github.com/wolfgangmm/eXide/pull/36">git</a>.</li>
+            </ul>
+        </change>
+        <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="2.0">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Context-sensitive code completion</li>
                 <li>Refactoring: extract function/variable</li>
@@ -22,8 +35,8 @@
                 <li>Show raw result of queries in embedded browser</li>
                 <li>And more ...</li>
             </ul>
-        </change>
-        <change version="1.0.14">
+        </repo:change>
+        <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="1.0.14">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Improved outline view</li>
                 <li>Fixed quicksearch</li>
@@ -31,14 +44,14 @@
                 <li>Set syntax to XQuery for code snippets passed in from demo app</li>
                 <li>Change indicator "*" not cleared properly after save</li>
             </ul>
-        </change>
-        <change version="1.0.15">
+        </repo:change>
+        <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="1.0.15">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fixed new app templates</li>
                 <li>Removed annoying log output</li>
                 <li>Updated code snippets</li>
             </ul>
-        </change>
+        </repo:change>
     </changelog>
-    <deployed>2013-06-04T23:22:18.855+02:00</deployed>
+    <deployed>2013-11-01T20:13:57.604+01:00</deployed>
 </meta>
