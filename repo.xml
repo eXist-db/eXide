@@ -13,6 +13,12 @@
     <permissions user="admin" password="" group="dba" mode="rw-rw-r--"/>
     <note>When upgrading, please make sure you also updated the shared-resources package to &gt; 0.3.5.</note>
     <changelog>
+        <change version="2.0.4">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Display of extended permissions in open/save dialogs</li>
+                <li>Editing of setuid, setgid and sticky bit permissions in Properties dialog</li>
+            </ul>
+        </change>
         <change version="2.0.3">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Added navigation shortcuts to quickly switch to buffer; navigate available commands</li>
