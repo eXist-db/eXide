@@ -117,11 +117,7 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
                 where sm:has-access(xs:anyURI($path), "r")
                 order by $resource ascending
                 return
-                    let $permissions := 
-                        if ($isCollection) then
-                            xmldb:permissions-to-string(xmldb:get-permissions($path))
-                        else
-                            xmldb:permissions-to-string(xmldb:get-permissions($collection, $resource))
+                    let $permissions := sm:get-permissions(xs:anyURI($path))/sm:permission
                     let $owner := 
                         if ($isCollection) then
                             xmldb:get-owner($path)
@@ -148,7 +144,7 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
                     return
                         <json:value json:array="true">
                             <name>{xmldb:decode-uri(if ($isCollection) then substring-after($resource, "/") else $resource)}</name>
-                            <permissions>{$permissions}</permissions>
+                            <permissions>{if($isCollection)then "c" else "-"}{string($permissions/@mode)}{if($permissions/sm:acl/@entries ne "0")then "+" else ""}</permissions>
                             <owner>{$owner}</owner>
                             <group>{$group}</group>
                             <last-modified>{$lastMod}</last-modified>
