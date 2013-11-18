@@ -33,9 +33,9 @@ eXide.browse.ResourceBrowser = (function () {
 	
 	var columns = [
         {id: "name", name:"Name", field: "name", width: 180, formatter: nameFormatter, editor: Slick.Editors.Text},
-        {id: "permissions", name: "Permissions", field: "permissions", width: 70},
-        {id: "owner", name: "Owner", field: "owner", width: 70},
-        {id: "group", name: "Group", field: "group", width: 70},
+        {id: "permissions", name: "Permissions", field: "permissions", width: 80},
+        {id: "owner", name: "Owner", field: "owner", width: 65},
+        {id: "group", name: "Group", field: "group", width: 65},
         {id: "lastMod", name: "Last Modified", field: "last-modified", width: 140}
     ];
     
@@ -184,7 +184,7 @@ eXide.browse.ResourceBrowser = (function () {
             title: "Resource/collection properties",
 			modal: true,
 	        autoOpen: false,
-	        height: 340,
+	        height: 380,
 	        width: 460,
             buttons: {
                 "Cancel": function () { $(this).dialog("close"); },

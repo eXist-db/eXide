@@ -117,11 +117,7 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
                 where sm:has-access(xs:anyURI($path), "r")
                 order by $resource ascending
                 return
-                    let $permissions := 
-                        if ($isCollection) then
-                            xmldb:permissions-to-string(xmldb:get-permissions($path))
-                        else
-                            xmldb:permissions-to-string(xmldb:get-permissions($collection, $resource))
+                    let $permissions := sm:get-permissions(xs:anyURI($path))/sm:permission
                     let $owner := 
                         if ($isCollection) then
                             xmldb:get-owner($path)
@@ -148,7 +144,7 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
                     return
                         <json:value json:array="true">
                             <name>{xmldb:decode-uri(if ($isCollection) then substring-after($resource, "/") else $resource)}</name>
-                            <permissions>{$permissions}</permissions>
+                            <permissions>{if($isCollection)then "c" else "-"}{string($permissions/@mode)}{if($permissions/sm:acl/@entries ne "0")then "+" else ""}</permissions>
                             <owner>{$owner}</owner>
                             <group>{$group}</group>
                             <last-modified>{$lastMod}</last-modified>
@@ -299,7 +295,7 @@ declare %private function local:get-property-map($resource as xs:string) as map(
                 "owner" := xmldb:get-owner($resource),
                 "group" := xmldb:get-group($resource),
                 "last-modified" := format-dateTime(xmldb:created($resource), "[MNn] [D00] [Y0000] [H00]:[m00]:[s00]"),
-                "permissions" := xmldb:permissions-to-string(xmldb:get-permissions($resource)),
+                "permissions" := sm:get-permissions(xs:anyURI($resource))/sm:permission/string(@mode),
                 "mime" := xmldb:get-mime-type(xs:anyURI($resource))
             }
         else
@@ -310,7 +306,7 @@ declare %private function local:get-property-map($resource as xs:string) as map(
                     "group" := xmldb:get-group($components[2], $components[3]),
                     "last-modified" := 
                         format-dateTime(xmldb:last-modified($components[2], $components[3]), "[MNn] [D00] [Y0000] [H00]:[m00]:[s00]"),
-                    "permissions" := xmldb:permissions-to-string(xmldb:get-permissions($components[2], $components[3])),
+                    "permissions" := sm:get-permissions(xs:anyURI($resource))/sm:permission/string(@mode),
                     "mime" := xmldb:get-mime-type(xs:anyURI($resource))
                 }
 };
@@ -332,7 +328,7 @@ declare %private function local:get-permissions($perms as xs:string) {
         <tr>
             <th>User</th>
             <th>Group</th>
-            <th>World</th>
+            <th>Other</th>
         </tr>
         <tr>
             <td>
@@ -344,7 +340,7 @@ declare %private function local:get-permissions($perms as xs:string) {
                 read
             </td>
             <td>
-                { local:checkbox("wr", substring($perms, 7, 1) = "r") }
+                { local:checkbox("or", substring($perms, 7, 1) = "r") }
                 read
             </td>
         </tr>
@@ -358,22 +354,36 @@ declare %private function local:get-permissions($perms as xs:string) {
                 write
             </td>
             <td>
-                { local:checkbox("ww", substring($perms, 8, 1) = "w") }
+                { local:checkbox("ow", substring($perms, 8, 1) = "w") }
                 write
             </td>
         </tr>
         <tr>
             <td>
-                { local:checkbox("ux", substring($perms, 3, 1) = "x") }
+                { local:checkbox("ux", substring($perms, 3, 1) = ("x", "s")) }
                 execute
             </td>
             <td>
-                { local:checkbox("gx", substring($perms, 6, 1) = "x") }
+                { local:checkbox("gx", substring($perms, 6, 1) = ("x", "s")) }
                 execute
             </td>
             <td>
-                { local:checkbox("wx", substring($perms, 9, 1) = "x") }
+                { local:checkbox("ox", substring($perms, 9, 1) = ("x", "t")) }
                 execute
+            </td>
+        </tr>
+        <tr>
+            <td>
+                { local:checkbox("us", substring($perms, 3, 1) = ("s", "S")) }
+                setuid
+            </td>
+            <td>
+                { local:checkbox("gs", substring($perms, 6, 1) = ("s", "S")) }
+                setgid
+            </td>
+            <td>
+                { local:checkbox("ot", substring($perms, 9, 1) = ("t", "T")) }
+                sticky
             </td>
         </tr>
     </table>
@@ -454,17 +464,24 @@ declare function local:edit-properties($resources as xs:string*) {
 };
 
 declare %private function local:permissions-from-form() {
-    string-join(
-        for $type in ("u", "g", "w")
+    
+    let $rwx := 
+        for $type in ("u", "g", "o")
         for $perm in ("r", "w", "x")
         let $param := request:get-parameter($type || $perm, ())
         return
-            if ($param) then
+            concat(
+                $type, 
+                if($param)then "+" else "-",
                 $perm
-            else
-                "-",
-        ""
+            )
+    let $special := (
+        concat("u", if(request:get-parameter("us", ()))then "+" else "-", "s"),
+        concat("g", if(request:get-parameter("gs", ()))then "+" else "-", "s"),
+        concat("o", if(request:get-parameter("ot", ()))then "+" else "-", "t")
     )
+    return
+        string-join($rwx, ",") || "," || string-join($special, ",")
 };
 
 declare function local:change-properties($resources as xs:string*) {
