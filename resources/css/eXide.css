@@ -514,22 +514,24 @@ Sub level menu list items (undo style from Top level List Items)
     background-color: #C0C0C0;
 }
 
-.eXide-browse-collections {
-	margin: 0;
-	padding: 0;
+#open-dialog {
+    padding: 0;
+}
+
+.eXide-browse-main {
+    position: absolute;
+    top: 54px;
+    bottom: 25px;
+    left: 0;
+    right: 0;
+    height: 300px;
+}
+
+.eXide-browse-header {
+    background: url("../images/bubble.gif") top right no-repeat;
 }
 
 .eXide-browse-toolbar, .eXide-browse-breadcrumbs {
-}
-
-.eXide-browse-panel .ui-layout-pane {
-    border: 0;
-    background-color: transparent;
-}
-
-.eXide-browse-panel .ui-layout-north {
-    background: url("../images/bubble.gif") top right no-repeat;
-    overflow: hidden;
 }
 
 .eXide-browse-breadcrumbs {
@@ -546,17 +548,13 @@ Sub level menu list items (undo style from Top level List Items)
     color: rgb(31, 57, 255);
 }
 
-.eXide-browse-main {
-    height: 100%;
-}
-
 .eXide-browse-resources {
 	position: absolute;
 	top: 0;
-	bottom: 0;
 	left: 0;
 	right: 0;
 	padding: 0;
+	height: 100%;
 	margin: 0;
 }
 
@@ -582,6 +580,8 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 .eXide-browse-form {
+    position: absolute;
+    bottom: 0;
 	text-align: left;
 	padding-top: 10px;
 }

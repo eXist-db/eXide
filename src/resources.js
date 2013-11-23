@@ -49,6 +49,7 @@ eXide.browse.ResourceBrowser = (function () {
 			editable: true,
             autoEdit: true,
 			multiSelect: true,
+			autoHeight: false,
             enableCellNavigation: true,
             forceSyncScrolling: true,
             forceFitColumns: true
@@ -251,6 +252,10 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 	
 	Constr.prototype.resize = function () {
+	    console.log("Resizing canvas...");
+// 		this.grid.render();
+        var h = $(".eXide-browse-main").height();
+        $(".eXide-browse-resources").height(h);
 		this.grid.resizeCanvas();
 		this.grid.focus();
 	};
@@ -576,7 +581,6 @@ eXide.browse.Browser = (function () {
 		this.container = container;
 		this.resources = new eXide.browse.ResourceBrowser($(".eXide-browse-resources", container), container);
 		this.upload = new eXide.browse.Upload($(".eXide-browse-upload", container).hide());
-		this.layout = null;
 		
 		this.resources.addEventListener("activate", this, this.onActivateResource);
 		this.resources.addEventListener("activateCollection", this, this.onActivateCollection);
@@ -609,26 +613,8 @@ eXide.browse.Browser = (function () {
 		 * the first time.
 		 */
 		init: function() {
-			var h = $(this.container).innerHeight()  - 
-				$(".eXide-browse-form", this.container).height() - 25;
-			$(".eXide-browse-panel", this.container).height(h);
-			if (this.layout == null) {
-				this.layout = $(".eXide-browse-panel", this.container).layout({
-					enableCursorHotkey: false,
-					north__resizable: false,
-					north__closable: false,
-					north__spacing_open: 0, 
-					south__resizable: false,
-					west__size: 200,
-					west__initClosed: false,
-					center__minSize: 300,
-					onresize: function () {
-						this.resources.resize();
-					}
-				});
-				this.resources.reload();
-				this.resources.resize();
-			}
+			this.resources.resize();
+			this.resources.reload();
 		},
 		
 		reload: function(buttons, mode) {
@@ -648,17 +634,12 @@ eXide.browse.Browser = (function () {
 			} else {
 				$(".eXide-browse-form", this.container).hide();
 			}
-			if (this.layout != null) {
-				this.resize();
-				$(this.selection).val("");
-			}
+
+			this.resize();
+			$(this.selection).val("");
 		},
 		
 		resize: function() {
-//			var h = $(this.container).innerHeight() - 
-//				$(".eXide-browse-form", this.container).height() - 25;
-//			$(".eXide-browse-panel", this.container).height(h);
-			this.layout.resizeAll();
 		},
 		
         deleteSelected: function () {
