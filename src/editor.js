@@ -549,6 +549,11 @@ eXide.edit.Editor = (function () {
             if (setMime)
                 doc.mime = "application/json";
             break;
+        case "markdown":
+            var MarkdownMode = require("ace/mode/markdown").Mode;
+            doc.$session.setMode(new MarkdownMode());
+            if (setMime)
+                doc.mime = "text/x-markdown";
 		}
         eXide.util.Snippets.init(doc.getSyntax());
         mode = this.modes[doc.getSyntax()];
