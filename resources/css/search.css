@@ -1,0 +1,38 @@
+body {
+    font-size: 12px;
+    font-family: "Verdana", "Helvetica", "Arial", sans-serif;
+    margin: 0;
+}
+
+h3 {
+    width: 100%;
+    font-size: 1em;
+    background: url("../images/bubble.gif") top left no-repeat;
+    background-color: #F3F3F3;
+    padding: 4px;
+    margin: 0 0 4px 0;
+}
+
+.resource { font-weight: bold; margin-right: 1em; }
+
+.code {
+    font-family: 'Ubuntu Mono', 'Monaco','Menlo','Droid Sans Mono','Courier New',monospace;
+    white-space: pre;
+}
+
+ul {
+    list-style: none;
+    padding: 0 0 0 8px;
+}
+
+.sourceinfo {
+    margin: 8px 0 4px 0;
+}
+
+.line {
+    color: red;
+}
+
+mark {
+    background-color: #FFFF00;
+}

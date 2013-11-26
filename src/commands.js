@@ -310,6 +310,14 @@ eXide.edit.commands = (function () {
                             eXide.app.getMenu().commandPalette();
                         }
                     });
+                    commands.addCommand({
+                        name: "findFiles",
+                        hint: "Find in files",
+                        bindKey: bindKey(bindings.findFiles),
+                        exec: function(editor) {
+                            eXide.app.findFiles();
+                        }
+                    });
     			    createMap(parent);
                 }
             });

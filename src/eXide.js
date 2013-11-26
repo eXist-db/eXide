@@ -188,16 +188,23 @@ eXide.app = (function() {
             //editor.newDocumentFromTemplate("collection-config");
         },
 
-		findDocument: function(path) {
+		findDocument: function(path, line) {
 			var doc = editor.getDocument(path);
 			if (doc == null) {
 				var resource = {
 						name: path.match(/[^\/]+$/)[0],
 						path: path
 				};
-				eXide.app.$doOpenDocument(resource);
+				eXide.app.$doOpenDocument(resource, function() {
+				    if (line) {
+        			    editor.editor.gotoLine(line);
+        			}
+				});
 			} else {
 				editor.switchTo(doc);
+				if (line) {
+    			    editor.editor.gotoLine(line);
+    			}
 			}
 		},
 		
@@ -895,7 +902,29 @@ eXide.app = (function() {
                      });   
                  }
              }
-        }(), 
+        }(),
+        
+        findFiles: function() {
+            var doc = editor.getActiveDocument();
+            projects.findProject(doc.getBasePath(), function(app) {
+                eXide.find.Files.open(doc, app, function(searchParams) {
+                    editor.updateStatus("");
+				    editor.clearErrors();
+				    startOffset = 1;
+				    currentOffset = 1;
+				    
+                    var iframe = document.getElementById("results-iframe");
+                    $(iframe).show();
+				    eXide.app.showResultsPanel();
+                    
+                    iframe.contentWindow.document.open('text/html', 'replace');
+                    iframe.contentWindow.document.write("<html><body><p>Searching ...</p></body></html>");
+                    iframe.contentWindow.document.close();
+                    
+                    iframe.src = "modules/search.xql?" + searchParams;
+                });
+            });
+        },
        
 		initGUI: function(menu) {
             var layoutState = {
@@ -1149,6 +1178,9 @@ eXide.app = (function() {
             menu.click("#menu-edit-find", function() {
                 var config = require("ace/config");
                 config.loadModule("ace/ext/searchbox", function(e) {e.Search(editor.editor)});
+            });
+            menu.click("#menu-edit-find-files", function() {
+                eXide.app.findFiles();
             });
             menu.click("#menu-edit-toggle-comment", function () {
                 editor.editor.toggleCommentLines();

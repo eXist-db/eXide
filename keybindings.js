@@ -30,5 +30,6 @@
     "extractVariable": ["Ctrl-Shift-E", "Command-Ctrl-E"],
     "gotoSymbol": ["Ctrl-Shift-U", "Command-Shift-U"],
     "openTab": ["Ctr-Alt-O", "Command-Ctrl-O"],
-    "commandPalette": ["Ctr-Alt-K", "Command-Shift-K"]
+    "commandPalette": ["Ctr-Alt-K", "Command-Shift-K"],
+    "findFiles": ["Ctrl-Alt-F", "Command-Option-F"]
 }

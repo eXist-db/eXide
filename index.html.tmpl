@@ -118,6 +118,9 @@
                                     <a href="#" id="menu-edit-find" data-command="searchIncremental">Find in buffer</a>
                                 </li>
                                 <li>
+                                    <a href="#" id="menu-edit-find-files" data-command="findFiles">Find in files</a>
+                                </li>
+                                <li>
                                     <a href="#" id="menu-edit-toggle-comment" data-command="toggleComment">Toggle comment</a>
                                 </li>
                                 <li>
@@ -572,12 +575,12 @@
                     and licensed under the tri-license MPL/LGPL/GPL.</p>
                 </div>
                 <div id="dialog-deploy"/>
-                <div id="find-replace-dialog">
+                <div id="find-dialog">
                     <form>
                         <fieldset>
                             <ol>
                                 <li>
-                                    <input name="search" type="text" placeholder="Search for ..." required="required"/>
+                                    <input class="query" name="search" type="search" placeholder="Search for ..." required="required"/>
                                     <label for="search">Find:</label>
                                 </li>
                                 <li>
@@ -589,8 +592,27 @@
                                     <label for="regex">Regular expression:</label>
                                 </li>
                                 <li>
-                                    <input name="replace" type="text" placeholder="Replace with ..."/>
-                                    <label for="replace">Replace with:</label>
+                                    <select name="type">
+                                        <option value="all">All</option>
+                                        <option value="xquery">XQuery</option>
+                                        <option value="javascript">Javascript</option>
+                                        <option value="css">CSS/Less</option>
+                                    </select>
+                                    <label for="type">Type:</label>
+                                </li>
+                                <li>
+                                    <input name="target" type="radio" value="collection" checked="checked"/>
+                                    <input name="collection" type="text"/>
+                                    <label>In: Collection</label>
+                                </li>
+                                <li>
+                                    <input class="project" name="target" type="radio" value=""/>
+                                    <span class="project-path"/>
+                                    <label>App</label>
+                                </li>
+                                <li>
+                                    <input name="target" type="radio" value="all"/>
+                                    <label>All</label>
                                 </li>
                             </ol>
                         </fieldset>

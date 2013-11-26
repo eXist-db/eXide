@@ -161,6 +161,46 @@ eXide.find.SearchReplace = (function () {
     return Constr;
 }());
 
+eXide.namespace("eXide.find.Files");
+
+eXide.find.Files = (function() {
+    var dialog;
+    
+    $(document).ready(function() {
+        dialog =  $("#find-dialog");
+        dialog.dialog({
+            title: "Search binary files",
+            modal: false,
+            autoOpen: false,
+            height: 400,
+    		width: 600
+        });
+    });
+    
+    return {
+        open: function(doc, project, callback) {
+            if (project) {
+                dialog.find("input.project").get().disabled = false;
+                dialog.find("input.project").val(project.root);
+                dialog.find(".project-path").text(project.abbrev);
+            } else {
+                dialog.find("input.project").get().disabled = true;
+            }
+            dialog.find("input[name='collection']").val(doc.getBasePath());
+            var buttons = {
+                "Close": function () { $(this).dialog("close"); self.editor.focus(); },
+                "Search": function() {
+                    var params = dialog.find("form").serialize();
+                    callback(params);
+                    $(this).dialog("close");
+                }
+            };
+            dialog.dialog("option", "buttons", buttons);
+            dialog.dialog("open");
+        }
+    }
+}());
+
 eXide.namespace("eXide.find.Modules");
 
 /**

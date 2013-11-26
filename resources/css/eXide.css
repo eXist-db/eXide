@@ -637,6 +637,7 @@ Sub level menu list items (undo style from Top level List Items)
 	font-size: 85%;
 	padding: 0;
     overflow: hidden;
+    z-index: 1;
 }
 
 #results-body {
@@ -665,6 +666,7 @@ Sub level menu list items (undo style from Top level List Items)
     height: 100%;
     width: 100%;
     overflow: auto;
+    z-index: 1;
 }
 
 #results-body .ace_text-layer {
@@ -1250,4 +1252,8 @@ div#valueHighLight {
 
 #dialog-startup a:link, #dialog-startup a:visited {
 	color: #0083CB;
+}
+
+#find-dialog input[type=text], #find-dialog input[type=search] {
+    width: 300px;
 }

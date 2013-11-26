@@ -232,10 +232,6 @@ eXide.edit.Editor = (function () {
 	    		$this.editor.gotoLine(parseInt(line) + 1);
 	    	}
 	    });
-
-        // incremental search box
-        //this.quicksearch = new eXide.find.IncrementalSearch($("#search-box"), this.editor);
-        this.search = new eXide.find.SearchReplace(this.editor);
         
         var tabsDiv = $("#tabs-container");
         tabsDiv.css({overflow: 'hidden'});
