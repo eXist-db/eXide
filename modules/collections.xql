@@ -372,7 +372,7 @@ declare %private function local:get-permissions($perms as xs:string) {
                 execute
             </td>
         </tr>
-        <tr>
+        <!--tr>
             <td>
                 { local:checkbox("us", substring($perms, 3, 1) = ("s", "S")) }
                 setuid
@@ -385,7 +385,7 @@ declare %private function local:get-permissions($perms as xs:string) {
                 { local:checkbox("ot", substring($perms, 9, 1) = ("t", "T")) }
                 sticky
             </td>
-        </tr>
+        </tr-->
     </table>
 };
 
@@ -490,10 +490,12 @@ declare function local:change-properties($resources as xs:string*) {
     let $mime := request:get-parameter("mime", ())
     for $resource in $resources
     let $uri := xs:anyURI($resource)
+    let $permFromForm := local:permissions-from-form()
+    let $log := util:log("INFO", ("permissions: ", $permFromForm))
     return (
         sm:chown($uri, $owner),
         sm:chgrp($uri, $group),
-        sm:chmod($uri, local:permissions-from-form()),
+        sm:chmod($uri, $permFromForm),
         if ($mime) then
             xmldb:set-mime-type($uri, $mime)
         else
