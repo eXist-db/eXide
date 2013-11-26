@@ -13,25 +13,31 @@
     <permissions user="admin" password="" group="dba" mode="rw-rw-r--"/>
     <note>When upgrading, please make sure you also updated the shared-resources package to &gt; 0.3.5.</note>
     <changelog>
-        <change version="2.0.4">
+        <change version="2.0.5">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Added feature to search across all binary resources (XQueries, Javascript, CSS) in a project</li>
+                <li>Many small bug fixes. In particular, there were display issues when browsing resources</li>
+            </ul>
+        </change>
+        <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="2.0.4">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Display of extended permissions in open/save dialogs</li>
                 <li>Editing of setuid, setgid and sticky bit permissions in Properties dialog</li>
             </ul>
-        </change>
-        <change version="2.0.3">
+        </repo:change>
+        <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="2.0.3">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Added navigation shortcuts to quickly switch to buffer; navigate available commands</li>
                 <li>Use emmet for HTML/XML/CSS</li>
                 <li>Updates and bug fixes for ace, slick grid</li>
             </ul>
-        </change>
-        <change version="2.0.2">
+        </repo:change>
+        <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="2.0.2">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Small fixes to variable completion</li>
                 <li>Experimental support for <a href="https://github.com/wolfgangmm/eXide/pull/36">git</a>.</li>
             </ul>
-        </change>
+        </repo:change>
         <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="2.0">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Context-sensitive code completion</li>
@@ -59,5 +65,5 @@
             </ul>
         </repo:change>
     </changelog>
-    <deployed>2013-11-01T20:13:57.604+01:00</deployed>
+    <repo:deployed xmlns:repo="http://exist-db.org/xquery/repo">2013-11-26T19:47:14.147+01:00</repo:deployed>
 </meta>
