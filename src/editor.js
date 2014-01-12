@@ -862,7 +862,6 @@ eXide.edit.Editor = (function () {
 		if (str) {
 			line = parseInt(str[1]);
 		}
-		$.log("error in line %d", str[1]);
         if (gotoLine) {
     		this.editor.focus();
     		this.editor.gotoLine(line);
