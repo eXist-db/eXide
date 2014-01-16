@@ -33,7 +33,7 @@ import module namespace pretty="http://exist-db.org/eXide/deploy" at "pretty-pri
 
 declare namespace sandbox="http://exist-db.org/xquery/sandbox";
 
-declare option exist:serialize "method=xml media-type=text/xml omit-xml-declaration=no indent=no";
+declare option exist:serialize "method=xml media-type=text/xml omit-xml-declaration=yes indent=no";
 
 (:~ Retrieve a single query result. :)
 declare function sandbox:retrieve($num as xs:integer) as element() {
