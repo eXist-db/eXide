@@ -64,7 +64,7 @@ eXide.edit.XMLModeHelper = (function () {
 					var line = parseInt(data.message.line) - 1;
 					if (line <= row) {
 						var tag = /element type \"([^\"]+)\"/.exec(data.message["#text"]);
-						if (tag.length > 0) {
+						if (tag && tag.length > 0) {
 							$this.editor.insert(tag[1] + ">");
 						}
 					}
