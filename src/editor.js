@@ -636,6 +636,8 @@ eXide.edit.Editor = (function () {
 
     Constr.prototype.reload = function(data) {
         this.activeDoc.getSession().setValue(data);
+        this.activeDoc.saved = true;
+        this.updateTabStatus(this.activeDoc.path, this.activeDoc);
     };
     
 	/**
