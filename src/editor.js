@@ -602,6 +602,9 @@ eXide.edit.Editor = (function () {
             contentType: $this.activeDoc.mime ? $this.activeDoc.mime : "application/octet-stream",
 			success: function (data) {
 			    if (data.status == "error") {
+			        // reset old path and name
+				    $this.activeDoc.path = oldPath;
+				    $this.activeDoc.name = oldName;
 					if (errorHandler) {
 						errorHandler.apply($this.activeDoc, [data.message]);
 					} else {
