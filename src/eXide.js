@@ -306,7 +306,7 @@ eXide.app = (function() {
         },
         
 		closeDocument: function() {
-			if (!editor.getActiveDocument().isSaved() && !editor.getActiveDocument().isNew()) {
+			if (!editor.getActiveDocument().isSaved()) {
 				$("#dialog-confirm-close").dialog({
                     appendTo: "#layout-container",
 					resizable: false,

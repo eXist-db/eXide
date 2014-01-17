@@ -54,6 +54,9 @@ eXide.edit.Document = (function() {
     Constr.TYPE_TEMPLATE = "template";
     
     Constr.prototype.needsValidation = function() {
+        if (this.isNew() && this.isSaved()) {
+            return false;
+        }
     	return !this.ast || this.lastChangeEvent > this.lastValidation;
     };
 
@@ -359,12 +362,13 @@ eXide.edit.Editor = (function () {
         if (data && typeof data == "string") {
             session = new EditSession(data);
         } else if (type && type === "xquery") {
-            session = new EditSession("xquery version \"3.0\";\n1");
+            session = new EditSession("xquery version \"3.0\";\n\n");
         } else {
             session = new EditSession("");
         }
 		var newDocument = new eXide.edit.Document("new-document " + newDocId,
 				"__new__" + newDocId, session);
+		newDocument.saved = true;
         if (type) {
             newDocument.setSyntax(type);
         } else {
