@@ -39,7 +39,7 @@ $(document).ready(function() {
     eXide.app.init(function (restored) {        
         var openDoc = qs["open"];
         var snippet = qs["snip"];
-        if (openDoc && !restored[openDoc]) {
+        if (openDoc) {
             eXide.app.findDocument(qs["open"]);
         } else if (snippet) {
             eXide.app.newDocument(snippet, "xquery");
