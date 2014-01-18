@@ -814,6 +814,12 @@ eXide.app = (function() {
 			eXide.app.resize(true);
         },
         
+        toggleResultsPanel: function() {
+            $("#layout-container").layout().toggle(resultPanel);
+			//layout.sizePane("south", 300);
+			eXide.app.resize(true);
+        },
+        
         prepareResultsPanel: function(target) {
             var contents = $("#results-body").parent().contents().detach();
             contents.appendTo(".ui-layout-" + target);
@@ -1210,6 +1216,9 @@ eXide.app = (function() {
             });
             menu.click("#menu-navigate-commands", function() {
                 eXide.app.getMenu().commandPalette();
+            });
+            menu.click("#menu-navigate-toggle-results", function() {
+                eXide.app.toggleResultsPanel();
             });
 			menu.click("#menu-deploy-run", eXide.app.openApp);
 			

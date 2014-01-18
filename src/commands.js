@@ -303,6 +303,14 @@ eXide.edit.commands = (function () {
                         }
                     });
                     commands.addCommand({
+                        name: "toggleQueryResults",
+                        hint: "toggle query results panel",
+                        bindKey: bindKey(bindings.toggleQueryResults),
+                        exec: function(editor) {
+                            eXide.app.toggleResultsPanel();
+                        }
+                    });
+                    commands.addCommand({
                         name: "commandPalette",
                         hint: "Command Palette",
                         bindKey: bindKey(bindings.commandPalette),
