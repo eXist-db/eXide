@@ -183,7 +183,7 @@ eXide.edit.XMLModeHelper = (function () {
         var token = iterator.stepForward();
         var startTag, endTag;
         while(token) {
-            if (token.type === "meta.tag.tag-name") {
+            if (token.type === "meta.tag.name") {
                 if (!inClosingTag) {
                     var tag = {
                         name: token.value,
