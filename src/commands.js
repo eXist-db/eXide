@@ -258,8 +258,8 @@ eXide.edit.commands = (function () {
                         }
                     });
                     commands.addCommand({
-                        name: "rename",
-                        bindKey: bindKey(bindings.rename),
+                        name: "renameSymbol",
+                        bindKey: bindKey(bindings.renameSymbol),
                         exec: function(editor) {
                             parent.exec("rename");
                         }

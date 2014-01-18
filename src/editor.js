@@ -443,6 +443,10 @@ eXide.edit.Editor = (function () {
 		}
 		$.log("opening %s, mime: %s, syntax: %s, line: %i", resource.name, doc.mime, doc.syntax, resource.line);
         this.updateStatus("");
+        var helper = this.activeDoc.getModeHelper();
+        if (helper) {
+            helper.deactivate();
+        }
 		this.$initDocument(doc);
 	};
 	
