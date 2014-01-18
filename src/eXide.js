@@ -137,7 +137,7 @@ eXide.app = (function() {
                 }
             });
             
-			$(window).resize(eXide.app.resize);
+// 			$(window).resize(eXide.app.resize);
 			
 			$(window).unload(function () {
 				eXide.app.saveState();
@@ -968,7 +968,7 @@ eXide.app = (function() {
                 east__onopen_end: eXide.app.resize,
                 east__onclose_end: eXide.app.resize,
 				center__minSize: 300,
-			 //   center__onresize: eXide.app.resize,
+			    center__onresize_end: eXide.app.resize,
 				center__contentSelector: ".content"
 			});
             eXide.app.prepareResultsPanel(resultPanel);
