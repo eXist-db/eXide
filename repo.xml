@@ -13,6 +13,13 @@
     <permissions user="admin" password="" group="dba" mode="rw-rw-r--"/>
     <note>When upgrading, please make sure you also updated the shared-resources package to &gt; 0.3.5.</note>
     <changelog>
+        <change version="2.0.6">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Lots of bug fixes</li>
+                <li>XML mode: new commands to expand selection to enclosing element; remove enclosing element</li>
+                <li>Updated templates to use bootstrap 3 (requires shared-resources-0.3.9)</li>
+            </ul>
+        </change>
         <change version="2.0.5">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Added feature to search across all binary resources (XQueries, Javascript, CSS) in a project</li>
