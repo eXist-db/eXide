@@ -35,7 +35,8 @@ declare variable $deploy:app-root := request:get-attribute("app-root");
 
 declare variable $deploy:ANT_FILE :=
     <project default="xar" name="$$app$$">
-        <property name="project.version" value="$$version$$"/>
+         <xmlproperty file="expath-pkg.xml"/>
+        <property name="project.version" value="${{package(version)}}"/>
         <property name="project.app" value="$$app$$"/>
         <property name="build.dir" value="build"/>
         <target name="xar">
@@ -274,11 +275,9 @@ declare function deploy:chmod($collection as xs:string, $userData as xs:string+,
 
 declare function deploy:store-ant($target as xs:string, $permissions as xs:string) {
     let $abbrev := request:get-parameter("abbrev", "")
-    let $version := request:get-parameter("version", "1.0")
     let $parameters :=
         <parameters>
             <param name="app" value="{$abbrev}"/>
-            <param name="version" value="{$version}"/>
         </parameters>
     let $antXML := tmpl:expand-template($deploy:ANT_FILE, $parameters)
     return
