@@ -258,10 +258,11 @@ eXide.edit.Editor = (function () {
 		this.validationEnabled = true;
 		
 		// register mode helpers
+		var xmlModeHelper = new eXide.edit.XMLModeHelper($this, menubar);
 		$this.modes = {
 			"xquery": new eXide.edit.XQueryModeHelper($this, menubar),
-			"xml": new eXide.edit.XMLModeHelper($this, menubar),
-            "html": new eXide.edit.XMLModeHelper($this, menubar),
+			"xml": xmlModeHelper,
+            "html": xmlModeHelper,
             "less": new eXide.edit.LessModeHelper($this),
             "javascript": new eXide.edit.JavascriptModeHelper($this),
             "css": new eXide.edit.CssModeHelper($this),
