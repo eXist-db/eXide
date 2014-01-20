@@ -130,31 +130,34 @@
     </xs:complexType>
 
     <xs:element name="range" type="newRangeIndexType"/>
-    
+
     <xs:complexType name="newRangeIndexType">
         <xs:sequence>
             <xs:element ref="create" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
     </xs:complexType>
-    
+
     <xs:element name="create" type="rangeIndexCreateType"/>
-    
+
     <xs:complexType name="rangeIndexCreateType">
         <xs:sequence>
             <xs:group ref="fieldDefinitions" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
         <xs:attributeGroup ref="qnameOpt"/>
+        <xs:attribute name="type" use="optional" type="xs:QName"/>
+        <xs:attributeGroup ref="matchOpt"/>
         <xs:attributeGroup ref="nestedOpt"/>
         <xs:attributeGroup ref="whitespaceOpt"/>
         <xs:attribute name="collation" use="optional" type="xs:string"/>
     </xs:complexType>
-    
+
     <xs:group name="fieldDefinitions">
         <xs:sequence>
-            <xs:element name="field" type="newRangeIndexFieldType" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="field" type="newRangeIndexFieldType" minOccurs="0"
+                maxOccurs="unbounded"/>
         </xs:sequence>
     </xs:group>
-    
+
     <xs:complexType name="newRangeIndexFieldType">
         <xs:attribute name="name" type="xs:NCName" use="required"/>
         <xs:attributeGroup ref="qnameOpt"/>
@@ -179,7 +182,7 @@
         <xs:attributeGroup ref="whitespaceOpt"/>
         <xs:attribute name="type" type="xs:QName" use="required"/>
     </xs:complexType>
-    
+
     <xs:element name="lucene" type="luceneType"/>
 
     <xs:complexType name="luceneType">
@@ -332,7 +335,7 @@
             <xs:enumeration value="false"/>
         </xs:restriction>
     </xs:simpleType>
-    
+
     <!-- we are hiding attributes in attributeGroup to manage their
         namespaces as described here: http://docstore.mik.ua/orelly/xml/schema/ch10_04.htm -->
     <xs:attributeGroup name="class">
