@@ -35,10 +35,17 @@ eXide.edit.XMLModeHelper = (function () {
         menubar.click("#menu-xml-rename", function() {
             self.rename(editor.getActiveDocument());
         });
-        
+        menubar.click("#menu-xml-select-element", function() {
+            self.selectElement(editor.getActiveDocument());
+        });
+        menubar.click("#menu-xml-remove-tag", function() {
+            self.deleteTags(editor.getActiveDocument());
+        });
 		this.addCommand("closeTag", this.closeTag);
+		this.addCommand("removeTags", this.deleteTags);
         this.addCommand("suggest", this.suggest);
         this.addCommand("rename", this.rename);
+        this.addCommand("expandSelection", this.selectElement);
 	}
 	
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
@@ -168,27 +175,96 @@ eXide.edit.XMLModeHelper = (function () {
         }
     };
     
-    Constr.prototype.rename = function(doc) {
+    Constr.prototype.selectElement = function(doc) {
+        var tags = this.findStartEndTags(doc, false);
+        if (!tags.start) {
+            return;
+        }
+        // expand end tag
+        var iterator = new TokenIterator(doc.getSession(), tags.end.row, tags.end.column);
+        var token = iterator.stepForward();
+        while(token) {
+            if (token.value === ">") {
+                tags.end.row = iterator.getCurrentTokenRow();
+                tags.end.column = iterator.getCurrentTokenColumn() + 1;
+                break;
+            }
+            token = iterator.stepForward();
+        }
+        // expand start tag
+        iterator = new TokenIterator(doc.getSession(), tags.start.row, tags.start.column);
+        token = iterator.getCurrentToken();
+        while(token) {
+            if (token.value === "<") {
+                tags.start.row = iterator.getCurrentTokenRow();
+                tags.start.column = iterator.getCurrentTokenColumn();
+                break;
+            }
+            token = iterator.stepBackward();
+        }
         
+        var sel = this.editor.getSelection();
+        var range = new Range(tags.start.row, tags.start.column, tags.end.row, tags.end.column);
+        sel.setSelectionRange(range);
+    };
+    
+    Constr.prototype.rename = function(doc) {
+        var tags = this.findStartEndTags(doc, true);
+        if (!tags.start) {
+            return;
+        }
+        
+        var sel = this.editor.getSelection();
+        var range = new Range(tags.start.row, tags.start.column, tags.start.row, tags.start.column + tags.start.name.length);
+        range.cursor = range.end;
+        sel.setSelectionRange(range);
+        sel.toOrientedRange();
+        if (tags.end) {
+            range = new Range(tags.end.row, tags.end.column, tags.end.row, tags.end.column + tags.end.name.length);
+            range.cursor = range.end;
+            sel.addRange(range);
+        }
+        this.editor.focus();
+    };
+    
+    Constr.prototype.deleteTags = function(doc) {
+        var tags = this.findStartEndTags(doc, false);
+        if (!tags.start) {
+            return;
+        }
+        
+        var range = this.selectTag(doc, tags.end);
+        doc.getSession().remove(range);
+        
+        range = this.selectTag(doc, tags.start);
+        doc.getSession().remove(range);
+    };
+    
+    Constr.prototype.findStartEndTags = function(doc) {
         function matches(iterator, position) {
             var column = iterator.getCurrentTokenColumn();
-            return (iterator.getCurrentTokenRow() == position.row && position.column >= column && 
+            return (iterator.getCurrentTokenRow() == position.row && position.column >= column &&
                 position.column <= column + iterator.getCurrentToken().value.length);
         }
         
-        var position = this.editor.getCursorPosition();
+        var sel   = this.editor.getSelection();
+        var selRange = sel.getRange();
+        var position = selRange.start;
+        
         var iterator = new TokenIterator(doc.getSession(), 0, 0);
         var stack = [];
         var inClosingTag = false;
         var token = iterator.stepForward();
         var startTag, endTag;
         while(token) {
-            if (token.type === "meta.tag.name") {
+            if (token.type.substring(0, 13) === "meta.tag.name") {
                 if (!inClosingTag) {
                     var tag = {
                         name: token.value,
+                        length: token.value.length,
                         row: iterator.getCurrentTokenRow(),
-                        column: iterator.getCurrentTokenColumn()
+                        column: iterator.getCurrentTokenColumn(),
+                        stack: stack.length
                     };
                     stack.push(tag);
                     if (matches(iterator, position)) {
@@ -196,13 +272,14 @@ eXide.edit.XMLModeHelper = (function () {
                     }
                 } else {
                     var last = stack.pop();
-                    if (startTag == last || matches(iterator, position)) {
+                    if (startTag == last || (startTag && startTag.stack == stack.length) || matches(iterator, position)) {
                         startTag = last;
                         endTag = {
                             name: token.value,
                             row: iterator.getCurrentTokenRow(),
                             column: iterator.getCurrentTokenColumn()
                         };
+                        break;
                     }
                 }
                 inClosingTag = false;
@@ -210,25 +287,42 @@ eXide.edit.XMLModeHelper = (function () {
                 inClosingTag = true;
             } else if (token.value === "/>") {
                 stack.pop();
+            } else if (matches(iterator, position)) {
+                startTag = stack[stack.length - 1];
             }
             token = iterator.stepForward();
         }
-
-        if (!startTag) {
-            return;
+        return {
+            start: startTag,
+            end: endTag
+        };
+    };
+    
+    Constr.prototype.selectTag = function(doc, tag) {
+        var range = new Range(tag.row, tag.column, tag.row, tag.column);
+        // expand end
+        var iterator = new TokenIterator(doc.getSession(), tag.row, tag.column);
+        var token = iterator.stepForward();
+        while(token) {
+            if (token.value === ">") {
+                range.end.row = iterator.getCurrentTokenRow();
+                range.end.column = iterator.getCurrentTokenColumn() + 1;
+                break;
+            }
+            token = iterator.stepForward();
         }
-        
-        var sel = this.editor.getSelection();
-        sel.toOrientedRange();
-        var range = new Range(startTag.row, startTag.column, startTag.row, startTag.column + startTag.name.length);
-        range.cursor = range.end;
-        sel.addRange(range);
-        if (endTag) {
-            range = new Range(endTag.row, endTag.column, endTag.row, endTag.column + endTag.name.length);
-            range.cursor = range.end;
-            sel.addRange(range);
+        // expand start
+        iterator = new TokenIterator(doc.getSession(), tag.row, tag.column);
+        token = iterator.getCurrentToken();
+        while(token) {
+            if (token.value === "<" || token.value === "</") {
+                range.start.row = iterator.getCurrentTokenRow();
+                range.start.column = iterator.getCurrentTokenColumn();
+                break;
+            }
+            token = iterator.stepBackward();
         }
-        this.editor.focus();
+        return range;
     };
     
 	return Constr;

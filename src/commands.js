@@ -28,11 +28,13 @@ eXide.edit.commands = (function () {
 	var bindings = {};
     
 	function bindKey(bindings) {
+		if (bindings) {
 	    return {
 	        win: bindings[0],
 	        mac: bindings[1],
 	        sender: "editor"
 	    };
+		}
 	}
 	
     function createMap(editor) {
@@ -262,6 +264,13 @@ eXide.edit.commands = (function () {
                         bindKey: bindKey(bindings.renameSymbol),
                         exec: function(editor) {
                             parent.exec("rename");
+                        }
+                    });
+                    commands.addCommand({
+                        name: "removeTags",
+                        bindKey: bindKey(bindings.removeTags),
+                        exec: function(editor) {
+                            parent.exec("removeTags");
                         }
                     });
                     commands.addCommand({

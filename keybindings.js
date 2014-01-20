@@ -26,6 +26,7 @@
     "quickfix": ["Ctrl-Shift-Q", "Command-Ctrl-Q"],
     "expandSelection": ["Ctrl-Shift-Up", "Ctrl-Command-Up"],
     "renameSymbol": ["Ctrl-Alt-R", "Command-Ctrl-R"],
+    "removeTags": ["Ctrl-Alt-Backspace", "Command-Option-Backspace"],
     "extractFunction": ["Ctrl-Shift-X", "Command-Ctrl-X"],
     "extractVariable": ["Ctrl-Shift-E", "Command-Ctrl-E"],
     "gotoSymbol": ["Ctrl-Shift-U", "Command-Shift-U"],
