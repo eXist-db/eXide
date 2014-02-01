@@ -823,6 +823,7 @@ eXide.app = (function() {
         prepareResultsPanel: function(target) {
             var contents = $("#results-body").parent().contents().detach();
             contents.appendTo(".ui-layout-" + target);
+            $("#results-iframe").hide();
         },
         
         switchResultsPanel: function() {

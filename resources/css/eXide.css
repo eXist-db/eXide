@@ -671,6 +671,7 @@ Sub level menu list items (undo style from Top level List Items)
 
 #results-body .ace_text-layer {
     height: 100%;
+    overflow: auto;
 }
 
 .navbar {

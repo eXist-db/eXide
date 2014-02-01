@@ -149,7 +149,7 @@ eXide.util.Preferences = (function () {
             var font = this.preferences.font + ", monospace";
             $("#editor").css("font-family", font);
             $("#outline").css("font-family", font);
-            $("#results-body .ace_scroller").css("font-family", font);
+            $("#results-body").css("font-family", font);
         }
             
         this.editor.editor.setFontSize(this.preferences.fontSize + "px");
