@@ -5,9 +5,9 @@
         <meta charset="utf-8"/>
         <link rel="stylesheet" type="text/css" href="resources/css/black-tie/jquery-ui-1.10.3.custom.min.css"/>
         <link rel="stylesheet" type="text/css" href="$shared/resources/scripts/jquery/css/jquery.pnotify.default.css"/>
-        <link rel="stylesheet" type="text/css" href="resources/scripts/jquery/jquery.layout-latest.css"/>
         <link rel="stylesheet" type="text/css" href="resources/scripts/jquery/slick.grid.css"/>
         <link rel="stylesheet" type="text/css" href="resources/css/eXide.css"/>
+        <script type="text/javascript" src="resources/scripts/modernizr.custom.js"/>
         <script type="text/javascript" src="resources/scripts/jquery/jquery-1.9.1.min.js"/>
         <script type="text/javascript" src="resources/scripts/jquery/jquery-ui-1.10.3.custom.min.js"/>
         <script type="text/javascript" src="$shared/resources/scripts/jquery/jquery.pnotify.min.js"/>
@@ -29,7 +29,6 @@
         <script src="$shared/resources/scripts/ace/demo.js" type="text/javascript"/>
         <script type="text/javascript" src="resources/scripts/xqlint.min.js"/>
         <script type="text/javascript" src="resources/scripts/eXide.min.js"/>
-        
         <!--script type="text/javascript" src="src/ace-modes.js"/>
         <script type="text/javascript" src="src/util.js"/>
         <script type="text/javascript" src="src/popup.js"/>
@@ -50,6 +49,7 @@
         <script type="text/javascript" src="src/help.js"/>
         <script type="text/javascript" src="src/preferences.js"/>
         <script type="text/javascript" src="src/eXide.js"/>
+        <script type="text/javascript" src="src/layout.js"/>
         <script type="text/javascript" src="src/templates.js"/>
         <script type="text/javascript" src="src/resources.js"/>
         <script type="text/javascript" src="src/find.js"/>
@@ -65,6 +65,10 @@
                 <img src="resources/images/logo.png"/>
                 <p>
                     <span id="splash-status">Loading</span> ...</p>
+                <p id="startup-error" style="display: none;">
+                Your browser is too old!<br/>
+                eXide requires a modern browser<br/> 
+                with support for CSS3 flexbox.</p>
             </div>
         </div>
         <div id="fullscreen">
@@ -236,7 +240,7 @@
                                 <li>
                                     <a href="#" id="menu-xml-select-element" data-command="expandSelection">Select element</a>
                                 </li>
-				<li>
+                                <li>
                                     <a href="#" id="menu-xml-remove-tag" data-command="removeTags">Remove tags</a>
                                 </li>
                             </ul>
@@ -294,64 +298,78 @@
             </div>
             <div id="body">
                 <div id="layout-container">
-                    <div class="ui-layout-center">
-                        <div id="tabs-container">
-                            <ul id="tabs"/>
-                            <button id="tab-prev">Previous</button>
-                            <button id="tab-next">Next</button>
+                    <div class="layout layout-horizontal">
+                        <div id="outline-container" class="panel-west">
+                            <h3>Outline</h3>
+                            <div id="outline-body" class="content">
+                                <div class="ace_scroller">
+                                    <div class="ace_text-layer">
+                                        <ul id="outline"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="outline-status">
+                                <input type="search" id="outline-filter" placeholder="Filter by..."/>
+                            </div>
+                            <div class="resize-handle">
+                                <span title="Click to close outline"/>
+                            </div>
                         </div>
-                        <div class="content" id="editor"/>
-                        <div id="status-bar">
-                            <span id="status">
-                                <a href="#" target="blank" title="Run in new tab">
-                                    <img src="resources/images/application_go.png"/>
-                                </a>
-                                <span>Path</span>
-                            </span>
-                            <a href="#" id="error-status"/>
-                        </div>
-                        <div id="ext-status-bar"/>
-                    </div>
-                    <div id="outline-container" class="ui-layout-west">
-                        <h3>Outline</h3>
-                        <div id="outline-body" class="content">
-                            <div class="ace_scroller">
-                                <div class="ace_text-layer">
-                                    <ul id="outline"/>
+                        <div class="layout-vertical">
+                            <div class="main">
+                                <div id="tabs-container">
+                                    <ul id="tabs"/>
+                                    <button id="tab-prev">Previous</button>
+                                    <button id="tab-next">Next</button>
+                                </div>
+                                <div class="content" id="editor"/>
+                                <div id="status-bar">
+                                    <span id="status">
+                                        <a href="#" target="blank" title="Run in new tab">
+                                            <img src="resources/images/application_go.png"/>
+                                        </a>
+                                        <span>Path</span>
+                                    </span>
+                                    <a href="#" id="error-status"/>
+                                </div>
+                                <div id="ext-status-bar"/>
+                            </div>
+                            <div class="panel-south results-container">
+                                <div class="resize-handle">
+                                    <span title="Click to close results"/>
+                                </div>
+                                <div class="navbar">
+                                    <a class="previous" href="#">
+                                        <img src="resources/images/control_rewind.png"/>
+                                    </a>
+                                    <select name="output-mode" id="serialization-mode">
+                                        <option value="xml">XML Output</option>
+                                        <option value="html">Direct Output</option>
+                                    </select>
+                                    <label class="checkbox" title="Update query results automatically while you type XQuery or when saving HTML">
+                                        <input type="checkbox" id="live-preview" name="live-preview" selected="false"/>
+                                        Live Preview
+                                    </label>
+                                    <img class="layout-switcher" src="resources/images/layouts_split.png" title="Switch results panel location between bottom and right"/>
+                                    <span class="current"/>
+                                    <a class="next" href="#">
+                                        <img src="resources/images/control_fastforward.png"/>
+                                    </a>
+                                </div>
+                                <div id="results-body">
+                                    <div class="ace_text-layer ace_marker-layer">
+                                        <div class="results"/>
+                                    </div>
+                                    <iframe id="results-iframe" style="display: none" src="JavaScript:''"/>
                                 </div>
                             </div>
                         </div>
-                        <div class="outline-status">
-                            <input type="search" id="outline-filter" placeholder="Filter by..."/>
-                        </div>
-                    </div>
-                    <div class="ui-layout-south results-container">
-                        <div class="navbar">
-                            <a class="previous" href="#">
-                                <img src="resources/images/control_rewind.png"/>
-                            </a>
-                            <select name="output-mode" id="serialization-mode">
-                                <option value="xml">XML Output</option>
-                                <option value="html">Direct Output</option>
-                            </select>
-                            <label class="checkbox" title="Update query results automatically while you type XQuery or when saving HTML">
-                                <input type="checkbox" id="live-preview" name="live-preview" selected="false"/>
-                        Live Preview
-                    </label>
-                            <img class="layout-switcher" src="resources/images/layouts_split.png" title="Switch results panel location between bottom and right"/>
-                            <a class="next" href="#">
-                                <img src="resources/images/control_fastforward.png"/>
-                            </a>
-                            <div class="current"/>
-                        </div>
-                        <div id="results-body">
-                            <div class="ace_text-layer ace_marker-layer">
-                                <div class="results"/>
+                        <div class="panel-east results-container">
+                            <div class="resize-handle">
+                                <span title="Click to close results"/>
                             </div>
-                            <iframe id="results-iframe" style="display: none" src="JavaScript:''"/>
                         </div>
                     </div>
-                    <div class="ui-layout-east results-container"/>
                 </div>
                 <div id="open-dialog">
                     <div class="eXide-browse-panel">
@@ -413,7 +431,7 @@
                         </table>
                     </form>
                 </div>
-                <div id="dialog-confirm-close" title="Close Editor">
+                <div id="dialog-confirm-close" title="Close Editor" style="display: none;">
                     <p>
                         <span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"/>There
                 are unsaved changes in this document which will be lost if you close it. Do you want to
@@ -458,7 +476,7 @@
                         <div id="synchronize-report"/>
                     </form>
                 </div>
-                <div id="dialog-store">
+                <div id="dialog-store" style="display: none;">
                     <p>
                         <span class="ui-icon ui-icon-circle-check" style="float:left; margin:0 7px 50px 0;"/>
                         Storing resource <span id="dialog-store-resource"/>

@@ -36,7 +36,7 @@ $(document).ready(function() {
     })(window.location.search.substr(1).split('&'));
     
     // check parameters passed in GET request
-    eXide.app.init(function (restored) {        
+    eXide.app.init(function (restored) {
         var openDoc = qs["open"];
         var snippet = qs["snip"];
         if (openDoc) {
@@ -59,6 +59,7 @@ eXide.app = (function() {
     
 	var editor;
 
+    var layout;
 	var deploymentEditor;
 	var dbBrowser;
     var projects;
@@ -88,6 +89,11 @@ eXide.app = (function() {
 	return {
         
 		init: function(afterInitCallback) {
+		    if (!Modernizr.flexbox) {
+		        $("#startup-error").show();
+		        return;
+            }
+            
             projects = new eXide.edit.Projects();
             menu = new eXide.util.Menubar($(".menu"));
 			editor = new eXide.edit.Editor(document.getElementById("editor"), menu);
@@ -112,8 +118,8 @@ eXide.app = (function() {
                         afterInitCallback(restored);
                     }
                     // dirty workaround to fix editor height
-                    var southStatus = localStorage.getItem("eXide.layout.south");
-                    $("#layout-container").layout().toggle("south");
+                    // var southStatus = localStorage.getItem("eXide.layout.south");
+                    // $("#layout-container").layout().toggle("south");
                     
                     if (eXide.configuration.allowGuest) {
                         $("#splash").fadeOut(400);
@@ -165,9 +171,8 @@ eXide.app = (function() {
         
 		resize: function(resizeIframe) {
 			var panel = $("#editor");
-			var header = $(".header");
             if (resizeIframe) {
-                var resultsContainer = $(".ui-layout-" + resultPanel);
+                var resultsContainer = $(".panel-" + resultPanel);
                 var resultsBody = $("#results-body");
                 $("#results-iframe").width(resultsBody.innerWidth());
                 $("#results-iframe").height(resultsContainer.innerHeight() - $(".navbar", resultsContainer).height() - 8);
@@ -645,6 +650,8 @@ eXide.app = (function() {
 				return false;
 			preferences.read();
 			
+			layout.restoreState();
+			
             var restoring = {};
             
 			var docCount = localStorage["eXide.documents"];
@@ -700,11 +707,8 @@ eXide.app = (function() {
 				return;
 			localStorage.clear();
 			preferences.save();
+			layout.saveState();
 			
-            var layout = $('#layout-container').layout();
-            localStorage["eXide.layout.south"] = layout.state.south.isClosed ? "closed" : "open";
-            localStorage["eXide.layout.west"] = layout.state.west.isClosed ? "closed" : "open";
-            localStorage["eXide.layout.east"] = layout.state.east.isClosed ? "closed" : "open";
             localStorage["eXide.layout.resultPanel"] = resultPanel;
 			editor.saveState();
 			deploymentEditor.saveState();
@@ -809,27 +813,25 @@ eXide.app = (function() {
         },
        
         showResultsPanel: function() {
-            $("#layout-container").layout().open(resultPanel);
-			//layout.sizePane("south", 300);
+			layout.show(resultPanel);
 			eXide.app.resize(true);
         },
         
         toggleResultsPanel: function() {
-            $("#layout-container").layout().toggle(resultPanel);
-			//layout.sizePane("south", 300);
 			eXide.app.resize(true);
         },
         
         prepareResultsPanel: function(target) {
-            var contents = $("#results-body").parent().contents().detach();
-            contents.appendTo(".ui-layout-" + target);
+            var contents = $("#results-body").parent().children(":not(.resize-handle)").detach();
+            contents.appendTo(".panel-" + target);
             $("#results-iframe").hide();
         },
         
         switchResultsPanel: function() {
             var target = resultPanel === "south" ? "east" : "south";
             eXide.app.prepareResultsPanel(target);
-            $("#layout-container").layout().close(resultPanel);
+            layout.hide(resultPanel);
+
             resultPanel = target;
             if (resultPanel === "south") {
                 $(".layout-switcher").attr("src", "resources/images/layouts_split.png");
@@ -934,50 +936,16 @@ eXide.app = (function() {
         },
        
 		initGUI: function(menu) {
-            var layoutState = {
-                south: "closed",
-                west: "open",
-                east: "closed"
-            };
             if (eXide.util.supportsHtml5Storage && localStorage.getItem("eXide.firstTime")) {
-                layoutState.west = localStorage.getItem("eXide.layout.west");
-                layoutState.east = localStorage.getItem("eXide.layout.east");
-                layoutState.south = localStorage.getItem("eXide.layout.south");
                 resultPanel = localStorage["eXide.layout.resultPanel"] || "south";
             }
-            $.log("resultPanel: %s", resultPanel);
-			var layout = $("#layout-container").layout({
-				enableCursorHotkey: false,
-                spacing_open: 6,
-                spacing_closed: 8,
-				north__size: 72,
-				north__resizable: false,
-				north__closable: false,
-                north__showOverflowOnHover: true,
-                north__spacing_open: 0,
-				south__minSize: 200,
-                south__size: 300,
-				south__initClosed: layoutState.south !== "closed",
-                south__contentSelector: "#results-body",
-                south__onresize_end: eXide.app.resize,
-                south__onopen_end: eXide.app.resize,
-                south__onclose_end: eXide.app.resize,
-				west__size: 200,
-				west__initClosed: layoutState.west == "closed",
-				west__contentSelector: ".content",
-                west__onopen_end: eXide.app.resize,
-                west__onclose_end: eXide.app.resize,
-                west__resize_end: eXide.app.resize,
-                east__minSize: 300,
-                east__size: 450,
-                east__initClosed: layoutState.east == "closed",
-                east__onresize_end: eXide.app.resize,
-                east__onopen_end: eXide.app.resize,
-                east__onclose_end: eXide.app.resize,
-				center__minSize: 300,
-			    center__onresize_end: eXide.app.resize,
-				center__contentSelector: ".content"
-			});
+            layout = new eXide.app.Layout(editor);
+            if (resultPanel == "south") {
+                layout.hide("east");
+            } else {
+                layout.hide("south");
+            }
+            
             eXide.app.prepareResultsPanel(resultPanel);
 			$("#open-dialog").dialog({
                 appendTo: "#layout-container",

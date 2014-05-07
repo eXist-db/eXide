@@ -7,6 +7,152 @@ body {
     margin: 0;
     padding: 0;
     background: #F3F3F3;
+    height: 100%;
+}
+
+.layout-horizontal {
+    position: absolute;
+    top: 63px;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    display: -webkit-flex;
+    display: -moz-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-flex-direction: row;
+    -moz-flex-direction: row;
+    -ms-flex-direction: row;
+    flex-direction: row;
+}
+
+.layout-vertical {
+    display: -webkit-flex;
+    display: -moz-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-flex-direction: column;
+    -moz-flex-direction: column;
+    -ms-flex-direction: column;
+    flex-direction: column;
+    -webkit-flex: auto;
+    -moz-flex: auto;
+    -ms-flex: auto;
+    flex: auto;
+}
+
+.main {
+    -webkit-flex: auto;
+    -moz-flex: auto;
+    -ms-flex: auto;
+    flex: auto;
+    display: -webkit-flex;
+    display: -moz-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-flex-direction: column;
+    -moz-flex-direction: column;
+    -ms-flex-direction: column;
+    flex-direction: column;
+}
+
+.content {
+    -webkit-flex: auto;
+    -moz-flex: auto;
+    -ms-flex: auto;
+    flex: auto;
+}
+
+.resize-handle, .minimized {
+    position: absolute;
+    z-index: 3;
+    cursor: col-resize;
+}
+
+.panel-west .resize-handle:hover, .panel-east .resize-handle:hover {
+    background: linear-gradient(to left, #C0C0C0, #E8E8E8) repeat scroll 0 0 rgba(0, 0, 0, 0);
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.4);
+}
+
+.minimized {
+    background: linear-gradient(to left, #C0C0C0, #E8E8E8) repeat scroll 0 0 rgba(0, 0, 0, 0);
+    cursor: default;
+}
+
+.panel-south .resize-handle:hover, .panel-south .minimized {
+    background: linear-gradient(to top, #C0C0C0, #E8E8E8) repeat scroll 0 0 rgba(0, 0, 0, 0);
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.4);
+}
+
+.panel-west .resize-handle:hover, .panel-west .minimized {
+    box-shadow: 2px 0 2px rgba(0, 0, 0, 0.4);
+}
+
+.panel-east .resize-handle:hover, .panel-east .minimized {
+    box-shadow: -2px 0 2px rgba(0, 0, 0, 0.4);
+}
+
+.panel-south .resize-handle {
+    cursor: row-resize;
+}
+
+.panel-south .resize-handle:hover span, .panel-south .minimized span {
+    background: url("../images/handle-vert.png") center center no-repeat scroll;
+    display: block;
+    height: 100%;
+    width: 32px;
+    position: absolute;
+    left: 50%;
+    margin-right: 16px;
+    cursor: pointer;
+}
+
+.panel-west .minimized span, .panel-east .minimized span,
+.panel-west .resize-handle:hover span, .panel-east .resize-handle:hover span {
+    background: url("../images/handle-hor.png") center center no-repeat scroll;
+    width: 100%;
+    height: 32px;
+    display: block;
+    position: absolute;
+    top: 50%;
+    margin-bottom: 16px;
+    cursor: pointer;
+}
+
+.panel-west {
+    position: relative;
+    width: 170px;
+}
+
+.panel-west .resize-handle, .panel-west .minimized {
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 10px;
+}
+
+.panel-east {
+    position: relative;
+    width: 170px;
+}
+
+.panel-east .resize-handle, .panel-east .minimized {
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 10px;
+}
+
+.panel-south {
+    position: relative;
+    height: 200px;
+}
+
+.panel-south .resize-handle, .panel-south .minimized {
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 10px;
 }
 
 #fullscreen {
@@ -18,19 +164,19 @@ body {
 }
  
 #body {
-    position: absolute;
-    top: 63px;
-    left: 0;
-    bottom: 0;
-    right: 0;
+    /*position: absolute;*/
+    /*top: 63px;*/
+    /*left: 0;*/
+    /*bottom: 0;*/
+    /*right: 0;*/
 }
 
 #layout-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
+    /*position: absolute;*/
+    /*top: 0;*/
+    /*left: 0;*/
+    /*bottom: 0;*/
+    /*right: 0;*/
 }
 
 #splash {
@@ -56,6 +202,10 @@ body {
 
 #splash p {
     text-shadow: 1px 1px 1px #666;
+}
+
+#startup-error {
+    color: red;
 }
 
 #login-dialog {
@@ -193,7 +343,7 @@ a:link,a:visited {
 
 #editor {
     font-family: 'Ubuntu Mono', 'Monaco','Menlo','Droid Sans Mono','Courier New',monospace;
-	height: 200px;
+	/*height: 200px;*/
 	margin: 0 4px;
 	/* background-color: #E8E8E8; */
 	padding: 0 0 0 0;
@@ -343,6 +493,8 @@ Sub level menu list items (undo style from Top level List Items)
     min-height: 20px;
 	background: #E8E8E8;
 	overflow: hidden;
+	margin: 0 4px;
+	border-left: 1px solid #bbb;
 }
 
 #error-status {
@@ -638,6 +790,8 @@ Sub level menu list items (undo style from Top level List Items)
 	padding: 0;
     overflow: hidden;
     z-index: 1;
+    margin: 0 4px 0 0;
+    border-left: 1px solid #bbb;
 }
 
 #results-body {
@@ -675,6 +829,7 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 .navbar {
+    position: relative;
 	background-color: #F0F0F0;
 	padding: 2px 4px;
 	height: 20px;
@@ -705,8 +860,17 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 .current {
-    margin-left: 1em;
+    position: absolute;
+    z-index: -1;
+    top: 4px;
+    left: 0;
+    right: 0;
+    text-align: center;
 	font-weight: bold;
+}
+
+.panel-east .current {
+    display: none;
 }
 
 .next {
@@ -824,6 +988,14 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 #outline-container {
+    display: -webkit-flex;
+    display: -moz-flex;
+    display: -ms-flexbox;
+    display: flex;
+    -webkit-flex-direction: column;
+    -moz-flex-direction: column;
+    -ms-flex-direction: column;
+    flex-direction: column;
 	padding: 0;
 	font-size: 85%;
     border: 0;
@@ -836,11 +1008,15 @@ Sub level menu list items (undo style from Top level List Items)
 	color: #606060;
 	font-weight: normal;
     font-size: 85%;
+    height: 1.2em;
 }
 
 #outline-body {
     position: relative;
-    height: 100%;
+    -webkit-flex: auto;
+    -moz-flex: auto;
+    -ms-flex: auto;
+    flex: auto;
     width: 100%;
 }
 
@@ -891,6 +1067,10 @@ Sub level menu list items (undo style from Top level List Items)
 
 #outline a:link, #outline a:visited {
     color: inherit;
+}
+
+.outline-status {
+    height: 20px;
 }
 
 #outline-filter {
