@@ -379,23 +379,32 @@
                         </div>
                         <div class="eXide-browse-main">
                             <div class="eXide-browse-resources"/>
-                            <div id="file_upload" class="eXide-browse-upload">
+                            <div class="eXide-browse-upload">
                                 <p>Drop files here or click on the button below to upload them
                           to the selected collection. Maximum file size is 100MB.</p>
                                 <form class="file_upload" action="modules/upload.xql" method="POST" enctype="multipart/form-data">
                                     <div class="options">
-                                        <input type="checkbox" name="deploy" checked="checked"/> Auto
-                                deploy uploaded .xar packages
-                            </div>
-                                    <input type="hidden" name="collection" value=""/>
-                                    <div class="file_upload_body">
-                                        <input type="file" name="file[]" multiple="multiple"/>
-                                        <button>Upload</button>
-                                        <div class="file_upload_label">Upload files</div>
+                                        <input type="checkbox" name="deploy" checked=""/> Auto deploy uploaded .xar packages
                                     </div>
+                                    <div class="file_upload_drop">Drop files here ...</div>
+                                    <div class="file_upload_body">
+                                        <div class="fileinput-button">
+                                            <input id="file_upload" type="file" name="file[]" multiple="multiple"/>
+                                            <button class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only">
+                                                <span class="ui-button-text">Upload Files</span>
+                                            </button>
+                                        </div>
+                                        <div class="fileinput-button">
+                                            <input id="dir_upload" type="file" name="file[]" multiple="multiple" directory="" webkitdirectory=""/>
+                                            <button class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only">
+                                                <span class="ui-button-text">Upload Directory</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="collection" value=""/>
                                 </form>
-                                <table id="files"/>
                                 <button id="eXide-browse-upload-done">Done</button>
+                                <table id="files"/>
                             </div>
                         </div>
                         <div class="eXide-browse-upload"/>

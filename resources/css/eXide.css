@@ -1262,84 +1262,98 @@ fieldset input:required:valid {
 	padding: 10px;
 }
 
-#eXide-browse-upload-done {
-	margin-top: 20px;
+.fileinput-button {
+  position: relative;
+  overflow: hidden;
+  float: right;
+}
+
+.fileinput-button input {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  margin: 0;
+  opacity: 0;
+  -ms-filter: 'alpha(opacity=0)';
+  direction: ltr;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.file_upload_drop {
+    color: #555;
+    font-weight: bold;
+    border: 3px dashed orange;
+    text-align: center;
+    -moz-border-radius: 10px;
+	-webkit-border-radius: 10px;
+	border-radius: 10px;
+	width: 18em;
+	font-size: 125%;
+	margin: 15px auto 15px auto;
+	padding: 15px 0;
 }
 
 form.file_upload .file_upload_body {
-	position: relative;
-    font-size: 125%;
-    font-weight: normal;
-	overflow: hidden;
-	direction: ltr;
-	cursor: pointer;
-	text-align: center;
-	color: #555;
-	font-weight: bold;
-	-moz-border-radius: 10px;
-	-webkit-border-radius: 10px;
-	border-radius: 10px;
-	width: 15em;
-	line-height: 2.5em;
-    border: 3px dashed orange;
-	margin-left: auto;
-	margin-right: auto;
-    margin-top: 1.5em;
-}
-
-form.file_upload_small {
-	width: 15em;
-	height: 2.5em;
-	line-height: 2.5em;
-	font-size: 100%;
-	background: palegreen;
-	border: 1px solid limegreen;
-}
-
-form.file_upload_large {
-	width: 100%;
-	height: 7em;
-	line-height: 7em;
-	font-size: 2em;
-	background: palegreen;
-	border: 1px solid limegreen;
+	/*position: relative;*/
+ /*   font-size: 125%;*/
+ /*   font-weight: normal;*/
+	/*overflow: hidden;*/
+	/*direction: ltr;*/
+	/*cursor: pointer;*/
+	/*text-align: center;*/
+	/*color: #555;*/
+	/*font-weight: bold;*/
+	/*width: 15em;*/
+	/*line-height: 2.5em;*/
+ /*   border: 3px dashed orange;*/
+	/*margin-left: auto;*/
+	/*margin-right: auto;*/
+ /*   margin-top: 1.5em;*/
 }
 
 form.file_upload_highlight,form.file_upload .file_upload_body:hover {
-	border: 3px dashed lawngreen;
+	/*border: 3px dashed lawngreen;*/
 }
 
 form.file_upload .file_upload_body input {
-	position: absolute;
-	top: 0;
-	right: 0;
-	margin: 0;
-	border: 300px solid transparent;
-	opacity: 0;
-	-ms-filter: 'alpha(opacity=0)';
-	filter: alpha(opacity = 0);
-	-o-transform: translate(-300px, -300px) scale(10);
-	-moz-transform: translate(-800px, 0) scale(10);
-	cursor: pointer;
-	height: 100%;
+	/*position: absolute;*/
+	/*top: 0;*/
+	/*right: 0;*/
+	/*margin: 0;*/
+	/*border: 300px solid transparent;*/
+	/*opacity: 0;*/
+	/*-ms-filter: 'alpha(opacity=0)';*/
+	/*filter: alpha(opacity = 0);*/
+	/*-o-transform: translate(-300px, -300px) scale(10);*/
+	/*-moz-transform: translate(-800px, 0) scale(10);*/
+	/*cursor: pointer;*/
+	/*height: 100%;*/
 }
 
-:root form.file_upload .file_upload_body {
-	height: auto;
+#files {
+    width: 100%;
+    margin: 10px 0;
 }
 
-form.file_upload button,.no-js .file_upload_label,.no-js .file_upload_overall_progress,.no-js .file_upload_buttons
-	{
-	display: none;
+#files thead tr {
+    margin-bottom: 4px;
+    border-bottom: 1px solid #aaa;
 }
 
-.file_upload .file_upload_label,.file_upload .file_upload_overall_progress,.file_upload .file_upload_buttons
-	{
-	display: block;
+#files th {
+    text-align: left;
+    padding-bottom: 4px;
 }
 
-.file_upload img {
-	border: none;
+#files td {
+    padding: 4px 8px;
+}
+
+#files .file_upload_progress {
+    width: 40%;
 }
 
 .progressbar,.progressbar div {
@@ -1355,13 +1369,16 @@ form.file_upload button,.no-js .file_upload_label,.no-js .file_upload_overall_pr
 	margin: -1px;
 }
 
+.file_upload_progress {
+    width: 150px;
+}
+
 .file_upload_progress .ui-progressbar-value,.file_upload_overall_progress .ui-progressbar-value,.progressbar div
 	{
 	background: url(../images/pbar-ani.gif);
 }
 
 .file_upload_progress div {
-	width: 150px;
 	height: 17px;
 }
 
@@ -1382,8 +1399,8 @@ form.file_upload button,.no-js .file_upload_label,.no-js .file_upload_overall_pr
 	font-size: 1.1em;
 }
 
-.file_upload .files,.file_upload_overall_progress {
-	margin: 10px 0;
+.file_upload .files {
+	margin: 20px 0;
 }
 
 .file_upload_error .ui-progressbar,.file_upload_error .progressbar,.file_upload_error .file_upload_start button

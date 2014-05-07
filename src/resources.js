@@ -467,6 +467,73 @@ eXide.namespace("eXide.browse.Upload");
  */
 eXide.browse.Upload = (function () {
 	
+	function isDirUploadSupported() {
+	    var tmpInput = document.createElement("input");
+	    return ("webkitdirectory" in tmpInput
+	        || "mozdirectory" in tmpInput
+	        || "odirectory" in tmpInput
+	        || "msdirectory" in tmpInput
+	        || "directory" in tmpInput);
+	}
+	
+	function initUpload(container, button, dropzone) {
+	    $(button).fileupload({
+			sequentialUploads: true,
+            autoUpload: false,
+            dataType: 'json',
+            dropZone: dropzone
+        }).on('fileuploadadd', function (e, data) {
+            $("#file_upload thead").show();
+            data.context = $('#files');
+            $.each(data.files, function (index, file) {
+                if (file.name != ".") {
+                    var path = file.name;
+                    if (file.webkitRelativePath) {
+                        path = file.webkitRelativePath;
+                    } else if (file.relativePath) {
+                        path = file.relativePath + path;
+                    }
+                    file.path = path;
+                    var node = $('<tr data-name="' + path + '"/>');
+                    node.append($('<td/>').text(file.name));
+                    node.append($('<td/>').text(file.size));
+                    node.append($('<td class="file_upload_progress"><div class="ui-progressbar-value" style="width: 0%;"></div></td>'));
+                    node.appendTo(data.context);
+                    
+                    
+                    data.formData = {
+                        path: path,
+                        collection: $("input[name=\"collection\"]", container).val()
+                    };
+                    
+                    var future = data.submit();
+                    future.done(function() {
+                        node.remove();
+                    });
+                }
+            });
+        }).on("fileuploadprogress", function (e, data) {
+            $.each(data.files, function(index, file) {
+                var progress = parseInt(data.loaded / data.total * 100, 10);
+                var tr = $("tr[data-name='" + file.path + "']", container);
+                tr.find(".ui-progressbar-value").css("width", progress + "%");
+            });
+            
+        }).on('fileuploaddone', function (e, data) {
+            // $.each(data.result.files, function (index, file) {
+            //     $(data.context.children()[index]).remove();
+            // });
+        }).on('fileuploadfail', function (e, data) {
+            console.log("error: ", data);
+            // $.each(data.files, function (index, file) {
+            //     var error = $('<span class="text-danger"/>').text('File upload failed.');
+            //     $(data.context.children()[index])
+            //         .append('<br>')
+            //         .append(error);
+            // })
+        });
+	}
+	
 	Constr = function (container) {
 		this.container = container;
 		
@@ -474,24 +541,13 @@ eXide.browse.Upload = (function () {
 			"done": []
 		};
 		
-		$("#file_upload").fileUploadUI({
-			sequentialUploads: true,
-            uploadTable: $('#files'),
-            buildUploadRow: function (files, index, handler) {
-                return $('<tr><td>' + files[index].name + '<\/td>' +
-                        '<td class="file_upload_progress"><div><\/div><\/td>' +
-                        '<td class="file_upload_cancel">' +
-                        '<button class="ui-state-default ui-corner-all" title="Cancel">' +
-                        '<span class="ui-icon ui-icon-cancel">Cancel<\/span>' +
-                        '<\/button><\/td><\/tr>');
-            },
-            buildDownloadRow: function (info) {
-                if (info.error) {
-                    return $("<tr><td>" + info.name + "</td><td>" + info.error + "</td></tr>");
-                }
-                return null;
-            }
-        });
+		initUpload(container, "#file_upload", $(".file_upload_drop"));
+		if (isDirUploadSupported()) {
+		    initUpload(container, "#dir_upload", null);
+		} else {
+		    $("#dir_upload").parent().hide();
+		}
+		
 		var $this = this;
 		$("#eXide-browse-upload-done").button().click(function() {
 			$('#files').empty();
@@ -504,7 +560,9 @@ eXide.browse.Upload = (function () {
     
 	Constr.prototype.update = function(collection) {
         $.log("Upload collection: %s", collection);
-			$("input[name=\"collection\"]", this.container).val(collection);
+        $("#files").empty();
+        $("#file_upload thead").hide();
+		$("input[name=\"collection\"]", this.container).val(collection);
 	};
 	
 	return Constr;

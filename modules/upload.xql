@@ -20,6 +20,7 @@ xquery version "3.0";
 
 declare namespace expath="http://expath.org/ns/pkg";
 declare namespace upload="http://exist-db.org/eXide/upload";
+declare namespace json="http://www.json.org";
 
 declare option exist:serialize "method=json media-type=application/json";
 
@@ -82,9 +83,11 @@ declare function upload:upload($collection, $path, $data) {
     let $path := upload:store($collection, $path, $data)
     let $upload :=
         <result>
-           <name>{$path}</name>
-           <type>{xmldb:get-mime-type($path)}</type>
-           <size>93928</size>
+            <files json:array="true">
+               <name>{$path}</name>
+               <type>{xmldb:get-mime-type($path)}</type>
+               <size>93928</size>
+            </files>
        </result>
     let $deploy := upload:deploy($path)
     return
@@ -92,11 +95,13 @@ declare function upload:upload($collection, $path, $data) {
 };
 
 let $collection := request:get-parameter("collection", ())
+let $pathParam := request:get-parameter("path", ())
 let $name := request:get-uploaded-file-name("file[]")
+let $path := ($pathParam, $name)[1]
 let $data := request:get-uploaded-file-data("file[]")
 return
     util:catch("*",
-        upload:upload(xmldb:encode-uri($collection), $name, $data),
+        upload:upload(xmldb:encode-uri($collection), $path, $data),
         <result>
            <name>{$name}</name>
            <error>{$util:exception-message}</error>
