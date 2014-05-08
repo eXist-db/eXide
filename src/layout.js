@@ -101,6 +101,7 @@ eXide.app.FlexboxSplitter = (function () {
         } else {
             this.prevSize = size;
             this.resizable.find(">*:not(.minimized)").show();
+            this.resizable.find(".minimized").addClass("resize-handle").removeClass("minimized");
         }
     };
     
