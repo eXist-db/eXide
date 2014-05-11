@@ -143,7 +143,7 @@ eXide.app = (function() {
                 }
             });
             
-// 			$(window).resize(eXide.app.resize);
+			$(window).resize(eXide.app.resize);
 			
 			$(window).unload(function () {
 				eXide.app.saveState();
