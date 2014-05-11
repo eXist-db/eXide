@@ -977,11 +977,16 @@ eXide.app = (function() {
 							data: params,
                             dataType: "json",
 							success: function (data) {
-								eXide.app.login = data;
-								$.log("Logged in as %s. Is dba: %s", eXide.app.login.user, eXide.app.login.isAdmin);
-								$("#login-dialog").dialog("close");
-								$("#user").text("Logged in as " + eXide.app.login.user + ". ");
-								editor.focus();
+							    if (!data.user) {
+							        $("#login-error").text("Login failed.");
+								    $("#login-dialog input:first").focus();
+							    } else {
+    								eXide.app.login = data;
+    								$.log("Logged in as %o. Is dba: %s", data, eXide.app.login.isAdmin);
+    								$("#login-dialog").dialog("close");
+    								$("#user").text("Logged in as " + eXide.app.login.user + ". ");
+    								editor.focus();
+							    }
 							},
 							error: function (xhr, status, data) {
 								$("#login-error").text("Login failed. " + data);
