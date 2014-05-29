@@ -30,8 +30,8 @@
     "extractFunction": ["Ctrl-Shift-X", "Command-Ctrl-X"],
     "extractVariable": ["Ctrl-Shift-E", "Command-Ctrl-E"],
     "gotoSymbol": ["Ctrl-Shift-U", "Command-Shift-U"],
-    "openTab": ["Ctr-Alt-O", "Command-Ctrl-O"],
+    "openTab": ["Ctrl-Alt-O", "Command-Ctrl-O"],
     "toggleQueryResults": ["Ctrl-Shift-F12", "Command-Shift-F12"],
-    "commandPalette": ["Ctr-Alt-K", "Command-Shift-K"],
+    "commandPalette": ["Ctrl-Alt-K", "Command-Shift-K"],
     "findFiles": ["Ctrl-Alt-F", "Command-Option-F"]
 }
