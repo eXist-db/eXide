@@ -60,7 +60,12 @@ let $split := text:groups($path, "^(.*)/([^/]+)$")
 let $collection := xmldb:encode-uri($split[2])
 let $resource := xmldb:encode-uri($split[3])
 let $mime := local:get-mime-type()
-let $data := request:get-data()
+let $data := request:get-request-data()
+let $data := 
+    if($mime and $data instance of xs:string and $data = "") then
+        util:string-to-binary("")
+    else
+        $data
 return
         try {
             let $path :=
