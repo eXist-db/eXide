@@ -61,6 +61,13 @@ let $collection := xmldb:encode-uri($split[2])
 let $resource := xmldb:encode-uri($split[3])
 let $mime := local:get-mime-type()
 let $data := request:get-data()
+let $data := 
+    if($data instance of xs:base64Binary) then
+        $data
+    else if($mime and not($data)) then
+        util:string-to-binary("")
+    else
+        $data
 return
         try {
             let $path :=
