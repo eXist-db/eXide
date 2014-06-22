@@ -405,6 +405,11 @@ Sub level menu list items (undo style from Top level List Items)
 	width: 220px; /*width of sub menus*/
 }
 
+.menu a .fa {
+    width: 13px;
+    margin-right: 10px;
+}
+
 .menu ul li ul li a:hover { /*sub menus hover style*/
 	background: #CFE2ED;
 	color: #101010;
