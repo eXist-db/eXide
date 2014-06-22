@@ -197,11 +197,17 @@ body {
     display: block;
     top: 50%;
     left: 50%;
-    margin: -32px 0 0 -126px;
+    margin: -64px 0 0 -126px;
 }
 
 #splash p {
     text-shadow: 1px 1px 1px #666;
+}
+
+#splash .help {
+    font-size: 75%;
+    text-shadow: none;
+    max-width: 300px;
 }
 
 #startup-error {
@@ -258,58 +264,6 @@ select:disabled {
 a:link,a:visited {
 	color: #666;
     text-decoration: none;
-}
-
-.ui-layout-north {
-	padding: 0;
-	background-color: #F3F3F3;
-	height: 75px;
-    overflow: hidden;
-}
-
-.ui-layout-center {
-	padding: 0;
-	border: 0;
-}
-
-.ui-layout-toggler-west-open {
-    background: url(../images/toggle-lt.gif) no-repeat center right;
-}
-
-.ui-layout-toggler-west-closed {
-    background: url(../images/toggle-rt.gif) no-repeat center right;
-}
-
-.ui-layout-toggler-east-open {
-    background: url(../images/toggle-rt.gif) no-repeat center right;
-}
-
-.ui-layout-toggler-east-closed {
-    background: url(../images/toggle-lt.gif) no-repeat center right;
-}
-
-.ui-layout-toggler-north-open {
-    background: url(../images/toggle-up.gif) no-repeat center right;
-}
-
-.ui-layout-toggler-north-closed {
-    background: url(../images/toggle-dn.gif) no-repeat center right;
-}
-
-.ui-layout-toggler-south-open {
-    background: url(../images/toggle-dn.gif) no-repeat center right;
-}
-
-.ui-layout-toggler-south-closed {
-    background: url(../images/toggle-up.gif) no-repeat center right;
-}
-
-.ui-layout-resizer {
-    background: #C0C0C0;
-}
-
-.ui-layout-resizer-hover {
-    background: #444;
 }
 
 #login-info {
@@ -513,7 +467,7 @@ Sub level menu list items (undo style from Top level List Items)
     font-size: 80%;
 }
 
-#status img {
+#status .fa {
     border: 0;
     margin-right: 1em;
 }
@@ -652,7 +606,7 @@ Sub level menu list items (undo style from Top level List Items)
 	height: 100%;
 }
 
-#eXide-dialog-message img, #eXide-dialog-input img {
+#eXide-dialog-message span, #eXide-dialog-input span {
 	float: left;
 	margin: 0 10px 4px 0;
 }
@@ -681,6 +635,17 @@ Sub level menu list items (undo style from Top level List Items)
 
 .eXide-browse-header {
     background: url("../images/bubble.gif") top right no-repeat;
+}
+
+.eXide-browse-toolbar button {
+    width: 32px;
+    height: 24px;
+    text-align: center;
+}
+
+.eXide-browse-toolbar button span {
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .eXide-browse-toolbar, .eXide-browse-breadcrumbs {
@@ -804,7 +769,7 @@ Sub level menu list items (undo style from Top level List Items)
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: 1000;
+    z-index: 2;
     border: 0;
     margin: 0;
     padding: 0;
@@ -1259,7 +1224,7 @@ fieldset input:required:valid {
 }
 
 .eXide-browse-upload {
-	padding: 10px;
+	padding: 0 10px;
 }
 
 .fileinput-button {
@@ -1291,27 +1256,13 @@ fieldset input:required:valid {
 	-webkit-border-radius: 10px;
 	border-radius: 10px;
 	width: 18em;
-	font-size: 125%;
-	margin: 15px auto 15px auto;
-	padding: 15px 0;
+	font-size: 100%;
+	margin: 10px auto 10px auto;
+	padding: 10px 0;
 }
 
 form.file_upload .file_upload_body {
-	/*position: relative;*/
- /*   font-size: 125%;*/
- /*   font-weight: normal;*/
-	/*overflow: hidden;*/
-	/*direction: ltr;*/
-	/*cursor: pointer;*/
-	/*text-align: center;*/
-	/*color: #555;*/
-	/*font-weight: bold;*/
-	/*width: 15em;*/
-	/*line-height: 2.5em;*/
- /*   border: 3px dashed orange;*/
-	/*margin-left: auto;*/
-	/*margin-right: auto;*/
- /*   margin-top: 1.5em;*/
+    margin-top: 4px;
 }
 
 form.file_upload_highlight,form.file_upload .file_upload_body:hover {
@@ -1373,18 +1324,19 @@ form.file_upload .file_upload_body input {
     width: 150px;
 }
 
-.file_upload_progress .ui-progressbar-value,.file_upload_overall_progress .ui-progressbar-value,.progressbar div
-	{
+.file_upload_progress .ui-progressbar-value,.file_upload_overall_progress .ui-progressbar-value,.progressbar div, #progress-all
+{
 	background: url(../images/pbar-ani.gif);
 }
 
-.file_upload_progress div {
+.file_upload_progress div, .file-upload-total {
 	height: 17px;
 }
 
-.file_upload_overall_progress div {
-	width: 350px;
+#progress-all {
+    margin-top: 4px;
 	height: 17px;
+	text-align: center;
 }
 
 .file_upload .file_name {
@@ -1454,4 +1406,24 @@ div#valueHighLight {
 
 #find-dialog input[type=text], #find-dialog input[type=search] {
     width: 300px;
+}
+
+/* Allow Font Awesome Icons in lieu of jQuery UI and only apply when using a FA icon */
+.ui-icon[class*=" fa-"] {
+    /* Remove the jQuery UI Icon */
+    background: none repeat scroll 0 0 transparent;
+    /* Remove the jQuery UI Text Indent */
+    text-indent: 0; 
+    /* Bump it up - jQuery UI is -8px */
+    margin-top: -0.5em;
+}
+
+/* Allow use of icon-large to be properly aligned */
+.ui-icon.icon-large {
+    margin-top: -0.75em;
+}
+
+.ui-button-icon-only .ui-icon[class*=" fa-"] {
+    /* Bump it - jQuery UI is -8px */
+    margin-left: -7px;
 }

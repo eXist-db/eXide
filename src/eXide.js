@@ -184,6 +184,14 @@ eXide.app = (function() {
 			editor.resize();
 		},
         
+        beforeResize: function() {
+            $("#results-iframe").css("display", "none");
+        },
+        
+        afterResize: function() {
+            $("#results-iframe").css("display", "");
+        },
+        
 		newDocument: function(data, type) {
 			editor.newDocument(data, type);
 		},
@@ -803,7 +811,7 @@ eXide.app = (function() {
         
         updateStatus: function(doc) {
             $("#syntax").val(doc.getSyntax());
-            $("#status span").text(eXide.util.normalizePath(doc.getPath()));
+            $("#status .path").text(eXide.util.normalizePath(doc.getPath()));
             if (!doc.isNew() && (doc.getSyntax() == "xquery" || doc.getSyntax() == "html" || doc.getSyntax() == "xml")) {
                 $("#status a").attr("href", doc.getExternalLink());
                 $("#status a").css("visibility", "visible");
@@ -818,18 +826,28 @@ eXide.app = (function() {
         },
         
         toggleResultsPanel: function() {
+            layout.toggle(resultPanel);
 			eXide.app.resize(true);
         },
         
-        prepareResultsPanel: function(target) {
+        prepareResultsPanel: function(target, switchPanels) {
+            var iframe = document.getElementById("results-iframe");
             var contents = $("#results-body").parent().children(":not(.resize-handle)").detach();
             contents.appendTo(".panel-" + target);
-            $("#results-iframe").hide();
+            if ($("#serialization-mode").val() == "html") {
+                $(iframe).show();
+                $("#serialization-mode").attr("disabled", "disabled").val("html");
+                if (switchPanels) {
+                    eXide.app.runQuery();
+                }
+            } else {
+                $("#results-iframe").hide();
+            }
         },
         
         switchResultsPanel: function() {
             var target = resultPanel === "south" ? "east" : "south";
-            eXide.app.prepareResultsPanel(target);
+            eXide.app.prepareResultsPanel(target, true);
             layout.hide(resultPanel);
 
             resultPanel = target;
@@ -962,40 +980,48 @@ eXide.app = (function() {
 				title: "Login",
 				modal: true,
 				autoOpen: false,
-				buttons: {
-					"Login": function() {
-                        var user = $("#login-form input[name=\"user\"]").val();
-                        var password = $("#login-form input[name=\"password\"]").val();
-                        var params = {
-                            user: user, password: password
-                        }
-                        if ($("#login-form input[name=\"duration\"]").is(":checked")) {
-                            params.duration = "P14D";
-                        }
-						$.ajax({
-							url: "login",
-							data: params,
-                            dataType: "json",
-							success: function (data) {
-							    if (!data.user) {
-							        $("#login-error").text("Login failed.");
-								    $("#login-dialog input:first").focus();
-							    } else {
-    								eXide.app.login = data;
-    								$.log("Logged in as %o. Is dba: %s", data, eXide.app.login.isAdmin);
-    								$("#login-dialog").dialog("close");
-    								$("#user").text("Logged in as " + eXide.app.login.user + ". ");
-    								editor.focus();
-							    }
-							},
-							error: function (xhr, status, data) {
-								$("#login-error").text("Login failed. " + data);
-								$("#login-dialog input:first").focus();
-							}
-						});
+				buttons: [
+					{
+					    text: "Login",
+					    click: function() {
+                            var user = $("#login-form input[name=\"user\"]").val();
+                            var password = $("#login-form input[name=\"password\"]").val();
+                            var params = {
+                                user: user, password: password
+                            }
+                            if ($("#login-form input[name=\"duration\"]").is(":checked")) {
+                                params.duration = "P14D";
+                            }
+    						$.ajax({
+    							url: "login",
+    							data: params,
+                                dataType: "json",
+    							success: function (data) {
+    							    if (!data.user) {
+    							        $("#login-error").text("Login failed.");
+    								    $("#login-dialog input:first").focus();
+    							    } else {
+        								eXide.app.login = data;
+        								$.log("Logged in as %o. Is dba: %s", data, eXide.app.login.isAdmin);
+        								$("#login-dialog").dialog("close");
+        								$("#user").text("Logged in as " + eXide.app.login.user + ". ");
+        								editor.focus();
+    							    }
+    							},
+    							error: function (xhr, status, data) {
+    								$("#login-error").text("Login failed. " + data);
+    								$("#login-dialog input:first").focus();
+    							}
+					        });
+					    },
+					    icons: { primary: "fa fa-sign-in" }
 					},
-					"Cancel": function () { $(this).dialog("close"); editor.focus(); }
-				},
+					{
+					    text: "Cancel",
+					    icons: { primary: "fa fa-times" },
+					    click: function () { $(this).dialog("close"); editor.focus(); }
+					}
+				],
 				open: function() {
 					// clear form fields
 					$(this).find("input").val("");
@@ -1089,20 +1115,20 @@ eXide.app = (function() {
             $(".toolbar-buttons").buttonset();
             
 			// initialize buttons and menu events
-            var button = $("#open").button("option", "icons", { primary: "ui-icon-folder-open" });
+            var button = $("#open").button("option", "icons", { primary: "fa fa-folder-open-o" });
 			button.click(eXide.app.openDocument);
             menu.click("#menu-file-open", eXide.app.openDocument);
 			
-            button = $("#close").button("option", "icons", { primary: "ui-icon-close" });
+            button = $("#close").button("option", "icons", { primary: "fa fa-times" });
 			button.click(eXide.app.closeDocument);
 			menu.click("#menu-file-close", eXide.app.closeDocument);
 			
-            button = $("#new").button("option", "icons", { primary: "ui-icon-document" });
+            button = $("#new").button("option", "icons", { primary: "fa fa-file-o" });
 			button.click(function() {
                 eXide.app.newDocumentFromTemplate();
 			});
             
-            button = $("#new-xquery").button("option", "icons", { primary: "ui-icon-document" });
+            button = $("#new-xquery").button("option", "icons", { primary: "fa fa-file-code-o" });
 			button.click(function() {
                 eXide.app.newDocument(null, "xquery");
 			});
@@ -1111,35 +1137,32 @@ eXide.app = (function() {
                 eXide.app.newDocument(null, "xquery");
     		});
 
-            button = $("#run").button("option", "icons", { primary: "ui-icon-play" });
+            button = $("#run").button("option", "icons", { primary: "fa fa-play" });
 			button.click(function(ev) { eXide.app.runQuery() });
 
-            button = $("#debug").button("option", "icons", { primary: "ui-icon-seek-end" });
+            button = $("#debug").button("option", "icons", { primary: "fa fa-fast-forward" });
             button.click(eXide.app.startDebug);
 
             
-            button = $("#debug-actions #step-over").button("option", "icons", { primary: "ui-icon-seek-end" });
+            button = $("#debug-actions #step-over").button("option", "icons", { primary: "fa fa-fast-forward" });
             button.click(eXide.app.stepOver);
 
-            button = $("#debug-actions #step-into").button("option", "icons", { primary: "ui-icon-seek-end" });
+            button = $("#debug-actions #step-into").button("option", "icons", { primary: "fa fa-fast-forward" });
             button.click(eXide.app.stepInto);
 
-            button = $("#debug-actions #step-out").button("option", "icons", { primary: "ui-icon-seek-end" });
+            button = $("#debug-actions #step-out").button("option", "icons", { primary: "fa fa-fast-forward" });
             button.click(eXide.app.startDebug);
 
-            button = $("#validate").button("option", "icons", { primary: "ui-icon-check" });
+            button = $("#validate").button("option", "icons", { primary: "fa fa-check" });
 
 			button.click(eXide.app.checkQuery);
             
-            button = $("#save").button("option", "icons", { primary: "ui-icon-disk" });
+            button = $("#save").button("option", "icons", { primary: "fa fa-save" });
 			button.click(eXide.app.saveDocument);
 			menu.click("#menu-file-save", eXide.app.saveDocument);
             menu.click("#menu-file-save-as", eXide.app.saveDocumentAs);
 			
             menu.click("#menu-file-reload", eXide.app.reloadDocument);
-            
-            button = $("#download").button("option", "icons", { primary: "ui-icon-transferthick-e-w" });
-			button.click(eXide.app.download);
             
 			menu.click("#menu-file-download", eXide.app.download);
 			menu.click("#menu-file-manager", eXide.app.manage);

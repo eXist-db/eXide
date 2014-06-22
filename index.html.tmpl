@@ -6,6 +6,7 @@
         <link rel="stylesheet" type="text/css" href="resources/css/black-tie/jquery-ui-1.10.3.custom.min.css"/>
         <link rel="stylesheet" type="text/css" href="$shared/resources/scripts/jquery/css/jquery.pnotify.default.css"/>
         <link rel="stylesheet" type="text/css" href="resources/scripts/jquery/slick.grid.css"/>
+        <link rel="stylesheet" href="resources/css/font-awesome/css/font-awesome.min.css"/>
         <link rel="stylesheet" type="text/css" href="resources/css/eXide.css"/>
         <script type="text/javascript" src="resources/scripts/modernizr.custom.js"/>
         <script type="text/javascript" src="resources/scripts/jquery/jquery-1.9.1.min.js"/>
@@ -340,7 +341,7 @@
                                 </div>
                                 <div class="navbar">
                                     <a class="previous" href="#">
-                                        <img src="resources/images/control_rewind.png"/>
+                                        <span class="fa fa-backward"/>
                                     </a>
                                     <select name="output-mode" id="serialization-mode">
                                         <option value="xml">XML Output</option>
@@ -353,7 +354,7 @@
                                     <img class="layout-switcher" src="resources/images/layouts_split.png" title="Switch results panel location between bottom and right"/>
                                     <span class="current"/>
                                     <a class="next" href="#">
-                                        <img src="resources/images/control_fastforward.png"/>
+                                        <span class="fa fa-forward"/>
                                     </a>
                                 </div>
                                 <div id="results-body">
@@ -390,13 +391,15 @@
                                     <div class="file_upload_body">
                                         <div class="fileinput-button">
                                             <input id="file_upload" type="file" name="file[]" multiple="multiple"/>
-                                            <button class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only">
+                                            <button class="ui-button ui-widget ui-state-default ui-button-text-icon-primary">
+                                                <span class="ui-button-icon-primary ui-icon fa fa-cloud-upload"/>
                                                 <span class="ui-button-text">Upload Files</span>
                                             </button>
                                         </div>
                                         <div class="fileinput-button">
                                             <input id="dir_upload" type="file" name="file[]" multiple="multiple" directory="" webkitdirectory=""/>
-                                            <button class="ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only">
+                                            <button class="ui-button ui-widget ui-state-default ui-button-text-icon-primary">
+                                                <span class="ui-button-icon-primary ui-icon fa fa-folder-open-o"/>
                                                 <span class="ui-button-text">Upload Directory</span>
                                             </button>
                                         </div>
@@ -600,10 +603,10 @@
                     <div id="module-list"/>
                 </div>
                 <div id="about-dialog">
-                    <p>eXide version @project.version@</p>
+		    <p>eXide version @project.version@</p>
                     <p>Website: <a href="https://github.com/wolfgangmm/eXide">https://github.com/wolfgangmm/eXide</a>
                     </p>
-                    <p>Copyright (C) 2011-2013 Wolfgang Meier, <a href="http://www.existsolutions.com">eXist Solutions GmbH</a>
+                    <p>Copyright (C) 2011-2014 Wolfgang Meier, <a href="http://www.existsolutions.com">eXist Solutions GmbH</a>
                     </p>
                     <p>Licensed under the GPLv3 license</p>
                     <p>Uses the <a href="http://ace.ajax.org">Ajax.org Code Editor (ACE)</a>, originally developed by Ajax.org

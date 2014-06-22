@@ -518,11 +518,13 @@ eXide.browse.Upload = (function () {
                 var tr = $("tr[data-name='" + file.path + "']", container);
                 tr.find(".ui-progressbar-value").css("width", progress + "%");
             });
+        
+        }).on("fileuploadprogressall", function (e, data) {
+            var progress = parseInt(data.loaded / data.total * 100, 10);
+            $("#progress-all", container).css("width", progress + "%").text(progress + "%");
             
         }).on('fileuploaddone', function (e, data) {
-            // $.each(data.result.files, function (index, file) {
-            //     $(data.context.children()[index]).remove();
-            // });
+            var div = $("#progress-all", container).empty().css("width", "0%");
         }).on('fileuploadfail', function (e, data) {
             console.log("error: ", data);
             // $.each(data.files, function (index, file) {
@@ -549,7 +551,7 @@ eXide.browse.Upload = (function () {
 		}
 		
 		var $this = this;
-		$("#eXide-browse-upload-done").button().click(function() {
+		$("#eXide-browse-upload-done").button({ "icons": { primary: "fa fa-times" }}).click(function() {
 			$('#files').empty();
 			$this.$triggerEvent("done", []);
 		});
@@ -582,8 +584,10 @@ eXide.browse.Browser = (function () {
     	button.title = title;
 		button.id = "eXide-browse-toolbar-" + id;
 		button.tabindex = index;
-		var img = document.createElement("img");
-		img.src = "resources/images/" + imgPath;
+		var img = document.createElement("span");
+		img.className = "fa fa-lg fa-" + imgPath;
+// 		var img = document.createElement("img");
+// 		img.src = "resources/images/" + imgPath;
 		button.appendChild(img);
 		toolbar.append(button);
         return button;
@@ -595,45 +599,45 @@ eXide.browse.Browser = (function () {
         
 		var toolbar = $(".eXide-browse-toolbar", container);
 		
-		var button = createButton(toolbar, "Reload", "reload", 1, "arrow_refresh.png");
+		var button = createButton(toolbar, "Reload", "reload", 1, "refresh");
 		$(button).click(function (ev) {
             $this.resources.reload(true);
 		});
 		
-        this.btnCreateCollection = createButton(toolbar, "Create Collection", "create", 3, "folder_add.png");
+        this.btnCreateCollection = createButton(toolbar, "Create Collection", "create", 3, "folder-o");
 		$(this.btnCreateCollection).click(function (ev) {
 			ev.preventDefault();
 			$this.resources.createCollection();
 		});
 		
-		this.btnUpload = createButton(toolbar, "Upload Files", "upload", 4, "database_add.png");
+		this.btnUpload = createButton(toolbar, "Upload Files", "upload", 4, "cloud-upload");
 		$(this.btnUpload).click(function (ev) {
 			ev.preventDefault();
 			$(".eXide-browse-resources", container).hide();
 			$(".eXide-browse-upload", container).show();
 		});
 		
-		this.btnDeleteResource = createButton(toolbar, "Delete", "delete-resource", 5, "bin.png")
+		this.btnDeleteResource = createButton(toolbar, "Delete", "delete-resource", 5, "trash-o")
 		$(this.btnDeleteResource).click(function (ev) {
 			ev.preventDefault();
 			$this.deleteSelected();
 		});
 		
-        this.btnProperties = createButton(toolbar, "Properties", "properties", 10, "application_form_edit.png");
+        this.btnProperties = createButton(toolbar, "Properties", "properties", 10, "info");
         $(this.btnProperties).click(function(ev) {
             ev.preventDefault();
             $this.resources.properties();
         });
         
-		button = createButton(toolbar, "Open Selected", "open", 6, "page_edit.png");
+		button = createButton(toolbar, "Open Selected", "open", 6, "edit");
 		$(button).click(function (ev) {
 			ev.preventDefault();
 			eXide.app.openSelectedDocument(false);
 		});
 		
-        this.btnCopy = createButton(toolbar, "Copy", "copy", 7, "page_copy.png");
-        this.btnCut = createButton(toolbar, "Cut", "cut", 8, "cut.png");
-        this.btnPaste = createButton(toolbar, "Paste", "paste", 9, "page_paste.png");
+        this.btnCopy = createButton(toolbar, "Copy", "copy", 7, "copy");
+        this.btnCut = createButton(toolbar, "Cut", "cut", 8, "cut");
+        this.btnPaste = createButton(toolbar, "Paste", "paste", 9, "paste");
         
 		this.selection = $(".eXide-browse-form input", container);
 		this.container = container;

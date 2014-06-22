@@ -6,6 +6,7 @@ eXide.app.FlexboxSplitter = (function () {
         var self = this;
         self.resizable = $(resizable);
         self.isHorizontal = region == "west" || region == "east";
+        self.min = min;
         var splitter = self.resizable.find(".resize-handle");
         var toggle = splitter.find("span");
         var container = self.resizable.parents(".layout");
@@ -17,6 +18,7 @@ eXide.app.FlexboxSplitter = (function () {
             e.preventDefault();
             var pos = (self.isHorizontal ? e.pageX : e.pageY);
             hasMoved = false;
+            self.$triggerEvent("beforeResize");
             container.on("mousemove", function(e) {
                 
                 var current = (self.isHorizontal ? e.pageX : e.pageY);
@@ -42,6 +44,7 @@ eXide.app.FlexboxSplitter = (function () {
             $(document).on("mouseup", function() {
                 container.off("mousemove");
                 $(document).off("mouseup");
+                self.$triggerEvent("afterResize");
             });
         });
         toggle.click(function(e) {
@@ -71,6 +74,9 @@ eXide.app.FlexboxSplitter = (function () {
         });
     };
     
+    // Extend eXide.events.Sender for event support
+    eXide.util.oop.inherit(Constr, eXide.events.Sender);
+    
     Constr.prototype.getSize = function() {
         if (this.resizable.is(":hidden")) {
             return 0;
@@ -86,6 +92,9 @@ eXide.app.FlexboxSplitter = (function () {
         if (size === 0) {
             this.hide();
             return;
+        }
+        if (size < this.min) {
+            size = this.min;
         }
         if (this.isHorizontal) {
             this.resizable.width(size);
@@ -106,14 +115,23 @@ eXide.app.FlexboxSplitter = (function () {
     };
     
     Constr.prototype.hide = function() {
+        this.prevSize = this.isHorizontal ? this.resizable.width() : this.resizable.height();
         this.resizable.hide();
     };
     
     Constr.prototype.show = function() {
         if (this.resizable.is(":hidden")) {
             this.resizable.show();
+            this.setSize(this.prevSize);
         }
-        this.setSize(this.prevSize);
+    };
+    
+    Constr.prototype.toggle = function() {
+        if (this.resizable.is(":hidden")) {
+            this.show();
+        } else {
+            this.hide();
+        }
     };
     
     return Constr;
@@ -136,6 +154,8 @@ eXide.app.Layout = (function () {
             "south": new eXide.app.FlexboxSplitter(this, ".panel-south", "south", 100, 200),
             "east": new eXide.app.FlexboxSplitter(this, ".panel-east", "east", 360, 380)
         };
+        this.regions["east"].addEventListener("beforeResize", eXide.app.beforeResize);
+        this.regions["east"].addEventListener("afterResize", eXide.app.afterResize);
     };
     
     Constr.prototype.resize = function() {
@@ -148,6 +168,10 @@ eXide.app.Layout = (function () {
     
     Constr.prototype.show = function(region) {
         this.regions[region].show();
+    };
+    
+    Constr.prototype.toggle = function(region) {
+        this.regions[region].toggle();
     };
     
     Constr.prototype.saveState = function() {
