@@ -503,7 +503,8 @@ eXide.browse.Upload = (function () {
                     
                     data.formData = {
                         path: path,
-                        collection: $("input[name=\"collection\"]", container).val()
+                        collection: $("input[name=\"collection\"]", container).val(),
+                        deploy: $("input[name='deploy']", container).is(":checked")
                     };
                     
                     var future = data.submit();

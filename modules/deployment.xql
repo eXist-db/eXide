@@ -585,7 +585,7 @@ declare function deploy:deploy($collection as xs:string, $expathConf as element(
     let $pkg := deploy:package($collection, $expathConf)
     let $null := (
         repo:remove($expathConf/@name),
-        repo:install-from-db($pkg)
+        repo:install-and-deploy-from-db($pkg)
     )
     return
         ()

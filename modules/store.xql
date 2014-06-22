@@ -26,10 +26,7 @@ declare function local:fix-permissions($collection as xs:string, $resource as xs
     let $mime := xmldb:get-mime-type($path)
     return
         if ($mime eq "application/xquery") then
-            let $mode := sm:get-permissions($path)/sm:permission/@mode
-            let $permissions := replace($mode, "(..).(..).(..).", "$1x$2x$3x")
-            return
-                sm:chmod(xs:anyURI($path), $permissions)
+            sm:chmod(xs:anyURI($path), "u+x,g+x,o+x")
         else
             ()
 };
@@ -70,13 +67,17 @@ let $data :=
         $data
 return
         try {
+            let $isNew := not(util:binary-doc-available($path)) and not(doc-available($path))
             let $path :=
-            if ($mime) then
-                xmldb:store($collection, $resource, $data, $mime)
-            else
-                xmldb:store($collection, $resource, $data)
+                if ($mime) then
+                    xmldb:store($collection, $resource, $data, $mime)
+                else
+                    xmldb:store($collection, $resource, $data)
             return (
-                local:fix-permissions($collection, $resource),
+                if ($isNew) then
+                    local:fix-permissions($collection, $resource)
+                else
+                    (),
                 <message status="ok" externalLink="{local:get-run-path($path)}"/>
             )
         } catch * {
