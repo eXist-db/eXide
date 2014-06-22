@@ -359,6 +359,7 @@ eXide.app = (function() {
     							$("#open-dialog").dialog("close");
                                 deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
                                 eXide.app.updateStatus(this);
+                                eXide.app.liveReload();
     						}, function (msg) {
     							eXide.util.Dialog.warning("Failed to Save Document", msg);
     						});
@@ -369,6 +370,7 @@ eXide.app = (function() {
     				editor.saveDocument(null, function () {
     					eXide.util.message(editor.getActiveDocument().getName() + " stored.");
                         deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
+                        eXide.app.liveReload();
     				}, function (msg) {
     					eXide.util.Dialog.warning("Failed to Save Document", msg);
     				});
@@ -390,6 +392,7 @@ eXide.app = (function() {
     						$("#open-dialog").dialog("close");
                             deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
                             eXide.app.updateStatus(this);
+                            eXide.app.liveReload();
     					}, function (msg) {
     						eXide.util.Dialog.warning("Failed to Save Document", msg);
     					});
@@ -953,6 +956,29 @@ eXide.app = (function() {
             });
         },
        
+        liveReload: function() {
+            var doc = editor.getActiveDocument();
+            projects.findProject(doc.getBasePath(), function(project) {
+                $.log("live reload: %s", project.liveReload);
+                if (project.liveReload) {
+                    var win = window.open("", project.abbrev);
+                    if (win && !win.closed) {
+                        win.location.reload();
+                    } else {
+                        $.log("app window not found: %s", project.abbrev);
+                    }
+                }
+            });
+        },
+        
+        toggleLiveReload: function() {
+            var doc = editor.getActiveDocument();
+            projects.findProject(doc.getBasePath(), function(project) {
+                project.liveReload = !project.liveReload;
+                $("#menu-deploy-live span").attr("class", project.liveReload ? "fa fa-check-square-o" : "fa fa-square-o");
+            });
+        },
+        
 		initGUI: function(menu) {
             if (eXide.util.supportsHtml5Storage && localStorage.getItem("eXide.firstTime")) {
                 resultPanel = localStorage["eXide.layout.resultPanel"] || "south";
@@ -1169,7 +1195,7 @@ eXide.app = (function() {
 			// menu-only events
 			menu.click("#menu-deploy-new", eXide.app.newDeployment);
 			menu.click("#menu-deploy-edit", eXide.app.deploymentSettings);
-			menu.click("#menu-deploy-deploy", eXide.app.deploy);
+			menu.click("#menu-deploy-live", eXide.app.toggleLiveReload);
 			menu.click("#menu-deploy-sync", eXide.app.synchronize);
             menu.click("#menu-deploy-download", eXide.app.downloadApp);
             
@@ -1242,6 +1268,7 @@ eXide.app = (function() {
                     if (app) {
                         $("#toolbar-current-app").text(app.abbrev);
                         $("#menu-deploy-active").text(app.abbrev);
+                        $("#menu-deploy-live span").attr("class", app.liveReload ? "fa fa-check-square-o" : "fa fa-square-o");
                         // update show/hide git stuff
                         if(app.git == "true" || app.git == true) {
                             $(".current-branch").show();
