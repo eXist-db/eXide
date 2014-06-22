@@ -66,6 +66,8 @@
                 <img src="resources/images/logo.png"/>
                 <p>
                     <span id="splash-status">Loading</span> ...</p>
+                <p class="help">If eXide fails to load within a few seconds, try to clear your browser cache and reload the page 
+                (hold Shift and click on the reload icon).</p>
                 <p id="startup-error" style="display: none;">
                 Your browser is too old!<br/>
                 eXide requires a modern browser<br/> 
@@ -187,6 +189,10 @@
                                 </li>
                                 <li>
                                     <a href="#" id="menu-deploy-sync" data-command="synchronize">Synchronize</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-deploy-live">
+                                        <span class="fa fa-check-square-o"/> Live Reload</a>
                                 </li>
                             </ul>
                         </li>
@@ -327,9 +333,9 @@
                                 <div id="status-bar">
                                     <span id="status">
                                         <a href="#" target="blank" title="Run in new tab">
-                                            <img src="resources/images/application_go.png"/>
+                                            <span class="fa fa-share"/>
                                         </a>
-                                        <span>Path</span>
+                                        <span class="path">Path</span>
                                     </span>
                                     <a href="#" id="error-status"/>
                                 </div>
@@ -445,9 +451,22 @@
                 </div>
                 <div id="dialog-confirm-close" title="Close Editor" style="display: none;">
                     <p>
-                        <span class="ui-icon ui-icon-alert" style="float:left; margin:0 7px 20px 0;"/>There
+                        <span class="fa fa-4x fa-warning" style="float:left; margin:0 7px 20px 0;"/>There
                 are unsaved changes in this document which will be lost if you close it. Do you want to
                 continue?</p>
+                </div>
+                <div id="dialog-run-app" title="Run Application">
+                    <div>
+                        <span class="fa fa-4x fa-warning" style="float:left; margin:0 7px 24px 0;"/>
+                        <p>Click on the following link to display the application start page:</p>
+                        <p>
+                            <a href="#" target="_new"/>
+                        </p>
+                        <p>
+                            <input type="checkbox" name="live-reload"/> activate live reload</p>
+                        <p>
+                            <input type="checkbox" name="new-window"/> open in new window</p>
+                    </div>
                 </div>
                 <div id="keyboard-help">
                     <table id="keybindings"/>

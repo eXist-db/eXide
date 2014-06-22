@@ -110,6 +110,22 @@ eXide.edit.PackageEditor = (function () {
 			height: 600
 		});
 		
+		this.runDialog = $("#dialog-run-app");
+		this.runDialog.dialog({
+		    appendTo: "#layout-container",
+			modal: false,
+			autoOpen: false,
+			width: 300,
+			height: 240,
+			buttons: {
+			    "Done": function () { $(this).dialog("close"); }
+			}
+		});
+		this.runDialog.find("input[name='live-reload']").click(function(ev) {
+		    $this.currentProject.liveReload = $(this).is(":checked");
+		    $("#menu-deploy-live span").attr("class", $this.currentProject.liveReload ? "fa fa-check-square-o" : "fa fa-square-o");
+		});
+		
 		this.syncDialog = $("#synchronize-dialog");
 		this.syncDialog.dialog({
             appendTo: "#layout-container",
@@ -351,11 +367,14 @@ eXide.edit.PackageEditor = (function () {
                     "should belong to an application package.");
                 return;
             }
+            
+            $this.currentProject = project;
             var url = project.url.replace(/\/{2,}/, "/");
             var link = "/exist" + url + "/";
-//			var link = "/exist/apps/" + project.root.replace(/^\/db\//, "") + "/";
-			eXide.util.Dialog.message("Run Application " + project.abbrev, "<p>Click on the following link to open your application:</p>" +
-				"<center><a href=\"" + link + "\" target=\"_new\">" + link + "</a></center>");
+// 			var link = "/exist/apps/" + project.root.replace(/^\/db\//, "") + "/";
+			var a = $this.runDialog.find("a");
+			a.attr("href", link).attr("target", project.abbrev).text(link);
+            $this.runDialog.dialog("open");
         });
 	};
     
