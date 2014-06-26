@@ -93,7 +93,7 @@ eXide.app.FlexboxSplitter = (function () {
             this.hide();
             return;
         }
-        if (size < this.min) {
+        if (size > this.min && size < this.min) {
             size = this.min;
         }
         if (this.isHorizontal) {

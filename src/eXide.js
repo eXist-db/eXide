@@ -668,7 +668,6 @@ eXide.app = (function() {
 			if (!eXide.util.supportsHtml5Storage)
 				return false;
 			var sameVersion = preferences.read();
-			console.log("same version: %s", sameVersion);
 			if (!sameVersion) {
 			    eXide.util.Dialog.message("Version Note", "It seems another version of eXide has been " +
 			        "used from this browser before. If you experience any display issues, please clear your browser's cache " +
