@@ -505,9 +505,9 @@ eXide.edit.XQueryModeHelper = (function () {
                     var template;
                     if (data[i].at) {
                         template = "import module namespace " + data[i].prefix + "=\"" + data[i].uri + 
-                            "\" at \"" + data[i].at + "\";"
+                            "\" at \"" + data[i].at + "\";";
                     } else {
-                        template = "import module namespace " + data[i].prefix + "=\"" + data[i].uri + "\";"
+                        template = "import module namespace " + data[i].prefix + "=\"" + data[i].uri + "\";";
                     }
                     popupItems.push({
                         type: "template",

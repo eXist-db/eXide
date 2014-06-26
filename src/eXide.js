@@ -157,6 +157,10 @@ eXide.app = (function() {
             });
 		},
 
+        version: function() {
+            return $("#eXide-version").text();
+        },
+        
         hasFocus: function() {
             return hasFocus;
         },
@@ -663,9 +667,14 @@ eXide.app = (function() {
 		restoreState: function(callback) {
 			if (!eXide.util.supportsHtml5Storage)
 				return false;
-			preferences.read();
-			
-			layout.restoreState();
+			var sameVersion = preferences.read();
+			console.log("same version: %s", sameVersion);
+			if (!sameVersion) {
+			    eXide.util.Dialog.message("Version Note", "It seems another version of eXide has been " +
+			        "used from this browser before. If you experience any display issues, please clear your browser's cache " +
+                    "(holding shift while clicking on the reload icon should usually be sufficient).");
+			}
+			layout.restoreState(sameVersion);
 			
             var restoring = {};
             
@@ -1083,6 +1092,16 @@ eXide.app = (function() {
             $("#about-dialog").dialog({
                 appendTo: "#layout-container",
                 title: "About",
+                modal: false,
+                autoOpen: false,
+                height: 300,
+                width: 450,
+                buttons: {
+    				"Close": function () { $(this).dialog("close"); }
+				}
+            });
+            $("#version-warning").dialog({
+                appendTo: "#layout-container",
                 modal: false,
                 autoOpen: false,
                 height: 300,

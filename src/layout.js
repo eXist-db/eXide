@@ -180,9 +180,12 @@ eXide.app.Layout = (function () {
         localStorage["eXide.layout.east"] = this.regions.east.getSize();
     };
     
-    Constr.prototype.restoreState = function() {
+    Constr.prototype.restoreState = function(sameVersion) {
         for (var region in this.regions) {
-            var size = localStorage["eXide.layout." + region];
+            var size;
+            if (sameVersion) {
+                size = localStorage["eXide.layout." + region];
+            }
             if (!size) {
                 size = PANEL_DEFAULTS[region];
             }
