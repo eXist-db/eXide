@@ -36,10 +36,11 @@ eXide.edit.LessModeHelper = (function () {
     Constr.prototype.documentSaved = function(doc) {
         var $this = this;
         var code = doc.getText();
-        var path = "/exist/" + doc.getBasePath().replace(/^\/db\//, "") + "/";
-        var parser = new less.Parser({
+        var path = doc.getExternalLink().replace(/^(.*\/)[^\/]*$/, "$1");
+        var parser = new(less.Parser)({
             paths: [path],
-            optimization: 3
+            optimization: 3,
+            filename: doc.getExternalLink()
         });
         parser.parse(code, function (err, tree) {
             if (err) {
