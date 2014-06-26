@@ -185,11 +185,15 @@ eXide.app = (function() {
 		},
         
         beforeResize: function() {
-            $("#results-iframe").css("display", "none");
+            if ($("#serialization-mode").val() == "html") {
+                $("#results-iframe").css("display", "none");
+            }
         },
         
         afterResize: function() {
-            $("#results-iframe").css("display", "");
+            if ($("#serialization-mode").val() == "html") {
+                $("#results-iframe").css("display", "");
+            }
         },
         
 		newDocument: function(data, type) {
