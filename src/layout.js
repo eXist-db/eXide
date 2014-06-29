@@ -29,7 +29,7 @@ eXide.app.FlexboxSplitter = (function () {
                     if (self.isHorizontal) {
                         var w = self.resizable.width();
                         var d = region == "west" ? -diff : diff;
-                        if (w + d >= min) {
+                        if ((w < min && d > 0) || w + d >= min) {
                             self.resizable.width(w + d);
                         }
                     } else {

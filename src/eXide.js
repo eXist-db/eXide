@@ -55,7 +55,7 @@ eXide.namespace("eXide.app");
 /**
  * Static class for the main application. Controls the GUI.
  */
-eXide.app = (function() {
+eXide.app = (function(util) {
     
 	var editor;
 
@@ -86,7 +86,7 @@ eXide.app = (function() {
         "less": 1
     };
     
-	return {
+	var app = {
         
 		init: function(afterInitCallback) {
 		    if (!Modernizr.flexbox) {
@@ -95,24 +95,27 @@ eXide.app = (function() {
             }
             
             projects = new eXide.edit.Projects();
-            menu = new eXide.util.Menubar($(".menu"));
+            menu = new util.Menubar($(".menu"));
 			editor = new eXide.edit.Editor(document.getElementById("editor"), menu);
 			deploymentEditor = new eXide.edit.PackageEditor(projects);
 			dbBrowser = new eXide.browse.Browser(document.getElementById("open-dialog"));
             deploymentEditor.addEventListener("change", null, function(collection) {
                 dbBrowser.changeToCollection(collection);
-                eXide.app.openDocument();
+                app.openDocument();
             });
-			preferences = new eXide.util.Preferences(editor);
+			preferences = new util.Preferences(editor);
 			
-            editor.addEventListener("setTheme", eXide.app.setTheme);
+            editor.addEventListener("setTheme", app.setTheme);
             
-            eXide.app.initGUI(menu);
+            app.initGUI(menu);
+			
+			var dnd = new eXide.util.DnD("body");
+			dnd.addEventListener("drop", app.dropFile);
 			
             // save restored paths for later
-            eXide.app.getLogin(function() {
-                eXide.app.initStatus("Restoring state");
-                eXide.app.restoreState(function(restored) {
+            app.getLogin(function() {
+                app.initStatus("Restoring state");
+                app.restoreState(function(restored) {
                     editor.init();
                     if (afterInitCallback) {
                         afterInitCallback(restored);
@@ -124,17 +127,17 @@ eXide.app = (function() {
                     if (eXide.configuration.allowGuest) {
                         $("#splash").fadeOut(400);
                     } else {
-                        eXide.app.requireLogin(function() {
+                        app.requireLogin(function() {
                             $("#splash").fadeOut(400);
                         });
                     }
                 });
             });
 		    
-		    editor.addEventListener("outlineChange", eXide.app.onOutlineChange);
+		    editor.addEventListener("outlineChange", app.onOutlineChange);
             editor.validator.addEventListener("documentValid", function(doc) {
                 if (doc.isXQuery() && $("#live-preview").is(":checked")) {
-                    eXide.app.runQuery(doc.getPath(), true);
+                    app.runQuery(doc.getPath(), true);
                 }
             });
             editor.addEventListener("saved", function(doc) {
@@ -143,14 +146,14 @@ eXide.app = (function() {
                 }
             });
             
-			$(window).resize(eXide.app.resize);
+			$(window).resize(app.resize);
 			
 			$(window).unload(function () {
-				eXide.app.saveState();
+				app.saveState();
 			});
             
             eXide.find.Modules.addEventListener("open", null, function (module) {
-                eXide.app.findDocument(module.at);
+                app.findDocument(module.at);
             });
             eXide.find.Modules.addEventListener("import", null, function (module) {
                 editor.exec("importModule", module.prefix, module.uri, module.at);
@@ -203,12 +206,23 @@ eXide.app = (function() {
 		newDocument: function(data, type) {
 			editor.newDocument(data, type);
 		},
-        
+
         newDocumentFromTemplate: function() {
             $("#dialog-templates").dialog("open");
             //editor.newDocumentFromTemplate("collection-config");
         },
 
+        dropFile: function(files) {
+            var reader = new FileReader();
+            for (var i = 0; i < files.length; i++) {
+                var mime = eXide.util.mimeTypes.getLangFromMime(files[i].type) || "xquery";
+                reader.onloadend = function(e) {
+                    app.newDocument(this.result, mime);
+                };
+                reader.readAsText(files[i]);
+            }
+        },
+        
 		findDocument: function(path, line) {
 			var doc = editor.getDocument(path);
 			if (doc == null) {
@@ -216,7 +230,7 @@ eXide.app = (function() {
 						name: path.match(/[^\/]+$/)[0],
 						path: path
 				};
-				eXide.app.$doOpenDocument(resource, function() {
+				app.$doOpenDocument(resource, function() {
 				    if (line) {
         			    editor.editor.gotoLine(line);
         			}
@@ -239,7 +253,7 @@ eXide.app = (function() {
 							name: path.match(/[^\/]+$/)[0],
 							path: path
 					};
-					eXide.app.$doOpenDocument(resource, function(doc) {
+					app.$doOpenDocument(resource, function(doc) {
                         if (doc) {
                             editor.exec("locate", type, symbol);
                         }
@@ -256,7 +270,7 @@ eXide.app = (function() {
 			$("#open-dialog").dialog("option", "title", "Open Document");
 			$("#open-dialog").dialog("option", "buttons", { 
 				"cancel": function() { $(this).dialog("close"); editor.focus(); },
-				"open": eXide.app.openSelectedDocument
+				"open": app.openSelectedDocument
 			});
 			$("#open-dialog").dialog("open");
 		},
@@ -264,14 +278,14 @@ eXide.app = (function() {
 		openSelectedDocument: function(close) {
 			var resource = dbBrowser.getSelection();
 			if (resource) {
-				eXide.app.$doOpenDocument(resource);
+				app.$doOpenDocument(resource);
 			}
 			if (close == undefined || close)
 				$("#open-dialog").dialog("close");
 		},
 
 		$doOpenDocument: function(resource, callback, reload) {
-			resource.path = eXide.util.normalizePath(resource.path);
+			resource.path = util.normalizePath(resource.path);
             var doc = editor.getDocument(resource.path);
             if (doc && !reload) {
                 editor.switchTo(doc);
@@ -287,7 +301,7 @@ eXide.app = (function() {
                     if (reload) {
                         editor.reload(data);
                     } else {
-                        var mime = eXide.util.mimeTypes.getMime(xhr.getResponseHeader("Content-Type"));
+                        var mime = util.mimeTypes.getMime(xhr.getResponseHeader("Content-Type"));
                         var externalPath = xhr.getResponseHeader("X-Link");
                         editor.openDocument(data, mime, resource, externalPath);
                     }
@@ -297,7 +311,7 @@ eXide.app = (function() {
                     return true;
 				},
 				error: function (xhr, status) {
-					eXide.util.error("Failed to load document " + resource.path + ": " + 
+					util.error("Failed to load document " + resource.path + ": " + 
 							xhr.status + " " + xhr.statusText);
                     if (callback) {
                         callback(null);
@@ -310,10 +324,10 @@ eXide.app = (function() {
         reloadDocument: function() {
             var doc = editor.getActiveDocument();
             if (doc.isSaved()) {
-                eXide.app.$reloadDocument(doc);
+                app.$reloadDocument(doc);
             } else {
-                eXide.util.Dialog.input("Reload Document", "Do you really want to reload the document?", function() {
-                    eXide.app.$reloadDocument(doc);
+                util.Dialog.input("Reload Document", "Do you really want to reload the document?", function() {
+                    app.$reloadDocument(doc);
                 });
             }
         },
@@ -323,7 +337,7 @@ eXide.app = (function() {
                 name: doc.getName(),
                 path: doc.getPath()
             };
-            eXide.app.$doOpenDocument(resource, null, true);
+            app.$doOpenDocument(resource, null, true);
         },
         
 		closeDocument: function() {
@@ -354,7 +368,7 @@ eXide.app = (function() {
 		},
 		
 		saveDocument: function() {
-            eXide.app.requireLogin(function () {
+            app.requireLogin(function () {
                 if (editor.getActiveDocument().getPath().match('^__new__')) {
         			dbBrowser.reload(["reload", "create"], "save");
     				$("#open-dialog").dialog("option", "title", "Save Document");
@@ -366,28 +380,28 @@ eXide.app = (function() {
     						editor.saveDocument(dbBrowser.getSelection(), function () {
     							$("#open-dialog").dialog("close");
                                 deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
-                                eXide.app.updateStatus(this);
-                                eXide.app.liveReload();
+                                app.updateStatus(this);
+                                app.liveReload();
     						}, function (msg) {
-    							eXide.util.Dialog.warning("Failed to Save Document", msg);
+    							util.Dialog.warning("Failed to Save Document", msg);
     						});
     					}
     				});
     				$("#open-dialog").dialog("open");
     			} else {
     				editor.saveDocument(null, function () {
-    					eXide.util.message(editor.getActiveDocument().getName() + " stored.");
+    					util.message(editor.getActiveDocument().getName() + " stored.");
                         deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
-                        eXide.app.liveReload();
+                        app.liveReload();
     				}, function (msg) {
-    					eXide.util.Dialog.warning("Failed to Save Document", msg);
+    					util.Dialog.warning("Failed to Save Document", msg);
     				});
     			}
             });
 		},
 
         saveDocumentAs: function() {
-            eXide.app.requireLogin(function () {
+            app.requireLogin(function () {
                 dbBrowser.reload(["reload", "create"], "save");
     			$("#open-dialog").dialog("option", "title", "Save Document As ...");
     			$("#open-dialog").dialog("option", "buttons", { 
@@ -399,10 +413,10 @@ eXide.app = (function() {
     					editor.saveDocument(dbBrowser.getSelection(), function () {
     						$("#open-dialog").dialog("close");
                             deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
-                            eXide.app.updateStatus(this);
-                            eXide.app.liveReload();
+                            app.updateStatus(this);
+                            app.liveReload();
     					}, function (msg) {
-    						eXide.util.Dialog.warning("Failed to Save Document", msg);
+    						util.Dialog.warning("Failed to Save Document", msg);
     					});
     				}
     			});
@@ -417,7 +431,7 @@ eXide.app = (function() {
 		download: function() {
 			var doc = editor.getActiveDocument();
 			if (doc.getPath().match("^__new__") || !doc.isSaved()) {
-				eXide.util.error("There are unsaved changes in the document. Please save it first.");
+				util.error("There are unsaved changes in the document. Please save it first.");
 				return;
 			}
 			window.location.href = "modules/load.xql?download=true&path=" + encodeURIComponent(doc.getPath());
@@ -427,14 +441,14 @@ eXide.app = (function() {
             function showResultsPanel() {
                 editor.updateStatus("");
 				editor.clearErrors();
-				eXide.app.showResultsPanel();
+				app.showResultsPanel();
 				
 				startOffset = 1;
 				currentOffset = 1;
             }
 
-            if (!(eXide.configuration.allowExecution || eXide.app.login.isAdmin)) {
-                eXide.util.error("You are not allowed to execute XQuery code.");
+            if (!(eXide.configuration.allowExecution || app.login.isAdmin)) {
+                util.error("You are not allowed to execute XQuery code.");
                 return;
             }
             if (!path && editor.getActiveDocument().getSyntax() == "html") {
@@ -473,7 +487,7 @@ eXide.app = (function() {
             					var elem = data.documentElement;
             					if (elem.nodeName == 'error') {
             				        var msg = $(elem).text();
-            				        //eXide.util.error(msg, "Compilation Error");
+            				        //util.error(msg, "Compilation Error");
             				        editor.evalError(msg, !livePreview);
             					} else {
             						showResultsPanel();
@@ -481,8 +495,8 @@ eXide.app = (function() {
             						endOffset = startOffset + 10 - 1;
             						if (hitCount < endOffset)
             							endOffset = hitCount;
-            						eXide.util.message("Query returned " + hitCount + " item(s) in " + elem.getAttribute("elapsed") + "s");
-            						eXide.app.retrieveNext();
+            						util.message("Query returned " + hitCount + " item(s) in " + elem.getAttribute("elapsed") + "s");
+            						app.retrieveNext();
             					}
                                 break;
                             default:
@@ -496,7 +510,7 @@ eXide.app = (function() {
                         }
     				},
     				error: function (xhr, status) {
-    					eXide.util.error(xhr.responseText, "Server Error");
+    					util.error(xhr.responseText, "Server Error");
     				}
     			});
             }
@@ -522,10 +536,10 @@ eXide.app = (function() {
 						$(".results-container .current").text("Showing results " + startOffset + " to " + (currentOffset - 1) +
 								" of " + hitCount);
 						$(".results-container .pos:last a").click(function () {
-							eXide.app.findDocument($(this).data("path"));
+							app.findDocument($(this).data("path"));
 							return false;
 						});
-						eXide.app.retrieveNext();
+						app.retrieveNext();
 					}
 				});
 			} else {
@@ -541,7 +555,7 @@ eXide.app = (function() {
 				if (hitCount < endOffset)
 					endOffset = hitCount;
 				$(".results-container .results").empty();
-				eXide.app.retrieveNext();
+				app.retrieveNext();
 			}
 			return false;
 		},
@@ -558,13 +572,13 @@ eXide.app = (function() {
 				if (hitCount < endOffset)
 					endOffset = hitCount;
 				$(".results-container .results").empty();
-				eXide.app.retrieveNext();
+				app.retrieveNext();
 			}
 			return false;
 		},
 		
 		manage: function() {
-			eXide.app.requireLogin(function() {
+			app.requireLogin(function() {
                 dbBrowser.reload(["reload", "create", "upload", "properties", "open", "cut", "copy", "paste"], "manage");
                 $("#open-dialog").dialog("option", "title", "DB Manager");
                 $("#open-dialog").dialog("option", "buttons", { 
@@ -580,24 +594,24 @@ eXide.app = (function() {
 			var collection = /^(.*)\/[^\/]+$/.exec(path);
 			if (!collection)
 				return;
-			eXide.app.requireLogin(function() {
+			app.requireLogin(function() {
                 $.log("Editing deployment settings for collection: %s", collection[1]);
     		    deploymentEditor.open(collection[1]);
 			});
 		},
 		
 		newDeployment: function() {
-			eXide.app.requireLogin(function() {
+			app.requireLogin(function() {
     			deploymentEditor.open();
 			});
 		},
 		
 		deploy: function() {
-            eXide.app.requireLogin(function() {
+            app.requireLogin(function() {
     			var path = editor.getActiveDocument().getPath();
     			var collection = /^(.*)\/[^\/]+$/.exec(path);
     			if (!collection) {
-    				eXide.util.error("The file open in the editor does not belong to an application package!");
+    				util.error("The file open in the editor does not belong to an application package!");
     				return false;
     			}
     			$.log("Deploying application from collection: %s", collection[1]);
@@ -607,11 +621,11 @@ eXide.app = (function() {
 		},
 		
 		synchronize: function() {
-            eXide.app.requireLogin(function () {
+            app.requireLogin(function () {
                 var path = editor.getActiveDocument().getPath();
         		var collection = /^(.*)\/[^\/]+$/.exec(path);
     			if (!collection) {
-                    eXide.util.error("The file open in the editor does not belong to an application package!");
+                    util.error("The file open in the editor does not belong to an application package!");
     				return;
     			}
     			deploymentEditor.synchronize(collection[1]);
@@ -619,22 +633,22 @@ eXide.app = (function() {
 		},
 		
         gitCheckout: function() {
-            eXide.app.requireLogin(function () {
+            app.requireLogin(function () {
                 var path = editor.getActiveDocument().getPath();
         		var collection = /^(.*)\/[^\/]+$/.exec(path);
     			if (!collection) {
-                    eXide.util.error("The file open in the editor does not belong to an application package!");
+                    util.error("The file open in the editor does not belong to an application package!");
     				return;
     			}
     			deploymentEditor.gitCheckout(collection[1]);
             });
 		},
         gitCommit: function() {
-            eXide.app.requireLogin(function () {
+            app.requireLogin(function () {
                 var path = editor.getActiveDocument().getPath();
         		var collection = /^(.*)\/[^\/]+$/.exec(path);
     			if (!collection) {
-                    eXide.util.error("The file open in the editor does not belong to an application package!");
+                    util.error("The file open in the editor does not belong to an application package!");
     				return;
     			}
     			deploymentEditor.gitCommit(collection[1]);
@@ -642,12 +656,12 @@ eXide.app = (function() {
 		},
         
         downloadApp: function () {
-            eXide.app.requireLogin(function() {
+            app.requireLogin(function() {
                 var path = editor.getActiveDocument().getPath();
             	var collection = /^(.*)\/[^\/]+$/.exec(path);
                 $.log("downloading %s", collection);
     			if (!collection) {
-                    eXide.util.error("The file open in the editor does not belong to an application package!");
+                    util.error("The file open in the editor does not belong to an application package!");
     				return;
     			}
     			deploymentEditor.download(collection[1]);
@@ -658,18 +672,18 @@ eXide.app = (function() {
 			var path = editor.getActiveDocument().getPath();
 			var collection = /^(.*)\/[^\/]+$/.exec(path);
 			if (!collection) {
-                eXide.util.error("The file open in the editor does not belong to an application package!");
+                util.error("The file open in the editor does not belong to an application package!");
 				return;
 			}
 			deploymentEditor.runApp(collection[1]);
 		},
         
 		restoreState: function(callback) {
-			if (!eXide.util.supportsHtml5Storage)
+			if (!util.supportsHtml5Storage)
 				return false;
 			var sameVersion = preferences.read();
 			if (!sameVersion) {
-			    eXide.util.Dialog.message("Version Note", "It seems another version of eXide has been " +
+			    util.Dialog.message("Version Note", "It seems another version of eXide has been " +
 			        "used from this browser before. If you experience any display issues, please clear your browser's cache " +
                     "(holding shift while clicking on the reload icon should usually be sufficient).");
 			}
@@ -703,7 +717,7 @@ eXide.app = (function() {
 			}
             this.restoreDocs(docsToLoad, function() {
                 if (!editor.getActiveDocument()) {
-                    eXide.app.newDocument("", "xquery");
+                    app.newDocument("", "xquery");
                 }
                 editor.validator.triggerNow(editor.getActiveDocument());
                 if (callback) callback(restoring);
@@ -720,13 +734,13 @@ eXide.app = (function() {
             }
             var self = this;
             var doc = docs.pop();
-            eXide.app.$doOpenDocument(doc, function() {
+            app.$doOpenDocument(doc, function() {
                 self.restoreDocs(docs, callback);
             });
         },
         
 		saveState: function() {
-			if (!eXide.util.supportsHtml5Storage)
+			if (!util.supportsHtml5Storage)
 				return;
 			localStorage.clear();
 			preferences.save();
@@ -743,16 +757,16 @@ eXide.app = (function() {
                 dataType: "json",
                 success: function(data) {
                     if (data && data.user) {
-                        eXide.app.login = data;
-                        $("#user").text("Logged in as " + eXide.app.login.user + ". ");
-                        if (callback) callback(eXide.app.login.user);
+                        app.login = data;
+                        $("#user").text("Logged in as " + app.login.user + ". ");
+                        if (callback) callback(app.login.user);
                     } else {
-                        eXide.app.login = null;
+                        app.login = null;
                         if (callback) callback(null);
                     }
                 },
                 error: function (xhr, textStatus) {
-                    eXide.app.login = null;
+                    app.login = null;
                     $("#user").text("Login");
                     if (callback) callback(null);
                 }
@@ -760,27 +774,27 @@ eXide.app = (function() {
         },
         
         enforceLogin: function() {
-            eXide.app.requireLogin(function() {
-                if (!eXide.app.login || eXide.app.login.user === "guest") {
-                    eXide.app.enforceLogin();
+            app.requireLogin(function() {
+                if (!app.login || app.login.user === "guest") {
+                    app.enforceLogin();
                 }
             });
         },
         
 		$checkLogin: function () {
-			if (eXide.app.login)
+			if (app.login)
 				return true;
-			eXide.util.error("Warning: you are not logged in.");
+			util.error("Warning: you are not logged in.");
 			return false;
 		},
 		
         requireLogin: function(callback) {
-            if (!eXide.app.login) {
+            if (!app.login) {
                 $("#login-dialog").dialog("option", "close", function () {
-                    if (eXide.app.login) {
+                    if (app.login) {
                         callback();
                     } else {
-                        eXide.util.error("Warning: you are not logged in!");
+                        util.error("Warning: you are not logged in!");
                     }
                 });
                 $("#login-dialog").dialog("open");
@@ -826,7 +840,7 @@ eXide.app = (function() {
         
         updateStatus: function(doc) {
             $("#syntax").val(doc.getSyntax());
-            $("#status .path").text(eXide.util.normalizePath(doc.getPath()));
+            $("#status .path").text(util.normalizePath(doc.getPath()));
             if (!doc.isNew() && (doc.getSyntax() == "xquery" || doc.getSyntax() == "html" || doc.getSyntax() == "xml")) {
                 $("#status a").attr("href", doc.getExternalLink());
                 $("#status a").css("visibility", "visible");
@@ -837,12 +851,12 @@ eXide.app = (function() {
        
         showResultsPanel: function() {
 			layout.show(resultPanel);
-			eXide.app.resize(true);
+			app.resize(true);
         },
         
         toggleResultsPanel: function() {
             layout.toggle(resultPanel);
-			eXide.app.resize(true);
+			app.resize(true);
         },
         
         prepareResultsPanel: function(target, switchPanels) {
@@ -853,7 +867,7 @@ eXide.app = (function() {
                 $(iframe).show();
                 $("#serialization-mode").attr("disabled", "disabled").val("html");
                 if (switchPanels) {
-                    eXide.app.runQuery();
+                    app.runQuery();
                 }
             } else {
                 $("#results-iframe").hide();
@@ -862,7 +876,7 @@ eXide.app = (function() {
         
         switchResultsPanel: function() {
             var target = resultPanel === "south" ? "east" : "south";
-            eXide.app.prepareResultsPanel(target, true);
+            app.prepareResultsPanel(target, true);
             layout.hide(resultPanel);
 
             resultPanel = target;
@@ -871,7 +885,7 @@ eXide.app = (function() {
             } else {
                 $(".layout-switcher").attr("src", "resources/images/layouts_split_vertical.png");
             }
-            eXide.app.showResultsPanel();
+            app.showResultsPanel();
         },
         
         initStatus: function(msg) {
@@ -881,12 +895,12 @@ eXide.app = (function() {
         git: function() {
             var gitUrl ='modules/git.xql',
                 gitError = function(xhr, status) {
-                           eXide.util.error("Failed to apply configuration: " + xhr.responseText);
+                           util.error("Failed to apply configuration: " + xhr.responseText);
                        },
                 showResultsPanel = function() {
                     editor.updateStatus("");
 				    editor.clearErrors();
-				    eXide.app.showResultsPanel();
+				    app.showResultsPanel();
 				    startOffset = 1;
 				    currentOffset = 1;
                 },       
@@ -902,7 +916,7 @@ eXide.app = (function() {
             return {
                  branch: function(app)   {
                      console.info('git.branch');
-                     if(!eXide.app.login.isAdmin) {return}
+                     if(!app.login.isAdmin) {return}
                      $.ajax({ 
                         type: "GET",
                         url: gitUrl,
@@ -930,7 +944,7 @@ eXide.app = (function() {
                      });   
                  },
                  command : function(app, command,option, success){
-                      if(!eXide.app.login.isAdmin) {return}
+                      if(!app.login.isAdmin) {return}
                      $.ajax({
                         type: "GET",
                         url: gitUrl,
@@ -957,7 +971,7 @@ eXide.app = (function() {
 				    
                     var iframe = document.getElementById("results-iframe");
                     $(iframe).show();
-				    eXide.app.showResultsPanel();
+				    app.showResultsPanel();
                     
                     iframe.contentWindow.document.open('text/html', 'replace');
                     iframe.contentWindow.document.write("<html><body><p>Searching ...</p></body></html>");
@@ -992,17 +1006,17 @@ eXide.app = (function() {
         },
         
 		initGUI: function(menu) {
-            if (eXide.util.supportsHtml5Storage && localStorage.getItem("eXide.firstTime")) {
+            if (util.supportsHtml5Storage && localStorage.getItem("eXide.firstTime")) {
                 resultPanel = localStorage["eXide.layout.resultPanel"] || "south";
             }
-            layout = new eXide.app.Layout(editor);
+            layout = new app.Layout(editor);
             if (resultPanel == "south") {
                 layout.hide("east");
             } else {
                 layout.hide("south");
             }
             
-            eXide.app.prepareResultsPanel(resultPanel);
+            app.prepareResultsPanel(resultPanel);
 			$("#open-dialog").dialog({
                 appendTo: "#layout-container",
 				title: "Open file",
@@ -1039,10 +1053,10 @@ eXide.app = (function() {
     							        $("#login-error").text("Login failed.");
     								    $("#login-dialog input:first").focus();
     							    } else {
-        								eXide.app.login = data;
-        								$.log("Logged in as %o. Is dba: %s", data, eXide.app.login.isAdmin);
+        								app.login = data;
+        								$.log("Logged in as %o. Is dba: %s", data, app.login.isAdmin);
         								$("#login-dialog").dialog("close");
-        								$("#user").text("Logged in as " + eXide.app.login.user + ". ");
+        								$("#user").text("Logged in as " + app.login.user + ". ");
         								editor.focus();
     							    }
     							},
@@ -1158,71 +1172,71 @@ eXide.app = (function() {
                 }
             });
             
-            eXide.util.Popup.init("#autocomplete-box", editor);
+            util.Popup.init("#autocomplete-box", editor);
             
             $(".toolbar-buttons").buttonset();
             
 			// initialize buttons and menu events
             var button = $("#open").button("option", "icons", { primary: "fa fa-folder-open-o" });
-			button.click(eXide.app.openDocument);
-            menu.click("#menu-file-open", eXide.app.openDocument);
+			button.click(app.openDocument);
+            menu.click("#menu-file-open", app.openDocument);
 			
             button = $("#close").button("option", "icons", { primary: "fa fa-times" });
-			button.click(eXide.app.closeDocument);
-			menu.click("#menu-file-close", eXide.app.closeDocument);
+			button.click(app.closeDocument);
+			menu.click("#menu-file-close", app.closeDocument);
 			
             button = $("#new").button("option", "icons", { primary: "fa fa-file-o" });
 			button.click(function() {
-                eXide.app.newDocumentFromTemplate();
+                app.newDocumentFromTemplate();
 			});
             
             button = $("#new-xquery").button("option", "icons", { primary: "fa fa-file-code-o" });
 			button.click(function() {
-                eXide.app.newDocument(null, "xquery");
+                app.newDocument(null, "xquery");
 			});
-			menu.click("#menu-file-new", eXide.app.newDocumentFromTemplate);
+			menu.click("#menu-file-new", app.newDocumentFromTemplate);
     		menu.click("#menu-file-new-xquery", function() {
-                eXide.app.newDocument(null, "xquery");
+                app.newDocument(null, "xquery");
     		});
 
             button = $("#run").button("option", "icons", { primary: "fa fa-play" });
-			button.click(function(ev) { eXide.app.runQuery() });
+			button.click(function(ev) { app.runQuery() });
 
             button = $("#debug").button("option", "icons", { primary: "fa fa-fast-forward" });
-            button.click(eXide.app.startDebug);
+            button.click(app.startDebug);
 
             
             button = $("#debug-actions #step-over").button("option", "icons", { primary: "fa fa-fast-forward" });
-            button.click(eXide.app.stepOver);
+            button.click(app.stepOver);
 
             button = $("#debug-actions #step-into").button("option", "icons", { primary: "fa fa-fast-forward" });
-            button.click(eXide.app.stepInto);
+            button.click(app.stepInto);
 
             button = $("#debug-actions #step-out").button("option", "icons", { primary: "fa fa-fast-forward" });
-            button.click(eXide.app.startDebug);
+            button.click(app.startDebug);
 
             button = $("#validate").button("option", "icons", { primary: "fa fa-check" });
 
-			button.click(eXide.app.checkQuery);
+			button.click(app.checkQuery);
             
             button = $("#save").button("option", "icons", { primary: "fa fa-save" });
-			button.click(eXide.app.saveDocument);
-			menu.click("#menu-file-save", eXide.app.saveDocument);
-            menu.click("#menu-file-save-as", eXide.app.saveDocumentAs);
+			button.click(app.saveDocument);
+			menu.click("#menu-file-save", app.saveDocument);
+            menu.click("#menu-file-save-as", app.saveDocumentAs);
 			
-            menu.click("#menu-file-reload", eXide.app.reloadDocument);
+            menu.click("#menu-file-reload", app.reloadDocument);
             
-			menu.click("#menu-file-download", eXide.app.download);
-			menu.click("#menu-file-manager", eXide.app.manage);
+			menu.click("#menu-file-download", app.download);
+			menu.click("#menu-file-manager", app.manage);
 			// menu-only events
-			menu.click("#menu-deploy-new", eXide.app.newDeployment);
-			menu.click("#menu-deploy-edit", eXide.app.deploymentSettings);
-			menu.click("#menu-deploy-live", eXide.app.toggleLiveReload);
-			menu.click("#menu-deploy-sync", eXide.app.synchronize);
-            menu.click("#menu-deploy-download", eXide.app.downloadApp);
+			menu.click("#menu-deploy-new", app.newDeployment);
+			menu.click("#menu-deploy-edit", app.deploymentSettings);
+			menu.click("#menu-deploy-live", app.toggleLiveReload);
+			menu.click("#menu-deploy-sync", app.synchronize);
+            menu.click("#menu-deploy-download", app.downloadApp);
             
-            menu.click("#menu-git-checkout", eXide.app.gitCheckout);
-            menu.click("#menu-git-commit", eXide.app.gitCommit);
+            menu.click("#menu-git-checkout", app.gitCheckout);
+            menu.click("#menu-git-commit", app.gitCommit);
             
 			menu.click("#menu-edit-undo", function () {
 				editor.editor.undo();
@@ -1235,7 +1249,7 @@ eXide.app = (function() {
                 config.loadModule("ace/ext/searchbox", function(e) {e.Search(editor.editor)});
             });
             menu.click("#menu-edit-find-files", function() {
-                eXide.app.findFiles();
+                app.findFiles();
             });
             menu.click("#menu-edit-toggle-comment", function () {
                 editor.editor.toggleCommentLines();
@@ -1260,12 +1274,12 @@ eXide.app = (function() {
                 editor.selectTab();
             });
             menu.click("#menu-navigate-commands", function() {
-                eXide.app.getMenu().commandPalette();
+                app.getMenu().commandPalette();
             });
             menu.click("#menu-navigate-toggle-results", function() {
-                eXide.app.toggleResultsPanel();
+                app.toggleResultsPanel();
             });
-			menu.click("#menu-deploy-run", eXide.app.openApp);
+			menu.click("#menu-deploy-run", app.openApp);
 			
             menu.click("#menu-help-keyboard", function (ev) {
 				$("#keyboard-help").dialog("open");
@@ -1274,7 +1288,7 @@ eXide.app = (function() {
 				$("#about-dialog").dialog("open");
 			});
             // menu.click("#menu-help-documentation", function(ev) {
-            //     eXide.util.Help.show();
+            //     util.Help.show();
             // });
             menu.click("#menu-help-documentation", function(ev) {
                 window.open("docs/doc.html");
@@ -1285,7 +1299,7 @@ eXide.app = (function() {
 			});
 			// register listener to update syntax drop down
 			editor.addEventListener("activate", null, function (doc) {
-                eXide.app.updateStatus(doc);
+                app.updateStatus(doc);
                 projects.findProject(doc.getBasePath(), function(app) {
                     if (app) {
                         $("#toolbar-current-app").text(app.abbrev);
@@ -1296,7 +1310,7 @@ eXide.app = (function() {
                             $(".current-branch").show();
                             $("#menu-git").show();
                             // update git-status
-                            eXide.app.git.branch(app);
+                            app.git.branch(app);
                         } else {
                             $(".current-branch").hide();
                             $("#menu-git").hide();
@@ -1314,28 +1328,28 @@ eXide.app = (function() {
             
 			$("#user").click(function (ev) {
 				ev.preventDefault();
-				if (eXide.app.login) {
+				if (app.login) {
 					// logout
 					$.get("login?logout=logout");
 					$("#user").text("Login");
-					eXide.app.login = null;
+					app.login = null;
 				} else {
 					$("#login-dialog").dialog("open");
 				}
 			});
-            if (!eXide.util.supportsFullScreen()) {
+            if (!util.supportsFullScreen()) {
                 $("#toggle-fullscreen").hide();
             }
             $("#toggle-fullscreen").click(function(ev) {
                 ev.preventDefault();
-                eXide.util.requestFullScreen(document.getElementById("fullscreen"));
+                util.requestFullScreen(document.getElementById("fullscreen"));
             });
-            $(".results-container .layout-switcher").click(eXide.app.switchResultsPanel);
-			$('.results-container .next').click(eXide.app.browseNext);
-			$('.results-container .previous').click(eXide.app.browsePrevious);
+            $(".results-container .layout-switcher").click(app.switchResultsPanel);
+			$('.results-container .next').click(app.browseNext);
+			$('.results-container .previous').click(app.browsePrevious);
             $("#serialization-mode").change(function(ev) {
                 if (lastQuery) {
-                    eXide.app.runQuery(lastQuery);
+                    app.runQuery(lastQuery);
                 }
             });
             $("#error-status").mouseover(function(ev) {
@@ -1355,7 +1369,7 @@ eXide.app = (function() {
                 var checkLogin = !hasFocus;
                 hasFocus = true;
                 if (checkLogin) {
-                   eXide.app.getLogin();
+                   app.getLogin();
                 } 
             });
             
@@ -1371,7 +1385,7 @@ eXide.app = (function() {
                     "OK" : function() { $(this).dialog("close"); }
     			}
     		});
-            if (!eXide.util.supportsHtml5Storage)
+            if (!util.supportsHtml5Storage)
     		    return;
             // if local storage contains eXide properties, the app has already
             // been started before and we do not show the welcome dialog
@@ -1381,4 +1395,6 @@ eXide.app = (function() {
             }
 		}
 	};
-}());
+	
+	return app;
+}(eXide.util));
