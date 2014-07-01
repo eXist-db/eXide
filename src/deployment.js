@@ -18,7 +18,7 @@
  */
 eXide.namespace("eXide.edit.Projects");
 
-eXide.edit.Projects = (function() {
+eXide.edit.Projects = (function(oop) {
     
     Constr = function() {
         this.projects = {};
@@ -43,7 +43,7 @@ eXide.edit.Projects = (function() {
             } else {
                 var project = $this.projects[data.abbrev];
                 if (project) {
-                    eXide.util.oop.extend(project, data);
+                    oop.extend(project, data);
                 } else {
                     project = data;
                     $this.projects[data.abbrev] = project;
@@ -80,14 +80,14 @@ eXide.edit.Projects = (function() {
         // refresh state to see if app package config has chaged in the db (e.g added Git)
         $.each(this.projects, function(project) {
             if(this.root) {
-               $this.getProject(this.root)
+               $this.getProject(this.root);
             }
-        })
+        });
         
 	};
     
     return Constr;
-}());
+}(eXide.util.oop));
 
 eXide.namespace("eXide.edit.PackageEditor");
 
@@ -368,10 +368,12 @@ eXide.edit.PackageEditor = (function () {
                 return;
             }
             
+            $this.runDialog.find("input[name='live-reload']").prop("checked", project.liveReload);
+            
             $this.currentProject = project;
             var url = project.url.replace(/\/{2,}/, "/");
-            var link = "/exist" + url + "/";
-// 			var link = "/exist/apps/" + project.root.replace(/^\/db\//, "") + "/";
+            var link = eXide.configuration.context + url + "/";
+
 			var a = $this.runDialog.find("a");
 			a.attr("href", link).attr("target", project.abbrev).text(link);
             $this.runDialog.dialog("open");

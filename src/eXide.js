@@ -213,13 +213,17 @@ eXide.app = (function(util) {
         },
 
         dropFile: function(files) {
-            var reader = new FileReader();
-            for (var i = 0; i < files.length; i++) {
-                var mime = eXide.util.mimeTypes.getLangFromMime(files[i].type) || "xquery";
-                reader.onloadend = function(e) {
-                    app.newDocument(this.result, mime);
-                };
-                reader.readAsText(files[i]);
+            if (Modernizr.filereader) {
+                var reader = new FileReader();
+                for (var i = 0; i < files.length; i++) {
+                    var mime = eXide.util.mimeTypes.getLangFromMime(files[i].type) || "xquery";
+                    reader.onloadend = function(e) {
+                        app.newDocument(this.result, mime);
+                    };
+                    reader.readAsText(files[i]);
+                }
+            } else {
+                util.message("Your browser does not support drag and drop of files.");
             }
         },
         
@@ -985,9 +989,11 @@ eXide.app = (function(util) {
         liveReload: function() {
             var doc = editor.getActiveDocument();
             projects.findProject(doc.getBasePath(), function(project) {
-                $.log("live reload: %s", project.liveReload);
+                $.log("live reload: %s %s", project.liveReload, project.abbrev);
                 if (project.liveReload) {
-                    var win = window.open("", project.abbrev);
+                    var url = project.url.replace(/\/{2,}/, "/");
+                    var link = eXide.configuration.context + url + "/";
+                    var win = window.open(link, project.abbrev);
                     if (win && !win.closed) {
                         win.location.reload();
                     } else {
