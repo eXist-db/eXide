@@ -41,7 +41,7 @@ declare function pretty:namespace-decls($elem as element(), $namespaces as xs:st
 declare function pretty:pretty-print($node as item(), $namespaces as xs:string*) {
 	typeswitch ($node)
 		case $elem as element(exist:match) return
-			<span class="ace_constant">{$elem/node()}</span>
+			<span class="ace_variable ace_entity ace_other ace_attribute-name exist-match">{$elem/node()}</span>
 		case $elem as element() return
             let $nsDecls := pretty:namespace-decls($elem, $namespaces)
             let $newNamespaces := 

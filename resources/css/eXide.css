@@ -155,6 +155,10 @@ body {
     height: 10px;
 }
 
+.exist-match {
+    text-decoration: underline;
+}
+
 #fullscreen {
     position: absolute;
     top: 0;
