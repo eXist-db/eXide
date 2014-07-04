@@ -74,6 +74,8 @@ eXide.app = (function(util) {
 	
 	var login = null;
     
+    var allowDnd = true;
+    
     // used to detect when window looses focus
     var hasFocus = true;
     
@@ -98,7 +100,12 @@ eXide.app = (function(util) {
             menu = new util.Menubar($(".menu"));
 			editor = new eXide.edit.Editor(document.getElementById("editor"), menu);
 			deploymentEditor = new eXide.edit.PackageEditor(projects);
+			
 			dbBrowser = new eXide.browse.Browser(document.getElementById("open-dialog"));
+			dbBrowser.addEventListener("upload-open", function(isOpen) {
+			    allowDnd = !isOpen;
+			});
+			
             deploymentEditor.addEventListener("change", null, function(collection) {
                 dbBrowser.changeToCollection(collection);
                 app.openDocument();
@@ -213,6 +220,9 @@ eXide.app = (function(util) {
         },
 
         dropFile: function(files) {
+            if (!allowDnd) {
+                return;
+            }
             if (Modernizr.filereader) {
                 var reader = new FileReader();
                 for (var i = 0; i < files.length; i++) {
