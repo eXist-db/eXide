@@ -732,6 +732,11 @@ eXide.app = (function(util) {
             this.restoreDocs(docsToLoad, function() {
                 if (!editor.getActiveDocument()) {
                     app.newDocument("", "xquery");
+                } else {
+                    var active = localStorage["eXide.activeTab"];
+                    if (active) {
+                        app.findDocument(active);
+                    }
                 }
                 editor.validator.triggerNow(editor.getActiveDocument());
                 if (callback) callback(restoring);
@@ -749,6 +754,9 @@ eXide.app = (function(util) {
             var self = this;
             var doc = docs.pop();
             app.$doOpenDocument(doc, function() {
+                if (doc.line) {
+                    editor.editor.gotoLine(doc.line + 1);
+                }
                 self.restoreDocs(docs, callback);
             });
         },
@@ -761,6 +769,9 @@ eXide.app = (function(util) {
 			layout.saveState();
 			
             localStorage["eXide.layout.resultPanel"] = resultPanel;
+            if (editor.getActiveDocument()) {
+                localStorage["eXide.activeTab"] = editor.getActiveDocument().path;
+            }
 			editor.saveState();
 			deploymentEditor.saveState();
 		},
@@ -985,7 +996,7 @@ eXide.app = (function(util) {
 				    
                     var iframe = document.getElementById("results-iframe");
                     $(iframe).show();
-				    app.showResultsPanel();
+				    eXide.app.showResultsPanel();
                     
                     iframe.contentWindow.document.open('text/html', 'replace');
                     iframe.contentWindow.document.write("<html><body><p>Searching ...</p></body></html>");
