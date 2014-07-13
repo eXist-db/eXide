@@ -10,7 +10,6 @@
     <target>eXide</target>
     <prepare>pre-install.xql</prepare>
     <finish/>
-    <note>When upgrading, please make sure you also updated the shared-resources package to &gt; 0.3.5.</note>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
         <change version="2.0.8">
@@ -20,6 +19,9 @@
                 <li>Directory Uploads (Chrome only)</li>
                 <li>Fixed less support</li>
                 <li>Updated UI: now based on CSS3 flexbox</li>
+                <li>Properly restore cursor position for each editor when reloading. Switch to previously open editor tab.</li>
+                <li>"Goto definition" works on global variables as well</li>
+                <li>Added "go to last edit position" command to navigate back in history</li>
             </ul>
         </change>
         <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="2.0.7">
