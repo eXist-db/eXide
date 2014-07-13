@@ -75,6 +75,7 @@ eXide.edit.JavascriptModeHelper = (function () {
             eXide.util.Popup.show(popupItems, function (selected) {
                 if (selected) {
                     self.editor.gotoLine(selected.row + 1);
+                    self.parent.history.push(doc.getPath(), selected.row);
                 }
                 self.editor.focus();
             });
@@ -97,6 +98,7 @@ eXide.edit.JavascriptModeHelper = (function () {
         	var func = this.parent.outline.findDefinition(doc, name);
             if (func && func.row) {
                 this.editor.gotoLine(func.row + 1);
+                this.parent.history.push(doc.getPath(), func.row);
             }
         }
 	};

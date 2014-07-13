@@ -84,6 +84,7 @@ eXide.edit.CssModeHelper = (function () {
             eXide.util.Popup.show(popupItems, function (selected) {
                 if (selected) {
                     self.editor.gotoLine(selected.row + 1);
+                    self.parent.history.push(doc.getPath(), selected.row);
                 }
             });
         }

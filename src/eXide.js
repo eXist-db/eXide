@@ -1275,6 +1275,10 @@ eXide.app = (function(util) {
                 var config = require("ace/config");
                 config.loadModule("ace/ext/searchbox", function(e) {e.Search(editor.editor)});
             });
+            menu.click("#menu-edit-find-replace", function() {
+                var config = require("ace/config");
+                config.loadModule("ace/ext/searchbox", function(e) {e.Search(editor.editor, true)});
+            });
             menu.click("#menu-edit-find-files", function() {
                 app.findFiles();
             });
@@ -1302,6 +1306,12 @@ eXide.app = (function(util) {
             });
             menu.click("#menu-navigate-commands", function() {
                 app.getMenu().commandPalette();
+            });
+            menu.click("#menu-navigate-line", function() {
+                editor.gotoLine();
+            });
+            menu.click("#menu-navigate-history", function() {
+                editor.historyBack();
             });
             menu.click("#menu-navigate-toggle-results", function() {
                 app.toggleResultsPanel();

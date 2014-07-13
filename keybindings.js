@@ -1,5 +1,6 @@
 {
     "gotoLine": ["Ctrl-L", "Command-L"],
+    "historyBack": ["Ctrl-Alt-Left", "Ctrl-Command-Left"],
     "fold": ["Alt-L", "Command-Option-L"],
     "unfold": ["Alt-Shift-L", "Command-Option-Shift-L"],
     "saveDocument": ["Ctrl-Shift-S", "Command-Shift-S"],

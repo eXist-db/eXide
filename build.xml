@@ -56,6 +56,7 @@
             <sources dir="${basedir}/src">
                 <file name="ace-modes.js"/>
                 <file name="util.js"/>
+                <file name="history.js"/>
                 <file name="popup.js"/>
                 <file name="events.js"/>
                 <file name="commands.js"/>

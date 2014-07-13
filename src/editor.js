@@ -33,7 +33,6 @@ eXide.edit.Document = (function() {
 		this.editable = true;
 		this.functions = [];
 		this.helper = null;
-		this.history = [];
 		this.$session = session;
         this.externalLink = null;
         this.lastChangeEvent = new Date().getTime();
@@ -128,14 +127,6 @@ eXide.edit.Document = (function() {
 		return this.helper;
 	};
 	
-	Constr.prototype.addToHistory = function(line) {
-		this.history.push(line);
-	};
-	
-	Constr.prototype.getLastLine = function() {
-		return this.history.pop(line);
-	};
-	
 	Constr.prototype.getCurrentLine = function() {
 		var sel = this.$session.getSelection();
 		var lead = sel.getSelectionLead();
@@ -199,6 +190,8 @@ eXide.edit.Editor = (function () {
 
         $this.themes = {};
         $this.initializing = true;
+        
+        $this.history = new eXide.edit.History();
 		
         var renderer = new Renderer($this.container, "ace/theme/eclipse");
 	    renderer.setShowGutter(true);
@@ -385,7 +378,6 @@ eXide.edit.Editor = (function () {
 		doc.syntax = eXide.util.mimeTypes.getLangFromMime(mime);
 		doc.saved = false;
 		if (resource.line) {
-			doc.addToHistory(resource.line);
 			this.editor.gotoLine(resource.line);
 		}
 		this.$initDocument(doc);
@@ -436,7 +428,6 @@ eXide.edit.Editor = (function () {
         doc.externalLink = externalPath;
 		doc.saved = true;
 		if (resource.line) {
-			doc.addToHistory(resource.line);
 			var sel = doc.$session.getSelection();
 			sel.clearSelection();
 			sel.moveCursorTo(resource.line, 1);
@@ -471,6 +462,7 @@ eXide.edit.Editor = (function () {
         
         doc.$session.getDocument().on("change", function(ev) {
             $this.$triggerEvent("change", [$this.activeDoc]);
+            $this.history.push(doc.getPath(), doc.getCurrentLine());
         });
         
         if (doc.getModeHelper()) {
@@ -672,6 +664,14 @@ eXide.edit.Editor = (function () {
 		if (mode && mode.onInput) {
 			mode.onInput(doc, delta);
 		}
+	};
+	
+	Constr.prototype.historyBack = function() {
+        var item = this.history.pop();
+        if (item) {
+            $.log("history event: going to %s at line %d", item.path, item.line);
+            eXide.app.findDocument(item.path, item.line + 1);
+        }
 	};
 	
 	Constr.prototype.autocomplete = function(alwaysShow) {

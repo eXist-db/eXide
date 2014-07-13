@@ -67,6 +67,13 @@ eXide.edit.commands = (function () {
                         }
                     });
                     commands.addCommand({
+                        name: "historyBack",
+                        bindKey: bindKey(bindings.historyBack),
+                        exec: function(editor) {
+                            parent.historyBack();
+                        }
+                    });
+                    commands.addCommand({
             			name: "fold",
         			    bindKey: bindKey(bindings.fold),
         			    exec: function(editor) {

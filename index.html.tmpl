@@ -35,6 +35,7 @@
         <script type="text/javascript" src="src/popup.js"/>
         <script type="text/javascript" src="src/events.js"/>
         <script type="text/javascript" src="src/dnd.js"/>
+        <script type="text/javascript" src="src/history.js"/>
         <script type="text/javascript" src="src/commands.js"/>
         <script type="text/javascript" src="src/mode-helper.js"/>
         <script type="text/javascript" src="src/xquery-helper.js"/>
@@ -141,6 +142,10 @@
                                         <span class="fa fa-search"/>Find in files</a>
                                 </li>
                                 <li>
+                                    <a href="#" id="menu-edit-find-replace" data-command="searchIncremental">
+                                        <span class="fa fa-search"/>Find/replace in buffer</a>
+                                </li>
+                                <li>
                                     <a href="#" id="menu-edit-toggle-comment" data-command="toggleComment">
                                         <span class="fa fa-comment-o"/>Toggle comment</a>
                                 </li>
@@ -159,7 +164,7 @@
                                 </li>
                                 <li>
                                     <a href="#" id="menu-navigate-definition" data-command="gotoDefinition">
-                                        <span class="fa fa-arrow-down"/>Go to definition</a>
+                                        <span class="fa fa-crosshairs"/>Go to definition</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-navigate-modules" data-command="findModule">
@@ -171,11 +176,19 @@
                                 </li>
                                 <li>
                                     <a href="#" id="menu-navigate-symbol" data-command="gotoSymbol">
-                                        <span class="fa fa-arrow-circle-o-down"/>Go to symbol</a>
+                                        <span class="fa fa-search"/>Go to symbol</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-navigate-buffer" data-command="openTab">
                                         <span class="fa fa-sitemap"/>Go to buffer</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-navigate-line" data-command="gotoLine">
+                                        <span class="fa fa-arrow-circle-o-down"/>Go to line</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-navigate-history" data-command="historyBack">
+                                        <span class="fa fa-history"/>Go to last edit</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-navigate-toggle-results" data-command="toggleQueryResults">

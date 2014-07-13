@@ -50,8 +50,14 @@ eXide.edit.Outline = (function () {
 		},
 		
 		gotoDefinition: function(doc, name) {
+		    var type = "function"
+            if (name.indexOf("$") === 0) {
+		        name = name.substring(1);
+		        type = "variable";
+		        
+		    }
 			$.each(doc.functions, function (i, func) {
-				if (name == func.name) {
+				if (name == func.name && type == func.type) {
 					eXide.app.locate(func.type, func.source == '' ? null : func.source, name);
 					return false;
 				}

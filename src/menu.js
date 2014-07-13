@@ -70,8 +70,8 @@ eXide.util.Menubar = (function() {
             eXide.util.Popup.show(popupItems, function (selected) {
                 if (selected) {
                     selected.callback();
-                    if ($this.editor) {
-                        $this.editor.focus();
+                    if (self.editor) {
+                        self.editor.focus();
                     }
                 }
             });

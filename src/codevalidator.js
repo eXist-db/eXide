@@ -68,7 +68,6 @@ eXide.edit.CodeValidator = (function () {
             self.inProgress = false;
             self.deferred.resolve([success]);
             self.deferred = null;
-            $.log("Validation completed: valid = %s", success);
 
             self.$triggerEvent("validate", [doc]);
             if (success) {

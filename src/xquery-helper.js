@@ -628,7 +628,17 @@ eXide.edit.XQueryModeHelper = (function () {
     		name = line.substring(start, end);
         }
         return name;
-	}
+	};
+	
+	Constr.prototype.getVariableAtCursor = function (doc, lead) {
+        var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+        if (astNode) {
+            var ref = eXide.edit.XQueryUtils.findAncestor(astNode, "VarRef");
+            if (ref && astNode.name === "EQName") {
+                return astNode.value;
+            }
+        }
+	};
 	
 	Constr.prototype.showFunctionDoc = function (doc) {
         this.xqlint(doc);
@@ -682,6 +692,11 @@ eXide.edit.XQueryModeHelper = (function () {
 		var funcName = this.getFunctionAtCursor(doc, lead);
 		if (funcName) {
 			this.parent.outline.gotoDefinition(doc, funcName);
+		} else {
+		    var varName = this.getVariableAtCursor(doc, lead);
+		    if (varName) {
+		        this.parent.outline.gotoDefinition(doc, varName);
+		    }
 		}
 	}
 	
@@ -876,6 +891,7 @@ eXide.edit.XQueryModeHelper = (function () {
         };  
         var focus = function(lineNb) {
             this.editor.gotoLine(lineNb + 1);
+            this.parent.history.push(doc.getPath(), lineNb);
             return this.editor.focus();
         };
         
@@ -900,6 +916,7 @@ eXide.edit.XQueryModeHelper = (function () {
 			var line = doc.$session.getLine(i);
 			if (line.match(regexp)) {
 				this.editor.gotoLine(i + 1);
+				this.parent.history.push(doc.getPath(), i);
 				this.editor.focus();
 				return;
 			}
