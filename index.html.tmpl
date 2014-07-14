@@ -29,8 +29,8 @@
         <script src="$shared/resources/scripts/ace/mode-markdown.js" type="text/javascript" charset="utf-8"/>
         <script src="$shared/resources/scripts/ace/demo.js" type="text/javascript"/>
         <script type="text/javascript" src="resources/scripts/xqlint.min.js"/>
-        <script type="text/javascript" src="resources/scripts/eXide.min.js"/>
-        <!--script type="text/javascript" src="src/ace-modes.js"/>
+        <!--script type="text/javascript" src="resources/scripts/eXide.min.js"/-->
+        <script type="text/javascript" src="src/ace-modes.js"/>
         <script type="text/javascript" src="src/util.js"/>
         <script type="text/javascript" src="src/popup.js"/>
         <script type="text/javascript" src="src/events.js"/>
@@ -60,7 +60,7 @@
         <script type="text/javascript" src="src/xquery-utils.js"/>
         <script type="text/javascript" src="src/quickfix.js"/>
         <script type="text/javascript" src="src/snippets.js"/>
-        <script type="text/javascript" src="src/snippet-helper.js"/-->
+        <script type="text/javascript" src="src/snippet-helper.js"/>
     </head>
     <body>
         <div id="splash">
@@ -500,7 +500,9 @@
                 <div id="dialog-run-app" title="Run Application">
                     <div>
                         <span class="fa fa-4x fa-warning" style="float:left; margin:0 7px 24px 0;"/>
-                        <p>Click on the following link to display the application start page:</p>
+                        <p class="first-load">For live reloading, the application page needs to
+                        be opened once from within eXide by clicking on the link below:</p>
+                        <p class="second-load">Click on the following link to display the application start page:</p>
                         <p>
                             <a href="#" target="_new"/>
                         </p>

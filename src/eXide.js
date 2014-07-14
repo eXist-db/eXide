@@ -682,14 +682,14 @@ eXide.app = (function(util) {
             });
         },
         
-		openApp: function () {
+		openApp: function (firstLoad) {
 			var path = editor.getActiveDocument().getPath();
 			var collection = /^(.*)\/[^\/]+$/.exec(path);
 			if (!collection) {
                 util.error("The file open in the editor does not belong to an application package!");
 				return;
 			}
-			deploymentEditor.runApp(collection[1]);
+			deploymentEditor.runApp(collection[1], firstLoad);
 		},
         
 		restoreState: function(callback) {
@@ -1014,9 +1014,9 @@ eXide.app = (function(util) {
                 if (project.liveReload) {
                     var url = project.url.replace(/\/{2,}/, "/");
                     var link = eXide.configuration.context + url + "/";
-                    var win = window.open(link, project.abbrev);
-                    if (win && !win.closed) {
-                        win.location.reload();
+                    project.win = window.open(link, project.abbrev);
+                    if (project.win && !project.win.closed) {
+                        project.win.location.reload();
                     } else {
                         $.log("app window not found: %s", project.abbrev);
                     }
@@ -1029,6 +1029,9 @@ eXide.app = (function(util) {
             projects.findProject(doc.getBasePath(), function(project) {
                 project.liveReload = !project.liveReload;
                 $("#menu-deploy-live span").attr("class", project.liveReload ? "fa fa-check-square-o" : "fa fa-square-o");
+                if (project.liveReload && (!project.win || project.win.closed)) {
+                    app.openApp(true);
+                }
             });
         },
         

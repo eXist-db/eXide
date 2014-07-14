@@ -359,7 +359,7 @@ eXide.edit.PackageEditor = (function () {
          }
      };
      
-	Constr.prototype.runApp = function (collection) {
+	Constr.prototype.runApp = function (collection, firstLoad) {
 		var $this = this;
         $this.projects.findProject(collection, function (project) {
             if (!project) {
@@ -376,6 +376,14 @@ eXide.edit.PackageEditor = (function () {
 
 			var a = $this.runDialog.find("a");
 			a.attr("href", link).attr("target", project.abbrev).text(link);
+			
+			if (firstLoad) {
+			    $this.runDialog.find(".first-load").show();
+			    $this.runDialog.find(".second-load").hide();
+			} else {
+			    $this.runDialog.find(".first-load").show();
+			    $this.runDialog.find(".second-load").hide();
+			}
             $this.runDialog.dialog("open");
         });
 	};
