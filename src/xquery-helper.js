@@ -890,8 +890,8 @@ eXide.edit.XQueryModeHelper = (function () {
             }
         };  
         var focus = function(lineNb) {
+            this.parent.history.push(doc.getPath(), doc.getCurrentLine());
             this.editor.gotoLine(lineNb + 1);
-            this.parent.history.push(doc.getPath(), lineNb);
             return this.editor.focus();
         };
         
@@ -915,8 +915,8 @@ eXide.edit.XQueryModeHelper = (function () {
 		for (var i = 0; i < len; i++) {
 			var line = doc.$session.getLine(i);
 			if (line.match(regexp)) {
+				this.parent.history.push(doc.getPath(), doc.getCurrentLine());
 				this.editor.gotoLine(i + 1);
-				this.parent.history.push(doc.getPath(), i);
 				this.editor.focus();
 				return;
 			}
