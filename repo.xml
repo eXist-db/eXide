@@ -12,7 +12,14 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
-        <change version="2.0.8">
+        <change version="2.0.9">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Remove size limits for documents which can be validated by the editor. Live error messages
+                will be shown even for large documents/XQueries.</li>
+                <li>Fixed navigation in edit history.</li>
+            </ul>
+        </change>
+        <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="2.0.8">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Live reload: automatically reload the browser window running the app if resource is saved in editor.</li>
                 <li>Drag a file on the editor to open its contents in a new tab</li>
@@ -23,7 +30,7 @@
                 <li>"Goto definition" works on global variables as well</li>
                 <li>Added "go to last edit position" command to navigate back in history</li>
             </ul>
-        </change>
+        </repo:change>
         <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="2.0.7">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fix copy and paste</li>
