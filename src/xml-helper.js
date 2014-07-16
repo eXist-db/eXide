@@ -62,9 +62,10 @@ eXide.edit.XMLModeHelper = (function () {
 		var basePath = "xmldb:exist://" + doc.getBasePath();
 		var $this = this;
 		$.ajax({
-			type: "POST",
-			url: "modules/validate-xml.xql",
-			data: { xml: text, validate: "no" },
+			type: "PUT",
+			url: "check/",
+			data: text,
+			contentType: "application/octet-stream",
 			dataType: "json",
 			success: function (data) {
 				if (data.status && data.status == "invalid") {
@@ -85,9 +86,10 @@ eXide.edit.XMLModeHelper = (function () {
 	Constr.prototype.validate = function(doc, code, onComplete) {
 		var $this = this;
 		$.ajax({
-			type: "POST",
+			type: "PUT",
 			url: "modules/validate-xml.xql",
-			data: { xml: code },
+			data: code,
+			contentType: "application/octet-stream",
 			dataType: "json",
 			success: function (data) {
 				$this.compileError(data, doc);
@@ -122,7 +124,7 @@ eXide.edit.XMLModeHelper = (function () {
 			this.parent.clearErrors();
 			this.parent.updateStatus("");
 		}
-	}
+	};
     
     Constr.prototype.suggest = function(doc, text, row, column) {
         $.log("Getting suggestions for %s", text);

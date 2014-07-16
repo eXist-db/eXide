@@ -119,6 +119,16 @@ else if (starts-with($exist:path, "/store/")) then
             </forward>
         </dispatch>
 
+else if (starts-with($exist:path, "/check/")) then
+    let $resource := substring-after($exist:path, "/validate")
+    return
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <forward url="{$exist:controller}/modules/validate-xml.xql">
+                <add-parameter name="validate" value="no"/>
+                {$login("org.exist.login", (), false())}
+            </forward>
+        </dispatch>
+        
 else if ($exist:resource = "index.html") then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <view>
