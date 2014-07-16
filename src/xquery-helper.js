@@ -110,9 +110,13 @@ eXide.edit.XQueryModeHelper = (function () {
 		var basePath = "xmldb:exist://" + doc.getBasePath();
 		var $this = this;
 		$.ajax({
-			type: "POST",
+			type: "PUT",
 			url: "modules/compile.xql",
-			data: {q: text, base: basePath},
+			data: text,
+			contentType: "application/octet-stream",
+			headers: {
+			    "X-BasePath": basePath
+			},
 			dataType: "json",
 			success: function (data) {
 				if (data.result == "fail") {
@@ -145,10 +149,14 @@ eXide.edit.XQueryModeHelper = (function () {
         this.validationListeners.length = 0;
         
 		$.ajax({
-			type: "POST",
+			type: "PUT",
 			url: "modules/compile.xql",
-			data: {q: code, base: basePath},
+			data: code,
 			dataType: "json",
+			headers: {
+			    "X-BasePath": basePath
+			},
+			contentType: "application/octet-stream",
 			success: function (data) {
 				var valid = $this.compileError(data, doc);
                 if (onComplete) {
