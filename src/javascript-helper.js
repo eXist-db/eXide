@@ -74,8 +74,8 @@ eXide.edit.JavascriptModeHelper = (function () {
             eXide.util.Popup.position({pageX: left, pageY: 20});
             eXide.util.Popup.show(popupItems, function (selected) {
                 if (selected) {
+                    self.parent.history.push(doc.getPath(), doc.getCurrentLine());
                     self.editor.gotoLine(selected.row + 1);
-                    self.parent.history.push(doc.getPath(), selected.row);
                 }
                 self.editor.focus();
             });
@@ -97,8 +97,8 @@ eXide.edit.JavascriptModeHelper = (function () {
         } else {
         	var func = this.parent.outline.findDefinition(doc, name);
             if (func && func.row) {
+                this.parent.history.push(doc.getPath(), doc.getCurrentLine());
                 this.editor.gotoLine(func.row + 1);
-                this.parent.history.push(doc.getPath(), func.row);
             }
         }
 	};

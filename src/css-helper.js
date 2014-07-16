@@ -83,8 +83,8 @@ eXide.edit.CssModeHelper = (function () {
             eXide.util.Popup.position({pageX: left, pageY: 40});
             eXide.util.Popup.show(popupItems, function (selected) {
                 if (selected) {
+                    self.parent.history.push(doc.getPath(), doc.getCurrentLine());
                     self.editor.gotoLine(selected.row + 1);
-                    self.parent.history.push(doc.getPath(), selected.row);
                 }
             });
         }
