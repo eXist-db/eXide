@@ -310,7 +310,7 @@ eXide.edit.Editor = (function () {
         var Emmet = require("ace/ext/emmet");
         net.loadScript("$shared/resources/scripts/ace/emmet.js", function() {
             Emmet.setCore(window.emmet);
-            $this.editor.setOption("enableEmmet", true);
+            $this.editor.setOption("enableEmmet", false);
         });
 	};
 
@@ -437,7 +437,7 @@ eXide.edit.Editor = (function () {
         this.updateStatus("");
         var helper = this.activeDoc.getModeHelper();
         if (helper) {
-            helper.deactivate();
+            helper.deactivate(doc);
         }
 		this.$initDocument(doc);
 	};
@@ -466,7 +466,7 @@ eXide.edit.Editor = (function () {
         });
         
         if (doc.getModeHelper()) {
-            doc.getModeHelper().activate();
+            doc.getModeHelper().activate(doc);
         }
 	};
 	
@@ -776,7 +776,7 @@ eXide.edit.Editor = (function () {
 	Constr.prototype.switchTo = function(doc) {
         var helper = this.activeDoc.getModeHelper();
         if (helper) {
-            helper.deactivate();
+            helper.deactivate(doc);
         }
 		this.editor.setSession(doc.$session);
 		this.editor.resize();
@@ -796,7 +796,7 @@ eXide.edit.Editor = (function () {
         
         helper = doc.getModeHelper();
         if (helper) {
-            helper.activate();
+            helper.activate(doc);
         }
         if (!this.activeDoc.ast) {
             this.validator.triggerNow(this.activeDoc);

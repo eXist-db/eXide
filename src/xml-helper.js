@@ -50,11 +50,16 @@ eXide.edit.XMLModeHelper = (function () {
 	
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
     
-    Constr.prototype.activate = function() {
+    Constr.prototype.activate = function(doc) {
         this.menu.show();
+        if (doc.getSyntax() === "html") {
+            this.editor.setOption("enableEmmet", true);
+        } else {
+            this.editor.setOption("enableEmmet", false);
+        }
     };
     
-    Constr.prototype.deactivate = function() {
+    Constr.prototype.deactivate = function(doc) {
         this.menu.hide();
     };
     
@@ -259,7 +264,7 @@ eXide.edit.XMLModeHelper = (function () {
         var token = iterator.stepForward();
         var startTag, endTag;
         while(token) {
-            if (token.type.substring(0, 13) === "meta.tag.name") {
+            if (/^(meta.tag.name|.*.tag-name.xml)/.test(token.type)) {
                 if (!inClosingTag) {
                     var tag = {
                         name: token.value,
