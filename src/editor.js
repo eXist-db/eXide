@@ -188,6 +188,8 @@ eXide.edit.Editor = (function () {
 		$this.pendingCheck = false;
         $this.recheck = false;
 
+        $this.enableEmmet = false;
+        
         $this.themes = {};
         $this.initializing = true;
         
@@ -323,6 +325,11 @@ eXide.edit.Editor = (function () {
         this.initializing = false;
         var currentDoc = this.getActiveDocument();
         this.$triggerEvent("activate", [currentDoc]);
+	};
+	
+	Constr.prototype.setEmmetEnabled = function(enabled) {
+	    this.enableEmmet = enabled;
+	    this.editor.setOption("enableEmmet", enabled);
 	};
 	
 	Constr.prototype.exec = function () {

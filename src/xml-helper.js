@@ -52,7 +52,7 @@ eXide.edit.XMLModeHelper = (function () {
     
     Constr.prototype.activate = function(doc) {
         this.menu.show();
-        if (doc.getSyntax() === "html") {
+        if (doc.getSyntax() === "html" && this.parent.enableEmmet) {
             this.editor.setOption("enableEmmet", true);
         } else {
             this.editor.setOption("enableEmmet", false);

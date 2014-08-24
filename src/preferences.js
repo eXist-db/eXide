@@ -33,7 +33,8 @@ eXide.util.Preferences = (function () {
 		showHScroll: false,
         indent: -1,
         indentSize: 4,
-        softWrap: -1
+        softWrap: -1,
+        emmet: false
 	};
     
     Constr = function(editor) {
@@ -75,6 +76,7 @@ eXide.util.Preferences = (function () {
         $("select[name=\"font\"]", form).val(this.preferences.font);
 		$("input[name=\"show-invisibles\"]", form).attr("checked", this.preferences.showInvisibles);
 		$("input[name=\"print-margin\"]", form).attr("checked", this.preferences.showPrintMargin);
+		$("input[name=\"emmet\"]", form).attr("checked", this.preferences.emmet);
 
         var indent = this.preferences.indent;
         var indentSize = this.preferences.indentSize;
@@ -102,6 +104,7 @@ eXide.util.Preferences = (function () {
         this.preferences.font = $("select[name=\"font\"]", form).val();
 		this.preferences.showInvisibles = $("input[name=\"show-invisibles\"]", form).is(":checked");
 		this.preferences.showPrintMargin = $("input[name=\"print-margin\"]", form).is(":checked");
+		this.preferences.emmet = $("input[name=\"emmet\"]", form).is(":checked");
 
         var indent = $("select[name=\"indent\"]", form).val();
         var indentSize = parseInt($("select[name=\"indent-size\"]", form).val(), 10);
@@ -128,6 +131,7 @@ eXide.util.Preferences = (function () {
 		this.editor.setTheme(this.preferences.theme);
 		this.editor.editor.setShowInvisibles(this.preferences.showInvisibles);
 		this.editor.editor.setShowPrintMargin(this.preferences.showPrintMargin);
+		this.editor.setEmmetEnabled(this.preferences.emmet);
         this.editor.forEachDocument(function (doc) {
             if ($this.preferences.softWrap > 0) {
                 doc.getSession().setWrapLimitRange($this.preferences.softWrap, $this.preferences.softWrap);
@@ -138,7 +142,7 @@ eXide.util.Preferences = (function () {
 
             if ($this.preferences.indent < 0) {
                 doc.getSession().setTabSize($this.preferences.indentSize);
-		doc.getSession().setUseSoftTabs(true);
+		        doc.getSession().setUseSoftTabs(true);
             } else if ($this.preferences.indent >= 0) {
                 doc.getSession().setUseSoftTabs(false);
             }
