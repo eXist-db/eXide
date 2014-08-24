@@ -88,7 +88,10 @@ eXide.app.FlexboxSplitter = (function () {
         }
     };
     
-    Constr.prototype.setSize = function(size) {
+    Constr.prototype.setSize = function(size, preferred) {
+        if (preferred) {
+            this.prevSize = preferred;
+        }
         if (size === 0) {
             this.hide();
             return;
@@ -112,6 +115,9 @@ eXide.app.FlexboxSplitter = (function () {
             this.resizable.find(">*:not(.minimized)").show();
             this.resizable.find(".minimized").addClass("resize-handle").removeClass("minimized");
         }
+        if (this.resizable.is(":hidden")) {
+            this.resizable.show();
+        }
     };
     
     Constr.prototype.hide = function() {
@@ -119,9 +125,11 @@ eXide.app.FlexboxSplitter = (function () {
         this.resizable.hide();
     };
     
-    Constr.prototype.show = function() {
+    Constr.prototype.show = function(resize) {
         if (this.resizable.is(":hidden")) {
             this.resizable.show();
+            this.setSize(this.prevSize);
+        } else if (resize && this.getSize() == 10) {
             this.setSize(this.prevSize);
         }
     };
@@ -142,9 +150,9 @@ eXide.namespace("eXide.app.Layout");
 eXide.app.Layout = (function () {
     
     var PANEL_DEFAULTS = {
-        "west": 200,
-        "south": 0,
-        "east": 0
+        "west": { size: 200, preferred: 200 },
+        "south": { size: 10, preferred: 200 },
+        "east": { size: 0, preferred: 380 }
     };
     
     var Constr = function(editor) {
@@ -166,8 +174,8 @@ eXide.app.Layout = (function () {
         this.regions[region].hide();
     };
     
-    Constr.prototype.show = function(region) {
-        this.regions[region].show();
+    Constr.prototype.show = function(region, resize) {
+        this.regions[region].show(resize);
     };
     
     Constr.prototype.toggle = function(region) {
@@ -181,15 +189,20 @@ eXide.app.Layout = (function () {
     };
     
     Constr.prototype.restoreState = function(sameVersion) {
+        if (!sameVersion) {
+            this.reset();
+        } else {
+            for (var region in this.regions) {
+                var size = localStorage["eXide.layout." + region];
+                this.regions[region].setSize(parseInt(size));
+            }
+        }
+    };
+    
+    Constr.prototype.reset = function() {
         for (var region in this.regions) {
-            var size;
-            if (sameVersion) {
-                size = localStorage["eXide.layout." + region];
-            }
-            if (!size) {
-                size = PANEL_DEFAULTS[region];
-            }
-            this.regions[region].setSize(parseInt(size));
+            var settings = PANEL_DEFAULTS[region];
+            this.regions[region].setSize(settings.size, settings.preferred);
         }
     };
     

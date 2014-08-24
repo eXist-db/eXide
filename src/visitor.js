@@ -27,23 +27,27 @@ eXide.edit.Visitor = (function () {
     };
     
     Constr.prototype.visit = function(node, handler) {
-        var name = node.name;
-        var skip = false;
-        
-        if (typeof this[name] === "function") skip = this[name](node) === true ? true : false;
-        
-        if (!skip) {
-            this.visitChildren(node, handler);
+        if (node) {
+            var name = node.name;
+            var skip = false;
+            
+            if (typeof this[name] === "function") skip = this[name](node) === true ? true : false;
+            
+            if (!skip) {
+                this.visitChildren(node, handler);
+            }
         }
     };
 
     Constr.prototype.visitChildren = function(node, handler) {
-        for (var i = 0; i < node.children.length; i++) {
-            var child = node.children[i];
-            if (handler !== undefined && typeof handler[child.name] === "function") {
-                handler[child.name](child);
-            } else {
-                this.visit(child, handler);
+        if (node) {
+            for (var i = 0; i < node.children.length; i++) {
+                var child = node.children[i];
+                if (handler !== undefined && typeof handler[child.name] === "function") {
+                    handler[child.name](child);
+                } else {
+                    this.visit(child, handler);
+                }
             }
         }
     };

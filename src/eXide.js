@@ -875,7 +875,7 @@ eXide.app = (function(util) {
         },
        
         showResultsPanel: function() {
-			layout.show(resultPanel);
+			layout.show(resultPanel, true);
 			app.resize(true);
         },
         
@@ -1318,6 +1318,12 @@ eXide.app = (function(util) {
             });
             menu.click("#menu-navigate-toggle-results", function() {
                 app.toggleResultsPanel();
+            });
+            menu.click("#menu-navigate-reset", function() {
+                if (resultPanel !== "south") {
+                    app.switchResultsPanel();
+                }
+                layout.reset();
             });
 			menu.click("#menu-deploy-run", app.openApp);
 			
