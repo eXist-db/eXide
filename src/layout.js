@@ -31,6 +31,7 @@ eXide.app.FlexboxSplitter = (function () {
                         var d = region == "west" ? -diff : diff;
                         if ((w < min && d > 0) || w + d >= min) {
                             self.resizable.width(w + d);
+                            self.resizable.css("min-width", (w + d) + "px")
                         }
                     } else {
                         var h = self.resizable.height();
@@ -53,6 +54,7 @@ eXide.app.FlexboxSplitter = (function () {
             if (size == 10) {
                 if (region == "west" || region == "east") {
                     self.resizable.width(self.prevSize);
+                    self.resizable.css("min-width", self.prevSize + "px");
                 } else {
                     self.resizable.height(self.prevSize);
                 }
@@ -63,6 +65,7 @@ eXide.app.FlexboxSplitter = (function () {
                 self.prevSize = size;
                 if (region == "west" || region == "east") {
                     self.resizable.width(10);
+                    self.resizable.css("min-width", "10px");
                 } else {
                     self.resizable.height(10);
                 }
@@ -101,6 +104,7 @@ eXide.app.FlexboxSplitter = (function () {
         }
         if (this.isHorizontal) {
             this.resizable.width(size);
+            this.resizable.css("min-width", size + "px");
         } else {
             this.resizable.height(size);
         }
