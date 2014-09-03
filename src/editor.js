@@ -157,6 +157,7 @@ eXide.edit.Editor = (function () {
     var UndoManager = require("ace/undomanager").UndoManager;
     var SnippetManager = require("ace/snippets").snippetManager;
     var net = require("ace/lib/net");
+    var event = require("ace/lib/event");
     
     function parseErrMsg(error) {
 		var msg;
@@ -182,6 +183,7 @@ eXide.edit.Editor = (function () {
         $this.projects = projects;
 		$this.documents = [];
 		$this.activeDoc = null;
+		$this.recent = [];
 		$this.tabCounter = 0;
 		$this.newDocCounter = 0;
 
@@ -208,6 +210,9 @@ eXide.edit.Editor = (function () {
         
         // register keybindings
         eXide.edit.commands.init($this);
+        
+        // all keyboard events in the current window should be handled by editor
+        event.addCommandKeyListener(window, $this.editor.onCommandKey.bind($this.editor));
         
         // register editor on menubar to allow regaining focus
         menubar.editor = this;
