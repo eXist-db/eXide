@@ -61,6 +61,7 @@ eXide.edit.XMLModeHelper = (function () {
     
     Constr.prototype.deactivate = function(doc) {
         this.menu.hide();
+        this.editor.setOption("enableEmmet", false);
     };
     
 	Constr.prototype.closeTag = function (doc, text, row) {

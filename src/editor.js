@@ -204,6 +204,7 @@ eXide.edit.Editor = (function () {
 		this.editor.setBehavioursEnabled(true);
 		this.editor.setShowFoldWidgets(true);
         this.editor.setFadeFoldWidgets(false);
+        //this.editor.setOption("enableBasicAutocompletion", false);
         
         // enable multiple cursors
 		require("ace/multi_select").MultiSelect(this.editor);
@@ -212,7 +213,7 @@ eXide.edit.Editor = (function () {
         eXide.edit.commands.init($this);
         
         // all keyboard events in the current window should be handled by editor
-        event.addCommandKeyListener(window, $this.editor.onCommandKey.bind($this.editor));
+        event.addCommandKeyListener(window, $this.onCommandKey.bind($this));
         
         // register editor on menubar to allow regaining focus
         menubar.editor = this;
@@ -324,6 +325,15 @@ eXide.edit.Editor = (function () {
     // Extend eXide.events.Sender for event support
     eXide.util.oop.inherit(Constr, eXide.events.Sender);
 
+    Constr.prototype.onCommandKey = function(e, hashId, keyCode) {
+        var target = $(e.target);
+        if (target.is(":input") || target.parents("#autocomplete-box")) {
+            return false;
+        } else {
+            this.editor.onCommandKey(e, hashId, keyCode);
+        }
+    };
+    
 	Constr.prototype.init = function() {
 	    if (this.documents.length == 0)
 	    	this.newDocument(null, "xquery");

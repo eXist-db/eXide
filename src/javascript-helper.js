@@ -37,6 +37,14 @@ eXide.edit.JavascriptModeHelper = (function () {
 	
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
     
+    // Constr.prototype.activate = function(doc) {
+    //     this.editor.setOption("enableBasicAutocompletion", true);
+    // };
+    
+    // Constr.prototype.deactivate = function(doc) {
+    //     this.editor.setOption("enableBasicAutocompletion", false);
+    // };
+    
     Constr.prototype.createOutline = function(doc, onComplete) {
         var iterator = new TokenIterator(doc.getSession(), 0, 0);
         var next = iterator.stepForward();
