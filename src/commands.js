@@ -342,6 +342,21 @@ eXide.edit.commands = (function () {
                             eXide.app.findFiles();
                         }
                     });
+                    
+                    function createExec(tab) {
+                        return function(editor) {
+                            parent.selectTab(tab - 1);
+                        };
+                    }
+                    
+                    for (var i = 1; i < 10; i++) {
+                        var tab = i;
+                        commands.addCommand({
+                            name: "gotoTab" + tab,
+                            bindKey: bindKey(bindings["gotoTab"  + tab]),
+                            exec: createExec(tab)
+                        });
+                    }
     			    createMap(parent);
                 }
             });

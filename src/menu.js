@@ -118,11 +118,15 @@ eXide.util.Menubar = (function() {
         });
     };
     
-    Constr.prototype.add = function(menu, label, title, onclick) {
+    Constr.prototype.add = function(menu, label, title, index, onclick) {
         var $this = this;
+        var shortcut = "";
+        if (index < 10) {
+            shortcut = "<span class=\"shortcut\">" + eXide.edit.commands.getShortcut("gotoTab" + index) + "</span>";
+        }
         var menu = $(this.container).find("ul li[title=\"" + menu + "\"]");
         var ul = menu.find("ul");
-        ul.append($("<li><a href=\"#\" title=\"" + title + "\">" + label + "</a></li>"));
+        ul.append($("<li><a href=\"#\" title=\"" + title + "\">" + label + shortcut + "</a></li>"));
         var item = ul.find("li:last-child a");
         item.click(function(ev) {
             ev.preventDefault();

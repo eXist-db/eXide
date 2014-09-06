@@ -34,5 +34,14 @@
     "openTab": ["Ctrl-Alt-O", "Command-Ctrl-O"],
     "toggleQueryResults": ["Ctrl-Shift-E", "Command-Shift-E"],
     "commandPalette": ["Ctrl-Alt-K", "Command-Shift-K"],
-    "findFiles": ["Ctrl-Alt-F", "Command-Option-F"]
+    "findFiles": ["Ctrl-Alt-F", "Command-Option-F"],
+    "gotoTab1": ["Alt-1", "Ctrl-1"],
+    "gotoTab2": ["Alt-2", "Ctrl-2"],
+    "gotoTab3": ["Alt-3", "Ctrl-3"],
+    "gotoTab4": ["Alt-4", "Ctrl-4"],
+    "gotoTab5": ["Alt-5", "Ctrl-5"],
+    "gotoTab6": ["Alt-6", "Ctrl-6"],
+    "gotoTab7": ["Alt-7", "Ctrl-7"],
+    "gotoTab8": ["Alt-8", "Ctrl-8"],
+    "gotoTab9": ["Alt-9", "Ctrl-9"]
 }

@@ -13,5 +13,6 @@
     "fo": "http://www.w3.org/1999/XSL/Format",
     "mods": "http://www.loc.gov/mods/v3",
     "mads": "http://www.loc.gov/mads/",
-    "test": "http://exist-db.org/xquery/xqsuite"
+    "test": "http://exist-db.org/xquery/xqsuite",
+    "console": "http://exist-db.org/xquery/console"
 }

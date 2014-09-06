@@ -764,7 +764,7 @@ eXide.edit.Editor = (function () {
 			$this.switchTo(doc);
 		});
 		
-        $this.menubar.add("buffers", label, tab.title, function() {
+        $this.menubar.add("buffers", label, tab.title, $this.documents.length + 1, function() {
             $this.switchTo(doc);
         });
         
@@ -776,25 +776,29 @@ eXide.edit.Editor = (function () {
         $this.scrollToTab($(tab));
 	};
 	
-	Constr.prototype.selectTab = function() {
+	Constr.prototype.selectTab = function(pos) {
 	    var self = this;
-	    var popupItems = [];
-        for (var i = 0; i < this.documents.length; i++) {
-            item = { 
-                label: this.documents[i].name,
-                pos: i
+	    if (pos >= 0 && pos < this.documents.length) {
+	        this.switchTo(this.documents[pos]);
+	    } else {
+    	    var popupItems = [];
+            for (var i = 0; i < this.documents.length; i++) {
+                item = { 
+                    label: this.documents[i].name,
+                    pos: i
+                };
+                popupItems.push(item);
             };
-            popupItems.push(item);
-        };
-        if (popupItems.length > 1) {
-            var left = this.getOffset().left;
-            eXide.util.Popup.position({ pageX: left, pageY: 40 });
-            eXide.util.Popup.show(popupItems, function (selected) {
-                if (selected) {
-                    self.switchTo(self.documents[selected.pos]);
-                }
-            });
-        }
+            if (popupItems.length > 1) {
+                var left = this.getOffset().left;
+                eXide.util.Popup.position({ pageX: left, pageY: 40 });
+                eXide.util.Popup.show(popupItems, function (selected) {
+                    if (selected) {
+                        self.switchTo(self.documents[selected.pos]);
+                    }
+                });
+            }
+	    }
 	};
 	
 	Constr.prototype.switchTo = function(doc) {
