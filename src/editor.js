@@ -327,9 +327,11 @@ eXide.edit.Editor = (function () {
 
     Constr.prototype.onCommandKey = function(e, hashId, keyCode) {
         var target = $(e.target);
-        if (target.is(":input") || target.parents("#autocomplete-box")) {
+
+        if (target.is(":input") || target.attr("id") == "autocomplete-box") {
             return false;
         } else {
+            $.log("Passing command to editor");
             this.editor.onCommandKey(e, hashId, keyCode);
         }
     };
