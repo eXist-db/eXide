@@ -34,6 +34,7 @@ declare function local:expand-html($html as element()) {
                     eXide.namespace("eXide.configuration");
                     eXide.configuration.allowExecution = { $execAllowed };
                     eXide.configuration.allowGuest = { $guestAllowed };
+                    eXide.configuration.context = "{ request:get-context-path() }";
                 </script>
             </head>
             { $html/body }

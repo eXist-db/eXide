@@ -37,6 +37,14 @@ eXide.edit.JavascriptModeHelper = (function () {
 	
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
     
+    // Constr.prototype.activate = function(doc) {
+    //     this.editor.setOption("enableBasicAutocompletion", true);
+    // };
+    
+    // Constr.prototype.deactivate = function(doc) {
+    //     this.editor.setOption("enableBasicAutocompletion", false);
+    // };
+    
     Constr.prototype.createOutline = function(doc, onComplete) {
         var iterator = new TokenIterator(doc.getSession(), 0, 0);
         var next = iterator.stepForward();
@@ -74,6 +82,7 @@ eXide.edit.JavascriptModeHelper = (function () {
             eXide.util.Popup.position({pageX: left, pageY: 20});
             eXide.util.Popup.show(popupItems, function (selected) {
                 if (selected) {
+                    self.parent.history.push(doc.getPath(), doc.getCurrentLine());
                     self.editor.gotoLine(selected.row + 1);
                 }
                 self.editor.focus();
@@ -96,6 +105,7 @@ eXide.edit.JavascriptModeHelper = (function () {
         } else {
         	var func = this.parent.outline.findDefinition(doc, name);
             if (func && func.row) {
+                this.parent.history.push(doc.getPath(), doc.getCurrentLine());
                 this.editor.gotoLine(func.row + 1);
             }
         }

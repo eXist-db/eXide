@@ -200,7 +200,7 @@ eXide.util.Dialog = (function () {
 	$(document).ready(function() {
 		$(document.body).append(
 				"<div id=\"eXide-dialog-message\">" +
-				"	<img id=\"eXide-dialog-message-icon\" src=\"resources/images/error.png\"/>" +
+				"	<span id=\"eXide-dialog-message-icon\" class=\"fa fa-4x fa-info-circle\"></span>" +
 				"	<div id=\"eXide-dialog-message-body\"></div>" +
 				"</div>"
 		);
@@ -217,7 +217,7 @@ eXide.util.Dialog = (function () {
 		
 		$(document.body).append(
 				"<div id=\"eXide-dialog-input\">" +
-				"	<img id=\"eXide-dialog-input-icon\" src=\"resources/images/information.png\"/>" +
+				"	<span id=\"eXide-dialog-message-icon\" class=\"fa fa-4x fa-info-circle\"></span>" +
 				"	<div id=\"eXide-dialog-input-body\"></div>" +
 				"</div>"
 		);

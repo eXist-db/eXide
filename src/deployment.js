@@ -18,7 +18,7 @@
  */
 eXide.namespace("eXide.edit.Projects");
 
-eXide.edit.Projects = (function() {
+eXide.edit.Projects = (function(oop) {
     
     Constr = function() {
         this.projects = {};
@@ -26,10 +26,10 @@ eXide.edit.Projects = (function() {
     
     Constr.prototype.findProject = function (collection, callback) {
         var project = this.getProjectFor(collection);
-        if (project) {
+        if (project && project !== null) {
             callback(project);
         } else {
-            this.getProject(collection, callback)
+            this.getProject(collection, callback);
         }
     };
     
@@ -43,7 +43,7 @@ eXide.edit.Projects = (function() {
             } else {
                 var project = $this.projects[data.abbrev];
                 if (project) {
-                    eXide.util.oop.extend(project, data);
+                    oop.extend(project, data);
                 } else {
                     project = data;
                     $this.projects[data.abbrev] = project;
@@ -80,14 +80,14 @@ eXide.edit.Projects = (function() {
         // refresh state to see if app package config has chaged in the db (e.g added Git)
         $.each(this.projects, function(project) {
             if(this.root) {
-               $this.getProject(this.root)
+               $this.getProject(this.root);
             }
-        })
+        });
         
 	};
     
     return Constr;
-}());
+}(eXide.util.oop));
 
 eXide.namespace("eXide.edit.PackageEditor");
 
@@ -108,6 +108,22 @@ eXide.edit.PackageEditor = (function () {
 			autoOpen: false,
 			width: 520,
 			height: 600
+		});
+		
+		this.runDialog = $("#dialog-run-app");
+		this.runDialog.dialog({
+		    appendTo: "#layout-container",
+			modal: false,
+			autoOpen: false,
+			width: 300,
+			height: 240,
+			buttons: {
+			    "Done": function () { $(this).dialog("close"); }
+			}
+		});
+		this.runDialog.find("input[name='live-reload']").click(function(ev) {
+		    $this.currentProject.liveReload = $(this).is(":checked");
+		    $("#menu-deploy-live span").attr("class", $this.currentProject.liveReload ? "fa fa-check-square-o" : "fa fa-square-o");
 		});
 		
 		this.syncDialog = $("#synchronize-dialog");
@@ -343,7 +359,7 @@ eXide.edit.PackageEditor = (function () {
          }
      };
      
-	Constr.prototype.runApp = function (collection) {
+	Constr.prototype.runApp = function (collection, firstLoad) {
 		var $this = this;
         $this.projects.findProject(collection, function (project) {
             if (!project) {
@@ -351,11 +367,24 @@ eXide.edit.PackageEditor = (function () {
                     "should belong to an application package.");
                 return;
             }
+            
+            $this.runDialog.find("input[name='live-reload']").prop("checked", project.liveReload);
+            
+            $this.currentProject = project;
             var url = project.url.replace(/\/{2,}/, "/");
-            var link = "/exist" + url + "/";
-//			var link = "/exist/apps/" + project.root.replace(/^\/db\//, "") + "/";
-			eXide.util.Dialog.message("Run Application " + project.abbrev, "<p>Click on the following link to open your application:</p>" +
-				"<center><a href=\"" + link + "\" target=\"_new\">" + link + "</a></center>");
+            var link = eXide.configuration.context + url + "/";
+
+			var a = $this.runDialog.find("a");
+			a.attr("href", link).attr("target", project.abbrev).text(link);
+			
+			if (firstLoad) {
+			    $this.runDialog.find(".first-load").show();
+			    $this.runDialog.find(".second-load").hide();
+			} else {
+			    $this.runDialog.find(".first-load").show();
+			    $this.runDialog.find(".second-load").hide();
+			}
+            $this.runDialog.dialog("open");
         });
 	};
     

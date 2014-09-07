@@ -67,6 +67,13 @@ eXide.edit.commands = (function () {
                         }
                     });
                     commands.addCommand({
+                        name: "historyBack",
+                        bindKey: bindKey(bindings.historyBack),
+                        exec: function(editor) {
+                            parent.historyBack();
+                        }
+                    });
+                    commands.addCommand({
             			name: "fold",
         			    bindKey: bindKey(bindings.fold),
         			    exec: function(editor) {
@@ -109,6 +116,13 @@ eXide.edit.commands = (function () {
         		    	}
         		    });
         		    commands.addCommand({
+        		    	name: "runQueryOrApp",
+        		    	bindKey: bindKey(bindings.runQueryOrApp),
+        		    	exec: function (editor) {
+        		    		eXide.app.runAppOrQuery();
+        		    	}
+        		    });
+        		    commands.addCommand({
         		    	name: "openDocument",
         		    	bindKey: bindKey(bindings.openDocument),
         		    	exec: function (editor) {
@@ -127,6 +141,13 @@ eXide.edit.commands = (function () {
         		    	bindKey: bindKey(bindings.closeDocument),
         		    	exec: function (editor) {
         		    		eXide.app.closeDocument();
+        		    	}
+        		    });
+        		    commands.addCommand({
+        		    	name: "closeAll",
+        		    	bindKey: bindKey(bindings.closeAll),
+        		    	exec: function (editor) {
+        		    		eXide.app.closeAll();
         		    	}
         		    });
         		    commands.addCommand({
@@ -335,6 +356,21 @@ eXide.edit.commands = (function () {
                             eXide.app.findFiles();
                         }
                     });
+                    
+                    function createExec(tab) {
+                        return function(editor) {
+                            parent.selectTab(tab - 1);
+                        };
+                    }
+                    
+                    for (var i = 1; i < 10; i++) {
+                        var tab = i;
+                        commands.addCommand({
+                            name: "gotoTab" + tab,
+                            bindKey: bindKey(bindings["gotoTab"  + tab]),
+                            exec: createExec(tab)
+                        });
+                    }
     			    createMap(parent);
                 }
             });

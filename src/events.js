@@ -54,7 +54,22 @@ eXide.events.Sender = (function() {
 					event[i].callback.apply(event[i].obj, args);
 				}
 			}
+		},
+	removeEventListener:function(name, obj, callback){
+		if (typeof obj == "function") {
+	            callback = obj;
+	            obj = null;
+	        }
+		var events = this.events || {};
+		var event = events[name];
+		if (event) {
+			var i = 0;
+			for (; i < event.length; i++) {
+				if(event[i].obj===obj && event[i].callback===callback) break;
+			}
+			if(i<event.length) this.events[name].splice(i,1);
 		}
+	}
     };
     
     return Constr;

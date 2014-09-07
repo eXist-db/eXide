@@ -110,9 +110,13 @@ eXide.edit.XQueryModeHelper = (function () {
 		var basePath = "xmldb:exist://" + doc.getBasePath();
 		var $this = this;
 		$.ajax({
-			type: "POST",
+			type: "PUT",
 			url: "modules/compile.xql",
-			data: {q: text, base: basePath},
+			data: text,
+			contentType: "application/octet-stream",
+			headers: {
+			    "X-BasePath": basePath
+			},
 			dataType: "json",
 			success: function (data) {
 				if (data.result == "fail") {
@@ -145,10 +149,14 @@ eXide.edit.XQueryModeHelper = (function () {
         this.validationListeners.length = 0;
         
 		$.ajax({
-			type: "POST",
+			type: "PUT",
 			url: "modules/compile.xql",
-			data: {q: code, base: basePath},
+			data: code,
 			dataType: "json",
+			headers: {
+			    "X-BasePath": basePath
+			},
+			contentType: "application/octet-stream",
 			success: function (data) {
 				var valid = $this.compileError(data, doc);
                 if (onComplete) {
@@ -505,9 +513,9 @@ eXide.edit.XQueryModeHelper = (function () {
                     var template;
                     if (data[i].at) {
                         template = "import module namespace " + data[i].prefix + "=\"" + data[i].uri + 
-                            "\" at \"" + data[i].at + "\";"
+                            "\" at \"" + data[i].at + "\";";
                     } else {
-                        template = "import module namespace " + data[i].prefix + "=\"" + data[i].uri + "\";"
+                        template = "import module namespace " + data[i].prefix + "=\"" + data[i].uri + "\";";
                     }
                     popupItems.push({
                         type: "template",
@@ -628,7 +636,17 @@ eXide.edit.XQueryModeHelper = (function () {
     		name = line.substring(start, end);
         }
         return name;
-	}
+	};
+	
+	Constr.prototype.getVariableAtCursor = function (doc, lead) {
+        var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+        if (astNode) {
+            var ref = eXide.edit.XQueryUtils.findAncestor(astNode, "VarRef");
+            if (ref && astNode.name === "EQName") {
+                return astNode.value;
+            }
+        }
+	};
 	
 	Constr.prototype.showFunctionDoc = function (doc) {
         this.xqlint(doc);
@@ -672,6 +690,8 @@ eXide.edit.XQueryModeHelper = (function () {
                     self.editor.focus();
                 }
             });
+        } else {
+            $.log("No quick fix resolution found");
         }
     };
     
@@ -682,6 +702,11 @@ eXide.edit.XQueryModeHelper = (function () {
 		var funcName = this.getFunctionAtCursor(doc, lead);
 		if (funcName) {
 			this.parent.outline.gotoDefinition(doc, funcName);
+		} else {
+		    var varName = this.getVariableAtCursor(doc, lead);
+		    if (varName) {
+		        this.parent.outline.gotoDefinition(doc, varName);
+		    }
 		}
 	}
 	
@@ -875,6 +900,7 @@ eXide.edit.XQueryModeHelper = (function () {
             }
         };  
         var focus = function(lineNb) {
+            this.parent.history.push(doc.getPath(), doc.getCurrentLine());
             this.editor.gotoLine(lineNb + 1);
             return this.editor.focus();
         };
@@ -899,6 +925,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		for (var i = 0; i < len; i++) {
 			var line = doc.$session.getLine(i);
 			if (line.match(regexp)) {
+				this.parent.history.push(doc.getPath(), doc.getCurrentLine());
 				this.editor.gotoLine(i + 1);
 				this.editor.focus();
 				return;

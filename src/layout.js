@@ -6,6 +6,7 @@ eXide.app.FlexboxSplitter = (function () {
         var self = this;
         self.resizable = $(resizable);
         self.isHorizontal = region == "west" || region == "east";
+        self.min = min;
         var splitter = self.resizable.find(".resize-handle");
         var toggle = splitter.find("span");
         var container = self.resizable.parents(".layout");
@@ -17,6 +18,7 @@ eXide.app.FlexboxSplitter = (function () {
             e.preventDefault();
             var pos = (self.isHorizontal ? e.pageX : e.pageY);
             hasMoved = false;
+            self.$triggerEvent("beforeResize");
             container.on("mousemove", function(e) {
                 
                 var current = (self.isHorizontal ? e.pageX : e.pageY);
@@ -27,8 +29,9 @@ eXide.app.FlexboxSplitter = (function () {
                     if (self.isHorizontal) {
                         var w = self.resizable.width();
                         var d = region == "west" ? -diff : diff;
-                        if (w + d >= min) {
+                        if ((w < min && d > 0) || w + d >= min) {
                             self.resizable.width(w + d);
+                            self.resizable.css("min-width", (w + d) + "px")
                         }
                     } else {
                         var h = self.resizable.height();
@@ -42,6 +45,7 @@ eXide.app.FlexboxSplitter = (function () {
             $(document).on("mouseup", function() {
                 container.off("mousemove");
                 $(document).off("mouseup");
+                self.$triggerEvent("afterResize");
             });
         });
         toggle.click(function(e) {
@@ -50,6 +54,7 @@ eXide.app.FlexboxSplitter = (function () {
             if (size == 10) {
                 if (region == "west" || region == "east") {
                     self.resizable.width(self.prevSize);
+                    self.resizable.css("min-width", self.prevSize + "px");
                 } else {
                     self.resizable.height(self.prevSize);
                 }
@@ -60,6 +65,7 @@ eXide.app.FlexboxSplitter = (function () {
                 self.prevSize = size;
                 if (region == "west" || region == "east") {
                     self.resizable.width(10);
+                    self.resizable.css("min-width", "10px");
                 } else {
                     self.resizable.height(10);
                 }
@@ -70,6 +76,9 @@ eXide.app.FlexboxSplitter = (function () {
             layout.resize();
         });
     };
+    
+    // Extend eXide.events.Sender for event support
+    eXide.util.oop.inherit(Constr, eXide.events.Sender);
     
     Constr.prototype.getSize = function() {
         if (this.resizable.is(":hidden")) {
@@ -82,13 +91,20 @@ eXide.app.FlexboxSplitter = (function () {
         }
     };
     
-    Constr.prototype.setSize = function(size) {
+    Constr.prototype.setSize = function(size, preferred) {
+        if (preferred) {
+            this.prevSize = preferred;
+        }
         if (size === 0) {
             this.hide();
             return;
         }
+        if (size > this.min && size < this.min) {
+            size = this.min;
+        }
         if (this.isHorizontal) {
             this.resizable.width(size);
+            this.resizable.css("min-width", size + "px");
         } else {
             this.resizable.height(size);
         }
@@ -103,17 +119,31 @@ eXide.app.FlexboxSplitter = (function () {
             this.resizable.find(">*:not(.minimized)").show();
             this.resizable.find(".minimized").addClass("resize-handle").removeClass("minimized");
         }
-    };
-    
-    Constr.prototype.hide = function() {
-        this.resizable.hide();
-    };
-    
-    Constr.prototype.show = function() {
         if (this.resizable.is(":hidden")) {
             this.resizable.show();
         }
-        this.setSize(this.prevSize);
+    };
+    
+    Constr.prototype.hide = function() {
+        this.prevSize = this.isHorizontal ? this.resizable.width() : this.resizable.height();
+        this.resizable.hide();
+    };
+    
+    Constr.prototype.show = function(resize) {
+        if (this.resizable.is(":hidden")) {
+            this.resizable.show();
+            this.setSize(this.prevSize);
+        } else if (resize && this.getSize() == 10) {
+            this.setSize(this.prevSize);
+        }
+    };
+    
+    Constr.prototype.toggle = function() {
+        if (this.resizable.is(":hidden")) {
+            this.show();
+        } else {
+            this.hide();
+        }
     };
     
     return Constr;
@@ -124,9 +154,9 @@ eXide.namespace("eXide.app.Layout");
 eXide.app.Layout = (function () {
     
     var PANEL_DEFAULTS = {
-        "west": 200,
-        "south": 0,
-        "east": 0
+        "west": { size: 200, preferred: 200 },
+        "south": { size: 10, preferred: 200 },
+        "east": { size: 0, preferred: 380 }
     };
     
     var Constr = function(editor) {
@@ -136,6 +166,8 @@ eXide.app.Layout = (function () {
             "south": new eXide.app.FlexboxSplitter(this, ".panel-south", "south", 100, 200),
             "east": new eXide.app.FlexboxSplitter(this, ".panel-east", "east", 360, 380)
         };
+        this.regions["east"].addEventListener("beforeResize", eXide.app.beforeResize);
+        this.regions["east"].addEventListener("afterResize", eXide.app.afterResize);
     };
     
     Constr.prototype.resize = function() {
@@ -146,8 +178,12 @@ eXide.app.Layout = (function () {
         this.regions[region].hide();
     };
     
-    Constr.prototype.show = function(region) {
-        this.regions[region].show();
+    Constr.prototype.show = function(region, resize) {
+        this.regions[region].show(resize);
+    };
+    
+    Constr.prototype.toggle = function(region) {
+        this.regions[region].toggle();
     };
     
     Constr.prototype.saveState = function() {
@@ -156,13 +192,21 @@ eXide.app.Layout = (function () {
         localStorage["eXide.layout.east"] = this.regions.east.getSize();
     };
     
-    Constr.prototype.restoreState = function() {
-        for (var region in this.regions) {
-            var size = localStorage["eXide.layout." + region];
-            if (!size) {
-                size = PANEL_DEFAULTS[region];
+    Constr.prototype.restoreState = function(sameVersion) {
+        if (!sameVersion) {
+            this.reset();
+        } else {
+            for (var region in this.regions) {
+                var size = localStorage["eXide.layout." + region];
+                this.regions[region].setSize(parseInt(size));
             }
-            this.regions[region].setSize(parseInt(size));
+        }
+    };
+    
+    Constr.prototype.reset = function() {
+        for (var region in this.regions) {
+            var settings = PANEL_DEFAULTS[region];
+            this.regions[region].setSize(settings.size, settings.preferred);
         }
     };
     

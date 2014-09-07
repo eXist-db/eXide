@@ -33,7 +33,6 @@ eXide.edit.Document = (function() {
 		this.editable = true;
 		this.functions = [];
 		this.helper = null;
-		this.history = [];
 		this.$session = session;
         this.externalLink = null;
         this.lastChangeEvent = new Date().getTime();
@@ -128,14 +127,6 @@ eXide.edit.Document = (function() {
 		return this.helper;
 	};
 	
-	Constr.prototype.addToHistory = function(line) {
-		this.history.push(line);
-	};
-	
-	Constr.prototype.getLastLine = function() {
-		return this.history.pop(line);
-	};
-	
 	Constr.prototype.getCurrentLine = function() {
 		var sel = this.$session.getSelection();
 		var lead = sel.getSelectionLead();
@@ -166,6 +157,7 @@ eXide.edit.Editor = (function () {
     var UndoManager = require("ace/undomanager").UndoManager;
     var SnippetManager = require("ace/snippets").snippetManager;
     var net = require("ace/lib/net");
+    var event = require("ace/lib/event");
     
     function parseErrMsg(error) {
 		var msg;
@@ -191,14 +183,21 @@ eXide.edit.Editor = (function () {
         $this.projects = projects;
 		$this.documents = [];
 		$this.activeDoc = null;
+		$this.recent = [];
 		$this.tabCounter = 0;
 		$this.newDocCounter = 0;
 
 		$this.pendingCheck = false;
         $this.recheck = false;
 
+        $this.enableEmmet = false;
+        
         $this.themes = {};
         $this.initializing = true;
+        
+        $this.history = new eXide.edit.History();
+		
+		$this.tabs = $("#tabs");
 		
         var renderer = new Renderer($this.container, "ace/theme/eclipse");
 	    renderer.setShowGutter(true);
@@ -207,12 +206,16 @@ eXide.edit.Editor = (function () {
 		this.editor.setBehavioursEnabled(true);
 		this.editor.setShowFoldWidgets(true);
         this.editor.setFadeFoldWidgets(false);
+        //this.editor.setOption("enableBasicAutocompletion", false);
         
         // enable multiple cursors
 		require("ace/multi_select").MultiSelect(this.editor);
         
         // register keybindings
         eXide.edit.commands.init($this);
+        
+        // all keyboard events in the current window should be handled by editor
+        event.addCommandKeyListener(window, $this.onCommandKey.bind($this));
         
         // register editor on menubar to allow regaining focus
         menubar.editor = this;
@@ -317,19 +320,56 @@ eXide.edit.Editor = (function () {
         var Emmet = require("ace/ext/emmet");
         net.loadScript("$shared/resources/scripts/ace/emmet.js", function() {
             Emmet.setCore(window.emmet);
-            $this.editor.setOption("enableEmmet", true);
+            $this.editor.setOption("enableEmmet", false);
         });
+        
+        // drop handler for appending tab to the end
+        $(".drop-placeholder .tab", $this.tabs).droppable({
+		    hoverClass: "dragover",
+		    greedy: true,
+		    drop: function(ev, ui) {
+		        ev.stopImmediatePropagation();
+		        ev.stopPropagation();
+		        ev.preventDefault();
+		        var target = $(this);
+		        var tabs = $(".tab", $this.tabs);
+		        var source = ui.draggable;
+		        var sourceIdx = tabs.index(source);
+		        var doc = $this.documents[sourceIdx];
+	            var li = source.parent().detach();
+	            li.insertBefore(target.parent());
+	            $this.documents.splice(sourceIdx, 1);
+	            $this.documents.push(doc);
+	            $this.rebuildBuffersMenu();
+		    }
+		});
 	};
 
     // Extend eXide.events.Sender for event support
     eXide.util.oop.inherit(Constr, eXide.events.Sender);
 
+    Constr.prototype.onCommandKey = function(e, hashId, keyCode) {
+        var target = $(e.target);
+
+        if (target.is(":input") || target.attr("id") == "autocomplete-box") {
+            return false;
+        } else {
+            $.log("Passing command to editor");
+            this.editor.onCommandKey(e, hashId, keyCode);
+        }
+    };
+    
 	Constr.prototype.init = function() {
 	    if (this.documents.length == 0)
 	    	this.newDocument(null, "xquery");
         this.initializing = false;
         var currentDoc = this.getActiveDocument();
         this.$triggerEvent("activate", [currentDoc]);
+	};
+	
+	Constr.prototype.setEmmetEnabled = function(enabled) {
+	    this.enableEmmet = enabled;
+	    this.editor.setOption("enableEmmet", enabled);
 	};
 	
 	Constr.prototype.exec = function () {
@@ -385,7 +425,6 @@ eXide.edit.Editor = (function () {
 		doc.syntax = eXide.util.mimeTypes.getLangFromMime(mime);
 		doc.saved = false;
 		if (resource.line) {
-			doc.addToHistory(resource.line);
 			this.editor.gotoLine(resource.line);
 		}
 		this.$initDocument(doc);
@@ -436,7 +475,6 @@ eXide.edit.Editor = (function () {
         doc.externalLink = externalPath;
 		doc.saved = true;
 		if (resource.line) {
-			doc.addToHistory(resource.line);
 			var sel = doc.$session.getSelection();
 			sel.clearSelection();
 			sel.moveCursorTo(resource.line, 1);
@@ -444,9 +482,11 @@ eXide.edit.Editor = (function () {
 		}
 		$.log("opening %s, mime: %s, syntax: %s, line: %i", resource.name, doc.mime, doc.syntax, resource.line);
         this.updateStatus("");
-        var helper = this.activeDoc.getModeHelper();
-        if (helper) {
-            helper.deactivate();
+        if (this.activeDoc) {
+            var helper = this.activeDoc.getModeHelper();
+            if (helper) {
+                helper.deactivate(doc);
+            }
         }
 		this.$initDocument(doc);
 	};
@@ -471,10 +511,12 @@ eXide.edit.Editor = (function () {
         
         doc.$session.getDocument().on("change", function(ev) {
             $this.$triggerEvent("change", [$this.activeDoc]);
+            $this.history.push(doc.getPath(), doc.getCurrentLine());
         });
         
+        eXide.app.toggleRunStatus(doc);
         if (doc.getModeHelper()) {
-            doc.getModeHelper().activate();
+            doc.getModeHelper().activate(doc);
         }
 	};
 	
@@ -568,12 +610,13 @@ eXide.edit.Editor = (function () {
 		doc.setModeHelper(mode);
 	};
 	
-	Constr.prototype.closeDocument = function() {
-		this.$triggerEvent("close", [this.activeDoc]);
-		$("#tabs a[title=\"" + this.activeDoc.path + "\"]").parent().remove();
-        this.menubar.remove("buffers", this.activeDoc.path);
+	Constr.prototype.closeDocument = function(docToClose) {
+	    var doc = docToClose || this.activeDoc;
+		this.$triggerEvent("close", [doc]);
+		$("#tabs a[title=\"" + doc.path + "\"]").parent().remove();
+        this.menubar.remove("buffers", doc.path);
 		for (var i = 0; i < this.documents.length; i++) {
-			if (this.documents[i].path == this.activeDoc.path) {
+			if (this.documents[i].path == doc.path) {
 				this.documents.splice(i, 1);
 			}
 		}
@@ -674,6 +717,14 @@ eXide.edit.Editor = (function () {
 		}
 	};
 	
+	Constr.prototype.historyBack = function() {
+        var item = this.history.pop();
+        if (item) {
+            $.log("history event: going to %s at line %d", item.path, item.line);
+            eXide.app.findDocument(item.path, item.line + 1);
+        }
+	};
+	
 	Constr.prototype.autocomplete = function(alwaysShow) {
 		var mode = this.activeDoc.getModeHelper();
 		if (mode && mode.autocomplete) {
@@ -703,8 +754,9 @@ eXide.edit.Editor = (function () {
 	};
 	
     Constr.prototype.forEachDocument = function(callback) {
-        for (var i = 0; i < this.documents.length; i++) {
-    		callback(this.documents[i]);
+        var docs = this.documents.slice(0);
+        for (var i = 0; i < docs.length; i++) {
+    		callback(docs[i]);
         }
     };
     
@@ -724,7 +776,7 @@ eXide.edit.Editor = (function () {
 		if (!doc.saved)
 			label += "*";
 		
-		$("#tabs li a").removeClass("active");
+		$("li a", $this.tabs).removeClass("active");
 		
 		var li = document.createElement("li");
 		var tab = document.createElement("a");
@@ -733,14 +785,47 @@ eXide.edit.Editor = (function () {
 		tab.id = tabId;
 		tab.title = doc.path;
 		li.appendChild(tab);
-		$("#tabs").append(li);
-        
+		
 		$(tab).click(function (ev) {
 			ev.preventDefault();
 			$this.switchTo(doc);
+		}).draggable({
+		    axis: "x",
+		    revert: true,
+		    opacity: 0.8,
+		    zIndex: 100,
+		    start: function() {
+		        $(".drop-placeholder .tab", $this.tabs).show();
+		    },
+		    stop: function() {
+		        $(".drop-placeholder .tab", $this.tabs).hide();
+		    }
+		}).droppable({
+		    hoverClass: "dragover",
+		    greedy: true,
+		    drop: function(ev, ui) {
+		        ev.stopImmediatePropagation();
+		        ev.stopPropagation();
+		        ev.preventDefault();
+		        var target = $(this);
+		        var tabs = $(".tab", $this.tabs);
+		        var source = ui.draggable;
+		        var sourceIdx = tabs.index(source);
+		        var targetIdx = tabs.index(target);
+		        if (sourceIdx != targetIdx) {
+		            var li = source.parent().detach();
+		            li.insertBefore(target.parent());
+		            $this.documents.splice(targetIdx, 0, $this.documents[sourceIdx]);
+		            sourceIdx = sourceIdx > targetIdx ? sourceIdx + 1 : sourceIdx;
+		            $this.documents.splice(sourceIdx, 1);
+		            $this.rebuildBuffersMenu();
+		        }
+		    }
 		});
 		
-        $this.menubar.add("buffers", label, tab.title, function() {
+		$(li).insertBefore($(".drop-placeholder", $this.tabs));
+		
+        $this.menubar.add("buffers", label, tab.title, $this.documents.length + 1, function() {
             $this.switchTo(doc);
         });
         
@@ -752,37 +837,57 @@ eXide.edit.Editor = (function () {
         $this.scrollToTab($(tab));
 	};
 	
-	Constr.prototype.selectTab = function() {
+	Constr.prototype.rebuildBuffersMenu = function() {
 	    var self = this;
-	    var popupItems = [];
-        for (var i = 0; i < this.documents.length; i++) {
-            item = { 
-                label: this.documents[i].name,
-                pos: i
+	    self.menubar.removeAll("buffers");
+	    self.documents.forEach(function(doc, idx) {
+	        var label = doc.name;
+    		if (label.length > 16) {
+    			label = label.substring(0, 13) + "...";
+    		}
+    		if (!doc.saved)
+    			label += "*";
+	        self.menubar.add("buffers", label, doc.path, idx + 1, function() {
+	            self.switchTo(doc);
+	        });
+	    });
+	};
+	
+	Constr.prototype.selectTab = function(pos) {
+	    var self = this;
+	    if (pos >= 0 && pos < this.documents.length) {
+	        this.switchTo(this.documents[pos]);
+	    } else {
+    	    var popupItems = [];
+            for (var i = 0; i < this.documents.length; i++) {
+                item = { 
+                    label: this.documents[i].name,
+                    pos: i
+                };
+                popupItems.push(item);
             };
-            popupItems.push(item);
-        };
-        if (popupItems.length > 1) {
-            var left = this.getOffset().left;
-            eXide.util.Popup.position({ pageX: left, pageY: 40 });
-            eXide.util.Popup.show(popupItems, function (selected) {
-                if (selected) {
-                    self.switchTo(self.documents[selected.pos]);
-                }
-            });
-        }
+            if (popupItems.length > 1) {
+                var left = this.getOffset().left;
+                eXide.util.Popup.position({ pageX: left, pageY: 40 });
+                eXide.util.Popup.show(popupItems, function (selected) {
+                    if (selected) {
+                        self.switchTo(self.documents[selected.pos]);
+                    }
+                });
+            }
+	    }
 	};
 	
 	Constr.prototype.switchTo = function(doc) {
         var helper = this.activeDoc.getModeHelper();
         if (helper) {
-            helper.deactivate();
+            helper.deactivate(doc);
         }
 		this.editor.setSession(doc.$session);
 		this.editor.resize();
 		this.activeDoc = doc;
         var $this = this;
-		$("#tabs a").each(function () {
+		$("a", $this.tabs).each(function () {
             var current = $(this);
 			if (this.title == doc.path) {
 				current.addClass("active");
@@ -794,9 +899,10 @@ eXide.edit.Editor = (function () {
 		this.updateStatus("");
 		this.$triggerEvent("activate", [doc]);
         
+        eXide.app.toggleRunStatus(doc);
         helper = doc.getModeHelper();
         if (helper) {
-            helper.activate();
+            helper.activate(doc);
         }
         if (!this.activeDoc.ast) {
             this.validator.triggerNow(this.activeDoc);
@@ -809,7 +915,7 @@ eXide.edit.Editor = (function () {
 			label = doc.name + "*";
 		else
 			label = doc.name;
-		$("#tabs a[title=\"" + oldPath + "\"]").attr("title", doc.path).text(label);
+		$("a[title=\"" + oldPath + "\"]", this.tabs).attr("title", doc.path).text(label);
 	};
 	
     Constr.prototype.scrollToTab = function (current) {

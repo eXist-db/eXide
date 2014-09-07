@@ -50,21 +50,28 @@ eXide.edit.XMLModeHelper = (function () {
 	
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
     
-    Constr.prototype.activate = function() {
+    Constr.prototype.activate = function(doc) {
         this.menu.show();
+        if (doc.getSyntax() === "html" && this.parent.enableEmmet) {
+            this.editor.setOption("enableEmmet", true);
+        } else {
+            this.editor.setOption("enableEmmet", false);
+        }
     };
     
-    Constr.prototype.deactivate = function() {
+    Constr.prototype.deactivate = function(doc) {
         this.menu.hide();
+        this.editor.setOption("enableEmmet", false);
     };
     
 	Constr.prototype.closeTag = function (doc, text, row) {
 		var basePath = "xmldb:exist://" + doc.getBasePath();
 		var $this = this;
 		$.ajax({
-			type: "POST",
-			url: "modules/validate-xml.xql",
-			data: { xml: text, validate: "no" },
+			type: "PUT",
+			url: "check/",
+			data: text,
+			contentType: "application/octet-stream",
 			dataType: "json",
 			success: function (data) {
 				if (data.status && data.status == "invalid") {
@@ -85,9 +92,10 @@ eXide.edit.XMLModeHelper = (function () {
 	Constr.prototype.validate = function(doc, code, onComplete) {
 		var $this = this;
 		$.ajax({
-			type: "POST",
+			type: "PUT",
 			url: "modules/validate-xml.xql",
-			data: { xml: code },
+			data: code,
+			contentType: "application/octet-stream",
 			dataType: "json",
 			success: function (data) {
 				$this.compileError(data, doc);
@@ -122,7 +130,7 @@ eXide.edit.XMLModeHelper = (function () {
 			this.parent.clearErrors();
 			this.parent.updateStatus("");
 		}
-	}
+	};
     
     Constr.prototype.suggest = function(doc, text, row, column) {
         $.log("Getting suggestions for %s", text);
@@ -257,7 +265,7 @@ eXide.edit.XMLModeHelper = (function () {
         var token = iterator.stepForward();
         var startTag, endTag;
         while(token) {
-            if (token.type.substring(0, 13) === "meta.tag.name") {
+            if (/^(meta.tag.name|.*.tag-name.xml)/.test(token.type)) {
                 if (!inClosingTag) {
                     var tag = {
                         name: token.value,

@@ -1,7 +1,7 @@
 (:
  :  eXide - web-based XQuery IDE
  :  
- :  Copyright (C) 2011 Wolfgang Meier
+ :  Copyright (C) 2014 Wolfgang Meier
  :
  :  This program is free software: you can redistribute it and/or modify
  :  it under the terms of the GNU General Public License as published by
@@ -20,7 +20,12 @@ xquery version "1.0";
 
 declare option exist:serialize "method=json media-type=text/javascript";
 
-let $query := request:get-parameter("q", ())
-let $baseURI := request:get-parameter("base", ())
+let $data := request:get-data()
+let $baseURI := request:get-header("X-BasePath")
+let $query :=
+    if($data instance of xs:base64Binary) then
+        util:binary-to-string($data)
+    else
+        $data
 return
   util:compile-query($query, $baseURI)

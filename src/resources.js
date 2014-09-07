@@ -503,7 +503,8 @@ eXide.browse.Upload = (function () {
                     
                     data.formData = {
                         path: path,
-                        collection: $("input[name=\"collection\"]", container).val()
+                        collection: $("input[name=\"collection\"]", container).val(),
+                        deploy: $("input[name='deploy']", container).is(":checked")
                     };
                     
                     var future = data.submit();
@@ -518,11 +519,13 @@ eXide.browse.Upload = (function () {
                 var tr = $("tr[data-name='" + file.path + "']", container);
                 tr.find(".ui-progressbar-value").css("width", progress + "%");
             });
+        
+        }).on("fileuploadprogressall", function (e, data) {
+            var progress = parseInt(data.loaded / data.total * 100, 10);
+            $("#progress-all", container).css("width", progress + "%").text(progress + "%");
             
         }).on('fileuploaddone', function (e, data) {
-            // $.each(data.result.files, function (index, file) {
-            //     $(data.context.children()[index]).remove();
-            // });
+            var div = $("#progress-all", container).empty().css("width", "0%");
         }).on('fileuploadfail', function (e, data) {
             console.log("error: ", data);
             // $.each(data.files, function (index, file) {
@@ -549,7 +552,7 @@ eXide.browse.Upload = (function () {
 		}
 		
 		var $this = this;
-		$("#eXide-browse-upload-done").button().click(function() {
+		$("#eXide-browse-upload-done").button({ "icons": { primary: "fa fa-times" }}).click(function() {
 			$('#files').empty();
 			$this.$triggerEvent("done", []);
 		});
@@ -582,8 +585,10 @@ eXide.browse.Browser = (function () {
     	button.title = title;
 		button.id = "eXide-browse-toolbar-" + id;
 		button.tabindex = index;
-		var img = document.createElement("img");
-		img.src = "resources/images/" + imgPath;
+		var img = document.createElement("span");
+		img.className = "fa fa-lg fa-" + imgPath;
+// 		var img = document.createElement("img");
+// 		img.src = "resources/images/" + imgPath;
 		button.appendChild(img);
 		toolbar.append(button);
         return button;
@@ -595,45 +600,46 @@ eXide.browse.Browser = (function () {
         
 		var toolbar = $(".eXide-browse-toolbar", container);
 		
-		var button = createButton(toolbar, "Reload", "reload", 1, "arrow_refresh.png");
+		var button = createButton(toolbar, "Reload", "reload", 1, "refresh");
 		$(button).click(function (ev) {
             $this.resources.reload(true);
 		});
 		
-        this.btnCreateCollection = createButton(toolbar, "Create Collection", "create", 3, "folder_add.png");
+        this.btnCreateCollection = createButton(toolbar, "Create Collection", "create", 3, "folder-o");
 		$(this.btnCreateCollection).click(function (ev) {
 			ev.preventDefault();
 			$this.resources.createCollection();
 		});
 		
-		this.btnUpload = createButton(toolbar, "Upload Files", "upload", 4, "database_add.png");
+		this.btnUpload = createButton(toolbar, "Upload Files", "upload", 4, "cloud-upload");
 		$(this.btnUpload).click(function (ev) {
 			ev.preventDefault();
 			$(".eXide-browse-resources", container).hide();
 			$(".eXide-browse-upload", container).show();
+			$this.$triggerEvent("upload-open", [true]);
 		});
 		
-		this.btnDeleteResource = createButton(toolbar, "Delete", "delete-resource", 5, "bin.png")
+		this.btnDeleteResource = createButton(toolbar, "Delete", "delete-resource", 5, "trash-o");
 		$(this.btnDeleteResource).click(function (ev) {
 			ev.preventDefault();
 			$this.deleteSelected();
 		});
 		
-        this.btnProperties = createButton(toolbar, "Properties", "properties", 10, "application_form_edit.png");
+        this.btnProperties = createButton(toolbar, "Properties", "properties", 10, "info");
         $(this.btnProperties).click(function(ev) {
             ev.preventDefault();
             $this.resources.properties();
         });
         
-		button = createButton(toolbar, "Open Selected", "open", 6, "page_edit.png");
+		button = createButton(toolbar, "Open Selected", "open", 6, "edit");
 		$(button).click(function (ev) {
 			ev.preventDefault();
 			eXide.app.openSelectedDocument(false);
 		});
 		
-        this.btnCopy = createButton(toolbar, "Copy", "copy", 7, "page_copy.png");
-        this.btnCut = createButton(toolbar, "Cut", "cut", 8, "cut.png");
-        this.btnPaste = createButton(toolbar, "Paste", "paste", 9, "page_paste.png");
+        this.btnCopy = createButton(toolbar, "Copy", "copy", 7, "copy");
+        this.btnCut = createButton(toolbar, "Cut", "cut", 8, "cut");
+        this.btnPaste = createButton(toolbar, "Paste", "paste", 9, "paste");
         
 		this.selection = $(".eXide-browse-form input", container);
 		this.container = container;
@@ -646,6 +652,7 @@ eXide.browse.Browser = (function () {
 		this.upload.addEventListener("done", this, function () {
 			$(".eXide-browse-resources", container).show();
 			$(".eXide-browse-upload", container).hide();
+			$this.$triggerEvent("upload-open", [false]);
 			this.reload();
 		});
         
@@ -661,105 +668,105 @@ eXide.browse.Browser = (function () {
         	ev.preventDefault();
 			$this.resources.paste();
 		});
-	}
+	};
 	
-	Constr.prototype = {
+	// Extend eXide.events.Sender for event support
+    eXide.util.oop.inherit(Constr, eXide.events.Sender);
 		
-		/**
-		 * jquery.layout needs to be initialized when the containing div
-		 * becomes visible. This does not happen until the dialog is shown
-		 * the first time.
-		 */
-		init: function() {
-			this.resources.resize();
-			this.resources.reload();
-		},
-		
-		reload: function(buttons, mode) {
-			if (buttons) {
-				$(".eXide-browse-toolbar button", this.container).hide();
-				for (var i = 0; i < buttons.length; i++) {
-					$("#eXide-browse-toolbar-" + buttons[i]).show();
-				}
+	/**
+	 * jquery.layout needs to be initialized when the containing div
+	 * becomes visible. This does not happen until the dialog is shown
+	 * the first time.
+	 */
+	Constr.prototype.init = function() {
+		this.resources.resize();
+		this.resources.reload();
+	};
+	
+	Constr.prototype.reload = function(buttons, mode) {
+		if (buttons) {
+			$(".eXide-browse-toolbar button", this.container).hide();
+			for (var i = 0; i < buttons.length; i++) {
+				$("#eXide-browse-toolbar-" + buttons[i]).show();
 			}
-            if (mode) {
-                this.mode = mode;
-            }
-            this.resources.setMode(mode);
-            this.resources.reload();
-			if (this.mode === "save") {
-				$(".eXide-browse-form", this.container).show().focus();
-			} else {
-				$(".eXide-browse-form", this.container).hide();
-			}
-
-			this.resize();
-			$(this.selection).val("");
-		},
-		
-		resize: function() {
-		},
-		
-        deleteSelected: function () {
-            var selected = this.resources.getSelected();
-            this.resources.deleteResource();
-        },
-        
-		getSelection: function () {
-			var name = $(this.selection).val();
-			if (name == null || name == '')
-				return null;
-			return {
-				name: name,
-				path: this.resources.collection + "/" + name,
-				writable: true
-			};
-		},
-		
-        changeToCollection: function (collection) {
-            this.resources.update(collection, true);
-        },
-        
-		onActivateResource: function (doc, writable) {
-			if (doc) {
-				$(this.selection).val(doc.name);
-			} else {
-				$(this.selection).val("");
-			}
-			if (this.mode != "open" && writable) {
-				$(this.btnDeleteResource).css("display", "");
-                $(this.btnProperties).css("display", "");
-			} else {
-				$(this.btnDeleteResource).css("display", "none");
-                $(this.btnProperties).css("display", "none");
-			}
-		},
-		
-		onActivateCollection: function (key, writable) {
-            $.log("Activate collection: %s %s", key, this.mode);
-            switch (this.mode) {
-                case "open":
-                case "save":
-                    $(".eXide-browse-toolbar button", this.container).hide();
-                    $(this.btnCreateCollection).css("display", "");
-                    break;
-                default:
-                    if (writable) {
-        				$(this.btnCreateCollection).css("display", "");
-        				$(this.btnUpload).css("display", "");
-                        $(this.btnCut).css("display", "");
-                        $(this.btnPaste).css("display", "");
-    				    $(this.btnDeleteResource).css("display", "");
-                    } else {
-                        $(this.btnCreateCollection).css("display", "none");
-            			$(this.btnUpload).css("display", "none");
-                        $(this.btnCut).css("display", "none");
-                        $(this.btnPaste).css("display", "none");
-    				    $(this.btnDeleteResource).css("display", "none");
-                    }
-            }
-			this.upload.update(key, writable);
 		}
+        if (mode) {
+            this.mode = mode;
+        }
+        this.resources.setMode(mode);
+        this.resources.reload();
+		if (this.mode === "save") {
+			$(".eXide-browse-form", this.container).show().focus();
+		} else {
+			$(".eXide-browse-form", this.container).hide();
+		}
+
+		this.resize();
+		$(this.selection).val("");
+	};
+	
+	Constr.prototype.resize = function() {
+	};
+	
+    Constr.prototype.deleteSelected = function () {
+        var selected = this.resources.getSelected();
+        this.resources.deleteResource();
+    };
+    
+	Constr.prototype.getSelection = function () {
+		var name = $(this.selection).val();
+		if (name == null || name == '')
+			return null;
+		return {
+			name: name,
+			path: this.resources.collection + "/" + name,
+			writable: true
+		};
+	};
+	
+    Constr.prototype.changeToCollection = function (collection) {
+        this.resources.update(collection, true);
+    };
+    
+	Constr.prototype.onActivateResource = function (doc, writable) {
+		if (doc) {
+			$(this.selection).val(doc.name);
+		} else {
+			$(this.selection).val("");
+		}
+		if (this.mode != "open" && writable) {
+			$(this.btnDeleteResource).css("display", "");
+            $(this.btnProperties).css("display", "");
+		} else {
+			$(this.btnDeleteResource).css("display", "none");
+            $(this.btnProperties).css("display", "none");
+		}
+	};
+	
+	Constr.prototype.onActivateCollection = function (key, writable) {
+        $.log("Activate collection: %s %s", key, this.mode);
+        switch (this.mode) {
+            case "open":
+            case "save":
+                $(".eXide-browse-toolbar button", this.container).hide();
+                $(this.btnCreateCollection).css("display", "");
+                break;
+            default:
+                if (writable) {
+    				$(this.btnCreateCollection).css("display", "");
+    				$(this.btnUpload).css("display", "");
+                    $(this.btnCut).css("display", "");
+                    $(this.btnPaste).css("display", "");
+				    $(this.btnDeleteResource).css("display", "");
+                } else {
+                    $(this.btnCreateCollection).css("display", "none");
+        			$(this.btnUpload).css("display", "none");
+                    $(this.btnCut).css("display", "none");
+                    $(this.btnPaste).css("display", "none");
+				    $(this.btnDeleteResource).css("display", "none");
+                }
+        }
+		this.upload.update(key, writable);
 	};
 	
 	return Constr;

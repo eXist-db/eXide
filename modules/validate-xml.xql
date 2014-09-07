@@ -57,7 +57,13 @@ declare function local:get-schema($doc as document-node(), $validate as xs:boole
         ()
 };
 
-let $xml := request:get-parameter("xml", ())
+let $method := upper-case(request:get-method())
+let $data := if ($method = "PUT") then request:get-data() else request:get-parameter("xml", ())
+let $xml := 
+    if($data instance of xs:base64Binary) then
+        util:binary-to-string($data)
+    else
+        $data
 let $validate := request:get-parameter("validate", "yes") = "yes"
 return
 	try {

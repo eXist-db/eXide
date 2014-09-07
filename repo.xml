@@ -10,22 +10,55 @@
     <target>eXide</target>
     <prepare>pre-install.xql</prepare>
     <finish/>
-    <permissions user="admin" password="" group="dba" mode="rw-rw-r--"/>
-    <note>When upgrading, please make sure you also updated the shared-resources package to &gt; 0.3.5.</note>
+    <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
-        <change version="2.0.6">
+        <change version="2.1.0">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fix word-left/word-right navigation</li>
+                <li>Add menu item to reset editor window layout to defaults</li>
+                <li>Keyboard shortcuts should now work in entire window, not just editor</li>
+                <li>Add shortcuts Alt-1 to 9 (windows, linux) and Ctrl-1 to 9 (mac) to quickly switch between tabs</li>
+                <li>Tabs can now be reordered with drag and drop</li>
+                <li>Added "Close-All" menu item</li>
+            </ul>
+        </change>
+        <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="2.0.9">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Remove size limits for documents which can be validated by the editor. Live error messages
+                will be shown even for large documents/XQueries.</li>
+                <li>Fixed navigation in edit history.</li>
+            </ul>
+        </repo:change>
+        <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="2.0.8">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Live reload: automatically reload the browser window running the app if resource is saved in editor.</li>
+                <li>Drag a file on the editor to open its contents in a new tab</li>
+                <li>Directory Uploads (Chrome only)</li>
+                <li>Fixed less support</li>
+                <li>Updated UI: now based on CSS3 flexbox</li>
+                <li>Properly restore cursor position for each editor when reloading. Switch to previously open editor tab.</li>
+                <li>"Goto definition" works on global variables as well</li>
+                <li>Added "go to last edit position" command to navigate back in history</li>
+            </ul>
+        </repo:change>
+        <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="2.0.7">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fix copy and paste</li>
+            </ul>
+        </repo:change>
+        <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="2.0.6">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Lots of bug fixes</li>
                 <li>XML mode: new commands to expand selection to enclosing element; remove enclosing element</li>
                 <li>Updated templates to use bootstrap 3 (requires shared-resources-0.3.9)</li>
             </ul>
-        </change>
-        <change version="2.0.5">
+        </repo:change>
+        <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="2.0.5">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Added feature to search across all binary resources (XQueries, Javascript, CSS) in a project</li>
                 <li>Many small bug fixes. In particular, there were display issues when browsing resources</li>
             </ul>
-        </change>
+        </repo:change>
         <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="2.0.4">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Display of extended permissions in open/save dialogs</li>
@@ -72,5 +105,4 @@
             </ul>
         </repo:change>
     </changelog>
-    <repo:deployed xmlns:repo="http://exist-db.org/xquery/repo">2013-11-26T19:47:14.147+01:00</repo:deployed>
 </meta>

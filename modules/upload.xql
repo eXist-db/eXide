@@ -46,8 +46,7 @@ return
         let $appName := $descriptors/expath:package/@name
         return (
             repo:remove($appName),
-            repo:install($url),
-            repo:deploy($appName)
+            repo:install-and-deploy-from-db($name)
         )
     else
         ()
