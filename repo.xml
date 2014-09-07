@@ -19,6 +19,7 @@
                 <li>Keyboard shortcuts should now work in entire window, not just editor</li>
                 <li>Add shortcuts Alt-1 to 9 (windows, linux) and Ctrl-1 to 9 (mac) to quickly switch between tabs</li>
                 <li>Tabs can now be reordered with drag and drop</li>
+                <li>Added "Close-All" menu item</li>
             </ul>
         </change>
         <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="2.0.9">
