@@ -690,6 +690,8 @@ eXide.edit.XQueryModeHelper = (function () {
                     self.editor.focus();
                 }
             });
+        } else {
+            $.log("No quick fix resolution found");
         }
     };
     

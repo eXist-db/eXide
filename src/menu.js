@@ -144,5 +144,10 @@ eXide.util.Menubar = (function() {
         menu.find("ul li a[title = \"" + title + "\"]").remove();
     };
     
+    Constr.prototype.removeAll = function(menu) {
+        var menu = $(this.container).find("ul li[title=\"" + menu + "\"] ul");
+        menu.empty();
+    };
+    
     return Constr;
 }());

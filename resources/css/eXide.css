@@ -169,7 +169,7 @@ body {
  
 #body {
     /*position: absolute;*/
-    /*top: 63px;*/
+    /*top: 0;*/
     /*left: 0;*/
     /*bottom: 0;*/
     /*right: 0;*/
@@ -576,6 +576,22 @@ Sub level menu list items (undo style from Top level List Items)
 	margin: 0 auto;
 }
 
+#tabs .drop-placeholder .tab {
+    display: none;
+    background: transparent;
+    border: 1px dashed #990000;
+    text-shadow: 0 0 0 transparent;
+    box-shadow: 0 0 0;
+	-moz-box-shadow: 0 0 0;
+	-webkit-box-shadow: 0 0 0;
+	width: 220px;
+}
+
+#tabs .dragover {
+    background: #888888 !important;
+    color: white;
+}
+
 #tabs .active {
 	background: #E8E8E8;
 	color: #6e6e6e;
@@ -787,7 +803,8 @@ Sub level menu list items (undo style from Top level List Items)
 
 .results-container .results {
 	margin: 0 15px;
-    white-space: pre-wrap;
+    /*white-space: pre-line;*/
+    /*word-wrap: break-word;*/
 }
 
 #results-body .ace_scroller {
