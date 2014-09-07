@@ -22,6 +22,8 @@
 $(document).ready(function() {
     window.name = "eXide";
     
+    jQuery.event.props.push( "dataTransfer" );
+    
     // parse query parameters passed in by URL:
     var qs = (function(a) {
         if (a == "") return {};
@@ -692,6 +694,47 @@ eXide.app = (function(util) {
 			deploymentEditor.runApp(collection[1], firstLoad);
 		},
         
+        runAppOrQuery: function() {
+            var doc = editor.getActiveDocument();
+            var project = projects.getProjectFor(doc.getPath());
+            if (project) {
+                var url = project.url.replace(/\/{2,}/, "/");
+                var link = eXide.configuration.context + url + "/";
+                app.ensureSaved(function() {
+                    project.win = window.open(link, project.abbrev);
+                    project.win.focus();
+                });
+            } else if (!doc.isNew() && (doc.getSyntax() == "xquery")) {
+                app.ensureSaved(function() {
+                    window.open(doc.getExternalLink(), doc.getName());
+                });
+            }
+        },
+        
+        toggleRunStatus: function(doc) {
+            var project = projects.getProjectFor(doc.getPath());
+            var enable = (project || (!doc.isNew() && doc.getSyntax() == "xquery"));
+            $("#run").button("option", "disabled", !enable);
+            $("#eval").button("option", "disabled", doc.getSyntax() != "xquery");
+        },
+        
+        ensureSaved: function(callback) {
+            if (!editor.getActiveDocument().isSaved()) {
+                app.requireLogin(function () {
+                    eXide.util.Dialog.input("Save document?", "The current document has not been saved. Save now?", function() {
+                            editor.saveDocument(null, function () {
+                				util.message(editor.getActiveDocument().getName() + " stored.");
+                                callback();
+                			}, function (msg) {
+                				util.Dialog.warning("Failed to Save Document", msg);
+                			});
+                    });
+                });
+            } else {
+                callback();
+            }
+        },
+        
 		restoreState: function(callback) {
 			if (!util.supportsHtml5Storage)
 				return false;
@@ -1010,6 +1053,9 @@ eXide.app = (function(util) {
         liveReload: function() {
             var doc = editor.getActiveDocument();
             projects.findProject(doc.getBasePath(), function(project) {
+                if (project == null) {
+                    return;
+                }
                 $.log("live reload: %s %s", project.liveReload, project.abbrev);
                 if (project.liveReload) {
                     var url = project.url.replace(/\/{2,}/, "/");
@@ -1027,6 +1073,9 @@ eXide.app = (function(util) {
         toggleLiveReload: function() {
             var doc = editor.getActiveDocument();
             projects.findProject(doc.getBasePath(), function(project) {
+                if (!project) {
+                    return;
+                }
                 project.liveReload = !project.liveReload;
                 $("#menu-deploy-live span").attr("class", project.liveReload ? "fa fa-check-square-o" : "fa fa-square-o");
                 if (project.liveReload && (!project.win || project.win.closed)) {
@@ -1229,9 +1278,13 @@ eXide.app = (function(util) {
                 app.newDocument(null, "xquery");
     		});
 
-            button = $("#run").button("option", "icons", { primary: "fa fa-play" });
+            button = $("#eval").button("option", "icons", { primary: "fa fa-cogs" });
+            button.button("option", "disabled", true);
 			button.click(function(ev) { app.runQuery() });
 
+            button = $("#run").button("option", "icons", { primary: "fa fa-play" });
+			button.click(function(ev) { app.runAppOrQuery() });
+			
             button = $("#debug").button("option", "icons", { primary: "fa fa-fast-forward" });
             button.click(app.startDebug);
 
@@ -1325,7 +1378,7 @@ eXide.app = (function(util) {
                 }
                 layout.reset();
             });
-			menu.click("#menu-deploy-run", app.openApp);
+			menu.click("#menu-deploy-run", app.runAppOrQuery);
 			
             menu.click("#menu-help-keyboard", function (ev) {
 				$("#keyboard-help").dialog("open");

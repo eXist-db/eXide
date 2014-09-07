@@ -1434,6 +1434,11 @@ div#valueHighLight {
     width: 300px;
 }
 
+.ui-button-disabled {
+    opacity: 1.0;
+    color: #666;
+}
+
 /* Allow Font Awesome Icons in lieu of jQuery UI and only apply when using a FA icon */
 .ui-icon[class*=" fa-"] {
     /* Remove the jQuery UI Icon */

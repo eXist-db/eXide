@@ -116,6 +116,13 @@ eXide.edit.commands = (function () {
         		    	}
         		    });
         		    commands.addCommand({
+        		    	name: "runQueryOrApp",
+        		    	bindKey: bindKey(bindings.runQueryOrApp),
+        		    	exec: function (editor) {
+        		    		eXide.app.runAppOrQuery();
+        		    	}
+        		    });
+        		    commands.addCommand({
         		    	name: "openDocument",
         		    	bindKey: bindKey(bindings.openDocument),
         		    	exec: function (editor) {

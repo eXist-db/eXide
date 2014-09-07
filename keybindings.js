@@ -5,6 +5,7 @@
     "unfold": ["Alt-Shift-L", "Command-Option-Shift-L"],
     "saveDocument": ["Ctrl-Shift-S", "Command-Shift-S"],
     "runQuery": ["Ctrl-Return", "Command-Return"],
+    "runQueryOrApp": ["Ctrl-Shift-Return", "Command-Shift-Return"],
     "openDocument": ["Ctrl-Shift-O", "Command-Shift-O"],
     "newDocumentFromTemplate": ["Ctrl-Shift-N", "Command-Shift-N"],
     "closeDocument": ["Ctrl-Shift-W", "Command-Option-W"],

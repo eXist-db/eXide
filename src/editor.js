@@ -482,9 +482,11 @@ eXide.edit.Editor = (function () {
 		}
 		$.log("opening %s, mime: %s, syntax: %s, line: %i", resource.name, doc.mime, doc.syntax, resource.line);
         this.updateStatus("");
-        var helper = this.activeDoc.getModeHelper();
-        if (helper) {
-            helper.deactivate(doc);
+        if (this.activeDoc) {
+            var helper = this.activeDoc.getModeHelper();
+            if (helper) {
+                helper.deactivate(doc);
+            }
         }
 		this.$initDocument(doc);
 	};
@@ -512,6 +514,7 @@ eXide.edit.Editor = (function () {
             $this.history.push(doc.getPath(), doc.getCurrentLine());
         });
         
+        eXide.app.toggleRunStatus(doc);
         if (doc.getModeHelper()) {
             doc.getModeHelper().activate(doc);
         }
@@ -894,6 +897,7 @@ eXide.edit.Editor = (function () {
 		this.updateStatus("");
 		this.$triggerEvent("activate", [doc]);
         
+        eXide.app.toggleRunStatus(doc);
         helper = doc.getModeHelper();
         if (helper) {
             helper.activate(doc);

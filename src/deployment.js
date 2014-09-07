@@ -26,10 +26,10 @@ eXide.edit.Projects = (function(oop) {
     
     Constr.prototype.findProject = function (collection, callback) {
         var project = this.getProjectFor(collection);
-        if (project) {
+        if (project && project !== null) {
             callback(project);
         } else {
-            this.getProject(collection, callback)
+            this.getProject(collection, callback);
         }
     };
     
