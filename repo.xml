@@ -12,13 +12,22 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
-        <change version="2.0.9">
+        <change version="2.1.0">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fix word-left/word-right navigation</li>
+                <li>Add menu item to reset editor window layout to defaults</li>
+                <li>Keyboard shortcuts should now work in entire window, not just editor</li>
+                <li>Add shortcuts Alt-1 to 9 (windows, linux) and Ctrl-1 to 9 (mac) to quickly switch between tabs</li>
+                <li>Tabs can now be reordered with drag and drop</li>
+            </ul>
+        </change>
+        <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="2.0.9">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Remove size limits for documents which can be validated by the editor. Live error messages
                 will be shown even for large documents/XQueries.</li>
                 <li>Fixed navigation in edit history.</li>
             </ul>
-        </change>
+        </repo:change>
         <repo:change xmlns:repo="http://exist-db.org/xquery/repo" version="2.0.8">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Live reload: automatically reload the browser window running the app if resource is saved in editor.</li>
