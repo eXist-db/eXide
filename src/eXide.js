@@ -382,7 +382,17 @@ eXide.app = (function(util) {
 				editor.closeDocument();
 			}
 		},
-		
+
+        closeAll: function() {
+            editor.forEachDocument(function(doc) {
+                if (doc.isSaved()) {
+                    editor.closeDocument(doc);
+                } else {
+                    util.message("Not closing unsaved document " + doc.getName());
+                }
+            });
+        },
+        
 		saveDocument: function() {
             app.requireLogin(function () {
                 if (editor.getActiveDocument().getPath().match('^__new__')) {
@@ -1263,6 +1273,8 @@ eXide.app = (function(util) {
             button = $("#close").button("option", "icons", { primary: "fa fa-times" });
 			button.click(app.closeDocument);
 			menu.click("#menu-file-close", app.closeDocument);
+			
+			menu.click("#menu-file-close-all", app.closeAll);
 			
             button = $("#new").button("option", "icons", { primary: "fa fa-file-o" });
 			button.click(function() {

@@ -9,6 +9,7 @@
     "openDocument": ["Ctrl-Shift-O", "Command-Shift-O"],
     "newDocumentFromTemplate": ["Ctrl-Shift-N", "Command-Shift-N"],
     "closeDocument": ["Ctrl-Shift-W", "Command-Option-W"],
+    "closeAll": ["Ctrl-Alt-W", "Command-Ctrl-W"],
     "autocomplete": ["Ctrl-Space", "Ctrl-Space|Option-Space"],
     "nextTab": ["Ctrl-Shift-PageDown", "Ctrl-Option-Right"],
     "previousTab": ["Ctrl-Shift-PageUp", "Ctrl-Option-Left"],

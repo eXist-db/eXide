@@ -610,12 +610,13 @@ eXide.edit.Editor = (function () {
 		doc.setModeHelper(mode);
 	};
 	
-	Constr.prototype.closeDocument = function() {
-		this.$triggerEvent("close", [this.activeDoc]);
-		$("#tabs a[title=\"" + this.activeDoc.path + "\"]").parent().remove();
-        this.menubar.remove("buffers", this.activeDoc.path);
+	Constr.prototype.closeDocument = function(docToClose) {
+	    var doc = docToClose || this.activeDoc;
+		this.$triggerEvent("close", [doc]);
+		$("#tabs a[title=\"" + doc.path + "\"]").parent().remove();
+        this.menubar.remove("buffers", doc.path);
 		for (var i = 0; i < this.documents.length; i++) {
-			if (this.documents[i].path == this.activeDoc.path) {
+			if (this.documents[i].path == doc.path) {
 				this.documents.splice(i, 1);
 			}
 		}
@@ -753,8 +754,9 @@ eXide.edit.Editor = (function () {
 	};
 	
     Constr.prototype.forEachDocument = function(callback) {
-        for (var i = 0; i < this.documents.length; i++) {
-    		callback(this.documents[i]);
+        var docs = this.documents.slice(0);
+        for (var i = 0; i < docs.length; i++) {
+    		callback(docs[i]);
         }
     };
     

@@ -144,6 +144,13 @@ eXide.edit.commands = (function () {
         		    	}
         		    });
         		    commands.addCommand({
+        		    	name: "closeAll",
+        		    	bindKey: bindKey(bindings.closeAll),
+        		    	exec: function (editor) {
+        		    		eXide.app.closeAll();
+        		    	}
+        		    });
+        		    commands.addCommand({
         		    	name: "autocomplete",
         		    	bindKey: bindKey(bindings.autocomplete),
         		    	exec: function(editor) {
