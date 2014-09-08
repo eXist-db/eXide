@@ -208,6 +208,7 @@ eXide.app.Layout = (function () {
             var settings = PANEL_DEFAULTS[region];
             this.regions[region].setSize(settings.size, settings.preferred);
         }
+        eXide.app.afterResize();
     };
     
     return Constr;

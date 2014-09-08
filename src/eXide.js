@@ -207,6 +207,7 @@ eXide.app = (function(util) {
         },
         
         afterResize: function() {
+            editor.resize();
             if ($("#serialization-mode").val() == "html") {
                 $("#results-iframe").css("display", "");
             }
