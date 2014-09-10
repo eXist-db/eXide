@@ -913,8 +913,7 @@ eXide.app = (function(util) {
         },
         
         setTheme: function(theme) {
-            $("#outline-body").removeClass().addClass(theme.cssClass);
-            $("#results-body").removeClass().addClass(theme.cssClass);
+            $("#outline-body,#directory-body,#results-body ").removeClass().addClass(theme.cssClass);
         },
         
         updateStatus: function(doc) {

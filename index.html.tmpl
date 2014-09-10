@@ -357,12 +357,26 @@
             <div id="body">
                 <div id="layout-container">
                     <div class="layout layout-horizontal">
-                        <div id="outline-container" class="panel-west">
-                            <h3>Outline</h3>
-                            <div id="outline-body" class="content">
+                     <div id="outline-container" class="panel-west">
+                            <div id="tabs-outline-container">
+                                <ul id="tabs-outline"/>
+                            </div>
+
+                            <div id="outline-body">
                                 <div class="ace_scroller">
                                     <div class="ace_text-layer">
                                         <ul id="outline"/>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="directory-body">
+                                <div class="ace_scroller">
+                                    <div class="ace_text-layer">
+                                        <div class="tree">
+                                            <ul id="directory">
+                                                <li id="tree-root"/>
+                                            </ul>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -373,6 +387,7 @@
                                 <span title="Click to close outline"/>
                             </div>
                         </div>
+
                         <div class="layout-vertical">
                             <div class="main">
                                 <div id="tabs-container">
