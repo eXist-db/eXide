@@ -993,13 +993,13 @@ eXide.app = (function(util) {
                              };       
             
             return {
-                 branch: function(app)   {
+                 branch: function(gitApp)   {
                      console.info('git.branch');
                      if(!app.login.isAdmin) {return}
                      $.ajax({ 
                         type: "GET",
                         url: gitUrl,
-                        data: { target: app.root, "git-command": "branch" },
+                        data: { target: gitApp.root, "git-command": "branch" },
                         dataType: "json",
                         success: function (data) {
                             var lines = data.stdout
@@ -1007,27 +1007,27 @@ eXide.app = (function(util) {
                                         ? data.stdout.line 
                                         : [data.stdout.line]
                                             : [];
-                            app.gitBranch = $.map(lines,function(l, index){
+                            gitApp.gitBranch = $.map(lines,function(l, index){
                                 var current = l.split(' ').pop()
                                 if(/^\*/.test(l)) {
-                                   app.gitCurrentBranch = current ;
-                                   app.gitCurrentBranchIndex = index;
+                                   gitApp.gitCurrentBranch = current ;
+                                   gitApp.gitCurrentBranchIndex = index;
                                    }
                                  return current  
                                 });
-                            $("#toolbar-current-branch").text(app.gitCurrentBranch);
-                            $("#menu-git-active").text(app.gitCurrentBranch);
-                            $("#menu-git-working-dir").text(app.workingDir);
+                            $("#toolbar-current-branch").text(gitApp.gitCurrentBranch);
+                            $("#menu-git-active").text(gitApp.gitCurrentBranch);
+                            $("#menu-git-working-dir").text(gitApp.workingDir);
                         },
                         error : gitError 
                      });   
                  },
-                 command : function(app, command,option, success){
+                 command : function(gitApp, command,option, success){
                       if(!app.login.isAdmin) {return}
                      $.ajax({
                         type: "GET",
                         url: gitUrl,
-                        data: { target: app.root, "git-command": command, "git-option" : option },
+                        data: { target: gitApp.root, "git-command": command, "git-option" : option },
                         dataType: "json",
                         success: function (data) {
                             if(typeof success =='function'){success(data)}
@@ -1422,7 +1422,7 @@ eXide.app = (function(util) {
                             $(".current-branch").show();
                             $("#menu-git").show();
                             // update git-status
-                            app.git.branch(app);
+                            eXide.app.git.branch(app);
                         } else {
                             $(".current-branch").hide();
                             $("#menu-git").hide();
