@@ -221,11 +221,14 @@ eXide.edit.Editor = (function () {
         menubar.editor = this;
         
 	    this.outline = new eXide.edit.Outline();
+	    this.directory = new eXide.edit.Directory();
 	    this.validator = new eXide.edit.CodeValidator(this);
 	    this.addEventListener("activate", this.outline, this.outline.updateOutline);
     	this.validator.addEventListener("validate", this.outline, this.outline.updateOutline);
 		this.addEventListener("close", this.outline, this.outline.clearOutline);
         
+       
+	    
 	    // Set up the status bar
 	    this.status = document.getElementById("error-status");
 	    $(this.status).click(function (ev) {
@@ -343,6 +346,23 @@ eXide.edit.Editor = (function () {
 	            $this.rebuildBuffersMenu();
 		    }
 		});
+		
+		 //Set up outline status bar
+		var outlineData = [{label: "outline", cls: "outline"},{label:'directory', cls:"directory"}]
+		d3.select("#tabs-outline").selectAll("li").data(outlineData)
+			.enter()
+			.append("li")
+				.append("a")
+				.attr("class", "tab")
+				.text(function(d,i){return d.label})
+				.on('click', function(d,i) {
+					d3.selectAll("#tabs-outline a.tab").classed("active", function(d,ii){return ii ==i})
+					outlineData.map(function(m,ii){return menubar.editor[m.cls].toggle(ii == i) })
+					})
+				.each(function(d,i){ // activate the first one
+					 menubar.editor[d.cls].toggle(i ===0 )
+					
+				})
 	};
 
     // Extend eXide.events.Sender for event support

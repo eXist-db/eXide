@@ -29,6 +29,7 @@ eXide.edit.Outline = (function () {
 	
 	Constr = function() {
 		this.currentDoc = null;
+        this.__activated = false;
         
         var self = this;
         $("#outline-filter").keyup(function() {
@@ -37,6 +38,13 @@ eXide.edit.Outline = (function () {
 	};
 	
 	Constr.prototype = {
+		
+		toggle : function(state) {
+			if(state || state === false) {this.__activated = !!state}
+			else {this.__activated = !this.__activated};
+// 			d3.select("#outline-body").style("display", this.__activated ? "block" : "none")
+			d3.select("#outline-body").style("position", this.__activated ? "relative" : "absolute")
+		},
 		
 		getTemplates: function (prefix) {
 			var re = new RegExp("^" + prefix);

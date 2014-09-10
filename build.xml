@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project basedir="." default="all" name="eXide">
     <property file="local.build.properties"/>
     <property file="build.properties"/>
@@ -67,6 +66,7 @@
                 <file name="javascript-helper.js"/>
                 <file name="css-helper.js"/>
                 <file name="outline.js"/>
+                <file name="directory.js"/>
                 <file name="debuger.js"/>
                 <file name="codevalidator.js"/>
                 <file name="editor.js"/>
