@@ -38,12 +38,14 @@ eXide.edit.Directory = (function () {
 	}
 	
 	function build(data) {
-		var sel = d3.select(this);
+		var sel = this instanceof d3.selection ? this : d3.select(this);
+		if(!sel.node()) {return}
 		var fn = function(d) {
 			sel.selectAll('ul, span, i').remove()
 				
 			var li = sel.datum(d)
 						.attr('class', function(d) {return d.isCollection ? "collection" : "resource"})
+						.attr("data-key", function(d){return d.isCollection ? d.key : null})
 						.style('cursor','pointer')
 						.on('click', click)
 				
@@ -69,7 +71,7 @@ eXide.edit.Directory = (function () {
 		if(data) {
 			return fn(data.length ? data[0]: data)
 		}
-		d3.json("modules/collections.xql?root=" + (this.__data__.key || "/db") + "&view=r", function(error, data){
+		d3.json("modules/collections.xql?root=" + (sel.datum().key || "/db") + "&view=r", function(error, data){
 			if(error)	{
 				return
 			}
@@ -82,7 +84,7 @@ eXide.edit.Directory = (function () {
 	};
 	
 	function init() {
-		build.call(d3.select("#tree-root").node(), [{key:'/db',isCollection: true, isOpen:false, name:'db', isLoaded: false}])
+		build.call(d3.select("#tree-root"), [{key:'/db',isCollection: true, isOpen:false, name:'db', isLoaded: false}])
 	};
 	
 	function toggleFolder(d) {
@@ -129,6 +131,9 @@ eXide.edit.Directory = (function () {
 		clearDirectory: function() {
 			$("#directory").empty();
 		},
+		reload : function (key) {
+			build.call(d3.select("[data-key='"+ key +"']"))
+		}
 		
 //         filter: function(str) {
 //             var regex = new RegExp(str, "i");
