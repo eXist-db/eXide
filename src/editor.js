@@ -510,6 +510,7 @@ eXide.edit.Editor = (function () {
             }
         }
 		this.$initDocument(doc);
+		this.directory.toggleEdit(this.activeDoc.getPath(), true)
 	};
 	
 	Constr.prototype.$initDocument = function (doc, setMime) {
@@ -648,6 +649,7 @@ eXide.edit.Editor = (function () {
 			$("#tabs a[title=\"" + this.activeDoc.path + "\"]").addClass("active");
 			this.editor.setSession(this.activeDoc.$session);
 			this.editor.resize();
+			this.directory.toggleEdit(doc.getPath(), false)
 			this.$triggerEvent("activate", [this.activeDoc]);
 		}
 	};
