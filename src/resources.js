@@ -167,7 +167,7 @@ eXide.browse.ResourceBrowser = (function () {
 				},
 				function (data) {
 					$this.reload();
-                    if ($this.data[args.row].isCollection) {
+                    if ($this.data[args.row] && $this.data[args.row].isCollection) {
                         $this.$triggerEvent("activateCollection", [ $this.data[args.row].name ]);
                     }
 					if (data.status == "fail") {
@@ -455,6 +455,8 @@ eXide.browse.ResourceBrowser = (function () {
         this.grid.invalidate();
     	this.data.length = 0;
 		this.update(this.collection, true);
+		//TODO : modify this to add an event mechanism instead
+		eXide.app.syncDirectory(this.collection);
 	};
 	
 	return Constr;

@@ -408,6 +408,7 @@ eXide.app = (function(util) {
     							$("#open-dialog").dialog("close");
                                 deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
                                 app.updateStatus(this);
+								app.syncDirectory(this.getBasePath())
                                 app.liveReload();
     						}, function (msg) {
     							util.Dialog.warning("Failed to Save Document", msg);
@@ -441,6 +442,7 @@ eXide.app = (function(util) {
     						$("#open-dialog").dialog("close");
                             deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
                             app.updateStatus(this);
+							app.syncDirectory(this.getBasePath())
                             app.liveReload();
     					}, function (msg) {
     						util.Dialog.warning("Failed to Save Document", msg);
@@ -619,6 +621,10 @@ eXide.app = (function(util) {
 				app.retrieveNext();
 			}
 			return false;
+		},
+		
+		syncDirectory : function(collection) {
+			editor.directory.reload(collection)
 		},
 		
 		syncManager : function(collection) {
