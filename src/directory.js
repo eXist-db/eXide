@@ -122,10 +122,11 @@ eXide.edit.Directory = (function () {
 	function click(d) {
 		d3.event.stopPropagation()
 		if(d.isCollection) {
+			eXide.app.syncManager(d.key)
 			if(d.isLoaded) {
 				return toggleFolder.call(this,d)
 			}
-			eXide.app.syncManager(d.key)
+			
 			loadFolder.call(this,d)
 		}
 		else {
