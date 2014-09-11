@@ -360,7 +360,10 @@ eXide.edit.Editor = (function () {
 					outlineData.map(function(m,ii){return menubar.editor[m.cls].toggle(ii == i) })
 					})
 				.each(function(d,i){ // activate the first one
-					 menubar.editor[d.cls].toggle(i ===0 )
+					if (i===0){
+						d3.select(this).classed('active', true)
+					}
+					menubar.editor[d.cls].toggle(i ===0 )
 					
 				})
 	};

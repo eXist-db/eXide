@@ -110,6 +110,7 @@ eXide.edit.Directory = (function () {
 			if(d.isLoaded) {
 				return toggleFolder.call(this,d)
 			}
+			eXide.app.syncManager(d.key)
 			loadFolder.call(this,d)
 		}
 		else {
