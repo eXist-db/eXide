@@ -122,7 +122,7 @@ eXide.edit.Directory = (function () {
 	function click(d) {
 		d3.event.stopPropagation()
 		if(d.isCollection) {
-			eXide.app.syncManager(d.key)
+			if(!d.isOpen) {eXide.app.syncManager(d.key)}
 			if(d.isLoaded) {
 				return toggleFolder.call(this,d)
 			}
@@ -145,9 +145,12 @@ eXide.edit.Directory = (function () {
 			$("#directory").empty();
 		},
 		reload : function (key) {
-			build.call(d3.select("[data-key='"+ key +"']"))
+			var sel = d3.select("[data-key='"+ key +"']")
+			if(sel.empty()) {return}
+			build.call(sel)
 		},
 		toggleEdit : function(key, state) {
+			
 			var sel = d3.select("[data-key='"+ key +"']")
 			if(sel.empty()) {return}
 			var d = sel.datum()
