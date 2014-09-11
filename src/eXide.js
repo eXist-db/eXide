@@ -478,69 +478,86 @@ eXide.app = (function(util) {
                 util.error("You are not allowed to execute XQuery code.");
                 return;
             }
-            if (!path && editor.getActiveDocument().getSyntax() == "html") {
-                showResultsPanel();
-                var iframe = document.getElementById("results-iframe");
-                $(iframe).show();
-                iframe.src = editor.getActiveDocument().getExternalLink();
-                $("#serialization-mode").attr("disabled", "disabled").val("html");
-            } else {
-                var code = editor.getText();
-                if (path) {
-                    var doc = editor.getDocument(path);
-                    if (doc) {
-                        code = doc.$session.getValue();
+            switch (editor.getActiveDocument().getSyntax()) {
+                case "html":
+                    showResultsPanel();
+                    var iframe = document.getElementById("results-iframe");
+                    $(iframe).show();
+                    if (path) {
+                        iframe.src = editor.getActiveDocument().getExternalLink();
                     } else {
-                        return;
+                        $(iframe).contents().find('html').html(editor.getText());
                     }
-                } else {
-                    lastQuery = editor.getActiveDocument().getPath();
-                }
-    			editor.updateStatus("Running query ...");
-    
-                $("#serialization-mode").removeAttr("disabled");
-                var serializationMode = $("#serialization-mode").val();
-    			var moduleLoadPath = "xmldb:exist://" + editor.getActiveDocument().getBasePath();
-    			$('.results-container .results').empty();
-    			$.ajax({
-    				type: "POST",
-    				url: "execute",
-    				dataType: serializationMode == "xml" ? serializationMode : "text",
-    				data: { "qu": code, "base": moduleLoadPath, "output": serializationMode },
-    				success: function (data, status, xhr) {
-                        switch (serializationMode) {
-                            case "xml":
-                                $("#results-iframe").hide();
-            					var elem = data.documentElement;
-            					if (elem.nodeName == 'error') {
-            				        var msg = $(elem).text();
-            				        //util.error(msg, "Compilation Error");
-            				        editor.evalError(msg, !livePreview);
-            					} else {
-            						showResultsPanel();
-            						hitCount = elem.getAttribute("hits");
-            						endOffset = startOffset + 10 - 1;
-            						if (hitCount < endOffset)
-            							endOffset = hitCount;
-            						util.message("Query returned " + hitCount + " item(s) in " + elem.getAttribute("elapsed") + "s");
-            						app.retrieveNext();
-            					}
-                                break;
-                            default:
-                                showResultsPanel();
-                                var iframe = document.getElementById("results-iframe");
-                                $(iframe).show();
-                                iframe.contentWindow.document.open('text/html', 'replace');
-                                iframe.contentWindow.document.write(data);
-                                iframe.contentWindow.document.close();
-                                break;
+                    $("#serialization-mode").attr("disabled", "disabled").val("html");
+                    break;
+                case "javascript":
+                    showResultsPanel();
+                    var iframe = document.getElementById("results-iframe");
+                    $(iframe).show();
+                    var code = editor.getText();
+                    code = "<script type=\"text/javascript\">" + code + "</script>";
+                    $(iframe).contents().find('html').html(code);
+                    $("#serialization-mode").attr("disabled", "disabled").val("html");
+                    break;
+                default:
+                    var code = editor.getText();
+                    if (path) {
+                        var doc = editor.getDocument(path);
+                        if (doc) {
+                            code = doc.$session.getValue();
+                        } else {
+                            return;
                         }
-    				},
-    				error: function (xhr, status) {
-    					util.error(xhr.responseText, "Server Error");
-    				}
-    			});
+                    } else {
+                        lastQuery = editor.getActiveDocument().getPath();
+                    }
+        			editor.updateStatus("Running query ...");
+        
+                    $("#serialization-mode").removeAttr("disabled");
+                    var serializationMode = $("#serialization-mode").val();
+        			var moduleLoadPath = "xmldb:exist://" + editor.getActiveDocument().getBasePath();
+        			$('.results-container .results').empty();
+        			$.ajax({
+        				type: "POST",
+        				url: "execute",
+        				dataType: serializationMode == "xml" ? serializationMode : "text",
+        				data: { "qu": code, "base": moduleLoadPath, "output": serializationMode },
+        				success: function (data, status, xhr) {
+                            switch (serializationMode) {
+                                case "xml":
+                                    $("#results-iframe").hide();
+                					var elem = data.documentElement;
+                					if (elem.nodeName == 'error') {
+                				        var msg = $(elem).text();
+                				        //util.error(msg, "Compilation Error");
+                				        editor.evalError(msg, !livePreview);
+                					} else {
+                						showResultsPanel();
+                						hitCount = elem.getAttribute("hits");
+                						endOffset = startOffset + 10 - 1;
+                						if (hitCount < endOffset)
+                							endOffset = hitCount;
+                						util.message("Query returned " + hitCount + " item(s) in " + elem.getAttribute("elapsed") + "s");
+                						app.retrieveNext();
+                					}
+                                    break;
+                                default:
+                                    showResultsPanel();
+                                    var iframe = document.getElementById("results-iframe");
+                                    $(iframe).show();
+                                    iframe.contentWindow.document.open('text/html', 'replace');
+                                    iframe.contentWindow.document.write(data);
+                                    iframe.contentWindow.document.close();
+                                    break;
+                            }
+        				},
+        				error: function (xhr, status) {
+        					util.error(xhr.responseText, "Server Error");
+        				}
+        			});
+                    break;
             }
+                
 		},
 
 		checkQuery: function() {
@@ -726,7 +743,9 @@ eXide.app = (function(util) {
             var project = projects.getProjectFor(doc.getPath());
             var enable = (project || (!doc.isNew() && doc.getSyntax() == "xquery"));
             $("#run").button("option", "disabled", !enable);
-            $("#eval").button("option", "disabled", doc.getSyntax() != "xquery");
+            enable = (doc.getSyntax() == "xquery" || doc.getSyntax() == "html" ||
+                doc.getSyntax() == "javascript");
+            $("#eval").button("option", "disabled", !enable);
         },
         
         ensureSaved: function(callback) {
