@@ -604,6 +604,13 @@ eXide.app = (function(util) {
 			return false;
 		},
 		
+		syncManager : function(collection) {
+			if($("#open-dialog").is(":visible")){
+				dbBrowser.resources.collection = collection
+				dbBrowser.resources.reload()
+			}
+		},
+		
 		manage: function() {
 			app.requireLogin(function() {
                 dbBrowser.reload(["reload", "create", "upload", "properties", "open", "cut", "copy", "paste"], "manage");
