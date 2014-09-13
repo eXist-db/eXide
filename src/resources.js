@@ -334,11 +334,13 @@ eXide.browse.ResourceBrowser = (function () {
 			"<label for=\"collection\">Name: </label>" +
 			"<input type=\"text\" name=\"collection\" id=\"eXide-browse-collection-name\"/>",
 			function () {
+			    $("#eXide-browse-spinner").show();
 				$.getJSON("modules/collections.xql", { 
 						create: $("#eXide-browse-collection-name").val(), 
 						collection: $this.collection
 					},
 					function (data) {
+					    $("#eXide-browse-spinner").hide();
 						if (data.status == "fail") {
 							eXide.util.Dialog.warning("Create Collection Error", data.message);
 						} else {
@@ -354,17 +356,19 @@ eXide.browse.ResourceBrowser = (function () {
 		var $this = this;
 		eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete collection " + $this.selected + "?",
 			function () {
+			    $("#eXide-browse-spinner").show();
 				$.getJSON("modules/collections.xql", { 
-					remove: $this.collection
-				},
-				function (data) {
-					if (data.status == "fail") {
-						eXide.util.Dialog.warning("Delete Collection Error", data.message);
-					} else {
-						$this.reload();
-					}
-				}
-			);
+    					remove: $this.collection
+    				},
+    				function (data) {
+    				    $("#eXide-browse-spinner").hide();
+    					if (data.status == "fail") {
+    						eXide.util.Dialog.warning("Delete Collection Error", data.message);
+    					} else {
+    						$this.reload();
+    					}
+    				}
+    			);
 		});
 	};
     
@@ -380,12 +384,13 @@ eXide.browse.ResourceBrowser = (function () {
 		var $this = this;
 		eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete the selected resources?",
 				function () {
-					$.log("Deleting resources %o", resources);
+				    $("#eXide-browse-spinner").show();
 					$.getJSON("modules/collections.xql", { 
 							remove: resources,
 							root: $this.collection
 						},
 						function (data) {
+						    $("#eXide-browse-spinner").hide();
 							$this.reload();
 							if (data.status == "fail") {
 								eXide.util.Dialog.warning("Delete Resource Error", data.message);
@@ -479,6 +484,7 @@ eXide.browse.Upload = (function () {
 	}
 	
 	function initUpload(container, button, dropzone) {
+	    var progressAll = $("#progress-all", container);
 	    $(button).fileupload({
 			sequentialUploads: true,
             autoUpload: false,
@@ -486,9 +492,13 @@ eXide.browse.Upload = (function () {
             dropZone: dropzone
         }).on('fileuploadadd', function (e, data) {
             $("#file_upload thead").show();
+            $("#eXide-browse-spinner").show();
             data.context = $('#files');
-            $.each(data.files, function (index, file) {
+            for (var i = 0; i < data.files.length; i++) {
+                var count = data.context.find("tr").length;
+                var file = data.files[i];
                 if (file.name != ".") {
+                    var node = null;
                     var path = file.name;
                     if (file.webkitRelativePath) {
                         path = file.webkitRelativePath;
@@ -496,12 +506,15 @@ eXide.browse.Upload = (function () {
                         path = file.relativePath + path;
                     }
                     file.path = path;
-                    var node = $('<tr data-name="' + path + '"/>');
-                    node.append($('<td/>').text(file.name));
-                    node.append($('<td/>').text(file.size));
-                    node.append($('<td class="file_upload_progress"><div class="ui-progressbar-value" style="width: 0%;"></div></td>'));
-                    node.appendTo(data.context);
-                    
+                    if (count == 200) {
+                        $('<tr><td colspan="3">Only 200 files are shown. More follow...</td></tr>').appendTo(data.context);
+                    } else if (count < 200) {
+                        node = $('<tr data-name="' + path + '"/>');
+                        node.append($('<td/>').text(file.name));
+                        node.append($('<td/>').text(file.size));
+                        node.append($('<td class="file_upload_progress"><div class="ui-progressbar-value" style="width: 0%;"></div></td>'));
+                        node.appendTo(data.context);
+                    }
                     
                     data.formData = {
                         path: path,
@@ -511,10 +524,12 @@ eXide.browse.Upload = (function () {
                     
                     var future = data.submit();
                     future.done(function() {
-                        node.remove();
+                        if (node) {
+                            node.remove();
+                        }
                     });
                 }
-            });
+            }
         }).on("fileuploadprogress", function (e, data) {
             $.each(data.files, function(index, file) {
                 var progress = parseInt(data.loaded / data.total * 100, 10);
@@ -524,10 +539,14 @@ eXide.browse.Upload = (function () {
         
         }).on("fileuploadprogressall", function (e, data) {
             var progress = parseInt(data.loaded / data.total * 100, 10);
-            $("#progress-all", container).css("width", progress + "%").text(progress + "%");
-            
+            progressAll.css("width", progress + "%").text(progress + "%");
+            if (progress >= 100) {
+                $("#files").empty();
+                $("#eXide-browse-spinner").hide();
+            }
         }).on('fileuploaddone', function (e, data) {
-            var div = $("#progress-all", container).empty().css("width", "0%");
+            progressAll.empty().css("width", "0%");
+
         }).on('fileuploadfail', function (e, data) {
             console.log("error: ", data);
             // $.each(data.files, function (index, file) {
@@ -545,7 +564,7 @@ eXide.browse.Upload = (function () {
 		this.events = {
 			"done": []
 		};
-		
+		$("#progress-all").empty().css("width", "0%");
 		initUpload(container, "#file_upload", $(".file_upload_drop"));
 		if (isDirUploadSupported()) {
 		    initUpload(container, "#dir_upload", null);
@@ -670,6 +689,7 @@ eXide.browse.Browser = (function () {
         	ev.preventDefault();
 			$this.resources.paste();
 		});
+		$("#eXide-browse-spinner").hide();
 	};
 	
 	// Extend eXide.events.Sender for event support

@@ -658,6 +658,12 @@ Sub level menu list items (undo style from Top level List Items)
     height: 300px;
 }
 
+#eXide-browse-spinner {
+    position: absolute;
+    top: 4px;
+    right: 12px;
+}
+
 .eXide-browse-header {
     background: url("../images/bubble.gif") top right no-repeat;
 }
@@ -1365,6 +1371,7 @@ form.file_upload .file_upload_body input {
 
 #progress-all {
     margin-top: 4px;
+    margin-bottom: 8px;
 	height: 17px;
 	text-align: center;
 }
