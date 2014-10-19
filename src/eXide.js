@@ -1502,8 +1502,8 @@ eXide.app = (function(util) {
                     $(this).css("display", "block");
                 });
             });
-            $("#ext-status-bar").mouseout(function(ev) {
-               $(this).css("display", "none");
+            $("#ext-status-bar,#error-status").mouseout(function(ev) {
+               $("#ext-status-bar").css("display", "none");
             });
             $(window).blur(function() {
                 hasFocus = false;
