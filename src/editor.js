@@ -991,7 +991,7 @@ eXide.edit.Editor = (function () {
 	 * Update the status bar.
 	 */
 	Constr.prototype.updateStatus = function(msg, href) {
-		this.status.innerHTML = msg;
+		$(this.status).text(msg);
 		if (href) {
 			this.status.href = href;
 		}
