@@ -247,17 +247,18 @@ eXide.edit.Editor = (function () {
 
         //When user move mouse over menu
         tabsDiv.mousemove(function(e) {
-        
             var tabsUl = tabsDiv.find("ul");
             var tabsWidth = tabsDiv.width();
-            var lastLi = tabsUl.find('li:last-child');
+            var lastLi = tabsUl.find('li');
             
-            //As images are loaded ul width increases,
-            //so we recalculate it each time
-            var ulWidth = lastLi[0].offsetLeft + lastLi.outerWidth();
-            
-            var left = (e.pageX - tabsDiv.offset().left) * (ulWidth-tabsWidth) / tabsWidth;
-            tabsDiv.scrollLeft(left);
+            if (lastLi.length > 1) {
+                //As images are loaded ul width increases,
+                //so we recalculate it each time
+                var ulWidth = lastLi[lastLi.length - 2].offsetLeft + lastLi.outerWidth();
+                
+                var left = (e.pageX - tabsDiv.offset().left) * (ulWidth-tabsWidth) / tabsWidth;
+                tabsDiv.scrollLeft(left);
+            }
         });
         
 		this.validateTimeout = null;
