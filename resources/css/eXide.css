@@ -540,7 +540,7 @@ Sub level menu list items (undo style from Top level List Items)
      /*height: 145px; */
      /*width: 500px; */
     /* Add scroll-bars */
-    overflow: auto;
+    overflow: hidden;
 }
 
 #tabs, #tabs-outline {
