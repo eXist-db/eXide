@@ -1477,7 +1477,6 @@ div#valueHighLight {
 .tree li {
     list-style-type:none;
     margin:0;
-    display:table;
     /*padding:13px 0px 0px 0px;*/
     line-height: 0.9em;
     font-size:10px;
