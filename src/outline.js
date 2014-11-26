@@ -88,10 +88,10 @@ eXide.edit.Outline = (function () {
 		updateOutline: function(doc) {
             var self = this;
 			self.currentDoc = doc;
-			doc.functions = [];
             
             var helper = doc.getModeHelper();
             if (helper != null && this.__activated) {
+                doc.functions = [];
                 helper.createOutline(doc, function() {
                     self.$outlineUpdate(doc);
                 });
