@@ -8,9 +8,9 @@ declare namespace git="http://exist-db.org/eXide/git";
 declare function git:branch($param) {
     ()
 };
-declare function git:process($command as xs:string, $option as xs:string?, $workingDir as xs:string) {
+declare function git:process($command as xs:string, $option as xs:string?, $syncDir as xs:string) {
     let $process-option := <option>
-        <workingDir>{$workingDir}</workingDir>
+        <syncDir>{$syncDir}</syncDir>
     </option>
 
     return
@@ -33,14 +33,14 @@ let $collection :=
             if ($root) then $root else $collectionParam 
     else
         $target
-let $workingDir := apputil:get-info-from-descriptor($collection)/workingDir/string()
+let $gitDir := apputil:get-info-from-descriptor($collection)/gitDir/string()
 
 let $command := request:get-parameter("git-command", ())
 let $option := request:get-parameter("git-option", ())
 return
 (:    try {:)
         if ($command) then
-            git:process($command, $option, $workingDir)
+            git:process($command, $option, $gitDir)
         else ()
 (:    } catch * {:)
 (:        response:set-status-code(500),:)

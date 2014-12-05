@@ -1017,7 +1017,7 @@ eXide.app = (function(util) {
                                 });
                             $("#toolbar-current-branch").text(gitApp.gitCurrentBranch);
                             $("#menu-git-active").text(gitApp.gitCurrentBranch);
-                            $("#menu-git-working-dir").text(gitApp.workingDir);
+                            $("#menu-git-working-dir").text(gitApp.syncDir);
                         },
                         error : gitError 
                      });   
