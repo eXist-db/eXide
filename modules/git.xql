@@ -10,7 +10,7 @@ declare function git:branch($param) {
 };
 declare function git:process($command as xs:string, $option as xs:string?, $syncDir as xs:string) {
     let $process-option := <option>
-        <syncDir>{$syncDir}</syncDir>
+        <workingDir>{$syncDir}</workingDir>
     </option>
 
     return
