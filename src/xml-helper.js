@@ -52,11 +52,13 @@ eXide.edit.XMLModeHelper = (function () {
     
     Constr.prototype.activate = function(doc) {
         this.menu.show();
-        if (doc.getSyntax() === "html" && this.parent.enableEmmet) {
-            this.editor.setOption("enableEmmet", true);
-        } else {
-            this.editor.setOption("enableEmmet", false);
-        }
+		this.editor.setOption("enableEmmet", this.parent.enableEmmet);
+// 		var syntax = doc.getSyntax();
+//         if ( syntax === "html" && this.parent.enableEmmet || syntax === 'xml') {
+//             this.editor.setOption("enableEmmet", true);
+//         } else {
+//             this.editor.setOption("enableEmmet", false);
+//         }
     };
     
     Constr.prototype.deactivate = function(doc) {

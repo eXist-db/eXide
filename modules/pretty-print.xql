@@ -29,7 +29,7 @@ declare function pretty:namespace-decls($elem as element(), $namespaces as xs:st
     let $ns := namespace-uri-from-QName($name)
     let $prefix := prefix-from-QName($name)
     return
-        if ($ns and empty(index-of($namespaces, $ns))) then
+        if ($ns and (empty($prefix) or $prefix != "xml") and empty(index-of($namespaces, $ns))) then
             <ns prefix="{$prefix}" uri="{$ns}"/>
         else
             ()

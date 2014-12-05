@@ -54,6 +54,7 @@ body {
     -moz-flex-direction: column;
     -ms-flex-direction: column;
     flex-direction: column;
+    position: relative;
 }
 
 .content {
@@ -463,11 +464,11 @@ Sub level menu list items (undo style from Top level List Items)
 #error-status {
     position: absolute;
     top: 4px;
-    left: 4px;
+    right: 4px;
     height: 100%;
     z-index: 999;
 	font-size: 85%;
-	color: red;
+	color: #D72621;
     background: #E8E8E8;
 }
 
@@ -492,8 +493,8 @@ Sub level menu list items (undo style from Top level List Items)
 #ext-status-bar {
     position: absolute;
     display: none;
-    left: 4px;
-    right: 4px;
+    left: 8px;
+    right: 8px;
     bottom: 30px;
     height: auto;
     z-index: 1000;
@@ -504,7 +505,7 @@ Sub level menu list items (undo style from Top level List Items)
 	-webkit-border-radius: 10px 10px 10px 10px;
     padding: 4px 8px;
     font-size: 85%;
-    color: red;
+    color: #D72621;
 }
 
 #search-box {
@@ -536,10 +537,10 @@ Sub level menu list items (undo style from Top level List Items)
 #tabs-container, #tabs-outline-container {
     position: relative;
     /* Set it so we could calculate the offsetLeft */
-    /* height: 145px; */
-    /* width: 500px; */
+     /*height: 145px; */
+     /*width: 500px; */
     /* Add scroll-bars */
-    overflow: auto;
+    overflow: hidden;
 }
 
 #tabs, #tabs-outline {
@@ -656,6 +657,12 @@ Sub level menu list items (undo style from Top level List Items)
     left: 0;
     right: 0;
     height: 300px;
+}
+
+#eXide-browse-spinner {
+    position: absolute;
+    top: 4px;
+    right: 12px;
 }
 
 .eXide-browse-header {
@@ -1365,6 +1372,7 @@ form.file_upload .file_upload_body input {
 
 #progress-all {
     margin-top: 4px;
+    margin-bottom: 8px;
 	height: 17px;
 	text-align: center;
 }

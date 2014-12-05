@@ -25,7 +25,6 @@ eXide.namespace("eXide.edit.Directory");
  */
 eXide.edit.Directory = (function () {
 	
-	
 	Constr = function() {
 		this.currentDoc = null;
         this.__activated = false; 
@@ -33,23 +32,27 @@ eXide.edit.Directory = (function () {
 		init();
 	};
 	
-	function setFolderClass(d) {
-		return 'fa ' + (d.isCollection ? ('fa-folder' + (d.isOpen ? "-open" : "")): "") 
+	function setClass(d) {
+		return 'fa ' + (d.isCollection ? ('fa-folder' + (d.isOpen ? "-open" : "")): (d.isResourceOpen ? "fa-edit" : ""))  
 	}
 	
 	function build(data) {
-		var sel = d3.select(this);
+		var sel = this instanceof d3.selection ? this : d3.select(this),
+			editor = eXide.app.getEditor();
+		if(sel.empty()) {return}
 		var fn = function(d) {
 			sel.selectAll('ul, span, i').remove()
 				
 			var li = sel.datum(d)
 						.attr('class', function(d) {return d.isCollection ? "collection" : "resource"})
+						.attr("data-key", function(d){return d.key})
 						.style('cursor','pointer')
 						.on('click', click)
+						.on('dblclick', dblClick)
 				
 			li
 				.append('i')
-				.attr('class', setFolderClass)
+				.attr('class', setClass)
 			li
 				.append('span')
 				.text(function(d){return d.name})
@@ -67,9 +70,13 @@ eXide.edit.Directory = (function () {
 		};
 
 		if(data) {
-			return fn(data.length ? data[0]: data)
+			var d = data.length ? data[0]: data
+			if(!d.isCollection) {
+				d.isResourceOpen = !!editor.getDocument(d.key)
+			}
+			return fn(d)
 		}
-		d3.json("modules/collections.xql?root=" + (this.__data__.key || "/db") + "&view=r", function(error, data){
+		d3.json("modules/collections.xql?root=" + (sel.datum().key || "/db") + "&view=r", function(error, data){
 			if(error)	{
 				return
 			}
@@ -82,13 +89,13 @@ eXide.edit.Directory = (function () {
 	};
 	
 	function init() {
-		build.call(d3.select("#tree-root").node(), [{key:'/db',isCollection: true, isOpen:false, name:'db', isLoaded: false}])
+		build.call(d3.select("#tree-root"), [{key:'/db',isCollection: true, isOpen:false, name:'db', isLoaded: false}])
 	};
 	
 	function toggleFolder(d) {
 		d.isOpen = !d.isOpen;
 		var sel = d3.select(this)
-		sel.select("i.fa").attr('class', setFolderClass)
+		sel.select("i.fa").attr('class', setClass)
 		if(d.isOpen) {
 		   return build.call(this)
 		}
@@ -104,16 +111,26 @@ eXide.edit.Directory = (function () {
 		eXide.app.$doOpenDocument({name :d.name, path: d.key, writable:d.writable});
 	};
 	
+	function dblClick(d) {
+		d3.event.stopPropagation()
+		if(!d.isCollection && d.isResourceOpen) {
+			loadResource(d)
+			eXide.app.closeDocument()
+		}
+	};
+	
 	function click(d) {
 		d3.event.stopPropagation()
 		if(d.isCollection) {
+			if(!d.isOpen) {eXide.app.syncManager(d.key)}
 			if(d.isLoaded) {
 				return toggleFolder.call(this,d)
 			}
+			
 			loadFolder.call(this,d)
 		}
 		else {
-			loadResource(d)
+			loadResource(d)	
 		}
 	};
 	
@@ -121,25 +138,26 @@ eXide.edit.Directory = (function () {
 		toggle : function(state) {
 			if(state || state === false) {this.__activated = !!state}
 			else {this.__activated = !this.__activated};
-// 			d3.select(this.__rootSel).style("display", this.__activated ?  "block" : "none")
 			d3.select("#directory-body").style("position", this.__activated ? "relative" : "absolute")
 		},
 		
 		clearDirectory: function() {
 			$("#directory").empty();
 		},
-		
-//         filter: function(str) {
-//             var regex = new RegExp(str, "i");
-//             $("#directory li a").each(function() {
-//                 var item = $(this);
-//                 if (!regex.test(item.text())) {
-//                     item.hide();
-//                 } else {
-//                     item.show();
-//                 }
-//             });
-//         }
+		reload : function (key) {
+			var sel = d3.select("[data-key='"+ key +"']")
+			if(sel.empty()) {return}
+			build.call(sel)
+		},
+		toggleEdit : function(key, state) {
+			
+			var sel = d3.select("[data-key='"+ key +"']")
+			if(sel.empty()) {return}
+			var d = sel.datum()
+			d.isResourceOpen = state || !d.isResourceOpen
+			sel.select("i.fa").attr("class", setClass)
+		}
+	
 	};
 	
 	return Constr;

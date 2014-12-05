@@ -247,17 +247,18 @@ eXide.edit.Editor = (function () {
 
         //When user move mouse over menu
         tabsDiv.mousemove(function(e) {
-        
             var tabsUl = tabsDiv.find("ul");
             var tabsWidth = tabsDiv.width();
-            var lastLi = tabsUl.find('li:last-child');
+            var lastLi = tabsUl.find('li');
             
-            //As images are loaded ul width increases,
-            //so we recalculate it each time
-            var ulWidth = lastLi[0].offsetLeft + lastLi.outerWidth();
-            
-            var left = (e.pageX - tabsDiv.offset().left) * (ulWidth-tabsWidth) / tabsWidth;
-            tabsDiv.scrollLeft(left);
+            if (lastLi.length > 1) {
+                //As images are loaded ul width increases,
+                //so we recalculate it each time
+                var ulWidth = lastLi[lastLi.length - 2].offsetLeft + lastLi.outerWidth();
+                
+                var left = (e.pageX - tabsDiv.offset().left) * (ulWidth-tabsWidth) / tabsWidth;
+                tabsDiv.scrollLeft(left);
+            }
         });
         
 		this.validateTimeout = null;
@@ -360,7 +361,10 @@ eXide.edit.Editor = (function () {
 					outlineData.map(function(m,ii){return menubar.editor[m.cls].toggle(ii == i) })
 					})
 				.each(function(d,i){ // activate the first one
-					 menubar.editor[d.cls].toggle(i ===0 )
+					if (i===0){
+						d3.select(this).classed('active', true)
+					}
+					menubar.editor[d.cls].toggle(i ===0 )
 					
 				})
 	};
@@ -507,6 +511,7 @@ eXide.edit.Editor = (function () {
             }
         }
 		this.$initDocument(doc);
+		this.directory.toggleEdit(this.activeDoc.getPath(), true)
 	};
 	
 	Constr.prototype.$initDocument = function (doc, setMime) {
@@ -645,6 +650,7 @@ eXide.edit.Editor = (function () {
 			$("#tabs a[title=\"" + this.activeDoc.path + "\"]").addClass("active");
 			this.editor.setSession(this.activeDoc.$session);
 			this.editor.resize();
+			this.directory.toggleEdit(doc.getPath(), false)
 			this.$triggerEvent("activate", [this.activeDoc]);
 		}
 	};
@@ -985,7 +991,7 @@ eXide.edit.Editor = (function () {
 	 * Update the status bar.
 	 */
 	Constr.prototype.updateStatus = function(msg, href) {
-		this.status.innerHTML = msg;
+		$(this.status).text(msg);
 		if (href) {
 			this.status.href = href;
 		}

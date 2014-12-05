@@ -95,7 +95,7 @@ declare function local:generate-help($desc as element(function)) {
             </dl>
         </div>
     return
-        util:serialize($help, "method=html5")
+        util:serialize($help, "method=xml omit-xml-declaration=yes")
 };
 
 declare function local:generate-signature($func as element(function)) {

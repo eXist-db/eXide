@@ -12,6 +12,20 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="2.1.2">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fix scrolling of editor tabs if they do not fit on screen</li>
+                <li>Various small bug fixes</li>
+            </ul>
+        </change>
+        <change version="2.1.1">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>New collection tree view</li>
+                <li>Fix inline help for functions</li>
+                <li>When uploading many files, don't show them all to avoid browser crash</li>
+                <li>Fix display of query results: skip unnecessary namespace declarations</li>
+            </ul>
+        </change>
         <change version="2.1.0">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fix word-left/word-right navigation</li>
