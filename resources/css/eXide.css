@@ -1129,6 +1129,7 @@ fieldset {
 
 fieldset input[type="checkbox"] {
     margin-top: 8px;
+    float: left;
 }
 
 fieldset legend {
