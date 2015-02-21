@@ -133,7 +133,7 @@ eXide.app = (function(util) {
                     // var southStatus = localStorage.getItem("eXide.layout.south");
                     // $("#layout-container").layout().toggle("south");
                     
-                    if (eXide.configuration.allowGuest) {
+                    if (eXide.configuration && eXide.configuration.allowGuest) {
                         $("#splash").fadeOut(400);
                     } else {
                         app.requireLogin(function() {
@@ -1025,8 +1025,7 @@ eXide.app = (function(util) {
             
             return {
                  branch: function(gitApp)   {
-                     console.info('git.branch');
-                     if(!app.login.isAdmin) {return}
+                     if(!app.login || !app.login.isAdmin) {return}
                      $.ajax({ 
                         type: "GET",
                         url: gitUrl,
