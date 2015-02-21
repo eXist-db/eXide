@@ -132,7 +132,6 @@ eXide.app = (function(util) {
                     // dirty workaround to fix editor height
                     // var southStatus = localStorage.getItem("eXide.layout.south");
                     // $("#layout-container").layout().toggle("south");
-                    
                     if (eXide.configuration.allowGuest) {
                         $("#splash").fadeOut(400);
                     } else {
@@ -1026,7 +1025,7 @@ eXide.app = (function(util) {
             return {
                  branch: function(gitApp)   {
                      console.info('git.branch');
-                     if(!app.login.isAdmin) {return}
+                     if(!app.login.isAdmin) {return}   
                      $.ajax({ 
                         type: "GET",
                         url: gitUrl,
