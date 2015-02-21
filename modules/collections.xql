@@ -317,7 +317,7 @@ declare %private function local:get-properties($resources as xs:string*) as map(
 };
 
 declare %private function local:checkbox($name as xs:string, $test as xs:boolean) {
-    <input type="checkbox" name="{$name}">
+    <input type="checkbox" name="{$name}" id="{$name}">
     {
         if ($test) then attribute checked { 'checked' } else ()
     }
@@ -334,57 +334,57 @@ declare %private function local:get-permissions($perms as xs:string) {
         <tr>
             <td>
                 { local:checkbox("ur", substring($perms, 1, 1) = "r") }
-                read
+                <label for="ur">read</label>
             </td>
             <td>
                 { local:checkbox("gr", substring($perms, 4, 1) = "r") }
-                read
+                <label for="gr">read</label>
             </td>
             <td>
                 { local:checkbox("or", substring($perms, 7, 1) = "r") }
-                read
+                <label for="or">read</label>
             </td>
         </tr>
         <tr>
             <td>
                 { local:checkbox("uw", substring($perms, 2, 1) = "w") }
-                write
+                <label for="uw">write</label>
             </td>
             <td>
                 { local:checkbox("gw", substring($perms, 5, 1) = "w") }
-                write
+                <label for="gw">write</label>
             </td>
             <td>
                 { local:checkbox("ow", substring($perms, 8, 1) = "w") }
-                write
+                <label for="ow">write</label>
             </td>
         </tr>
         <tr>
             <td>
                 { local:checkbox("ux", substring($perms, 3, 1) = ("x", "s")) }
-                execute
+                <label for="ux">execute</label>
             </td>
             <td>
                 { local:checkbox("gx", substring($perms, 6, 1) = ("x", "s")) }
-                execute
+                <label for="gx">execute</label>
             </td>
             <td>
                 { local:checkbox("ox", substring($perms, 9, 1) = ("x", "t")) }
-                execute
+                <label for="ox">execute</label>
             </td>
         </tr>
         <!--tr>
             <td>
                 { local:checkbox("us", substring($perms, 3, 1) = ("s", "S")) }
-                setuid
+                <label for="us">setuid</label>
             </td>
             <td>
                 { local:checkbox("gs", substring($perms, 6, 1) = ("s", "S")) }
-                setgid
+                <label for="gs">setgid</label>
             </td>
             <td>
                 { local:checkbox("ot", substring($perms, 9, 1) = ("t", "T")) }
-                sticky
+                <label for="ot">sticky</label>
             </td>
         </tr-->
     </table>
