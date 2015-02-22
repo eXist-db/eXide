@@ -994,7 +994,6 @@ eXide.app = (function(util) {
             
             return {
                  branch: function(gitApp)   {
-                     // console.info('git.branch');
                      if(!app.login || !app.login.isAdmin) {return}
                      $.ajax({ 
                         type: "GET",
