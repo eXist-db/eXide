@@ -45,7 +45,7 @@ declare function local:format-output($output) {
 let $startParam := request:get-parameter("start", ())
 let $startTime := if (empty($startParam) or $startParam eq "") then () else $startParam 
 let $collection := request:get-parameter("collection", ())
-let $dir := request:get-parameter("dir", apputil:get-info-from-descriptor($collection)/workingDir/string())
+let $dir := request:get-parameter("dir", apputil:get-info-from-descriptor($collection)/syncDir/string())
 let $output := file:sync($collection, $dir, $startTime)
 return
     local:format-output($output)

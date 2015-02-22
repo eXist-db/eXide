@@ -1047,13 +1047,14 @@ eXide.app = (function(util) {
                                 });
                             $("#toolbar-current-branch").text(gitApp.gitCurrentBranch);
                             $("#menu-git-active").text(gitApp.gitCurrentBranch);
-                            $("#menu-git-working-dir").text(gitApp.workingDir);
+                            $("#menu-git-sync-dir").text(gitApp.syncDir);
+                            $("#menu-git-git-dir").text(gitApp.gitDir);
                         },
                         error : gitError 
                      });   
                  },
                  command : function(gitApp, command,option, success){
-                      if(!app.login.isAdmin) {return}
+                      if(!app.login.isAdmin || !app.login.isAdmin) {return}
                      $.ajax({
                         type: "GET",
                         url: gitUrl,
