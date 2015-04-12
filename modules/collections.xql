@@ -238,13 +238,13 @@ declare function local:copyOrMove($operation as xs:string, $target as xs:string,
                     return
                         <response status="ok"/>
                 else
-                    let $split := text:groups($source, "^(.*)/([^/]+)$")
+                    let $split := analyze-string($source, "^(.*)/([^/]+)$")//fn:group/string()
                     let $null := 
                         switch ($operation)
                             case "move" return
-                                xmldb:move($split[2], $target, $split[3])
+                                xmldb:move($split[1], $target, $split[2])
                             default return
-                                xmldb:copy($split[2], $target, $split[3])
+                                xmldb:copy($split[1], $target, $split[2])
                     return
                         <response status="ok"/>
             } catch * {
@@ -300,13 +300,13 @@ declare %private function local:get-property-map($resource as xs:string) as map(
                 "mime" := xmldb:get-mime-type(xs:anyURI($resource))
             }
         else
-            let $components := text:groups($resource, "^(.*)/([^/]+)$")
+            let $components := analyze-string($resource, "^(.*)/([^/]+)$")//fn:group/string()
             return
                 map {
-                    "owner" := xmldb:get-owner($components[2], $components[3]),
-                    "group" := xmldb:get-group($components[2], $components[3]),
+                    "owner" := xmldb:get-owner($components[1], $components[2]),
+                    "group" := xmldb:get-group($components[1], $components[2]),
                     "last-modified" := 
-                        format-dateTime(xmldb:last-modified($components[2], $components[3]), "[MNn] [D00] [Y0000] [H00]:[m00]:[s00]"),
+                        format-dateTime(xmldb:last-modified($components[1], $components[2]), "[MNn] [D00] [Y0000] [H00]:[m00]:[s00]"),
                     "permissions" := sm:get-permissions(xs:anyURI($resource))/sm:permission/string(@mode),
                     "mime" := xmldb:get-mime-type(xs:anyURI($resource))
                 }
