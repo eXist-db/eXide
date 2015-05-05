@@ -16,7 +16,7 @@
  :  You should have received a copy of the GNU General Public License
  :  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  :)
-xquery version "3.0";
+xquery version "3.1";
 
 import module namespace config="http://exist-db.org/xquery/apps/config" at "config.xqm";
 
@@ -293,22 +293,22 @@ declare %private function local:get-property-map($resource as xs:string) as map(
     return
         if ($isCollection) then
             map {
-                "owner" := xmldb:get-owner($resource),
-                "group" := xmldb:get-group($resource),
-                "last-modified" := format-dateTime(xmldb:created($resource), "[MNn] [D00] [Y0000] [H00]:[m00]:[s00]"),
-                "permissions" := sm:get-permissions(xs:anyURI($resource))/sm:permission/string(@mode),
-                "mime" := xmldb:get-mime-type(xs:anyURI($resource))
+                "owner" : xmldb:get-owner($resource),
+                "group" : xmldb:get-group($resource),
+                "last-modified" : format-dateTime(xmldb:created($resource), "[MNn] [D00] [Y0000] [H00]:[m00]:[s00]"),
+                "permissions" : sm:get-permissions(xs:anyURI($resource))/sm:permission/string(@mode),
+                "mime" : xmldb:get-mime-type(xs:anyURI($resource))
             }
         else
             let $components := analyze-string($resource, "^(.*)/([^/]+)$")//fn:group/string()
             return
                 map {
-                    "owner" := xmldb:get-owner($components[1], $components[2]),
-                    "group" := xmldb:get-group($components[1], $components[2]),
-                    "last-modified" := 
+                    "owner" : xmldb:get-owner($components[1], $components[2]),
+                    "group" : xmldb:get-group($components[1], $components[2]),
+                    "last-modified" : 
                         format-dateTime(xmldb:last-modified($components[1], $components[2]), "[MNn] [D00] [Y0000] [H00]:[m00]:[s00]"),
-                    "permissions" := sm:get-permissions(xs:anyURI($resource))/sm:permission/string(@mode),
-                    "mime" := xmldb:get-mime-type(xs:anyURI($resource))
+                    "permissions" : sm:get-permissions(xs:anyURI($resource))/sm:permission/string(@mode),
+                    "mime" : xmldb:get-mime-type(xs:anyURI($resource))
                 }
 };
 

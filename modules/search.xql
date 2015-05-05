@@ -1,4 +1,4 @@
-xquery version "3.0";
+xquery version "3.1";
 
 
 import module namespace dbutil="http://exist-db.org/xquery/dbutil";
@@ -11,9 +11,9 @@ declare option output:media-type "text/html";
 declare variable $local:SPECIAL_CHARS := "[\-\[\]\(\)\{\}\*\+\?\.\^\|\$]";
 
 declare variable $local:MIME_MAP := map {
-    "javascript" := ("text/javascript", "application/x-javascript"),
-    "css" := ("text/css", "application/less"),
-    "xquery" := "application/xquery"
+    "javascript" : ("text/javascript", "application/x-javascript"),
+    "css" : ("text/css", "application/less"),
+    "xquery" : "application/xquery"
 };
 
 declare variable $local:MIME_TYPES := (
