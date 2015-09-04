@@ -57,6 +57,9 @@ snippet decns
 snippet decopt
 	declare option output:${1:method} "${2:html5}";
 
+snippet output
+    declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
+
 snippet json
 	declare option output:method "json";
 	declare option output:media-type "application/json";
@@ -64,6 +67,9 @@ snippet json
 snippet html5
 	declare option output:method "html5";
 	declare option output:media-type "text/html";
+
+snippet html
+    declare namespace html="http://www.w3.org/1999/xhtml";
 
 snippet var
 	declare variable $${1:name} := ${2:()};
