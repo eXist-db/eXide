@@ -1129,6 +1129,7 @@ fieldset {
 
 fieldset input[type="checkbox"] {
     margin-top: 8px;
+    float: left;
 }
 
 fieldset legend {
@@ -1485,6 +1486,7 @@ div#valueHighLight {
 .tree li {
     list-style-type:none;
     margin:0;
+    display:table;
     /*padding:13px 0px 0px 0px;*/
     line-height: 0.9em;
     font-size:10px;

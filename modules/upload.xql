@@ -70,10 +70,10 @@ declare function upload:mkcol($collection, $path) {
 
 declare function upload:store($root as xs:string, $path as xs:string, $data) {
     if (matches($path, "/[^/]+$")) then
-        let $split := text:groups($path, "^(.*)/([^/]+)$")
-        let $newCol := upload:mkcol($root, $split[2])
+        let $split := analyze-string($path, "^(.*)/([^/]+)$")//fn:group/string()
+        let $newCol := upload:mkcol($root, $split[1])
         return
-            xmldb:store($newCol, $split[3], $data)
+            xmldb:store($newCol, $split[2], $data)
     else
         xmldb:store($root, $path, $data)
 };

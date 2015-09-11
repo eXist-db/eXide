@@ -69,9 +69,13 @@ declare function local:user-allowed() {
 };
 
 declare function local:query-execution-allowed() {
+    (
     config:get-configuration()/restrictions/@execute-query = "yes"
         and
     local:user-allowed()
+    )
+        or
+    xmldb:is-admin-user((request:get-attribute("org.exist.login.user"),request:get-attribute("xquery.user"), 'nobody')[1])
 };
 
 if ($exist:path eq '') then

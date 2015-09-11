@@ -53,9 +53,9 @@ declare function local:get-mime-type() {
 (:~ Called by the editor to store a document :)
 
 let $path := request:get-parameter("path", ())
-let $split := text:groups($path, "^(.*)/([^/]+)$")
-let $collection := xmldb:encode-uri($split[2])
-let $resource := xmldb:encode-uri($split[3])
+let $split := analyze-string($path, "^(.*)/([^/]+)$")//fn:group/string()
+let $collection := xmldb:encode-uri($split[1])
+let $resource := xmldb:encode-uri($split[2])
 let $mime := local:get-mime-type()
 let $data := request:get-data()
 let $data := 

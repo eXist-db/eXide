@@ -132,8 +132,7 @@ eXide.app = (function(util) {
                     // dirty workaround to fix editor height
                     // var southStatus = localStorage.getItem("eXide.layout.south");
                     // $("#layout-container").layout().toggle("south");
-                    
-                    if (eXide.configuration && eXide.configuration.allowGuest) {
+                    if (eXide.configuration.allowGuest) {
                         $("#splash").fadeOut(400);
                     } else {
                         app.requireLogin(function() {
@@ -1025,7 +1024,8 @@ eXide.app = (function(util) {
             
             return {
                  branch: function(gitApp)   {
-                     if(!app.login || !app.login.isAdmin) {return}
+                     console.info('git.branch');
+                     if(!app.login.isAdmin) {return}   
                      $.ajax({ 
                         type: "GET",
                         url: gitUrl,
