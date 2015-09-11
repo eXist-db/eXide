@@ -39,6 +39,8 @@ body {
     -moz-flex: auto;
     -ms-flex: auto;
     flex: auto;
+    min-width: 0;
+    min-height: 0;
 }
 
 .main {
@@ -789,6 +791,8 @@ Sub level menu list items (undo style from Top level List Items)
     z-index: 1;
     margin: 0 4px 0 0;
     border-left: 1px solid #bbb;
+    min-width: 0;
+    min-height: 0;
 }
 
 #results-body {
