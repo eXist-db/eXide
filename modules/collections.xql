@@ -528,7 +528,7 @@ return
             return
                 ($result[@status = "fail"], $result[1])[1]
         else if (exists($rename)) then
-            local:rename($collection, $rename)
+            local:rename($collection, xmldb:encode-uri($rename))
         else if (exists($deleteResource)) then
             local:delete(xmldb:encode-uri($collection), $deleteResource, $user)
         else if (exists($properties)) then
