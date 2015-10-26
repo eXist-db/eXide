@@ -3,7 +3,7 @@
  : to process any URI ending with ".html". It receives the HTML from
  : the controller and passes it to the templating system.
  :)
-xquery version "3.0";
+xquery version "3.1";
 
 import module namespace templates="http://exist-db.org/xquery/templates" $$templates$$;
 
@@ -20,8 +20,8 @@ declare option output:method "html5";
 declare option output:media-type "text/html";
 
 let $config := map {
-    $templates:CONFIG_APP_ROOT := $config:app-root,
-    $templates:CONFIG_STOP_ON_ERROR := true()
+    $templates:CONFIG_APP_ROOT : $config:app-root,
+    $templates:CONFIG_STOP_ON_ERROR : true()
 }
 (:
  : We have to provide a lookup function to templates:apply to help it
