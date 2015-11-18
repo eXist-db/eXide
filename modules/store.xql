@@ -69,10 +69,13 @@ return
         try {
             let $isNew := not(util:binary-doc-available($path)) and not(doc-available($path))
             let $path :=
-                if ($mime) then
-                    xmldb:store($collection, $resource, $data, $mime)
+                if(util:binary-doc-available($path)) then
+                    xmldb:store-as-binary($collection, $resource, $data)
                 else
-                    xmldb:store($collection, $resource, $data)
+                    if ($mime) then
+                        xmldb:store($collection, $resource, $data, $mime)
+                    else
+                        xmldb:store($collection, $resource, $data)
             return (
                 if ($isNew) then
                     local:fix-permissions($collection, $resource)
