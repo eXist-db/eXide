@@ -1,6 +1,6 @@
 (:
  :  eXide - web-based XQuery IDE
- :  
+ :
  :  Copyright (C) 2013 Wolfgang Meier
  :
  :  This program is free software: you can redistribute it and/or modify
@@ -20,6 +20,8 @@ xquery version "3.0";
 
 
 declare option exist:serialize "method=json media-type=text/javascript";
+
+declare variable $local:store-as-binary := function-lookup(xs:QName("xmldb:store-as-binary"), 3);
 
 declare function local:fix-permissions($collection as xs:string, $resource as xs:string) {
     let $path := concat($collection, "/", $resource)
@@ -58,7 +60,7 @@ let $collection := xmldb:encode-uri($split[1])
 let $resource := xmldb:encode-uri($split[2])
 let $mime := local:get-mime-type()
 let $data := request:get-data()
-let $data := 
+let $data :=
     if($data instance of xs:base64Binary) then
         $data
     else if($mime and not($data)) then
@@ -69,8 +71,8 @@ return
         try {
             let $isNew := not(util:binary-doc-available($path)) and not(doc-available($path))
             let $path :=
-                if(util:binary-doc-available($path)) then
-                    xmldb:store-as-binary($collection, $resource, $data)
+                if(util:binary-doc-available($path) and exists($local:store-as-binary)) then
+                    $local:store-as-binary($collection, $resource, $data)
                 else
                     if ($mime) then
                         xmldb:store($collection, $resource, $data, $mime)
