@@ -264,13 +264,14 @@ eXide.browse.ResourceBrowser = (function () {
         if (!reload && collection === this.collection)
             return;
 		$.log("Opening resources for %s", collection);
+		this.grid.gotoCell(0, 0);
         this.setCollection(collection);
-		this.grid.invalidate();
 		this.data.length = 0;
         this.grid.setSelectedRows([]);
-		this.grid.onViewportChanged.notify();
         this.grid.resetActiveCell();
 		this.grid.setActiveCell(0, 1);
+		this.grid.invalidate();
+		this.grid.onViewportChanged.notify();
         this.grid.focus();
 	};
 	
