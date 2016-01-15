@@ -162,7 +162,8 @@ else if ($exist:resource eq 'execute') then
     return
         if ($userAllowed) then
             switch ($output)
-                case "xml" return
+                case "xml" 
+                case "adaptive" return
                     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
                         <!-- Query is executed by XQueryServlet -->
                         <forward servlet="XQueryServlet">

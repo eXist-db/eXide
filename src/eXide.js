@@ -521,11 +521,12 @@ eXide.app = (function(util) {
         			$.ajax({
         				type: "POST",
         				url: "execute",
-        				dataType: serializationMode == "xml" ? serializationMode : "text",
+        				dataType: serializationMode == "xml" || serializationMode == "adaptive" ? "xml" : "text",
         				data: { "qu": code, "base": moduleLoadPath, "output": serializationMode },
         				success: function (data, status, xhr) {
                             switch (serializationMode) {
                                 case "xml":
+                                case "adaptive":
                                     $("#results-iframe").hide();
                 					var elem = data.documentElement;
                 					if (elem.nodeName == 'error') {
@@ -571,11 +572,14 @@ eXide.app = (function(util) {
 		retrieveNext: function() {
 			$.log("retrieveNext: %d", currentOffset);
 		    if (currentOffset > 0 && currentOffset <= endOffset) {
+		        $("#serialization-mode").removeAttr("disabled");
+		        var serializationMode = $("#serialization-mode").val();
 		        var url = 'results/' + currentOffset;
 				currentOffset++;
 				$.ajax({
 					url: url,
 					dataType: 'html',
+					data: { "output": serializationMode },
 					success: function (data) {
 						$('.results-container .results').append(data);
 						$(".results-container .current").text("Showing results " + startOffset + " to " + (currentOffset - 1) +
