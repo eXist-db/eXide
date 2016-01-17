@@ -521,12 +521,13 @@ eXide.app = (function(util) {
         			$.ajax({
         				type: "POST",
         				url: "execute",
-        				dataType: serializationMode == "xml" || serializationMode == "adaptive" ? "xml" : "text",
+        				dataType: serializationMode == "adaptive" || serializationMode == "json" || serializationMode == "xml" ? "xml" : "text",
         				data: { "qu": code, "base": moduleLoadPath, "output": serializationMode },
         				success: function (data, status, xhr) {
                             switch (serializationMode) {
-                                case "xml":
                                 case "adaptive":
+                                case "json":
+                                case "xml":
                                     $("#results-iframe").hide();
                 					var elem = data.documentElement;
                 					if (elem.nodeName == 'error') {

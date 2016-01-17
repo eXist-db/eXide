@@ -20,6 +20,9 @@ xquery version "3.1";
 
 module namespace pretty="http://exist-db.org/eXide/deploy";
 
+declare namespace json = "http://www.w3.org/2013/XSL/json";
+declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
+
 (:~
  :  Check which namespace declarations have to be output.
  :)
@@ -38,6 +41,8 @@ declare function pretty:namespace-decls($elem as element(), $namespaces as xs:st
 declare function pretty:pretty-print($item as item(), $namespaces as xs:string*, $output as xs:string) {
     if ($output = "xml") then 
         pretty:pretty-print-xml($item, $namespaces)
+    else if ($output = "json") then 
+        pretty:pretty-print-json($item, $namespaces)
     else
         (: if ($output = "adaptive") return :)
         pretty:pretty-print-adaptive($item, $namespaces)
@@ -202,4 +207,18 @@ declare function pretty:pretty-print-adaptive($item as item(), $namespaces as xs
         default return 
     		(: handles any other type :)
     		<span class="ace_constant">{string($item)}</span>
+};
+
+(:~
+    Pretty print an item using JSON serialization rules. 
+    @see https://www.w3.org/TR/xslt-xquery-serialization-31/#json-output
+:)
+declare function pretty:pretty-print-json($item as item(), $namespaces as xs:string*) {
+    let $serialization-parameters := 
+        <output:serialization-parameters>
+            <output:method>json</output:method>
+            <output:indent>yes</output:indent>
+        </output:serialization-parameters>
+    return
+        <pre>{serialize($item, $serialization-parameters)}</pre>
 };
