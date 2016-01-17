@@ -128,19 +128,31 @@ declare function pretty:pretty-print-adaptive($item as item(), $namespaces as xs
 			    '"'
 			)
 	    case $map as map(*) return 
-            map:for-each-entry(
-                $map, 
-                function($object-name, $object-value) {
+            <div class="xml-element">
+                <span class="ace_identifier">map </span>
+                <span class="ace_paren ace_lparen">{{</span>
+                {
+                let $objects := 
+                    map:for-each-entry(
+                        $map, 
+                        function($object-name, $object-value) {
+                            <div class="xml-element">
+                                <span class="ace_variable">"{$object-name}"</span>
+                                <span class="ace_identifier"> : </span>
+                                { pretty:pretty-print-adaptive($object-value, $namespaces) }
+                            </div>
+                        }
+                    )
+                let $object-count := count($objects)
+                for $object at $n in $objects
+                return
                     (
-                    <span class="ace_identifier">map </span>,
-                    <span class="ace_paren ace_lparen">{{</span>,
-                    <span class="ace_variable">"{$object-name}"</span>,
-                    <span class="ace_identifier"> : </span> ,
-                    pretty:pretty-print-adaptive($object-value, $namespaces),
-                    <span class="ace_paren ace_rparen">}} </span>
+                        $object,
+                        if ($n lt $object-count) then <div class="xml-element"><span class="ace_identifier" style="display: inline">, </span></div> else ()
                     )
                 }
-            )
+                <span class="ace_paren ace_rparen">}} </span>
+            </div>
         case $array as array(*) return 
 	        (
 	            <span class="ace_paren ace_lparen">[ </span>,
