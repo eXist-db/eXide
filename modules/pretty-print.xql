@@ -178,7 +178,7 @@ declare function pretty:pretty-print-adaptive($item as item(), $namespaces as xs
                 if (empty($name)) then 
                     (
                         <span class="ace_paren ace_lparen">(</span>,
-                        'anonymous',
+                        'anonymous-function',
                         <span class="ace_paren ace_rparen">)</span>
                     )
                 else 
