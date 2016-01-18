@@ -16,7 +16,7 @@
  :  You should have received a copy of the GNU General Public License
  :  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  :)
-xquery version "1.0";
+xquery version "3.0";
 
 (:~
 	Post-processes query results for the sandbox application. The
@@ -37,13 +37,19 @@ declare option exist:serialize "method=xml media-type=text/xml omit-xml-declarat
 
 (:~ Retrieve a single query result. :)
 declare function sandbox:retrieve($num as xs:integer) as element() {
+    let $output := request:get-parameter("output", "xml")
     let $cached := session:get-attribute("cached")
     let $node := $cached[$num]
     let $item := 
-    	if ($node instance of node()) then
-    		util:expand($node, 'indent=yes')
-    	else
-    		$node
+        if ($output = "xml") then
+            if ($node instance of node()) then
+                (: note that util:expand, when run on an attribute, returns the attribute's value :)
+                util:expand($node, 'indent=yes')
+            else
+                (: preserve eXide's traditional behavior: return an "empty" result in the case of maps, arrays, etc. :)
+                try { serialize($node) } catch * { () }
+        else
+            $node
     let $documentURI :=if ($node instance of node()) then document-uri(root($node)) else ()
     return
         <div class="{if ($num mod 2 eq 0) then 'even' else 'uneven'}">
@@ -62,7 +68,7 @@ declare function sandbox:retrieve($num as xs:integer) as element() {
                     ()
             }
             <div class="item">
-            { pretty:pretty-print($item, ()) }
+            { if (exists($item)) then pretty:pretty-print($item, (), $output) else () }
             </div>
         </div>
 };
