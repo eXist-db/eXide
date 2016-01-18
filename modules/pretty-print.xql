@@ -172,17 +172,36 @@ declare function pretty:pretty-print-adaptive($item as item(), $namespaces as xs
 	        )
         case $function as function(*) return
             let $name := function-name($function)
+            let $local-name := local-name-from-QName($name)
+            let $ns-uri := namespace-uri-from-QName($name)
+            let $ns-prefix :=
+                switch ($ns-uri)
+                    case "http://www.w3.org/2005/xpath-functions" return "fn"
+                    case "http://www.w3.org/2005/xpath-functions/math" return "math"
+                    case "http://www.w3.org/2005/xpath-functions/map" return "map"
+                    case "http://www.w3.org/2005/xpath-functions/array" return "array"
+                    case "http://www.w3.org/2001/XMLSchema" return "xs"
+                    case "http://www.w3.org/2005/xquery-local-functions" return "local"
+                    default return "other"
             let $arity := function-arity($function)
             return
                 (
-                if (empty($name)) then 
+                if (empty($ns-uri)) then 
                     (
                         <span class="ace_paren ace_lparen">(</span>,
                         'anonymous-function',
                         <span class="ace_paren ace_rparen">)</span>
                     )
-                else 
-                    <span class="ace_support ace_function">{$name}</span>
+                else if ($ns-prefix = "other") then
+                    (
+                    <span class="ace_identifier">{"Q"}</span>,
+                    <span class="ace_paren ace_lparen">{{</span>,
+                    <span class="ace_string">{$ns-uri}</span>,
+                    <span class="ace_paren ace_rparen">}}</span>,
+                    <span class="ace_support ace_function">{$local-name}</span>
+                    )
+                else
+                    <span class="ace_support ace_function">{$ns-prefix || ":" || $local-name}</span>
                 ,
 				'#' || $arity
                 )
