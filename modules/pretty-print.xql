@@ -239,5 +239,5 @@ declare function pretty:pretty-print-json($item as item(), $namespaces as xs:str
             <output:indent>yes</output:indent>
         </output:serialization-parameters>
     return
-        <pre>{serialize($item, $serialization-parameters)}</pre>
+        <div class="xml-element" style="white-space: pre">{serialize($item, $serialization-parameters)}</div>
 };
