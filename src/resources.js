@@ -60,6 +60,7 @@ eXide.browse.ResourceBrowser = (function () {
 		this.container = $(container);
         this.breadcrumbs = $(".eXide-browse-breadcrumbs", parentContainer);
 		this.loading = false;
+		this.search = "";
         this.clipboard = [];
         this.clipboardMode = "copy";
 		this.events = {
@@ -109,6 +110,7 @@ eXide.browse.ResourceBrowser = (function () {
                 return;
 			if (!e.shiftKey && !e.altKey && !e.ctrlKey) {
                 switch (e.which) {
+                    // enter
     				case 13:
     					e.stopPropagation();
     		            e.preventDefault();
@@ -128,6 +130,7 @@ eXide.browse.ResourceBrowser = (function () {
     						}
     		            }
                         break;
+                    // backspace
     				case 8:
                         e.stopPropagation();
     		            e.preventDefault();
@@ -142,8 +145,71 @@ eXide.browse.ResourceBrowser = (function () {
     						}
     					}
                         break;
+                    // page down
+                    case 34:
+                        e.stopPropagation();
+                        e.preventDefault();
+                        var cell = $this.grid.getActiveCell();
+                        var target = -1;
+                        if (cell.row + 10 < $this.data.length) {
+                            target = cell.row + 10;
+                        } else if (cell.row + 1 != $this.data.length) {
+                            target = $this.data.length - 1;
+                        }
+                        if (target != -1) {
+                            $this.goto(target);
+                        }
+                        break;
+                    // page up
+                    case 33:
+                        e.stopPropagation();
+                        e.preventDefault();
+                        var cell = $this.grid.getActiveCell();
+                        if (cell.row > 0) {
+                            $this.goto(cell.row > 10 ? cell.row - 10 : 0);
+                        }
+                        break;
+                    // home
+                    case 36:
+                        e.stopPropagation();
+                        e.preventDefault();
+                        $this.goto(0);
+                        break;
+                    // end
+                    case 35:
+                        e.stopPropagation();
+                        e.preventDefault();
+                        $this.goto($this.data.length - 1);
+                        break;
+                    // delete
                     case 46:
                         $this.deleteResource();
+                        break;
+                    // escape
+                    case 27:
+                        $this.search = "";
+                        break;
+                    // down/up
+                    case 38:
+                    case 40:
+                        break;
+                    default:
+                        $this.search += String.fromCharCode(e.which);
+                        if ($this.searchTimeout) {
+                            clearTimeout($this.searchTimeout);
+                            $this.searchTimeout = undefined;
+                        }
+                        var regex = new RegExp("^" + $this.search, "i");
+                        var cell = $this.grid.getActiveCell();
+                        for (var i = cell.row; i < $this.data.length; i++) {
+                            if ($this.data[i] && regex.test($this.data[i].name)) {
+                                $this.goto(i);
+                                break;
+                            }
+                        }
+                        $this.searchTimeout = setTimeout(function() {
+                            $this.search = "";
+                        }, 2000);
                         break;
 				}
 			}
@@ -273,6 +339,7 @@ eXide.browse.ResourceBrowser = (function () {
 		this.grid.invalidate();
 		this.grid.onViewportChanged.notify();
         this.grid.focus();
+        this.search = "";
 	};
 	
 	Constr.prototype.load = function (start, end) {
@@ -451,6 +518,17 @@ eXide.browse.ResourceBrowser = (function () {
 				}
 			}
 	    );
+    };
+    
+    Constr.prototype.goto = function(row) {
+        this.grid.gotoCell(0, 0);
+        this.grid.setSelectedRows([]);
+        this.grid.resetActiveCell();
+        this.grid.setActiveCell(row, 1);
+        this.grid.invalidate();
+        this.grid.onViewportChanged.notify();
+        this.grid.scrollRowToTop(row);
+        this.grid.focus();
     };
     
     Constr.prototype.focus = function() {
