@@ -125,6 +125,7 @@ declare function pretty:pretty-print-adaptive($item as item(), $namespaces as xs
 	typeswitch ($item)
 	    (: pass normal XML nodes to pretty-print-xml() - which has slightly different formatting, but works :)
 	    case element() | comment() | processing-instruction() | text() return pretty:pretty-print-xml($item, $namespaces)
+	    case document-node() return pretty:pretty-print-xml($item/node(), $namespaces)
 	    case $attr as attribute() return
 	        (
 			    <span class="ace_keyword">{node-name($attr)}</span>,
