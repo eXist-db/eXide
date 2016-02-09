@@ -24,6 +24,8 @@ eXide.namespace("eXide.browse.ResourceBrowser");
  */
 eXide.browse.ResourceBrowser = (function () {
 
+    var useragent = require("ace/lib/useragent");
+
 	var nameFormatter = function(row, cell, value, columnDef, dataContext) {
 		if (dataContext.isCollection)
 			return '<span class="collection"><img src="resources/images/folder.png"/> ' + value + '</span>';
@@ -108,7 +110,28 @@ eXide.browse.ResourceBrowser = (function () {
 		this.grid.onKeyDown.subscribe(function (e) {
             if ($this.inEditor)
                 return;
-			if (!e.shiftKey && !e.altKey && !e.ctrlKey) {
+            if ((e.metaKey && useragent.isMac) || (e.ctrlKey && !useragent.isMac)) {
+                switch (e.which) {
+                    case 67: // cmd-c
+                        e.stopPropagation();
+                        e.preventDefault();
+                        $this.copy();
+                        break;
+                    case 86: // cmd-v
+                        e.stopPropagation();
+                        e.preventDefault();
+                        $this.paste();
+                        break;
+                    case 88: // cmd-x
+                        e.stopPropagation();
+                        e.preventDefault();
+                        $this.cut();
+                        break;
+                    default:
+                        // nothing to do
+                        break;
+                }
+            } else if (!e.shiftKey && !e.altKey && !e.ctrlKey) {
                 switch (e.which) {
                     // enter
     				case 13:
