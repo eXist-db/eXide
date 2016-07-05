@@ -12,6 +12,12 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="2.2.0">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Keyboard shortcuts for copy and paste in file dialog</li>
+                <li>Type in file dialog to quickly jump to file</li>
+            </ul>
+        </change>
         <change version="2.1.2">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fix scrolling of editor tabs if they do not fit on screen</li>
