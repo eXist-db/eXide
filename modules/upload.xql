@@ -75,11 +75,12 @@ declare function upload:store($root as xs:string, $path as xs:string, $data) {
         return
             xmldb:store($newCol, $split[2], $data)
     else
-        xmldb:store($root, $path, $data)
+        xmldb:store($root, encode-for-uri($path), $data)
 };
 
 declare function upload:upload($collection, $path, $data) {
     let $path := upload:store($collection, $path, $data)
+    
     let $upload :=
         <result>
             <files json:array="true">
