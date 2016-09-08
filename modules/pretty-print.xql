@@ -55,7 +55,15 @@ declare function pretty:pretty-print($item as item(), $namespaces as xs:string*,
 declare function pretty:pretty-print-xml($node as item(), $namespaces as xs:string*) {
 	typeswitch ($node)
 		case $elem as element(exist:match) return
-			<span class="ace_variable ace_entity ace_other ace_attribute-name exist-match">{$elem/node()}</span>
+		    <div class="xml-element">
+				<span>&lt;</span>
+				<span class="ace_keyword">exist:match</span>
+				<span>&gt;</span>
+			    <span class="ace_variable ace_entity ace_other ace_attribute-name exist-match">{$elem/node()}</span>
+				<span>&lt;/</span>
+				<span class="ace_keyword">exist:match</span>
+				<span>&gt;</span>
+			</div>
 		case $elem as element() return
             let $nsDecls := pretty:namespace-decls($elem, $namespaces)
             let $newNamespaces := 
