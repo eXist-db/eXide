@@ -85,7 +85,12 @@ if ($exist:path eq '') then
 
 else if ($exist:path eq '/') then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <redirect url="index.html"/>
+    {
+        if(lower-case(request:get-uri()) = "/exist/apps/exide/" and lower-case(request:get-header("X-Forwarded-URI")) = "/apps/exide/") then
+            <redirect url="/apps/eXide/index.html"/>
+        else
+            <redirect url="index.html"/>
+    }
     </dispatch>
 
 (:
