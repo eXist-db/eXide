@@ -38,14 +38,16 @@ declare function pretty:namespace-decls($elem as element(), $namespaces as xs:st
             ()
 };
 
-declare function pretty:pretty-print($item as item(), $namespaces as xs:string*, $output as xs:string) {
+declare function pretty:pretty-print($item as item(), $namespaces as xs:string*, $output as xs:string, $auto-expand-matches as xs:boolean) {
     if ($output = "xml") then 
-        pretty:pretty-print-xml($item, $namespaces)
+        let $node := if ($auto-expand-matches) then util:expand($item) else $item
+        return
+            pretty:pretty-print-xml($node, $namespaces)
     else if ($output = "json") then 
         pretty:pretty-print-json($item, $namespaces)
     else
         (: if ($output = "adaptive") return :)
-        pretty:pretty-print-adaptive($item, $namespaces)
+        pretty:pretty-print-adaptive($item, $namespaces, $auto-expand-matches)
 };
 
 (:~
@@ -129,11 +131,19 @@ declare function pretty:pretty-print-xml($node as item(), $namespaces as xs:stri
     @see https://www.w3.org/TR/xslt-xquery-serialization-31/#adaptive-output
     TODO extend to handle xs:double (format-number with spec's picture string returns an error) and xs:NOTATION (huh?)
 :)
-declare function pretty:pretty-print-adaptive($item as item()*, $namespaces as xs:string*) {
+declare function pretty:pretty-print-adaptive($item as item()*, $namespaces as xs:string*, $auto-expand-matches as xs:boolean) {
 	typeswitch ($item)
-        (: pass normal XML nodes to pretty-print-xml() - which has slightly different formatting, but works :)
-	    case element() | comment() | processing-instruction() | text() return pretty:pretty-print-xml($item, $namespaces)
-	    case document-node() return pretty:pretty-print-xml($item/node(), $namespaces)
+	    (: pass normal XML nodes to pretty-print-xml() - which has slightly different formatting, but works :)
+        case element() return 
+            let $node := 
+                if ($auto-expand-matches) then
+                    util:expand($item)
+                else 
+                    $item
+            return
+                pretty:pretty-print-xml($node, $namespaces)
+	    case comment() | processing-instruction() | text() return pretty:pretty-print-xml($item, $namespaces)
+	    case document-node() return $item/node() ! pretty:pretty-print-adaptive(., $namespaces, $auto-expand-matches)
 	    case $attr as attribute() return
 	        (
 			    <span class="ace_keyword">{node-name($attr)}</span>,
@@ -153,7 +163,7 @@ declare function pretty:pretty-print-adaptive($item as item()*, $namespaces as x
                             <div class="xml-element">
                                 <span class="ace_variable">"{$object-name}"</span>
                                 <span class="ace_identifier"> : </span>
-                                { pretty:pretty-print-adaptive($object-value, $namespaces) }
+                                { pretty:pretty-print-adaptive($object-value, $namespaces, $auto-expand-matches) }
                             </div>
                         }
                     )
@@ -173,7 +183,7 @@ declare function pretty:pretty-print-adaptive($item as item()*, $namespaces as x
 	            for $array-member at $n in $array?*
                 return 
                     (
-                        pretty:pretty-print-adaptive($array-member, $namespaces),
+                        pretty:pretty-print-adaptive($array-member, $namespaces, $auto-expand-matches),
                         if ($n lt array:size($array)) then <span class="ace_identifier">, </span> else ()
                     )
                 ,
