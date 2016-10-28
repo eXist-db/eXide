@@ -40,7 +40,7 @@ declare function pretty:namespace-decls($elem as element(), $namespaces as xs:st
 
 declare function pretty:pretty-print($item as item(), $namespaces as xs:string*, $output as xs:string, $auto-expand-matches as xs:boolean) {
     if ($output = "xml") then 
-        let $node := if ($auto-expand-matches) then util:expand($item) else $item
+        let $node := if ($auto-expand-matches) then util:expand($item, "highlight-matches=both") else $item
         return
             pretty:pretty-print-xml($node, $namespaces)
     else if ($output = "json") then 
@@ -61,7 +61,7 @@ declare function pretty:pretty-print-xml($node as item(), $namespaces as xs:stri
 				<span>&lt;</span>
 				<span class="ace_keyword">exist:match</span>
 				<span>&gt;</span>
-			    <span class="ace_variable ace_entity ace_other ace_attribute-name exist-match">{$elem/node()}</span>
+			    <span class="ace_variable exist-match">{$elem/node()}</span>
 				<span>&lt;/</span>
 				<span class="ace_keyword">exist:match</span>
 				<span>&gt;</span>
@@ -98,7 +98,18 @@ declare function pretty:pretty-print-xml($node as item(), $namespaces as xs:stri
 					for $attr in $elem/@*
 					return (
 						' ', <span class="ace_keyword">{node-name($attr)}</span>,
-						'="', <span class="ace_string">{$attr/string()}</span>, '"'
+						'="', <span class="{
+                            string-join(
+                                (
+                                    "ace_string",
+                                    if ($attr/../@exist:matches = $attr/name()) then 
+                                        "ace_variable exist-match"
+                                    else 
+                                        ()
+                                ),
+                                " "
+                            )
+                        }">{$attr/string()}</span>, '"'
 					)
 				}
 				{
@@ -137,7 +148,7 @@ declare function pretty:pretty-print-adaptive($item as item()*, $namespaces as x
         case element() return 
             let $node := 
                 if ($auto-expand-matches) then
-                    util:expand($item)
+                    util:expand($item, "highlight-matches=both")
                 else 
                     $item
             return
@@ -145,12 +156,23 @@ declare function pretty:pretty-print-adaptive($item as item()*, $namespaces as x
 	    case comment() | processing-instruction() | text() return pretty:pretty-print-xml($item, $namespaces)
 	    case document-node() return $item/node() ! pretty:pretty-print-adaptive(., $namespaces, $auto-expand-matches)
 	    case $attr as attribute() return
-	        (
-			    <span class="ace_keyword">{node-name($attr)}</span>,
-			    '="', 
-			    <span class="ace_string">{$attr/string()}</span>, 
-			    '"'
-			)
+            (
+                <span class="ace_keyword">{node-name($attr)}</span>,
+                '="', 
+                <span class="{
+                    string-join(
+                        (
+                            "ace_string",
+                            if ($auto-expand-matches and $attr/../@exist:matches = $attr/name()) then 
+                                "ace_variable exist-match"
+                            else 
+                                ()
+                        ),
+                        " "
+                    )
+                }">{$attr/string()}</span>, 
+                '"'
+            )
 	    case $map as map(*) return 
             <div class="xml-element">
                 <span class="ace_identifier">map </span>
