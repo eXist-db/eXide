@@ -121,9 +121,9 @@ declare function pretty:pretty-print-xml($node as item(), $namespaces as xs:stri
     @see https://www.w3.org/TR/xslt-xquery-serialization-31/#adaptive-output
     TODO extend to handle xs:double (format-number with spec's picture string returns an error) and xs:NOTATION (huh?)
 :)
-declare function pretty:pretty-print-adaptive($item as item(), $namespaces as xs:string*) {
+declare function pretty:pretty-print-adaptive($item as item()*, $namespaces as xs:string*) {
 	typeswitch ($item)
-	    (: pass normal XML nodes to pretty-print-xml() - which has slightly different formatting, but works :)
+        (: pass normal XML nodes to pretty-print-xml() - which has slightly different formatting, but works :)
 	    case element() | comment() | processing-instruction() | text() return pretty:pretty-print-xml($item, $namespaces)
 	    case document-node() return pretty:pretty-print-xml($item/node(), $namespaces)
 	    case $attr as attribute() return
@@ -225,8 +225,11 @@ declare function pretty:pretty-print-adaptive($item as item(), $namespaces as xs
         case $number as xs:integer | xs:decimal return
             <span class="ace_constant ace_numeric">{string($item)}</span>
         default return 
-    		(: handles any other type :)
-    		<span class="ace_constant">{string($item)}</span>
+            if (empty($item)) then
+                <span class="ace_constant">null</span>
+            else
+        		(: handles any other type :)
+        		<span class="ace_constant">{string($item)}</span>
 };
 
 (:~
