@@ -226,7 +226,10 @@ declare function pretty:pretty-print-adaptive($item as item()*, $namespaces as x
             <span class="ace_constant ace_numeric">{string($item)}</span>
         default return 
             if (empty($item)) then
-                <span class="ace_constant">null</span>
+                (
+                    <span class="ace_paren ace_lparen">(</span>,
+                    <span class="ace_paren ace_rparen">)</span>
+                )
             else
         		(: handles any other type :)
         		<span class="ace_constant">{string($item)}</span>
