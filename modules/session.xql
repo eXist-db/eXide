@@ -53,20 +53,15 @@ declare function sandbox:retrieve($num as xs:integer) as element() {
     let $documentURI :=if ($cached-item instance of node()) then document-uri(root($cached-item)) else ()
     return
         <div class="{if ($num mod 2 eq 0) then 'even' else 'uneven'}">
+            <div class="pos">
             {
                 if (string-length($documentURI) > 0) then
-                    <div class="pos">
-                    {
-                        if (string-length($documentURI) > 0) then
-                            <a href="{$documentURI}#{util:node-id($cached-item)}" data-path="{$documentURI}"
-                                title="Click to load source document">{$num}</a>
-                        else
-                            ()
-                    }
-                    </div>
+                    <a href="{$documentURI}#{util:node-id($cached-item)}" data-path="{$documentURI}"
+                        title="Click to load source document">{$num}</a>
                 else
-                    ()
+                    $num
             }
+            </div>
             <div class="item">
             { if (exists($result)) then pretty:pretty-print($result, (), $output, $auto-expand-matches) else () }
             </div>
