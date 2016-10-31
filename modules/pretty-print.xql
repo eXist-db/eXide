@@ -40,7 +40,7 @@ declare function pretty:namespace-decls($elem as element(), $namespaces as xs:st
 
 declare function pretty:pretty-print($item as item(), $namespaces as xs:string*, $output as xs:string, $auto-expand-matches as xs:boolean) {
     if ($output = "xml") then 
-        let $node := if ($auto-expand-matches) then util:expand($item, "highlight-matches=both") else $item
+        let $node := if ($auto-expand-matches and $item instance of node()) then util:expand($item, "highlight-matches=both") else $item
         return
             pretty:pretty-print-xml($node, $namespaces)
     else if ($output = "json") then 
