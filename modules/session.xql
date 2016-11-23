@@ -42,11 +42,11 @@ declare function sandbox:retrieve($num as xs:integer) as element() {
     let $cached := session:get-attribute("cached")
     let $cached-item := $cached[$num]
     let $result := 
-        if ($output = ("xml", "adaptive")) then
+        if ($output = "xml") then
+            (: preserve eXide's traditional behavior for XML Output: return an "empty" result in the case of maps, arrays, etc. :)
             if ($cached-item instance of node()) then
                 $cached-item
             else
-                (: preserve eXide's traditional behavior: return an "empty" result in the case of maps, arrays, etc. :)
                 try { serialize($cached-item) } catch * { () }
         else
             $cached-item
