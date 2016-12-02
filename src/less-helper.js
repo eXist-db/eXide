@@ -22,57 +22,66 @@ eXide.namespace("eXide.edit.LessModeHelper");
  * XML specific helper methods.
  */
 eXide.edit.LessModeHelper = (function () {
-    
+
+    function saveCSS (path, css) {
+        $.ajax({
+            url: "store/" + path,
+            type: "PUT",
+            data: css,
+            dataType: "json",
+            contentType: "text/css",
+            success: function (data) {
+                if (data.status == "error") {
+                    return eXide.util.error(data.message);
+                }
+                eXide.util.message(path + " stored.");
+            },
+            error: function (xhr, status) {
+                eXide.util.error(xhr.responseText);
+            }
+        });
+    }
+
     var TokenIterator = require("ace/token_iterator").TokenIterator;
     
 	Constr = function(editor) {
 		this.parent = editor;
 		this.editor = this.parent.editor;
         this.addCommand("locate", this.locate);
-	};
-	
-	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
+    };
+
+    eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
 
     Constr.prototype.documentSaved = function(doc) {
-        var $this = this;
+        var path = doc.getExternalLink();
         var code = doc.getText();
-        var path = doc.getExternalLink().replace(/^(.*\/)[^\/]*$/, "$1");
-        var parser = new(less.Parser)({
-            paths: [path],
-            optimization: 3,
-            filename: doc.getExternalLink()
-        });
-        parser.parse(code, function (err, tree) {
+
+        if (/\/_.+\.less$/.test(path)) {
+          // TODO get main file from code
+          return eXide.util.error("CSS not compiled for include : " + path);
+        }
+
+        var options = {
+            filename: path
+            // TODO sourcemaps
+        };
+
+        var header = "/**\n" +
+                      " * THIS IS A GENERATED FILE\n" +
+                      " * to make changes edit\n" +
+                      " * " + path + "\n" +
+                      " */\n\n";
+
+        var handler = function (err, output) {
             if (err) {
-                eXide.util.error("Error: " + err.message);
-                return;
+                return eXide.util.error("Error: " + err.message);
             }
-            $this.saveCSS(doc, tree.toCSS());
-        });
+            eXide.util.message("Compiled less file: " + path);
+            var cssPath = doc.getPath().replace(/\.less$/, ".css");
+            saveCSS(cssPath, header + output.css);
+        };
+        less.render(code, options, handler);
     };
-    
-    Constr.prototype.saveCSS = function(doc, css) {
-        var cssPath = doc.getPath().replace(/\.less$/, ".css");
-        eXide.util.message("Compiling less file to " + cssPath);
-		$.ajax({
-            url: "store/" + cssPath,
-			type: "PUT",
-			data: css,
-			dataType: "json",
-            contentType: "text/css",
-			success: function (data) {
-			    if (data.status == "error") {
-					eXide.util.error(data.message);
-				} else {
-					eXide.util.message(cssPath + " stored.");
-				}
-			},
-			error: function (xhr, status) {
-				eXide.util.error(xhr.responseText);
-			}
-		});
-    };
-    
     Constr.prototype.createOutline = function(doc, onComplete) {
         var iterator = new TokenIterator(doc.getSession(), 0, 0);
         var next = iterator.stepForward();
