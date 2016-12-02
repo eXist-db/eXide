@@ -1,6 +1,6 @@
 /*
  *  eXide - web-based XQuery IDE
- *  
+ *
  *  Copyright (C) 2011 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -43,10 +43,10 @@ eXide.edit.LessModeHelper = (function () {
     }
 
     var TokenIterator = require("ace/token_iterator").TokenIterator;
-    
-	Constr = function(editor) {
-		this.parent = editor;
-		this.editor = this.parent.editor;
+
+    var Constr = function(editor) {
+        this.parent = editor;
+        this.editor = this.parent.editor;
         this.addCommand("locate", this.locate);
     };
 
@@ -82,6 +82,9 @@ eXide.edit.LessModeHelper = (function () {
         };
         less.render(code, options, handler);
     };
+
+    Constr.prototype.saveCSS = saveCSS;
+
     Constr.prototype.createOutline = function(doc, onComplete) {
         var iterator = new TokenIterator(doc.getSession(), 0, 0);
         var next = iterator.stepForward();
@@ -99,20 +102,21 @@ eXide.edit.LessModeHelper = (function () {
                 var selectorStr = selector.reverse().join("");
                 doc.functions.push({
                     type: eXide.edit.Document.TYPE_FUNCTION,
-    				name: selectorStr,
+                    name: selectorStr,
                     source: doc.getPath(),
-    				signature: selectorStr,
+                    signature: selectorStr,
                     sort: selectorStr,
                     row: iterator.getCurrentTokenRow(),
                     column: iterator.getCurrentTokenColumn()
-    			});
+                });
                 lastVar = "";
             }
             next = iterator.stepForward();
         }
-        if (onComplete)
+        if (onComplete) {
             onComplete(doc);
+        }
     }
-    
-	return Constr;
+
+    return Constr;
 }());
