@@ -575,12 +575,13 @@ eXide.app = (function(util) {
 		    if (currentOffset > 0 && currentOffset <= endOffset) {
 		        $("#serialization-mode").removeAttr("disabled");
 		        var serializationMode = $("#serialization-mode").val();
+		        var autoExpandMatches = $("#auto-expand-matches").is(":checked");
 		        var url = 'results/' + currentOffset;
 				currentOffset++;
 				$.ajax({
 					url: url,
 					dataType: 'html',
-					data: { "output": serializationMode },
+					data: { "output": serializationMode, "auto-expand-matches": autoExpandMatches },
 					success: function (data) {
 						$('.results-container .results').append(data);
 						$(".results-container .current").text("Showing results " + startOffset + " to " + (currentOffset - 1) +

@@ -38,37 +38,32 @@ declare option exist:serialize "method=xml media-type=text/xml omit-xml-declarat
 (:~ Retrieve a single query result. :)
 declare function sandbox:retrieve($num as xs:integer) as element() {
     let $output := request:get-parameter("output", "xml")
+    let $auto-expand-matches := request:get-parameter("auto-expand-matches", true())
     let $cached := session:get-attribute("cached")
-    let $node := $cached[$num]
-    let $item := 
-        if ($output = "xml") then
-            if ($node instance of node()) then
-                (: note that util:expand, when run on an attribute, returns the attribute's value :)
-                util:expand($node, 'indent=yes')
+    let $cached-item := $cached[$num]
+    let $result := 
+        if ($output eq "xml") then
+            (: preserve eXide's traditional behavior for XML Output: return an "empty" result in the case of maps, arrays, etc. :)
+            if ($cached-item instance of node()) then
+                $cached-item
             else
-                (: preserve eXide's traditional behavior: return an "empty" result in the case of maps, arrays, etc. :)
-                try { serialize($node) } catch * { () }
+                try { serialize($cached-item) } catch * { () }
         else
-            $node
-    let $documentURI :=if ($node instance of node()) then document-uri(root($node)) else ()
+            $cached-item
+    let $documentURI :=if ($cached-item instance of node()) then document-uri(root($cached-item)) else ()
     return
         <div class="{if ($num mod 2 eq 0) then 'even' else 'uneven'}">
+            <div class="pos">
             {
                 if (string-length($documentURI) > 0) then
-                    <div class="pos">
-                    {
-                        if (string-length($documentURI) > 0) then
-                            <a href="{$documentURI}#{util:node-id($node)}" data-path="{$documentURI}"
-                                title="Click to load source document">{$num}</a>
-                        else
-                            ()
-                    }
-                    </div>
+                    <a href="{$documentURI}#{util:node-id($cached-item)}" data-path="{$documentURI}"
+                        title="Click to load source document">{$num}</a>
                 else
-                    ()
+                    $num
             }
+            </div>
             <div class="item">
-            { if (exists($item)) then pretty:pretty-print($item, (), $output) else () }
+            { if (exists($result)) then pretty:pretty-print($result, (), $output, $auto-expand-matches) else () }
             </div>
         </div>
 };
