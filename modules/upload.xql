@@ -80,6 +80,7 @@ declare function upload:store($root as xs:string, $path as xs:string, $data) {
 
 declare function upload:upload($collection, $path, $data) {
     let $path := upload:store($collection, $path, $data)
+    
     let $upload :=
         <result>
             <files json:array="true">
@@ -100,7 +101,7 @@ let $path := ($pathParam, $name)[1]
 let $data := request:get-uploaded-file-data("file[]")
 return
     util:catch("*",
-        upload:upload(xmldb:encode-uri($collection), $path, $data),
+        upload:upload(xmldb:encode-uri($collection), encode-for-uri($path), $data),
         <result>
            <name>{$name}</name>
            <error>{$util:exception-message}</error>
