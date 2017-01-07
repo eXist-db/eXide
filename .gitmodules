@@ -1,3 +1,4 @@
 [submodule "support/xqlint"]
-	path = support/xqlint
-url=https://github.com/wolfgangmm/xqlint.git
+    path = support/xqlint
+    url = https://github.com/eXistSolutions/xqlint.git
+    ignore = dirty
