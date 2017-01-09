@@ -1,7 +1,6 @@
 <project basedir="." default="all" name="eXide">
     <property file="local.build.properties"/>
     <property file="build.properties"/>
-    <property name="project.version" value="1.0.16"/>
     <property name="src" value="./src"/>
     <property name="tools" value="./tools"/>
     <property name="build" value="./build"/>
@@ -10,7 +9,7 @@
     <property name="templates.dir" value="./templates"/>
     <property name="templates.default.dir" value="${templates.dir}/default"/>
     <property name="xqlint.dir" value="./support/xqlint"/>
-    <property name="closure.compiler.url" value="http://closure-compiler.googlecode.com/files/compiler-latest.zip"/>
+    <property name="closure.compiler.url" value="http://dl.google.com/closure-compiler/compiler-latest.zip"/>
     <property name="server.url" value="http://demo.exist-db.org/exist/apps/public-repo/public/"/>
     <condition property="git.commit" value="${git.commit}" else="">
         <isset property="git.commit"/>
@@ -27,6 +26,10 @@
                 <include name="*.zip"/>
             </fileset>
         </unzip>
+        <move todir="${tools}">
+            <fileset dir="${tools}" includes="*.jar"/>
+            <mapper type="glob" from="*.jar" to="compiler.jar"/>
+        </move>
         <delete file="${tools}/compiler-latest.zip"/>
     </target>
     <target name="prepare" depends="get-closure">
