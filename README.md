@@ -37,7 +37,7 @@ You can install a newer or second version of eXide by deploying it directly into
 also how development on eXide is done.
 
 To build eXide from scratch,
-you should first get eXist-db from SVN and build it (build.sh/build.bat). Next, clone eXide into a directory, e.g.:
+you should first get eXist-db from SVN and build it (build.sh/build.bat). Next, install Node.js (https://nodejs.org/). Next, clone eXide into a directory, e.g.:
 
      git clone git://github.com/wolfgangmm/eXide.git eXideDev
      cd eXideDev
