@@ -11,13 +11,7 @@
     <property name="templates.default.dir" value="${templates.dir}/default"/>
     <property name="xqlint.dir" value="./support/xqlint"/>
     <property name="closure.compiler.url" value="http://closure-compiler.googlecode.com/files/compiler-latest.zip"/>
-    <property name="rhino.url" value="https://raw.github.com/jrburke/r.js/master/lib/rhino/js.jar"/>
-    <property name="rhino.jar" value="tools/js.jar"/>
-    <property name="r.js.url" value="http://requirejs.org/docs/release/2.1.4/r.js"/>
     <property name="server.url" value="http://demo.exist-db.org/exist/apps/public-repo/public/"/>
-    <condition property="rhino.optimize.interpret" value="-opt -1" else="">
-        <isset property="32bit"/>
-    </condition>
     <condition property="git.commit" value="${git.commit}" else="">
         <isset property="git.commit"/>
     </condition>
@@ -35,16 +29,7 @@
         </unzip>
         <delete file="${tools}/compiler-latest.zip"/>
     </target>
-    <target name="check-rhino-available">
-        <available property="rhino.available" file="${tools}/js.jar"/>
-    </target>
-    <target name="get-rhino" depends="check-rhino-available" unless="${rhino.available}">
-        <echo message="Downloading rhino..."/>
-        <mkdir dir="${tools}"/>
-        <get src="${rhino.url}" dest="${tools}"/>
-        <get src="${r.js.url}" dest="${tools}"/>
-    </target>
-    <target name="prepare" depends="get-closure,get-rhino">
+    <target name="prepare" depends="get-closure">
         <taskdef name="jscomp" classname="com.google.javascript.jscomp.ant.CompileTask" classpath="${tools}/compiler.jar"/>
     </target>
     <target name="all" depends="xqlint,compress,xar"/>
@@ -103,27 +88,29 @@
                 <file name="slick.cellrangeselector.js"/>
             </sources>
         </jscomp>
+        <jscomp compilationLevel="simple" debug="false" output="${scripts}/xqlint.min.js" languageIn="ECMASCRIPT5">
+            <sources dir="${xqlint.dir}/build">
+                <file name="xqlint.js"/>
+                <file name="jsoniq_lexer.js"/>
+                <file name="xquery_lexer.js"/>
+            </sources>
+        </jscomp>
     </target>
-    <target name="xqlint" depends="get-rhino">
+    <target name="xqlint">
         <echo message="Optimizing xqlint ..."/>
-        <copy file="tools/build.js" tofile="${xqlint.dir}/build.js"/>
-        <copy file="tools/main/main.js" tofile="${xqlint.dir}/main.js"/>
-        <java classpath="${rhino.jar}:${tools}/compiler.jar" classname="org.mozilla.javascript.tools.shell.Main" fork="true" failonerror="true">
-            <arg line="${rhino.optimize.interpret}"/>
-            <arg line="${xqlint.dir}/r.js"/>
-            <arg line="-o ${xqlint.dir}/build.js"/>
-        </java>
+        <exec executable="${node.dir}/npm" dir="${xqlint.dir}">
+            <env key="PATH" value="${env.PATH}:${node.dir}/" />
+            <arg line="install"/>
+        </exec>
+        <exec executable="${node.dir}/grunt" dir="${xqlint.dir}">
+            <env key="PATH" value="${env.PATH}:${node.dir}/" />
+            <arg line="browser_build"/>
+        </exec>
     </target>
     <target name="clean">
         <delete>
             <fileset dir="${scripts}">
                 <include name="eXide-*.min.js"/>
-            </fileset>
-        </delete>
-        <delete>
-            <fileset dir="${tools}">
-                <include name="js.jar"/>
-                <include name="r.js"/>
             </fileset>
         </delete>
         <delete failonerror="false">
