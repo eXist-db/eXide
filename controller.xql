@@ -139,13 +139,21 @@ else if (starts-with($exist:path, "/check/")) then
         </dispatch>
         
 else if ($exist:resource = "index.html") then
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <view>
-            <forward url="modules/view.xql">
-                <set-header name="Cache-Control" value="max-age=3600"/>
-            </forward>
-        </view>
-    </dispatch>
+    return
+        if (local:user-allowed())
+        then (
+            <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+                <view>
+                    <forward url="modules/view.xql">
+                        <set-header name="Cache-Control" value="max-age=3600"/>
+                    </forward>
+                </view>
+            </dispatch>
+        )
+        else (
+            response:set-status-code(401),
+            <status>fail</status>
+        )
 
 (: Documentation :)
 else if (matches($exist:path, "/docs/.*\.html")) then
