@@ -18,8 +18,7 @@
                 <li>New checkbox to toggle highlighting of index hits</li>
                 <li>Label of "Remember me" is clickable</li>
                 <li>Fix function doc lookup</li>
-                <li>Fix adaptive output</li>
-                <li>Various small bug fixes</li>
+                <li>Various bug fixes</li>
             </ul>
         </change>
         <change version="2.2.0">
