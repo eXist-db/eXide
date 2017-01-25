@@ -2,7 +2,7 @@
 <meta xmlns="http://exist-db.org/xquery/repo">
     <description>eXide - a web based XQuery IDE</description>
     <author>Wolfgang Meier</author>
-    <website/>
+    <website>http://exist-db.org/exist/apps/eXide/docs/doc.html</website>
     <status>stable</status>
     <license>GNU-GPLv3</license>
     <copyright>true</copyright>
