@@ -12,46 +12,49 @@
         </div>
     </div>
     <section id="news">
-        <h1>New in 2.0.8</h1>
+        <h1>New in 2.3.0</h1>
         <div class="feature">
             <div class="row-fluid">
                 <div class="span3 thumb">
-                    <h2>Live Reload</h2>
-                    <p>Instant previews</p>
+                    <h2>Adaptive &amp; JSON Output</h2>
+                    <p>New output modes for viewing your query results</p>
                 </div>
                 <div class="span9">
-                    <p>When developing an XQuery application, enable <em>Live Reload</em> and the browser
-                    tab or window containing the application's web page will automatically reload whenever
-                    you save a resource belonging to the app's package.</p>
-                    <p>Just start the app via the <code>Application/Run app</code> menu entry and check
-                        <em>activate live reload</em>.
-                    </p>
-                    <p>Note: due to browser security restrictions, live reload will only work if the app window has been
-                    opened from within eXide, not via the dashboard. A web page cannot control other windows unless it
-                    created them.</p>
+                    <p>eXide's new default output mode is "Adaptive Output," 
+                    which displays all XDM data types: not just XML elements, 
+                    but free-standing attribute nodes, maps, arrays, and 
+                    functions. (Read more about 
+                    <a href="https://www.w3.org/TR/xslt-xquery-serialization-31/#adaptive-output">Adaptive Output</a>.)
+                    The old "XML Output" method is still available via the output 
+                    mode drop-down.</p>
+                    <p>Also new is a "JSON Output" mode, which uses eXist's 
+                    built-in JSON serialization method (using the popular 
+                    Jackson library) to maps, arrays, and other JSON data 
+                    structures.</p>
+                    <p>Experiment with the new output modes via the dropdown at
+                    the top of the query result pane.</p>
                 </div>
             </div>
         </div>
         <div class="feature">
             <div class="row-fluid">
                 <div class="span3 thumb">
-                    <h2>Drop Files</h2>
-                    <p>Drag and drop files into the editor</p>
+                    <h2>Match highlighting improvements</h2>
+                    <p>Attribute matches are highlighted, and new controls</p>
                 </div>
                 <div class="span9">
-                    <p>Drag a file on the editor to open its contents in a new tab.</p>
-                </div>
-            </div>
-        </div>
-        <div class="feature">
-            <div class="row-fluid">
-                <div class="span3 thumb">
-                    <h2>Directory Uploads</h2>
-                    <p>Preserves directory structure</p>
-                </div>
-                <div class="span9">
-                    <p>A long requested feature is now available - at least if you are on Chrome: you can now upload
-                    entire directories and preserve their structure. Even better: drag and drop of directories works as well.</p>
+                    <p>eXide's highlighting of element index matches in queries 
+                    that leverage full text, range, and ngram indexes has been 
+                    extended to attributes (requires eXist 3.0).</p>
+                    <p>To improve fidelity of query results with these index
+                    matches, the exist:match element (and exist:matches 
+                    attribute) is now displayed, in addition to the highlighting 
+                    of the result.</p>
+                    <p>In addition, a new "Highlight Index Matches" checkbox 
+                    at the top of the query result pane (selected by default)
+                    lets you toggle the highlighting behavior. Unselecting the
+                    checkbox will suppress the highlighting and any exist:match
+                    elements or exist:matches attributes.</p>
                 </div>
             </div>
         </div>
@@ -77,8 +80,8 @@
         <div class="feature">
             <div class="row-fluid">
                 <div class="span3 thumb">
-                    <h2>IntelliCode</h2>
-                    <p>Context-sensitive code completion</p>
+                    <h2>Code completion</h2>
+                    <p>Context-sensitive code completion, with the touch of a key</p>
                 </div>
                 <div class="span9">
                     <p>In XQuery mode, pressing the <code>tab</code> key after typing a few characters calls context-sensitive code completion. 
@@ -218,6 +221,48 @@
                         the namespace URI, press <code>Ctrl-Space</code> or <code>Cmd-Space</code> to call autocomplete.
                         This should pop up any module currently stored in the db which matches the prefix you entered.</li>
                     </ol>
+                </div>
+            </div>
+        </div>
+        <div class="feature">
+            <div class="row-fluid">
+                <div class="span3 thumb">
+                    <h2>Live Reload</h2>
+                    <p>Instant previews</p>
+                </div>
+                <div class="span9">
+                    <p>When developing an XQuery application, enable <em>Live Reload</em> and the browser
+                    tab or window containing the application's web page will automatically reload whenever
+                    you save a resource belonging to the app's package.</p>
+                    <p>Just start the app via the <code>Application/Run app</code> menu entry and check
+                        <em>activate live reload</em>.
+                    </p>
+                    <p>Note: due to browser security restrictions, live reload will only work if the app window has been
+                    opened from within eXide, not via the dashboard. A web page cannot control other windows unless it
+                    created them.</p>
+                </div>
+            </div>
+        </div>
+        <div class="feature">
+            <div class="row-fluid">
+                <div class="span3 thumb">
+                    <h2>Drop Files</h2>
+                    <p>Drag and drop files into the editor</p>
+                </div>
+                <div class="span9">
+                    <p>Drag a file on the editor to open its contents in a new tab.</p>
+                </div>
+            </div>
+        </div>
+        <div class="feature">
+            <div class="row-fluid">
+                <div class="span3 thumb">
+                    <h2>Directory Uploads</h2>
+                    <p>Preserves directory structure (Chrome only)</p>
+                </div>
+                <div class="span9">
+                    <p>Use File > Manage > Upload Files > Upload Directory to upload
+                    entire directories and preserve their structure. Or drag and drop onto the Upload Files pane.</p>
                 </div>
             </div>
         </div>
