@@ -24,7 +24,7 @@ declare variable $login :=
         else
             local:fallback-login#3
 ;
- 
+
 (:~
     Fallback login function used when the persistent login module is not available.
     Stores user/password in the HTTP session.
@@ -39,7 +39,7 @@ declare function local:fallback-login($domain as xs:string, $maxAge as xs:dayTim
             error(xs:QName("login"), "Persistent login module not enabled in this version of eXist-db")
         else if ($logout) then
             session:invalidate()
-        else 
+        else
             if ($user) then
                 let $isLoggedIn := xmldb:login("/db", $user, $password, true())
                 return
@@ -137,15 +137,23 @@ else if (starts-with($exist:path, "/check/")) then
                 {$login("org.exist.login", (), false())}
             </forward>
         </dispatch>
-        
+
 else if ($exist:resource = "index.html") then
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <view>
-            <forward url="modules/view.xql">
-                <set-header name="Cache-Control" value="max-age=3600"/>
-            </forward>
-        </view>
-    </dispatch>
+    return
+        if (local:user-allowed())
+        then (
+            <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+                <view>
+                    <forward url="modules/view.xql">
+                        <set-header name="Cache-Control" value="max-age=3600"/>
+                    </forward>
+                </view>
+            </dispatch>
+        )
+        else (
+            response:set-status-code(401),
+            <status>fail</status>
+        )
 
 (: Documentation :)
 else if (matches($exist:path, "/docs/.*\.html")) then
@@ -156,7 +164,7 @@ else if (matches($exist:path, "/docs/.*\.html")) then
             </forward>
         </view>
     </dispatch>
-    
+
 else if ($exist:resource eq 'execute') then
     let $query := request:get-parameter("qu", ())
     let $base := request:get-parameter("base", ())
@@ -167,8 +175,8 @@ else if ($exist:resource eq 'execute') then
     return
         if ($userAllowed) then
             switch ($output)
-                case "adaptive" 
-                case "json" 
+                case "adaptive"
+                case "json"
                 case "xml" return
                     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
                         <!-- Query is executed by XQueryServlet -->
@@ -191,7 +199,7 @@ else if ($exist:resource eq 'execute') then
                             <forward url="modules/session.xql">
                                <clear-attribute name="xquery.source"/>
                                <clear-attribute name="xquery.attribute"/>
-                               <set-attribute name="elapsed" 
+                               <set-attribute name="elapsed"
                                    value="{string(seconds-from-duration(util:system-time() - $startTime))}"/>
                             </forward>
             	        </view>
@@ -212,7 +220,7 @@ else if ($exist:resource eq 'execute') then
                     </dispatch>
         else
             response:set-status-code(401)
-            
+
 (: Retrieve an item from the query results stored in the HTTP session. The
  : format of the URL will be /sandbox/results/X, where X is the number of the
  : item in the result set :)
@@ -224,7 +232,7 @@ else if (starts-with($exist:path, '/results/')) then
             <add-parameter name="num" value="{$exist:resource}"/>
         </forward>
     </dispatch>
-    
+
 else if ($exist:resource eq "outline") then
     let $query := request:get-parameter("qu", ())
     let $base := request:get-parameter("base", ())
@@ -246,14 +254,14 @@ else if ($exist:resource eq "debug") then
             <set-header name="Cache-Control" value="no-cache"/>
         </forward>
     </dispatch>
-    
+
 else if (ends-with($exist:path, ".xql")) then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         {$login("org.exist.login", (), false())}
         <set-header name="Cache-Control" value="no-cache"/>
         <set-attribute name="app-root" value="{$exist:prefix}{$exist:controller}"/>
     </dispatch>
-    
+
 else if (contains($exist:path, "/$shared/")) then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <forward url="/shared-resources/{substring-after($exist:path, '/$shared/')}"/>
