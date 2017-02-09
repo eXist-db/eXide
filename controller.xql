@@ -139,7 +139,6 @@ else if (starts-with($exist:path, "/check/")) then
         </dispatch>
 
 else if ($exist:resource = "index.html") then
-    return
         if (local:user-allowed())
         then (
             <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
