@@ -1,5 +1,5 @@
 .DS_Store
-*.xar
+build/*
 expath-pkg.xml
 
 resources/scripts/xqlint.min.js
@@ -7,3 +7,4 @@ resources/scripts/xqlint.min.js
 tools/r.js
 
 tools/js.jar
+index.html

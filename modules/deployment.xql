@@ -426,13 +426,13 @@ declare function deploy:view($collection as xs:string?, $expathConf as element()
                         </select>
                         <label for="type">Type of the package:</label>
                     </li>
-                    <li>
+                    <!--li>
                         <div class="hint">By default some XQuery libraries and other resources will be imported from the "shared-resources" package.
                             The generated package will thus have a dependancy on "shared-resources". Check this to avoid the dependency.
                         </div>
                         <input type="checkbox" name="includeall"/>
                         <label for="includeall">Include all libraries</label>
-                    </li>
+                    </li-->
                     <li>
                         <div class="hint">A relative path to the collection where the package will be installed below the repository root. Leave
                             this empty if the package does not need to be deployed into the database.

@@ -15,6 +15,6 @@ let $source := request:get-parameter("source", ())
 let $result := test:suite(inspect:module-functions(xs:anyURI("xmldb:exist://" || $source)))
 return
     <div class="uneven">
-        <div class="item">{pretty:pretty-print($result, ())}</div>
+        <div class="item">{pretty:pretty-print($result, (), "xml", false())}</div>
     </div>
     

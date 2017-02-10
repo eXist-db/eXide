@@ -425,7 +425,7 @@ eXide.edit.Editor = (function () {
         if (data && typeof data == "string") {
             session = new EditSession(data);
         } else if (type && type === "xquery") {
-            session = new EditSession("xquery version \"3.0\";\n\n");
+            session = new EditSession("xquery version \"3.1\";\n\n");
         } else {
             session = new EditSession("");
         }
@@ -489,7 +489,10 @@ eXide.edit.Editor = (function () {
 			eXide.util.message("Opening " + resource.path);
         if (/\.snippet/.test(resource.name)) {
             mime = "application/tmsnippet";
+        } else if (/\.less/.test(resource.name)) {
+            mime = "application/less";
         }
+        console.log("mime type: %s", mime);
 		var doc = new eXide.edit.Document(resource.name, resource.path, new EditSession(data));
 		doc.editable = resource.writable;
 		doc.mime = mime;

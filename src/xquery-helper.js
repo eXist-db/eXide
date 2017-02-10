@@ -40,12 +40,17 @@ eXide.edit.XQueryModeHelper = (function () {
 		this.editor = this.parent.editor;
         this.xqDebugger = null;
         
-        // pre-compile regexp needed by this class
-    	this.funcDefRe = /declare\s+((?:%[\w\:\-]+(?:\([^\)]*\))?\s*)*)function\s+([^\(]+)\(/g;
-		this.varDefRe = /declare\s+(?:%\w+\s+)*variable\s+\$[^\s;]+/gm;
-		this.varRe = /declare\s+(?:%\w+\s+)*variable\s+(\$[^\s;]+)/;
-		this.parseImportRe = /import\s+module\s+namespace\s+[^=]+\s*=\s*["'][^"']+["']\s*at\s+["'][^"']+["']\s*;/g;
-		this.moduleRe = /import\s+module\s+namespace\s+([^=\s]+)\s*=\s*["']([^"']+)["']\s*at\s+["']([^"']+)["']\s*;/;
+//      this.funcDefRe = /\(:[^)]*:\)|(declare\s+((?:%[\w\:\-]+(?:\([^\)]*\))?\s*)*)function\s+([^\(]+)\()/g;
+//      this.varDefRe = /\(:[^)]*:\)|(declare\s+(?:%\w+\s+)*variable\s+\$[^\s;]+)/gm;
+        this.funcDefRe = /\(:.*declare.+function.+:\)|(declare\s+((?:%[\w\:\-]+(?:\([^\)]*\))?\s*)*)function\s+([^\(]+)\()/g;
+        this.varDefRe = /\(:.*declare.+variable.+:\)|(declare\s+(?:%\w+\s+)*variable\s+\$[^\s;]+)/gm;
+        
+        this.varRe = /declare\s+(?:%\w+\s+)*variable\s+(\$[^\s;]+)/;
+        // this.parseImportRe = /import\s+module\s+namespace\s+[^=]+\s*=\s*["'][^"']+["']\s*at\s+["'][^"']+["']\s*;/g;
+        this.parseImportRe = /\(:[^)]*:\)|(import\s+module\s+namespace\s+[^=]+\s*=\s*["'][^"']+["']\s*at\s+["'][^"']+["']\s*;)/g
+        this.moduleRe = /import\s+module\s+namespace\s+([^=\s]+)\s*=\s*["']([^"']+)["']\s*at\s+["']([^"']+)["']\s*;/;
+
+
 		// added to clean function name : 
         this.trimRe = /^[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+|[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+$/g;
         
@@ -1092,47 +1097,52 @@ eXide.edit.XQueryModeHelper = (function () {
 	}
     
     Constr.prototype.$parseLocalFunctions = function(text, doc) {
-		doc.functions = [];
-		
-		while (true) {
-			var funcDef = this.funcDefRe.exec(text);
-			if (funcDef == null) {
-				break;
-			}
-			var offset = this.funcDefRe.lastIndex;
-			var end = this.$findMatchingParen(text, offset);
-            var name = (funcDef.length == 3 ? funcDef[2] : funcDef[1]).replace(this.trimRe,"");
-            var status = funcDef.length == 3 ? funcDef[1] : "public";
-            var signature =  name + "(" + text.substring(offset, end) + ")"
-            if (status.indexOf("%private") !== -1)
-                status = "private";
-			doc.functions.push({
-				type: eXide.edit.Document.TYPE_FUNCTION,
-				name: name,
-                visibility: status,
-                signature: signature,
-                sort : "$$" + signature
-			});
-		}
-		var varDefs = text.match(this.varDefRe);
-		if (varDefs) {
-			for (var i = 0; i < varDefs.length; i++) {
-				var v = this.varRe.exec(varDefs[i]);
+        doc.functions = [];
+        
+        var match =  this.funcDefRe.exec(text), 
+            funcDef,
+            varDef;
+
+        while ((funcDef = match) != null) {
+            if(funcDef[1] != null ) {
+                var offset = this.funcDefRe.lastIndex;
+                var end = this.$findMatchingParen(text, offset);
+                var name = (funcDef.length == 4 ? funcDef[3] : funcDef[2]).replace(this.trimRe,"");
+                var status = funcDef.length == 4 ? funcDef[2] : "public";
+                var signature =  name + "(" + text.substring(offset, end) + ")"
+                if (status.indexOf("%private") !== -1) {status = "private";}
+                doc.functions.push({
+                    type: eXide.edit.Document.TYPE_FUNCTION,
+                    name: name,
+                    visibility: status,
+                    signature: signature,
+                    sort : "$$" + signature
+                });
+            };
+            match = this.funcDefRe.exec(text);
+        }
+
+        match =  this.varDefRe.exec(text);
+        while ((varDef = match) != null) {
+            if(varDef[1] != null ) {
+                var v = this.varRe.exec(varDef[1]);
                 var sort = v[1].substr(1).split(":");
                 sort.splice(1,0,":$");
                 var name = v[1];
                 if (name.substring(0, 1) == "$") {
                     name = name.substring(1);
                 }
-				doc.functions.push({
-					type: eXide.edit.Document.TYPE_VARIABLE,
-					name: name,
+                doc.functions.push({
+                    type: eXide.edit.Document.TYPE_VARIABLE,
+                    name: name,
                     sort: "$$" + sort.join("")
-				});
-			}
-		}
+                });
+            }
+            match = this.varDefRe.exec(text);
+        }
+
         this.$sortFunctions(doc);
-	}
+    }
 	
 	Constr.prototype.$findMatchingParen = function (text, offset) {
 		var depth = 1;
@@ -1150,7 +1160,17 @@ eXide.edit.XQueryModeHelper = (function () {
 	}
 	
 	Constr.prototype.$parseImports = function(code) {
-		return code.match(this.parseImportRe);
+        var ret = [], 
+            re = this.parseImportRe,
+            match = re.exec(code);
+
+        // put Group capture in ret
+        while (match != null) {
+            if( match[1] != null ) {ret.push(match[1])};
+            match = re.exec(code);
+        }
+        return ret
+		// return code.match(this.parseImportRe);
 	}
 	
 	Constr.prototype.$resolveImports = function(doc, imports, onComplete) {

@@ -16,7 +16,7 @@
  :  You should have received a copy of the GNU General Public License
  :  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  :)
-xquery version "1.0";
+xquery version "3.0";
 
 (:~
 	Post-processes query results for the sandbox application. The
@@ -37,32 +37,33 @@ declare option exist:serialize "method=xml media-type=text/xml omit-xml-declarat
 
 (:~ Retrieve a single query result. :)
 declare function sandbox:retrieve($num as xs:integer) as element() {
+    let $output := request:get-parameter("output", "xml")
+    let $auto-expand-matches := request:get-parameter("auto-expand-matches", true())
     let $cached := session:get-attribute("cached")
-    let $node := $cached[$num]
-    let $item := 
-    	if ($node instance of node()) then
-    		util:expand($node, 'indent=yes')
-    	else
-    		$node
-    let $documentURI :=if ($node instance of node()) then document-uri(root($node)) else ()
+    let $cached-item := $cached[$num]
+    let $result := 
+        if ($output eq "xml") then
+            (: preserve eXide's traditional behavior for XML Output: return an "empty" result in the case of maps, arrays, etc. :)
+            if ($cached-item instance of node()) then
+                $cached-item
+            else
+                try { serialize($cached-item) } catch * { () }
+        else
+            $cached-item
+    let $documentURI :=if ($cached-item instance of node()) then document-uri(root($cached-item)) else ()
     return
         <div class="{if ($num mod 2 eq 0) then 'even' else 'uneven'}">
+            <div class="pos">
             {
                 if (string-length($documentURI) > 0) then
-                    <div class="pos">
-                    {
-                        if (string-length($documentURI) > 0) then
-                            <a href="{$documentURI}#{util:node-id($node)}" data-path="{$documentURI}"
-                                title="Click to load source document">{$num}</a>
-                        else
-                            ()
-                    }
-                    </div>
+                    <a href="{$documentURI}#{util:node-id($cached-item)}" data-path="{$documentURI}"
+                        title="Click to load source document">{$num}</a>
                 else
-                    ()
+                    $num
             }
+            </div>
             <div class="item">
-            { pretty:pretty-print($item, ()) }
+            { if (exists($result)) then pretty:pretty-print($result, (), $output, $auto-expand-matches) else () }
             </div>
         </div>
 };

@@ -19,7 +19,7 @@ declare function find:xquery-scripts($root as xs:string) {
 };
 
 declare function find:registered-scripts($prefix as xs:string?) {
-    for $uri in util:registered-modules()
+    for $uri in (util:registered-modules(), util:mapped-modules())
     let $module := inspect:inspect-module-uri($uri)
     where empty($prefix) or contains($module/@prefix, $prefix)
     return

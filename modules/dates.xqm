@@ -6,10 +6,7 @@ xquery version "1.0";
 
 module namespace date="http://exist-db.org/xquery/admin-interface/date";
 
-declare variable $date:months {
-	("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct",
-	"Nov", "Dec")
-};
+declare variable $date:months := ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec");
 
 declare function date:format-date($date as xs:dateTime) as xs:string {
 	string-join((

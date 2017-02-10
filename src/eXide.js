@@ -132,8 +132,7 @@ eXide.app = (function(util) {
                     // dirty workaround to fix editor height
                     // var southStatus = localStorage.getItem("eXide.layout.south");
                     // $("#layout-container").layout().toggle("south");
-                    
-                    if (eXide.configuration && eXide.configuration.allowGuest) {
+                    if (eXide.configuration.allowGuest) {
                         $("#splash").fadeOut(400);
                     } else {
                         app.requireLogin(function() {
@@ -522,10 +521,12 @@ eXide.app = (function(util) {
         			$.ajax({
         				type: "POST",
         				url: "execute",
-        				dataType: serializationMode == "xml" ? serializationMode : "text",
+        				dataType: serializationMode == "adaptive" || serializationMode == "json" || serializationMode == "xml" ? "xml" : "text",
         				data: { "qu": code, "base": moduleLoadPath, "output": serializationMode },
         				success: function (data, status, xhr) {
                             switch (serializationMode) {
+                                case "adaptive":
+                                case "json":
                                 case "xml":
                                     $("#results-iframe").hide();
                 					var elem = data.documentElement;
@@ -572,11 +573,15 @@ eXide.app = (function(util) {
 		retrieveNext: function() {
 			$.log("retrieveNext: %d", currentOffset);
 		    if (currentOffset > 0 && currentOffset <= endOffset) {
+		        $("#serialization-mode").removeAttr("disabled");
+		        var serializationMode = $("#serialization-mode").val();
+		        var autoExpandMatches = $("#auto-expand-matches").is(":checked");
 		        var url = 'results/' + currentOffset;
 				currentOffset++;
 				$.ajax({
 					url: url,
 					dataType: 'html',
+					data: { "output": serializationMode, "auto-expand-matches": autoExpandMatches },
 					success: function (data) {
 						$('.results-container .results').append(data);
 						$(".results-container .current").text("Showing results " + startOffset + " to " + (currentOffset - 1) +
@@ -1025,7 +1030,8 @@ eXide.app = (function(util) {
             
             return {
                  branch: function(gitApp)   {
-                     if(!app.login || !app.login.isAdmin) {return}
+                     console.info('git.branch');
+                     if(!app.login.isAdmin) {return}   
                      $.ajax({ 
                         type: "GET",
                         url: gitUrl,
