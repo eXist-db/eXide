@@ -181,11 +181,24 @@ declare function pretty:pretty-print-adaptive($item as item()*, $namespaces as x
                 let $objects := 
                     map:for-each-entry(
                         $map, 
-                        function($object-name, $object-value) {
+                        function($object-name, $object-values) {
                             <div class="xml-element">
                                 <span class="ace_variable">"{$object-name}"</span>
                                 <span class="ace_identifier"> : </span>
-                                { pretty:pretty-print-adaptive($object-value, $namespaces, $auto-expand-matches) }
+                                { 
+                                    if (count($object-values) gt 1) then
+                                        (
+                                            <span class="ace_paren ace_lparen">(</span>,
+                                            for $value at $n in $object-values
+                                            return
+                                                (
+                                                    pretty:pretty-print-adaptive($value, $namespaces, $auto-expand-matches),
+                                                    if ($n lt count($object-values)) then <span class="ace_identifier">, </span> else ()
+                                                ),
+                                            <span class="ace_paren ace_rparen">)</span>
+                                        )
+                                    else
+                                        pretty:pretty-print-adaptive($object-values, $namespaces, $auto-expand-matches) }
                             </div>
                         }
                     )
