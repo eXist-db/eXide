@@ -12,6 +12,11 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="2.3.2">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Raise eXist dependency restrictions to allow compatibility with eXist 3.1</li>
+            </ul>
+        </change>
         <change version="2.3.1">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Add Adaptive Output mode handling for maps with a sequence of items as a value</li>
