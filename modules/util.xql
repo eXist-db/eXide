@@ -47,7 +47,8 @@ declare function apputil:get-info-from-descriptor($collection as xs:string) {
             <isAdmin json:literal="true">{$auth}</isAdmin>
             <url>{ request:get-attribute("$exist:prefix") || "/" || substring-after($collection, repo:get-root()) }</url>
             <git>{exists($gitConf)}</git>
-            <workingDir>{$gitConf/git:workingDir/string()}</workingDir>
+            <syncDir>{$gitConf/git:syncDir/string()}</syncDir>
+            <gitDir>{($gitConf/git:gitDir/string(), $gitConf/git:syncDir/string())[1]}</gitDir>
         </info>
 };
 
