@@ -98,21 +98,19 @@ else if ($exist:path eq '/') then
  :)
 else if ($exist:resource = 'login') then
     let $loggedIn := $login("org.exist.login", (), false())
-    let $userAllowed := local:user-allowed()
     return
         try {
-        (
             util:declare-option("exist:serialize", "method=json"),
-            if ($userAllowed) then
+            if (local:user-allowed()) then
                 <status>
                     <user>{request:get-attribute("org.exist.login.user")}</user>
                     <isAdmin json:literal="true">{ xmldb:is-admin-user((request:get-attribute("org.exist.login.user"),request:get-attribute("xquery.user"), 'nobody')[1]) }</isAdmin>
                 </status>
-            else (
-                response:set-status-code(401),
-                <status>fail</status>
-            )
-            )
+            else 
+                (
+                    response:set-status-code(401),
+                    <status>fail</status>
+                )
         } catch * {
             response:set-status-code(401),
             <status>{$err:description}</status>
@@ -139,18 +137,16 @@ else if (starts-with($exist:path, "/check/")) then
         </dispatch>
 
 else if ($exist:resource = "index.html") then
-    return
-        if (local:user-allowed())
-        then (
-            <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-                <view>
-                    <forward url="modules/view.xql">
-                        <set-header name="Cache-Control" value="max-age=3600"/>
-                    </forward>
-                </view>
-            </dispatch>
-        )
-        else (
+    if (local:user-allowed()) then 
+        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+            <view>
+                <forward url="modules/view.xql">
+                    <set-header name="Cache-Control" value="max-age=3600"/>
+                </forward>
+            </view>
+        </dispatch>
+    else 
+        (
             response:set-status-code(401),
             <status>fail</status>
         )
