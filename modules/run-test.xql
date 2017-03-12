@@ -12,9 +12,14 @@ declare option output:media-type "text/html";
 declare option output:indent "no";
 
 let $source := request:get-parameter("source", ())
-let $result := test:suite(inspect:module-functions(xs:anyURI("xmldb:exist://" || $source)))
 return
-    <div class="uneven">
-        <div class="item">{pretty:pretty-print($result, (), "xml", false())}</div>
-    </div>
-    
+    if (util:binary-doc-available((xs:anyURI("xmldb:exist://" || $source)))) then 
+        let $result := test:suite(inspect:module-functions(xs:anyURI("xmldb:exist://" || $source)))
+        return
+            <div class="uneven">
+                <div class="item">{pretty:pretty-print($result, (), "xml", false())}</div>
+            </div>
+    else
+        let $message := "To use XQuery > Run as test, the query must be saved in the database. Please save the test to a collection in the database and try XQuery > Run as test again."
+        return
+            error(QName("http://exist-db.org/apps/eXide", "eXide-error"), $message)
