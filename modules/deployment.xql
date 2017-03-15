@@ -21,6 +21,7 @@ xquery version "3.0";
 
 import module namespace apputil="http://exist-db.org/apps/eXide/apputil" at "util.xql";
 import module namespace tmpl="http://exist-db.org/xquery/template" at "tmpl.xql";
+import module namespace dbutil="http://exist-db.org/xquery/dbutil";
 
 (:~ 
     Edit the expath and repo app descriptors.
@@ -571,9 +572,24 @@ declare function deploy:package($collection as xs:string, $expathConf as element
         xmldb:store("/db/system/repo", $name, $xar, "application/zip")
 };
 
-declare function deploy:download($collection as xs:string, $expathConf as element()) {
+declare function deploy:download($app-collection as xs:string, $expathConf as element(), $expand-xincludes as xs:boolean) {
     let $name := concat($expathConf/@abbrev, "-", $expathConf/@version, ".xar")
-    let $xar := compression:zip(xs:anyURI($collection), true(), $collection)
+    let $entries :=
+        (: compression:zip doesn't seem to store empty collections, so we'll scan for only resources :)
+        dbutil:scan-resources(xs:anyURI($app-collection), function($resource as xs:anyURI?) {
+            let $relative-path := substring-after($resource, $app-collection || "/")
+            return
+                if (util:binary-doc-available($resource)) then
+                    <entry name="{$relative-path}" type="uri">{$resource}</entry>
+                else
+                    <entry name="{$relative-path}" type="xml">
+                        {
+                            util:declare-option("exist:serialize", "expand-xincludes=" || (if ($expand-xincludes) then "yes" else "no")), 
+                            doc($resource)
+                        }
+                    </entry>
+        })
+    let $xar := compression:zip($entries, true())
     return (
         response:set-header("Content-Disposition", concat("attachment; filename=", $name)),
         response:stream-binary($xar, "application/zip", $name)
@@ -603,13 +619,14 @@ let $collection :=
 let $info := request:get-parameter("info", ())
 let $deploy := request:get-parameter("deploy", ())
 let $download := request:get-parameter("download", ())
+let $expand-xincludes := request:get-parameter("expand-xincludes", "false") cast as xs:boolean
 let $expathConf := if ($collection) then xmldb:xcollection($collection)/expath:package else ()
 let $repoConf := if ($collection) then xmldb:xcollection($collection)/repo:meta else ()
 let $abbrev := request:get-parameter("abbrev", ())
 return
     try {
         if ($download) then
-            deploy:download($collection, $expathConf)
+            deploy:download($collection, $expathConf, $expand-xincludes)
         else if ($info) then
             apputil:get-info($info)
         else if ($abbrev) then
