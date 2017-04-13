@@ -286,7 +286,7 @@ eXide.edit.Editor = (function () {
                     var line = $(this).find('input[name="row"]').val();
                     var column = $(this).find('input[name="column"]').val();
                     if (column && column != "") {
-                        $this.editor.gotoLine(line, column, true);
+                        $this.editor.gotoLine(line, column - 1, true);
                     } else {
                         $this.editor.gotoLine(line, 0, true);
                     }
