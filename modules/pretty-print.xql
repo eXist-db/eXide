@@ -90,7 +90,7 @@ declare function pretty:pretty-print-xml($node as item(), $namespaces as xs:stri
                                 
                         }
                         </span>, '="',
-                        <span class="ace_string">{$nsDecl/@uri/string()}</span>,
+                        <span class="ace_string">{serialize($nsDecl/@uri/string())}</span>,
                         '"'
                     )
                 }
@@ -109,7 +109,7 @@ declare function pretty:pretty-print-xml($node as item(), $namespaces as xs:stri
                                 ),
                                 " "
                             )
-                        }">{$attr/string()}</span>, '"'
+                        }">{serialize($attr/string())}</span>, '"'
 					)
 				}
 				{
@@ -128,9 +128,9 @@ declare function pretty:pretty-print-xml($node as item(), $namespaces as xs:stri
 				}
 			</div>
 		case $text as text() return
-			<span class="ace_identifier">{$text}</span>
+			<span class="ace_identifier">{serialize($text)}</span>
 		case $comment as comment() return
-			<div class="ace_comment">&lt;!-- {$comment/string()} --&gt;</div>
+			<div class="ace_comment">&lt;!--{$comment/string()}--&gt;</div>
 		case $pi as processing-instruction() return
 			<div style="color: darkred">&lt;?{node-name($pi)}{if ($pi/string()) then " " || $pi/string() else ()}?&gt;</div>
 		default return
@@ -170,7 +170,7 @@ declare function pretty:pretty-print-adaptive($item as item()*, $namespaces as x
                         ),
                         " "
                     )
-                }">{$attr/string()}</span>, 
+                }">{serialize($attr/string())}</span>, 
                 '"'
             )
 	    case $map as map(*) return 
@@ -266,7 +266,7 @@ declare function pretty:pretty-print-adaptive($item as item()*, $namespaces as x
                 <span class="ace_paren ace_rparen">)</span>
 		    )
 	    case $string as xs:string | xs:untypedAtomic return
-	        <span class="ace_string">"{$string}"</span>
+	        <span class="ace_string">"{serialize($string)}"</span>
         case $qname as xs:QName return 
             (
                 <span class="ace_identifier">{"Q"}</span>,
