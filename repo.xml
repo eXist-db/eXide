@@ -12,6 +12,15 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="2.3.3">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fix serialization of query results with strings containing escaped characters</li>
+                <li>Fix the column that "Navigate" > "Go to line" goes to</li>
+                <li>Improve download app to prevent expansion of XIncludes</li>
+                <li>Improve error reported when trying to run tests not stored in the database</li>
+                <li>Removed package's semver-max to ensure compatibility with all eXist 3.x releases</li>
+            </ul>
+        </change>
         <change version="2.3.2">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Raise eXist dependency restrictions to allow compatibility with eXist 3.1</li>
