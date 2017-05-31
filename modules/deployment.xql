@@ -575,16 +575,17 @@ declare function deploy:package($collection as xs:string, $expathConf as element
 declare function deploy:download($app-collection as xs:string, $expathConf as element(), $expand-xincludes as xs:boolean) {
     let $name := concat($expathConf/@abbrev, "-", $expathConf/@version, ".xar")
     let $entries :=
-        dbutil:scan(xs:anyURI($app-collection), function($collection as xs:anyURI, $resource as xs:anyURI?) {
-            let $relative-path := substring-after($resource, $app-collection || "/")
+        dbutil:scan(xs:anyURI($app-collection), function($collection as xs:anyURI?, $resource as xs:anyURI?) {
+            let $resource-relative-path := substring-after($resource, $app-collection || "/")
+            let $collection-relative-path := substring-after($collection, $app-collection || "/")
             return
                 (: compression:zip doesn't seem to store empty collections, so we'll only operate on resources :)
                 if (exists($collection)) then
-                    ()
+                    <entry name="{$collection-relative-path}" type="collection"/>
                 else if (util:binary-doc-available($resource)) then
-                    <entry name="{$relative-path}" type="uri">{$resource}</entry>
+                    <entry name="{$resource-relative-path}" type="uri">{$resource}</entry>
                 else
-                    <entry name="{$relative-path}" type="xml">
+                    <entry name="{$resource-relative-path}" type="xml">
                         {
                             util:declare-option("exist:serialize", "expand-xincludes=" || (if ($expand-xincludes) then "yes" else "no")), 
                             doc($resource)
