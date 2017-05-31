@@ -575,11 +575,13 @@ declare function deploy:package($collection as xs:string, $expathConf as element
 declare function deploy:download($app-collection as xs:string, $expathConf as element(), $expand-xincludes as xs:boolean) {
     let $name := concat($expathConf/@abbrev, "-", $expathConf/@version, ".xar")
     let $entries :=
-        (: compression:zip doesn't seem to store empty collections, so we'll scan for only resources :)
-        dbutil:scan-resources(xs:anyURI($app-collection), function($resource as xs:anyURI?) {
+        dbutil:scan(xs:anyURI($app-collection), function($collection as xs:anyURI, $resource as xs:anyURI?) {
             let $relative-path := substring-after($resource, $app-collection || "/")
             return
-                if (util:binary-doc-available($resource)) then
+                (: compression:zip doesn't seem to store empty collections, so we'll only operate on resources :)
+                if (exists($collection)) then
+                    ()
+                else if (util:binary-doc-available($resource)) then
                     <entry name="{$relative-path}" type="uri">{$resource}</entry>
                 else
                     <entry name="{$relative-path}" type="xml">
