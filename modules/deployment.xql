@@ -18,7 +18,6 @@
  :)
 xquery version "3.0";
 
-
 import module namespace apputil="http://exist-db.org/apps/eXide/apputil" at "util.xql";
 import module namespace tmpl="http://exist-db.org/xquery/template" at "tmpl.xql";
 import module namespace dbutil="http://exist-db.org/xquery/dbutil";
@@ -579,18 +578,19 @@ declare function deploy:download($app-collection as xs:string, $expathConf as el
             let $resource-relative-path := substring-after($resource, $app-collection || "/")
             let $collection-relative-path := substring-after($collection, $app-collection || "/")
             return
-                (: compression:zip doesn't seem to store empty collections, so we'll only operate on resources :)
-                if (exists($collection)) then
-                    <entry name="{$collection-relative-path}" type="collection"/>
+                if (empty($resource)) then
+                    (: no need to create a collection entry for the app's root directory :)
+                    if ($collection-relative-path eq "") then
+                        ()
+                    else
+                        <entry type="collection" name="{$collection-relative-path}"/>
                 else if (util:binary-doc-available($resource)) then
-                    <entry name="{$resource-relative-path}" type="uri">{$resource}</entry>
+                    <entry type="uri" name="{$resource-relative-path}">{$resource}</entry>
                 else
-                    <entry name="{$resource-relative-path}" type="xml">
-                        {
-                            util:declare-option("exist:serialize", "expand-xincludes=" || (if ($expand-xincludes) then "yes" else "no")), 
-                            doc($resource)
-                        }
-                    </entry>
+                    <entry type="xml" name="{$resource-relative-path}">{
+                        util:declare-option("exist:serialize", "expand-xincludes=" || (if ($expand-xincludes) then "yes" else "no")),
+                        doc($resource)
+                    }</entry>
         })
     let $xar := compression:zip($entries, true())
     return (
