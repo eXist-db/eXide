@@ -18,7 +18,6 @@
  :)
 xquery version "3.0";
 
-
 import module namespace apputil="http://exist-db.org/apps/eXide/apputil" at "util.xql";
 import module namespace tmpl="http://exist-db.org/xquery/template" at "tmpl.xql";
 import module namespace dbutil="http://exist-db.org/xquery/dbutil";
@@ -575,19 +574,23 @@ declare function deploy:package($collection as xs:string, $expathConf as element
 declare function deploy:download($app-collection as xs:string, $expathConf as element(), $expand-xincludes as xs:boolean) {
     let $name := concat($expathConf/@abbrev, "-", $expathConf/@version, ".xar")
     let $entries :=
-        (: compression:zip doesn't seem to store empty collections, so we'll scan for only resources :)
-        dbutil:scan-resources(xs:anyURI($app-collection), function($resource as xs:anyURI?) {
-            let $relative-path := substring-after($resource, $app-collection || "/")
+        dbutil:scan(xs:anyURI($app-collection), function($collection as xs:anyURI?, $resource as xs:anyURI?) {
+            let $resource-relative-path := substring-after($resource, $app-collection || "/")
+            let $collection-relative-path := substring-after($collection, $app-collection || "/")
             return
-                if (util:binary-doc-available($resource)) then
-                    <entry name="{$relative-path}" type="uri">{$resource}</entry>
+                if (empty($resource)) then
+                    (: no need to create a collection entry for the app's root directory :)
+                    if ($collection-relative-path eq "") then
+                        ()
+                    else
+                        <entry type="collection" name="{$collection-relative-path}"/>
+                else if (util:binary-doc-available($resource)) then
+                    <entry type="uri" name="{$resource-relative-path}">{$resource}</entry>
                 else
-                    <entry name="{$relative-path}" type="xml">
-                        {
-                            util:declare-option("exist:serialize", "expand-xincludes=" || (if ($expand-xincludes) then "yes" else "no")), 
-                            doc($resource)
-                        }
-                    </entry>
+                    <entry type="xml" name="{$resource-relative-path}">{
+                        util:declare-option("exist:serialize", "expand-xincludes=" || (if ($expand-xincludes) then "yes" else "no")),
+                        doc($resource)
+                    }</entry>
         })
     let $xar := compression:zip($entries, true())
     return (
