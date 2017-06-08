@@ -576,12 +576,13 @@ eXide.app = (function(util) {
 		        $("#serialization-mode").removeAttr("disabled");
 		        var serializationMode = $("#serialization-mode").val();
 		        var autoExpandMatches = $("#auto-expand-matches").is(":checked");
+		        var indentResults = $("#indent-results").is(":checked");
 		        var url = 'results/' + currentOffset;
 				currentOffset++;
 				$.ajax({
 					url: url,
 					dataType: 'html',
-					data: { "output": serializationMode, "auto-expand-matches": autoExpandMatches },
+					data: { "output": serializationMode, "auto-expand-matches": autoExpandMatches, "indent": indentResults },
 					success: function (data) {
 						$('.results-container .results').append(data);
 						$(".results-container .current").text("Showing results " + startOffset + " to " + (currentOffset - 1) +

@@ -31,26 +31,39 @@ xquery version "3.0";
 
 import module namespace pretty="http://exist-db.org/eXide/deploy" at "pretty-print.xql";
 
+declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace sandbox="http://exist-db.org/xquery/sandbox";
 
 declare option exist:serialize "method=xml media-type=text/xml omit-xml-declaration=yes indent=no";
 
 (:~ Retrieve a single query result. :)
 declare function sandbox:retrieve($num as xs:integer) as element() {
-    let $output := request:get-parameter("output", "xml")
-    let $auto-expand-matches := request:get-parameter("auto-expand-matches", true())
-    let $cached := session:get-attribute("cached")
-    let $cached-item := $cached[$num]
-    let $result := 
-        if ($output eq "xml") then
-            (: preserve eXide's traditional behavior for XML Output: return an "empty" result in the case of maps, arrays, etc. :)
-            if ($cached-item instance of node()) then
-                $cached-item
-            else
-                try { serialize($cached-item) } catch * { () }
+    let $output := request:get-parameter("output", "adaptive")
+    let $indent := request:get-parameter("indent", true()) cast as xs:boolean
+    let $auto-expand-matches := request:get-parameter("auto-expand-matches", true()) cast as xs:boolean
+    let $cached-items := session:get-attribute("cached")
+    let $cached-item := $cached-items[$num]
+    let $result :=
+        (: preserve eXide's traditional behavior for non-node results under XML Output: return an "empty" result in the case of maps, arrays, etc. :)
+        if ($output eq "xml" and (not($cached-item instance of node()))) then
+            try { serialize($cached-item) } catch * { () }
+        else if ($cached-item instance of node()) then
+            if ($auto-expand-matches) then util:expand($cached-item, "highlight-matches=both") else ()
         else
             $cached-item
-    let $documentURI :=if ($cached-item instance of node()) then document-uri(root($cached-item)) else ()
+    let $documentURI := if ($cached-item instance of node()) then document-uri(root($cached-item)) else ()
+    let $serialized :=
+        if ($output eq "xml") then
+            pretty:pretty-print($result)
+        else
+            let $serialization-parameters :=
+                <output:serialization-parameters>
+                    <output:method>{$output}</output:method>
+                    <output:indent>{if ($indent) then "yes" else "no"}</output:indent>
+                </output:serialization-parameters>
+            return
+                <div class="content ace_editor ace-tomorrow" style="white-space: pre">{serialize($cached-item, $serialization-parameters)}</div>
+
     return
         <div class="{if ($num mod 2 eq 0) then 'even' else 'uneven'}">
             <div class="pos">
@@ -63,7 +76,7 @@ declare function sandbox:retrieve($num as xs:integer) as element() {
             }
             </div>
             <div class="item">
-            { if (exists($result)) then pretty:pretty-print($result, (), $output, $auto-expand-matches) else () }
+            { $serialized }
             </div>
         </div>
 };
