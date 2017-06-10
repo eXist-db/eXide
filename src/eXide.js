@@ -521,13 +521,18 @@ eXide.app = (function(util) {
         			$.ajax({
         				type: "POST",
         				url: "execute",
-        				dataType: serializationMode == "adaptive" || serializationMode == "json" || serializationMode == "xml" ? "xml" : "text",
+        				dataType: serializationMode == "adaptive" || serializationMode == "html5" || serializationMode == "xhtml" || serializationMode == "xhtml5" || serializationMode == "json" || serializationMode == "text" || serializationMode == "xml" || serializationMode == "microxml" ? "xml" : "text",
         				data: { "qu": code, "base": moduleLoadPath, "output": serializationMode },
         				success: function (data, status, xhr) {
                             switch (serializationMode) {
                                 case "adaptive":
+                                case "html5":
+                                case "xhtml":
+                                case "xhtml5":
                                 case "json":
+                                case "text":
                                 case "xml":
+                                case "microxml":
                                     $("#results-iframe").hide();
                 					var elem = data.documentElement;
                 					if (elem.nodeName == 'error') {

@@ -29,41 +29,31 @@ xquery version "3.0";
 	items from the result set stored in the session (see controller).
 :)
 
-import module namespace pretty="http://exist-db.org/eXide/deploy" at "pretty-print.xql";
-
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
-declare namespace sandbox="http://exist-db.org/xquery/sandbox";
 
 declare option exist:serialize "method=xml media-type=text/xml omit-xml-declaration=yes indent=no";
 
 (:~ Retrieve a single query result. :)
-declare function sandbox:retrieve($num as xs:integer) as element() {
+declare function local:retrieve($num as xs:integer) as element() {
     let $output := request:get-parameter("output", "adaptive")
     let $indent := request:get-parameter("indent", true()) cast as xs:boolean
     let $auto-expand-matches := request:get-parameter("auto-expand-matches", true()) cast as xs:boolean
     let $cached-items := session:get-attribute("cached")
     let $cached-item := $cached-items[$num]
-    let $result :=
-        (: preserve eXide's traditional behavior for non-node results under XML Output: return an "empty" result in the case of maps, arrays, etc. :)
-        if ($output eq "xml" and (not($cached-item instance of node()))) then
-            try { serialize($cached-item) } catch * { () }
-        else if ($cached-item instance of node()) then
-            if ($auto-expand-matches) then util:expand($cached-item, "highlight-matches=both") else ()
-        else
-            $cached-item
     let $documentURI := if ($cached-item instance of node()) then document-uri(root($cached-item)) else ()
+    let $serialization-parameters :=
+        <output:serialization-parameters>
+            <output:method>{$output}</output:method>
+            <output:indent>{if ($indent) then "yes" else "no"}</output:indent>
+        </output:serialization-parameters>
     let $serialized :=
-        if ($output eq "xml") then
-            pretty:pretty-print($result)
-        else
-            let $serialization-parameters :=
-                <output:serialization-parameters>
-                    <output:method>{$output}</output:method>
-                    <output:indent>{if ($indent) then "yes" else "no"}</output:indent>
-                </output:serialization-parameters>
-            return
-                <div class="content ace_editor ace-tomorrow" style="white-space: pre">{serialize($cached-item, $serialization-parameters)}</div>
-
+        serialize(
+            if ($cached-item instance of node() and $auto-expand-matches) then
+                util:expand($cached-item, "both")
+            else
+                $cached-item,
+            $serialization-parameters
+        )
     return
         <div class="{if ($num mod 2 eq 0) then 'even' else 'uneven'}">
             <div class="pos">
@@ -76,13 +66,15 @@ declare function sandbox:retrieve($num as xs:integer) as element() {
             }
             </div>
             <div class="item">
-            { $serialized }
+                <div class="content ace_editor ace-tomorrow" style="white-space: pre-wrap">
+                    { $serialized }
+                </div>
             </div>
         </div>
 };
 
 (:~ Take the query results and store them into the HTTP session. :)
-declare function sandbox:store-in-session($results as item()*) as element(result) {
+declare function local:store-in-session($results as item()*) as element(result) {
 	let $null := session:set-attribute('cached', $results)
     let $startTime := request:get-attribute("start-time")
     let $elapsed := 
@@ -110,6 +102,6 @@ return
     if (string-length($input) gt 0) then
         $input
 	else if ($pos) then
-		sandbox:retrieve($pos)
+		local:retrieve($pos)
 	else
-		sandbox:store-in-session($results)
+		local:store-in-session($results)
