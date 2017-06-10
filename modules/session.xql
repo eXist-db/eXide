@@ -49,7 +49,7 @@ declare function local:retrieve($num as xs:integer) as element() {
     let $serialized :=
         serialize(
             if ($cached-item instance of node() and $auto-expand-matches) then
-                util:expand($cached-item, "both")
+                util:expand($cached-item, "highlight-matches=both")
             else
                 $cached-item,
             $serialization-parameters
