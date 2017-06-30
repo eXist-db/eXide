@@ -172,6 +172,11 @@ else if ($exist:resource eq 'execute') then
         if ($userAllowed) then
             switch ($output)
                 case "adaptive"
+                case "html5"
+                case "xhtml"
+                case "xhtml5"
+                case "text"
+                case "microxml"
                 case "json"
                 case "xml" return
                     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">

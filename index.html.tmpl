@@ -423,14 +423,24 @@
                                     <select name="output-mode" id="serialization-mode">
                                         <option value="adaptive">Adaptive Output</option>
                                         <option value="json">JSON Output</option>
+                                        <option value="text">Text Output</option>
                                         <option value="xml">XML Output</option>
-                                        <option value="html">Direct Output</option>
+                                        <option value="html5">HTML5 Output</option>
+                                        <option value="xhtml">XHTML Output</option>
+                                        <option value="xhtml5">XHTML5 Output</option>
+                                        <option value="microxml">MicroXML Output</option>
+                                        <option disabled="disabled">-</option>
+                                        <option value="direct">Direct Output</option>
                                     </select>
+                                    <label class="checkbox" title="Indent results; effective only in Adaptive, JSON, (X)HTML, and XML Output modes.">
+                                        <input type="checkbox" id="indent-results" name="indent-results" checked="checked"/>
+                                        Indent
+                                    </label>
                                     <label class="checkbox" title="Update query results automatically while you type XQuery or when saving HTML">
-                                        <input type="checkbox" id="live-preview" name="live-preview" selected="false"/>
+                                        <input type="checkbox" id="live-preview" name="live-preview"/>
                                         Live Preview
                                     </label>
-                                    <label class="checkbox" title="Automatically highlight hits from index-based queries (e.g., Lucene full text, Range); available only in Adaptive and XML Output modes.">
+                                    <label class="checkbox" title="Automatically highlight hits from index-based queries (e.g., Lucene full text, Range); effective only in Adaptive and XML Output modes when outputting XML nodes.">
                                         <input type="checkbox" id="auto-expand-matches" name="auto-expand-matches" checked="checked"/>
                                         Highlight Index Matches
                                     </label>

@@ -521,13 +521,18 @@ eXide.app = (function(util) {
         			$.ajax({
         				type: "POST",
         				url: "execute",
-        				dataType: serializationMode == "adaptive" || serializationMode == "json" || serializationMode == "xml" ? "xml" : "text",
+        				dataType: serializationMode == "adaptive" || serializationMode == "html5" || serializationMode == "xhtml" || serializationMode == "xhtml5" || serializationMode == "json" || serializationMode == "text" || serializationMode == "xml" || serializationMode == "microxml" ? "xml" : "text",
         				data: { "qu": code, "base": moduleLoadPath, "output": serializationMode },
         				success: function (data, status, xhr) {
                             switch (serializationMode) {
                                 case "adaptive":
+                                case "html5":
+                                case "xhtml":
+                                case "xhtml5":
                                 case "json":
+                                case "text":
                                 case "xml":
+                                case "microxml":
                                     $("#results-iframe").hide();
                 					var elem = data.documentElement;
                 					if (elem.nodeName == 'error') {
@@ -576,12 +581,13 @@ eXide.app = (function(util) {
 		        $("#serialization-mode").removeAttr("disabled");
 		        var serializationMode = $("#serialization-mode").val();
 		        var autoExpandMatches = $("#auto-expand-matches").is(":checked");
+		        var indentResults = $("#indent-results").is(":checked");
 		        var url = 'results/' + currentOffset;
 				currentOffset++;
 				$.ajax({
 					url: url,
 					dataType: 'html',
-					data: { "output": serializationMode, "auto-expand-matches": autoExpandMatches },
+					data: { "output": serializationMode, "auto-expand-matches": autoExpandMatches, "indent": indentResults },
 					success: function (data) {
 						$('.results-container .results').append(data);
 						$(".results-container .current").text("Showing results " + startOffset + " to " + (currentOffset - 1) +
