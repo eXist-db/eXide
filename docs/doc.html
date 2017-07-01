@@ -2,7 +2,7 @@
 <div xmlns="http://www.w3.org/1999/xhtml" data-template="templates:surround" data-template-with="docs/page.html" data-template-at="main">
     <div class="row-fluid video">
         <div class="span4 header">
-            <h1>Introducing<br/>eXide 2.0</h1>
+            <h1>Introducing<br/>eXide</h1>
             <p>The XQuery IDE</p>
         </div>
         <div class="span8">
@@ -12,49 +12,28 @@
         </div>
     </div>
     <section id="news">
-        <h1>New in 2.3.0</h1>
+        <h1>New in 2.4.0</h1>
         <div class="feature">
             <div class="row-fluid">
                 <div class="span3 thumb">
-                    <h2>Adaptive &amp; JSON Output</h2>
-                    <p>New output modes for viewing your query results</p>
+                    <h2>Faster and more accurate query results</h2>
+                    <p>Native serialization methods and indent toggling</p>
                 </div>
                 <div class="span9">
-                    <p>eXide's new default output mode is "Adaptive Output," 
-                    which displays all XDM data types: not just XML elements, 
-                    but free-standing attribute nodes, maps, arrays, and 
-                    functions. (Read more about 
-                    <a href="https://www.w3.org/TR/xslt-xquery-serialization-31/#adaptive-output">Adaptive Output</a>.)
-                    The old "XML Output" method is still available via the output 
-                    mode drop-down.</p>
-                    <p>Also new is a "JSON Output" mode, which uses eXist's 
-                    built-in JSON serialization method (using the popular 
-                    Jackson library) to maps, arrays, and other JSON data 
-                    structures.</p>
-                    <p>Experiment with the new output modes via the dropdown at
-                    the top of the query result pane.</p>
-                </div>
-            </div>
-        </div>
-        <div class="feature">
-            <div class="row-fluid">
-                <div class="span3 thumb">
-                    <h2>Match highlighting improvements</h2>
-                    <p>Attribute matches are highlighted, and new controls</p>
-                </div>
-                <div class="span9">
-                    <p>eXide's highlighting of element index matches in queries 
-                    that leverage full text, range, and ngram indexes has been 
-                    extended to attributes (requires eXist 3.0).</p>
-                    <p>To improve fidelity of query results with these index
-                    matches, the exist:match element (and exist:matches 
-                    attribute) is now displayed, in addition to the highlighting 
-                    of the result.</p>
-                    <p>In addition, a new "Highlight Index Matches" checkbox 
-                    at the top of the query result pane (selected by default)
-                    lets you toggle the highlighting behavior. Unselecting the
-                    checkbox will suppress the highlighting and any exist:match
-                    elements or exist:matches attributes.</p>
+                    <p>eXide has jettisoned its longstanding “pretty-printing” library, and now uses
+                        eXist’s built-in serialization methods. This change means improved
+                        whitespace accuracy and speed when viewing your query results, and turns
+                        eXide into a serialization sandbox. By toggling the output methods via the
+                        “Output” dropdown menu, you can serialize query results not just as
+                        Adaptive, JSON, XML, or the old “direct” (rendered) method, but also as
+                        Text, HTML5, XHTML, XHTML5, and MicroXML. The new “Indent” checkbox lets you
+                        toggle whether query results are indented or not.</p>
+                    <p>eXide now also supports eXist 3.3.0’s newly added "Adaptive" serialization
+                        method, which displays all XDM data types: not just XML elements, but
+                        free-standing attribute nodes, maps, arrays, and functions. (Read more about
+                            <a
+                            href="https://www.w3.org/TR/xslt-xquery-serialization-31/#adaptive-output"
+                            >Adaptive Output</a>.)</p>
                 </div>
             </div>
         </div>
@@ -181,10 +160,6 @@
                         <li>unknown variables</li>
                         <li>unused namespaces or module imports</li>
                     </ul>
-                    <div class="alert">
-                        Note: Some quick fixes require updates to the XQuery parser which will be available
-                        in eXist 2.0.1.
-                    </div>
                 </div>
             </div>
         </div>
