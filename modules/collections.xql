@@ -373,7 +373,7 @@ declare %private function local:get-permissions($perms as xs:string) {
                 <label for="ox">execute</label>
             </td>
         </tr>
-        <!--tr>
+        <tr>
             <td>
                 { local:checkbox("us", substring($perms, 3, 1) = ("s", "S")) }
                 <label for="us">setuid</label>
@@ -386,7 +386,7 @@ declare %private function local:get-permissions($perms as xs:string) {
                 { local:checkbox("ot", substring($perms, 9, 1) = ("t", "T")) }
                 <label for="ot">sticky</label>
             </td>
-        </tr-->
+        </tr>
     </table>
 };
 
