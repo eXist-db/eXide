@@ -12,6 +12,11 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="2.4.1">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: Restored the SetGID, SetUID, and sticky bit checkboxes in File > Manage permissions dialog</li>
+            </ul>
+        </change>
         <change version="2.4.0">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>New: Support all native serialization methods in displaying query results, including eXist 3.3.0's new adaptive serialization</li>
