@@ -39,7 +39,7 @@ also how development on eXide is done.
 To build eXide from scratch,
 you should first get eXist-db from SVN and build it (build.sh/build.bat). Next, clone eXide into a directory, e.g.:
 
-     git clone git://github.com/wolfgangmm/eXide.git eXideDev
+     git clone git://github.com/eXist-db/eXide.git eXideDev
      cd eXideDev
      git submodule update --init --recursive
 
