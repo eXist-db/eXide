@@ -1,8 +1,8 @@
 (:
  :  eXide - web-based XQuery IDE
- :  
+ :
  :  Copyright (C) 2011 Wolfgang Meier
- : 
+ :
  :  This program is free software: you can redistribute it and/or modify
  :  it under the terms of the GNU General Public License as published by
  :  the Free Software Foundation, either version 3 of the License, or
@@ -22,7 +22,7 @@ import module namespace apputil="http://exist-db.org/apps/eXide/apputil" at "uti
 import module namespace tmpl="http://exist-db.org/xquery/template" at "tmpl.xql";
 import module namespace dbutil="http://exist-db.org/xquery/dbutil";
 
-(:~ 
+(:~
     Edit the expath and repo app descriptors.
     Functions to read, update the descriptors and deploy an app.
 :)
@@ -41,11 +41,11 @@ declare variable $deploy:ANT_FILE :=
         <property name="build.dir" value="build"/>
         <target name="xar">
             <mkdir dir="${{build.dir}}"/>
-            <zip basedir="." destfile="${{build.dir}}/${{project.app}}-${{project.version}}.xar" 
+            <zip basedir="." destfile="${{build.dir}}/${{project.app}}-${{project.version}}.xar"
                 excludes="${{build.dir}}/*"/>
         </target>
     </project>;
-    
+
 declare function deploy:select-option($value as xs:string, $current as xs:string?, $label as xs:string) {
     <option value="{$value}">
     { if (exists($current) and $value eq $current) then attribute selected { "selected" } else (), $label }
@@ -110,9 +110,9 @@ declare function deploy:repo-descriptor() {
             if (request:get-parameter("owner", ())) then
                 let $group := request:get-parameter("group", ())
                 return
-                    <permissions user="{request:get-parameter('owner', ())}" 
-                        password="{request:get-parameter('password', ())}" 
-                        group="{if ($group != '') then $group else 'dba'}" 
+                    <permissions user="{request:get-parameter('owner', ())}"
+                        password="{request:get-parameter('password', ())}"
+                        group="{if ($group != '') then $group else 'dba'}"
                         mode="{request:get-parameter('mode', ())}"/>
             else
                 ()
@@ -134,7 +134,7 @@ declare function deploy:store-repo($descriptor as element(), $collection as xs:s
 
 declare function deploy:mkcol-recursive($collection, $components, $userData as xs:string*, $permissions as xs:string?) {
     if (exists($components)) then
-        let $permissions := 
+        let $permissions :=
             if ($permissions) then
                 deploy:set-execute-bit($permissions)
             else
@@ -221,7 +221,7 @@ declare function deploy:copy-templates($target as xs:string, $source as xs:strin
         return (
             xmldb:copy($source, $target, $resource),
             let $mime := xmldb:get-mime-type($targetPath)
-            let $perms := 
+            let $perms :=
                 if ($mime eq "application/xquery") then
                     deploy:set-execute-bit($permissions)
                 else $permissions
@@ -257,7 +257,7 @@ declare function deploy:chmod($collection as xs:string, $userData as xs:string+,
         let $path := concat($collection, "/", $resource)
         let $targetPath := xs:anyURI($path)
         let $mime := xmldb:get-mime-type($path)
-        let $perms := 
+        let $perms :=
             if ($mime eq "application/xquery") then
                 deploy:set-execute-bit($permissions)
             else
@@ -286,7 +286,7 @@ declare function deploy:store-ant($target as xs:string, $permissions as xs:strin
 
 declare function deploy:expand($collection as xs:string, $resource as xs:string, $parameters as element(parameters)) {
     if (util:binary-doc-available($collection || "/" || $resource)) then
-        let $code := 
+        let $code :=
             let $doc := util:binary-doc($collection || "/" || $resource)
             return
                 util:binary-to-string($doc)
@@ -300,7 +300,7 @@ declare function deploy:expand($collection as xs:string, $resource as xs:string,
 declare function deploy:expand-xql($target as xs:string) {
     let $name := request:get-parameter("name", ())
     let $includeTmpl := request:get-parameter("includeall", ())
-    let $template := 
+    let $template :=
         if ($includeTmpl) then
             "at &quot;templates.xql&quot;"
         else
@@ -361,7 +361,7 @@ declare function deploy:store($collection as xs:string?, $expathConf as element(
         else
             let $create := deploy:create-collection($collection, $userData, $permissions)
             let $null := (
-                deploy:store-expath($collection, $userData, $permissions), 
+                deploy:store-expath($collection, $userData, $permissions),
                 deploy:store-repo($repoConf, $collection, $userData, $permissions),
                 if (empty($expathConf)) then (
                     deploy:store-templates($collection, $userData, $permissions),
@@ -437,7 +437,7 @@ declare function deploy:view($collection as xs:string?, $expathConf as element()
                         <div class="hint">A relative path to the collection where the package will be installed below the repository root. Leave
                             this empty if the package does not need to be deployed into the database.
                         </div>
-                        <input type="text" name="target" value="{$repoConf/repo:target}" 
+                        <input type="text" name="target" value="{$repoConf/repo:target}"
                             placeholder="app-collection" size="40" required="required"/>
                         <label for="target">Target collection:</label>
                     </li>
@@ -451,7 +451,7 @@ declare function deploy:view($collection as xs:string?, $expathConf as element()
                     <li>
                         <div class="hint">A short name for the app. This will be the name of the collection into which
                         the app is installed.</div>
-                        <input type="text" name="abbrev" placeholder="Short name" 
+                        <input type="text" name="abbrev" placeholder="Short name"
                             value="{$expathConf/@abbrev}" size="25" required="required"/>
                         <label for="abbrev">Abbreviation:</label>
                     </li>
@@ -461,7 +461,7 @@ declare function deploy:view($collection as xs:string?, $expathConf as element()
                         <label for="title">Title:</label>
                     </li>
                     <li>
-                        <input type="text" name="version" value="{if ($expathConf) then $expathConf/@version else '0.1'}" 
+                        <input type="text" name="version" value="{if ($expathConf) then $expathConf/@version else '0.1'}"
                             size="10" required="required"/>
                         <label for="version">Version:</label>
                     </li>
@@ -473,6 +473,7 @@ declare function deploy:view($collection as xs:string?, $expathConf as element()
                                 { deploy:select-option("alpha", $status, "Alpha") }
                                 { deploy:select-option("beta", $status, "Beta") }
                                 { deploy:select-option("stable", $status, "Stable") }
+                                { deploy:select-option("SNAPSHOT", $status, "Snapshot") }
                             </select>
                     }
                         <label for="status">Status:</label>
@@ -481,7 +482,7 @@ declare function deploy:view($collection as xs:string?, $expathConf as element()
                     <li>
                         <div class="hint">Optional: name of an XQuery script which will be run <b>before</b> the
                         application is installed. Use this to create users, index configurations and the like.</div>
-                        <input type="text" name="prepare" value="{if ($repoConf) then $repoConf/repo:prepare else 'pre-install.xql'}" 
+                        <input type="text" name="prepare" value="{if ($repoConf) then $repoConf/repo:prepare else 'pre-install.xql'}"
                             placeholder="pre-install.xql" size="40"/>
                         <label for="prepare">Pre-install XQuery:</label>
                     </li>
@@ -526,7 +527,7 @@ declare function deploy:view($collection as xs:string?, $expathConf as element()
             </fieldset>
             <fieldset>
                 <legend>Default Permissions</legend>
-                
+
                 <p>Default permissions applied to all resources uploaded into the database. To set
                 non-default permissions on particular resources, use a post-install script. If a user
                 and password is specified, it will be created upon install if it does not yet exist.
