@@ -58,7 +58,7 @@ declare function local:get-matching-functions($q as xs:string) {
                     $all-modules[starts-with(@prefix, $supplied-module-namespace-prefix)] 
                 else 
                     $all-modules
-    let $functions := $modules/function
+    let $functions := $modules/function[not(deprecated)]
     for $function in $functions
     let $function-name := 
         (: Functions in some modules contain the module namespace prefix in 
