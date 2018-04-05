@@ -158,7 +158,7 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
 };
 
 declare function local:create-collection($collName as xs:string, $user as xs:string) {
-    let $parent := xmldb:encode-uri(request:get-parameter("collection", "/db"))
+    let $parent := request:get-parameter("collection", "/db")
     return
         if (sm:has-access(xs:anyURI($parent), "w")) then
             let $null := xmldb:create-collection($parent, $collName)
@@ -198,7 +198,6 @@ declare function local:delete-resource($collection as xs:string, $resource as xs
 declare function local:delete($collection as xs:string, $selection as xs:string+, $user as xs:string) {
     let $result :=
         for $docOrColl in $selection
-        let $docOrColl := xmldb:encode($docOrColl)
         let $path :=
             if (starts-with($docOrColl, "/")) then
                 $docOrColl
@@ -520,29 +519,29 @@ let $user := if (request:get-attribute('org.exist.login.user')) then request:get
 return
     try {
         if (exists($copy)) then
-            let $result := local:copyOrMove("copy", xmldb:encode-uri($collection), $copy, $user)
+            let $result := local:copyOrMove("copy", $collection, $copy, $user)
             return
                 ($result[@status = "fail"], $result[1])[1]
         else if (exists($move)) then
-            let $result := local:copyOrMove("move", xmldb:encode-uri($collection), $move, $user)
+            let $result := local:copyOrMove("move", $collection, $move, $user)
             return
                 ($result[@status = "fail"], $result[1])[1]
         else if (exists($rename)) then
-            local:rename($collection, xmldb:encode-uri($rename))
+            local:rename($collection, $rename)
         else if (exists($deleteResource)) then
-            local:delete(xmldb:encode-uri($collection), $deleteResource, $user)
+            local:delete($collection, $deleteResource, $user)
         else if (exists($properties)) then
             local:edit-properties($properties)
         else if (exists($modify)) then
             local:change-properties($modify)
         else if ($createCollection) then
-            local:create-collection(xmldb:encode-uri($createCollection), $user)
+            local:create-collection($createCollection, $user)
         else if ($view eq "c") then
             <collection json:array="true">
-                {local:collections(xmldb:encode-uri($collection), xmldb:encode-uri($collName), $user)}
+                {local:collections($collection, $collName, $user)}
             </collection>
         else
-            local:resources(xmldb:encode-uri($collection), $user)
+            local:resources($collection, $user)
     } catch * {
         <response status="fail">{$err:description}</response>
     }

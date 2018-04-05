@@ -56,8 +56,8 @@ declare function local:get-mime-type() {
 
 let $path := request:get-parameter("path", ())
 let $split := analyze-string($path, "^(.*)/([^/]+)$")//fn:group/string()
-let $collection := xmldb:encode-uri($split[1])
-let $resource := xmldb:encode-uri($split[2])
+let $collection := $split[1]
+let $resource := $split[2]
 let $mime := local:get-mime-type()
 let $data := request:get-data()
 let $data :=

@@ -35,7 +35,7 @@ declare function local:get-run-path($path) {
         )
 };
 
-let $path := xmldb:encode(request:get-parameter("path", ()))
+let $path := request:get-parameter("path", ())
 let $download := request:get-parameter("download", ())
 let $mime := xmldb:get-mime-type($path)
 let $isBinary := util:is-binary-doc($path)
