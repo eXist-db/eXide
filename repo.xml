@@ -12,6 +12,11 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="2.4.4">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: Handling of special characters in resource names - <a href="https://github.com/eXist-db/eXide/pull/183">#183</a></li>
+            </ul>
+        </change>
         <change version="2.4.3">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>New: Support "Snapshot" as a status in the app generator - <a href="https://github.com/eXist-db/eXide/pull/178">#178</a></li>
