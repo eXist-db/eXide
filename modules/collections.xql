@@ -47,7 +47,7 @@ declare function local:collections($root as xs:string, $child as xs:string,
             if (sm:has-access(xs:anyURI($root), "r")) then (
                 <title>{xmldb:decode-uri(xs:anyURI($child))}</title>,
                 <isFolder json:literal="true">true</isFolder>,
-                <key>{xmldb:decode-uri(xs:anyURI($root))}</key>,
+                <key>{xs:anyURI($root)}</key>,
                 <writable json:literal="true">{if ($canWrite) then 'true' else 'false'}</writable>,
                 <addClass>{if ($canWrite) then 'writable' else 'readable'}</addClass>,
             	if (exists($children) ) then
@@ -147,7 +147,7 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
                             <permissions>{if($isCollection)then "c" else "-"}{string($permissions/@mode)}{if($permissions/sm:acl/@entries ne "0")then "+" else ""}</permissions>
                             <owner>{$owner}</owner>
                             <group>{$group}</group>
-                            <key>{xmldb:decode-uri(xs:anyURI($path))}</key>
+                            <key>{xs:anyURI($path)}</key>
                             <last-modified>{$lastMod}</last-modified>
                             <writable json:literal="true">{$canWrite}</writable>
                             <isCollection json:literal="true">{$isCollection}</isCollection>
