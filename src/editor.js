@@ -322,7 +322,7 @@ eXide.edit.Editor = (function () {
         });
         
         var Emmet = require("ace/ext/emmet");
-        net.loadScript("$shared/resources/scripts/ace/emmet.js", function() {
+        net.loadScript("$shared/resources/scripts/emmet.js", function() {
             Emmet.setCore(window.emmet);
             $this.editor.setOption("enableEmmet", false);
         });
