@@ -101,7 +101,7 @@ let $path := ($pathParam, $name)[1]
 let $data := request:get-uploaded-file-data("file[]")
 return
     util:catch("*",
-        upload:upload($collection, encode-for-uri($path), $data),
+        upload:upload($collection, $path, $data),
         <result>
            <name>{$name}</name>
            <error>{$util:exception-message}</error>
