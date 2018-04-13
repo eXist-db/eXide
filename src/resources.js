@@ -470,7 +470,7 @@ eXide.browse.ResourceBrowser = (function () {
 		}
 		var resources = [];
 		for (var i = 0; i < selected.length; i++) {
-			resources.push(this.data[selected[i]].name);
+			resources.push(this.data[selected[i]].key);
 		}
 		var $this = this;
 		eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete the selected resources?",
