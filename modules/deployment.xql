@@ -140,9 +140,10 @@ declare function deploy:mkcol-recursive($collection, $components, $userData as x
             else
                 "rwxr-x---"
         let $newColl := xs:anyURI(concat($collection, "/", $components[1]))
+        let $exists := xmldb:collection-available($newColl)
         return (
             xmldb:create-collection($collection, $components[1]),
-            if (exists($userData)) then (
+            if (exists($userData) and not($exists)) then (
                 sm:chmod($newColl, $permissions),
                 sm:chown($newColl, $userData[1]),
                 sm:chgrp($newColl, $userData[2])
