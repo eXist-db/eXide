@@ -12,6 +12,14 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="2.4.5">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: Names of files uploaded via "Upload Directory" dialog included directory name and slash - <a href="https://github.com/eXist-db/eXide/pull/186">#186</a></li>
+                <li>Fixed: Resources with certain characters could not be deleted via DB Manager - <a href="https://github.com/eXist-db/eXide/pull/187">#187</a></li>
+                <li>Fixed: The app creation wizard could change permissions on collections above it - <a href="https://github.com/eXist-db/eXide/pull/188">#188</a></li>
+                <li>Fixed: Link to emmet.js library included in the shared-resources app was incorrect - <a href="https://github.com/eXist-db/eXide/pull/189">#189</a></li>
+            </ul>
+        </change>
         <change version="2.4.4">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fixed: Handling of special characters in resource names - <a href="https://github.com/eXist-db/eXide/pull/183">#183</a></li>
