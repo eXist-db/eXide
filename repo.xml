@@ -12,6 +12,11 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="2.4.6">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: Deletion of resources via DB Manager - <a href="https://github.com/eXist-db/eXide/pull/193">#193</a></li>
+            </ul>
+        </change>
         <change version="2.4.5">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fixed: Names of files uploaded via "Upload Directory" dialog included directory name and slash - <a href="https://github.com/eXist-db/eXide/pull/186">#186</a></li>
