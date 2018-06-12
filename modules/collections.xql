@@ -181,34 +181,35 @@ declare function local:delete-collection($collName as xs:string, $user as xs:str
         </response>
 };
 
-declare function local:delete-resource($collection as xs:string, $resource as xs:string+, $user as xs:string) {
+declare function local:delete-resource($collection as xs:string, $resource as xs:string, $user as xs:string) {
+    let $resource-name := substring-after($resource, $collection || "/")
     let $canWrite := 
-        sm:has-access(xs:anyURI($collection || "/" || $resource), "w")
+        sm:has-access(xs:anyURI($resource), "w")
         and
         sm:has-access(xs:anyURI($collection), "w")
     return
     if ($canWrite) then
-        let $removed := xmldb:remove($collection, $resource)
+        let $removed := xmldb:remove($collection, $resource-name)
         return
             <response status="ok"/>
     else
         <response status="fail" item="{$resource}"/>
 };
 
-declare function local:delete($collection as xs:string, $selection as xs:string+, $user as xs:string) {
+declare function local:delete($collection as xs:string, $selections as xs:string+, $user as xs:string) {
     let $result :=
-        for $docOrColl in $selection
+        for $selection in $selections
         let $path :=
-            if (starts-with($docOrColl, "/")) then
-                $docOrColl
+            if (starts-with($selection, "/")) then
+                $selection
             else
-                $collection || "/" || $docOrColl
+                $collection || "/" || $selection
         let $isCollection := xmldb:collection-available($path)
         let $response :=
             if ($isCollection) then
                 local:delete-collection($path, $user)
             else
-                local:delete-resource($collection, $docOrColl, $user)
+                local:delete-resource($collection, $path, $user)
         return
             $response
     return
