@@ -1,6 +1,6 @@
 (:
  :  eXide - web-based XQuery IDE
- :  
+ :
  :  Copyright (C) 2011 Wolfgang Meier
  :
  :  This program is free software: you can redistribute it and/or modify
@@ -59,7 +59,7 @@ declare function local:get-schema($doc as document-node(), $validate as xs:boole
 
 let $method := upper-case(request:get-method())
 let $data := if ($method = "PUT") then request:get-data() else request:get-parameter("xml", ())
-let $xml := 
+let $xml :=
     if($data instance of xs:base64Binary) then
         util:binary-to-string($data)
     else
@@ -67,7 +67,7 @@ let $xml :=
 let $validate := request:get-parameter("validate", "yes") = "yes"
 return
 	try {
-		let $doc := util:parse($xml)
+		let $doc := parse-xml($xml)
         let $schema := local:get-schema($doc, $validate)
         return
             if ($schema) then
