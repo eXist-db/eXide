@@ -16,8 +16,10 @@
     </template>
     <template name="xhtml5" mode="html">
         <description>HTML5 Document in XHTML Namespace</description>
+        <!-- removed doctype: not required per spec
+            (https://www.w3.org/TR/html5/the-xhtml-syntax.html#the-xhtml-syntax).
+            2018-07-31 dariok – https://github.com/dariok -->
         <code>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
-&lt;!DOCTYPE html&gt;
 &lt;html xmlns="http://www.w3.org/1999/xhtml"&gt;
     &lt;head&gt;
         &lt;title&gt;&lt;/title&gt;
