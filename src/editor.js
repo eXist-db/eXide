@@ -476,7 +476,9 @@ eXide.edit.Editor = (function () {
         		var newDocument = new eXide.edit.Document("new-document " + newDocId,
         				"__new__" + newDocId, session);
                 newDocument.setSyntax(mode);
-        		self.$initDocument(newDocument, true);
+                /* set the template; used to later determine correct MIME; 2018-07-31 dariok – https://github.com/dariok */
+                newDocument.template = template;
+                self.$initDocument(newDocument, true);
 			}
         });
     };
@@ -519,6 +521,7 @@ eXide.edit.Editor = (function () {
 	
 	Constr.prototype.$initDocument = function (doc, setMime) {
 		var $this = this;
+		
 		$this.$setMode(doc, setMime);
 		doc.$session.setUndoManager(new UndoManager());
 		doc.$session.addEventListener("change", function (ev) {
@@ -575,8 +578,12 @@ eXide.edit.Editor = (function () {
             mode = new HtmlMode(this);
             mode.$id = "html";
 			doc.$session.setMode(mode);
-			if (setMime)
-				doc.mime = "text/html";
+			if (setMime) {
+			    /* set MIME type base on the template used – 2018-07-31 dariok https://github.com/dariok */
+			    if (doc.template == 'html')
+				    doc.mime = "text/html";
+				    else doc.mime = "application/xhtml+xml";
+			}
 			break;
 		case "javascript":
 			var JavascriptMode = require("ace/mode/javascript").Mode;
