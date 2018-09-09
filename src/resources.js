@@ -508,40 +508,49 @@ eXide.browse.ResourceBrowser = (function () {
         }
     };
 
-    Constr.prototype.cut = function() {
-        this.clipboardMode = "move";
-        this.copy();
-    };
+  Constr.prototype.cut = function() {
+    this.clipboardMode = "move";
+    var selected = this.grid.getSelectionModel().getSelectedRows();
+    this.clipboard = [];
+    for (var i = 0; i < selected.length; i++) {
+      var path = this.data[selected[i]].name;
+      if (path.substr(0, 1) != "/") {
+        path = this.collection + "/" + path;
+      }
+      this.clipboard.push(path);
+    }
+    $.log("Clipboard cut: %o", this.clipboard);
+  };
 
-    Constr.prototype.copy = function() {
-        var selected = this.grid.getSelectionModel().getSelectedRows();
-        this.clipboard = [];
-		for (var i = 0; i < selected.length; i++) {
-            var path = this.data[selected[i]].name;
-            if (path.substr(0, 1) != "/") {
-                path = this.collection + "/" + path;
-            }
-			this.clipboard.push(path);
-		}
-        $.log("Clipboard: %o", this.clipboard);
-    };
+  Constr.prototype.copy = function() {
+    var selected = this.grid.getSelectionModel().getSelectedRows();
+    this.clipboard = [];
+    for (var i = 0; i < selected.length; i++) {
+      var path = this.data[selected[i]].name;
+      if (path.substr(0, 1) != "/") {
+        path = this.collection + "/" + path;
+      }
+      this.clipboard.push(path);
+    }
+    $.log("Clipboard copy: %o", this.clipboard);
+  };
 
-    Constr.prototype.paste = function() {
-        var $this = this;
-        $.log("Copying resources %o to %s", this.clipboard, this.collection);
-        var params = { root: this.collection };
-        params[this.clipboardMode] = this.clipboard;
-		$.getJSON("modules/collections.xql", params,
-			function (data) {
-				$.log(data.status);
-				if (data.status == "fail") {
-					eXide.util.Dialog.warning("Delete Resource Error", data.message);
-				} else {
-					$this.reload();
-				}
-			}
-	    );
-    };
+  Constr.prototype.paste = function() {
+    var $this = this;
+    $.log("Pasting resources %o to %s in mode %s", this.clipboard, this.collection, this.clipboardMode);
+    var params = { root: this.collection };
+    params[this.clipboardMode] = this.clipboard;
+    $.getJSON("modules/collections.xql", params,
+      function (data) {
+        $.log(data.status);
+        if (data.status == "fail") {
+          eXide.util.Dialog.warning("Delete Resource Error", data.message);
+        } else {
+          $this.reload();
+        }
+      }
+    );
+  };
 
     Constr.prototype.goto = function(row) {
         this.grid.gotoCell(0, 0);
