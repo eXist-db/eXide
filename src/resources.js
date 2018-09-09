@@ -523,6 +523,7 @@ eXide.browse.ResourceBrowser = (function () {
   };
 
   Constr.prototype.copy = function() {
+    this.clipboardMode = "copy";
     var selected = this.grid.getSelectionModel().getSelectedRows();
     this.clipboard = [];
     for (var i = 0; i < selected.length; i++) {
