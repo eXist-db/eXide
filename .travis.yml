@@ -1,0 +1,10 @@
+language: java
+
+jdk:
+  - oraclejdk8
+  - oraclejdk11
+
+install:
+   - ant
+
+script: skip 
