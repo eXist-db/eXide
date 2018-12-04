@@ -1,7 +1,5 @@
 language: java
-os:
-  - linux
-  - windows
+
 jdk:
   - oraclejdk8
   - oraclejdk11
@@ -9,4 +7,4 @@ jdk:
 install:
    - ant
 
-script: skip
+script: skip 
