@@ -4,7 +4,32 @@ jdk:
   - oraclejdk8
   - oraclejdk11
 
-install:
-   - ant
+services:
+  - docker
 
-script: skip 
+env:
+  - img=existdb/existdb:latest
+  - img=existdb/existdb:release
+  # - img= existdb/existdb:4.5.0
+  - img=evolvedbinary/exist-db:eXist-3.6.1-minimal
+
+before_install:
+  - docker pull $img
+  - docker create  --name exist-ci -p 8080:8080 $img
+  - docker start exist-ci
+  # exist needs time
+  - sleep 30
+  - docker ps
+
+install:
+  - ant
+
+
+before_script:
+  - docker exec exist-ci java -jar start.jar client --no-gui --xpath "repo:undeploy('http://exist-db.org/apps/eXide'), repo:remove('http://exist-db.org/apps/eXide')"
+  - curl -T ./build/eXide-*.xar http://admin:@localhost:8080/exist/rest/db/tmp/eXide-ci.xar
+  - docker exec exist-ci java -jar start.jar client --no-gui --xpath "repo:install-and-deploy-from-db('/db/tmp/eXide-ci.xar')"
+  - docker restart exist-ci
+
+
+script: skip
