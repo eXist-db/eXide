@@ -158,6 +158,7 @@
                 <exclude name=".git*"/>
                 <exclude name="*.tmpl"/>
                 <exclude name="*.properties"/>
+                <exclude name=".github/**"/>
             </fileset>
         </zip>
     </target>
