@@ -1,0 +1,51 @@
+language: java
+
+jdk:
+  - oraclejdk8
+  - oraclejdk11
+
+services:
+  - docker
+
+env:
+  - img=existdb/existdb:latest
+  - img=existdb/existdb:release
+  # - img= existdb/existdb:4.5.0
+
+jobs:
+  include:
+    # Define the release stage that runs semantic-release
+    - stage: release
+    - jdk: oraclejdk8
+    deploy:
+      provider: releases
+      api_key: $GH_TOKEN
+      file_glob: true
+      file: build/*
+      skip_cleanup: true
+      on:
+        tags: true
+
+before_install:
+  - docker pull $img
+  - docker create  --name exist-ci -p 8080:8080 $img
+  - docker start exist-ci
+  # exist needs time
+  - sleep 30
+  - docker ps
+
+install:
+  - ant
+
+
+before_script:
+  # uninstall pre-installed eXide
+  - docker exec exist-ci java -jar start.jar client --no-gui --xpath "repo:undeploy('http://exist-db.org/apps/eXide'), repo:remove('http://exist-db.org/apps/eXide')"
+  # upload new version with fake name
+  - curl -T ./build/eXide-*.xar http://admin:@localhost:8080/exist/rest/db/tmp/eXide-ci.xar
+  # install new version
+  - docker exec exist-ci java -jar start.jar client --no-gui --xpath "repo:install-and-deploy-from-db('/db/tmp/eXide-ci.xar')"
+  - docker restart exist-ci
+
+
+script: skip
