@@ -39,8 +39,11 @@ install:
 
 
 before_script:
+  # uninstall pre-installed eXide
   - docker exec exist-ci java -jar start.jar client --no-gui --xpath "repo:undeploy('http://exist-db.org/apps/eXide'), repo:remove('http://exist-db.org/apps/eXide')"
+  # upload new version with fake name
   - curl -T ./build/eXide-*.xar http://admin:@localhost:8080/exist/rest/db/tmp/eXide-ci.xar
+  # install new version
   - docker exec exist-ci java -jar start.jar client --no-gui --xpath "repo:install-and-deploy-from-db('/db/tmp/eXide-ci.xar')"
   - docker restart exist-ci
 
