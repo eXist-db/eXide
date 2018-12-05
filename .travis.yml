@@ -15,9 +15,10 @@ env:
 jobs:
   include:
     # Define the release stage that runs semantic-release
-    - stage: release
-    - jdk: oraclejdk8
-    deploy:
+    - stage: deploy
+      jdk: oraclejdk8
+      env: img=existdb/existdb:release
+      script: skip
       provider: releases
       api_key: $GH_TOKEN
       file_glob: true
