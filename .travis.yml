@@ -12,6 +12,19 @@ env:
   - img=existdb/existdb:release
   # - img= existdb/existdb:4.5.0
 
+jobs:
+  include:
+    # Define the release stage that runs semantic-release
+    - stage: release
+    - jdk: oraclejdk8
+    deploy:
+      provider: releases
+      api_key: $GH_TOKEN
+      file_glob: true
+      file: build/*
+      skip_cleanup: true
+      on:
+        tags: true
 
 before_install:
   - docker pull $img
