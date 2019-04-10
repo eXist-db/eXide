@@ -1,6 +1,6 @@
 (:
  :  eXide - web-based XQuery IDE
- :  
+ :
  :  Copyright (C) 2011 Wolfgang Meier
  :
  :  This program is free software: you can redistribute it and/or modify
@@ -26,7 +26,7 @@ declare option exist:serialize "method=json media-type=text/javascript";
 
 declare function local:sub-collections($root as xs:string, $children as xs:string*, $user as xs:string) {
         for $child in $children
-        let $processChild := 
+        let $processChild :=
     		local:collections(concat($root, '/', $child), $child, $user)
 		where exists($processChild)
 		order by $child ascending
@@ -36,11 +36,11 @@ declare function local:sub-collections($root as xs:string, $children as xs:strin
 			</children>
 };
 
-declare function local:collections($root as xs:string, $child as xs:string, 
+declare function local:collections($root as xs:string, $child as xs:string,
 	$user as xs:string) {
     if (sm:has-access(xs:anyURI($root), "x")) then
         let $children := xmldb:get-child-collections($root)
-        let $canWrite := 
+        let $canWrite :=
             (: local:canWrite($root, $user) :)
             sm:has-access(xs:anyURI($root), "w")
         return
@@ -55,13 +55,13 @@ declare function local:collections($root as xs:string, $child as xs:string,
             	else
                 ()
             ) else
-                ()  
+                ()
     else
         ()
 };
 
 declare function local:list-collection-contents($collection as xs:string, $user as xs:string) {
-    let $subcollections := 
+    let $subcollections :=
         for $child in xmldb:get-child-collections($collection)
         let $collpath := concat($collection, "/", $child)
         where sm:has-access(xs:anyURI($collpath), "r") and config:access-allowed($collpath, $user)
@@ -109,7 +109,7 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
             {
                 for $resource in $subset
                 let $isCollection := starts-with($resource, "/")
-                let $path := 
+                let $path :=
                     if ($isCollection) then
                         concat($collection, $resource)
                     else
@@ -118,17 +118,9 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
                 order by $resource ascending
                 return
                     let $permissions := sm:get-permissions(xs:anyURI($path))/sm:permission
-                    let $owner := 
-                        if ($isCollection) then
-                            xmldb:get-owner($path)
-                        else
-                            xmldb:get-owner($collection, $resource)
-                    let $group :=
-                        if ($isCollection) then
-                            xmldb:get-group($path)
-                        else
-                            xmldb:get-group($collection, $resource)
-                    let $lastMod := 
+                    let $owner := $permissions/@owner/string()
+                    let $group := $permissions/@group/string()
+                    let $lastMod :=
                         let $date :=
                             if ($isCollection) then
                                 xmldb:created($path)
@@ -183,7 +175,7 @@ declare function local:delete-collection($collName as xs:string, $user as xs:str
 
 declare function local:delete-resource($collection as xs:string, $resource as xs:string, $user as xs:string) {
     let $resource-name := substring-after($resource, $collection || "/")
-    let $canWrite := 
+    let $canWrite :=
         sm:has-access(xs:anyURI($resource), "w")
         and
         sm:has-access(xs:anyURI($collection), "w")
@@ -221,7 +213,7 @@ declare function local:delete($collection as xs:string, $selections as xs:string
             <response status="ok"/>
 };
 
-declare function local:copyOrMove($operation as xs:string, $target as xs:string, $sources as xs:string+, 
+declare function local:copyOrMove($operation as xs:string, $target as xs:string, $sources as xs:string+,
     $user as xs:string) {
     if (sm:has-access(xs:anyURI($target), "w")) then
         for $source in $sources
@@ -229,22 +221,22 @@ declare function local:copyOrMove($operation as xs:string, $target as xs:string,
         return
             try {
                 if ($isCollection) then
-                    let $null := 
+                    let $null :=
                         switch ($operation)
                             case "move" return
                                 xmldb:move($source, $target)
                             default return
-                                xmldb:copy($source, $target)
+                                xmldb:copy-collection($source, $target)
                     return
                         <response status="ok"/>
                 else
                     let $split := analyze-string($source, "^(.*)/([^/]+)$")//fn:group/string()
-                    let $null := 
+                    let $null :=
                         switch ($operation)
                             case "move" return
                                 xmldb:move($split[1], $target, $split[2])
                             default return
-                                xmldb:copy($split[1], $target, $split[2])
+                                xmldb:copy-resource($split[1], $split[2], $target, $split[2])
                     return
                         <response status="ok"/>
             } catch * {
@@ -264,7 +256,7 @@ declare function local:rename($collection as xs:string, $source as xs:string) {
     return
         try {
             if ($isCollection) then
-                let $null := 
+                let $null :=
                     xmldb:rename($collection || "/" || $source, $target)
                 return
                     <response status="ok"/>
@@ -280,7 +272,7 @@ declare function local:rename($collection as xs:string, $source as xs:string) {
 };
 
 declare %private function local:merge-properties($maps as map(*)+) {
-    map:new(
+    map:merge(
         for $key in map:keys($maps[1])
         let $values := distinct-values(for $map in $maps return $map($key))
         return
@@ -290,24 +282,25 @@ declare %private function local:merge-properties($maps as map(*)+) {
 
 declare %private function local:get-property-map($resource as xs:string) as map(*) {
     let $isCollection := xmldb:collection-available($resource)
+    let $permissions := sm:get-permissions(xs:anyURI($resource))/sm:permission
     return
         if ($isCollection) then
             map {
-                "owner" : xmldb:get-owner($resource),
-                "group" : xmldb:get-group($resource),
+                "owner" : $permissions/@owner/string(),
+                "group" : $permissions/@group/string(),
                 "last-modified" : format-dateTime(xmldb:created($resource), "[MNn] [D00] [Y0000] [H00]:[m00]:[s00]"),
-                "permissions" : sm:get-permissions(xs:anyURI($resource))/sm:permission/string(@mode),
+                "permissions" : $permissions/string(@mode),
                 "mime" : xmldb:get-mime-type(xs:anyURI($resource))
             }
         else
             let $components := analyze-string($resource, "^(.*)/([^/]+)$")//fn:group/string()
             return
                 map {
-                    "owner" : xmldb:get-owner($components[1], $components[2]),
-                    "group" : xmldb:get-group($components[1], $components[2]),
-                    "last-modified" : 
+                    "owner" : $permissions/@owner/string(),
+                    "group" : $permissions/@group/string(),
+                    "last-modified" :
                         format-dateTime(xmldb:last-modified($components[1], $components[2]), "[MNn] [D00] [Y0000] [H00]:[m00]:[s00]"),
-                    "permissions" : sm:get-permissions(xs:anyURI($resource))/sm:permission/string(@mode),
+                    "permissions" : $permissions/string(@mode),
                     "mime" : xmldb:get-mime-type(xs:anyURI($resource))
                 }
 };
@@ -392,7 +385,7 @@ declare %private function local:get-permissions($perms as xs:string) {
 
 declare %private function local:get-users() {
     distinct-values(
-        for $group in sm:get-groups()
+        for $group in sm:list-groups()
         return
             try {
                 sm:get-group-members($group)
@@ -441,7 +434,7 @@ declare function local:edit-properties($resources as xs:string*) {
                     <label for="group">Group:</label>
                     <select name="group">
                     {
-                        for $group in sm:get-groups()
+                        for $group in sm:list-groups()
                         order by $group
                         return
                             <option value="{$group}">
@@ -465,14 +458,14 @@ declare function local:edit-properties($resources as xs:string*) {
 };
 
 declare %private function local:permissions-from-form() {
-    
-    let $rwx := 
+
+    let $rwx :=
         for $type in ("u", "g", "o")
         for $perm in ("r", "w", "x")
         let $param := request:get-parameter($type || $perm, ())
         return
             concat(
-                $type, 
+                $type,
                 if($param)then "+" else "-",
                 $perm
             )

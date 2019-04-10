@@ -1,6 +1,6 @@
 /*
  *  eXide - web-based XQuery IDE
- *  
+ *
  *  Copyright (C) 2011-2013 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -23,7 +23,7 @@ eXide.namespace("eXide.edit.Document");
  * Represents an open document.
  */
 eXide.edit.Document = (function() {
-    
+
 	Constr = function(name, path, session) {
 		this.name = name;
         this.path = path.replace(/\/{2,}/g, "/");
@@ -51,7 +51,7 @@ eXide.edit.Document = (function() {
     Constr.TYPE_FUNCTION = "function";
     Constr.TYPE_VARIABLE = "variable";
     Constr.TYPE_TEMPLATE = "template";
-    
+
     Constr.prototype.needsValidation = function() {
         if (this.isNew() && this.isSaved()) {
             return false;
@@ -62,71 +62,71 @@ eXide.edit.Document = (function() {
 	Constr.prototype.getText = function() {
 		return this.$session.getValue();
 	};
-	
+
     Constr.prototype.setText = function(text) {
         this.$session.setValue(text);
     };
-    
+
 	Constr.prototype.getName = function() {
 		return this.name;
 	};
-	
+
 	Constr.prototype.getPath = function() {
 		return this.path;
 	};
-	
+
     Constr.prototype.setPath = function(path) {
     	this.path = path;
 	};
-    
+
 	Constr.prototype.getBasePath = function() {
 		return this.path.replace(/(^.+)\/[^\/]*$/, "$1");
 	};
-	
+
 	Constr.prototype.getMime = function() {
 		return this.mime;
 	};
-	
+
     Constr.prototype.setMime = function(mimeType) {
         this.mime = mimeType;
     };
-    
+
 	Constr.prototype.getSyntax = function() {
 		return this.syntax;
 	};
-	
+
     Constr.prototype.setSyntax = function(syntax) {
     	this.syntax = syntax;
 	};
-    
+
 	Constr.prototype.getSession = function() {
 		return this.$session;
 	};
-	
+
 	Constr.prototype.isSaved = function() {
 		return this.saved;
 	};
-	
+
     Constr.prototype.isNew = function() {
         return /__new__/.test(this.path);
     };
-    
+
 	Constr.prototype.isEditable = function() {
 		return this.editable;
 	};
-	
+
 	Constr.prototype.isXQuery = function() {
 		return this.mime == "application/xquery";
 	};
-	
+
 	Constr.prototype.setModeHelper = function(mode) {
 		this.helper = mode;
 	};
-	
+
 	Constr.prototype.getModeHelper = function() {
 		return this.helper;
 	};
-	
+
 	Constr.prototype.getCurrentLine = function() {
 		var sel = this.$session.getSelection();
 		var lead = sel.getSelectionLead();
@@ -136,11 +136,11 @@ eXide.edit.Document = (function() {
 	Constr.prototype.getLastChanged = function() {
 		return this.lastChangeEvent;
 	};
-    
+
     Constr.prototype.getExternalLink = function() {
         return this.externalLink;
     };
-    
+
 	return Constr;
 }());
 
@@ -150,7 +150,7 @@ eXide.namespace("eXide.edit.Editor");
  * The main editor component. Handles the ACE editor as well as tabs, keybindings, commands...
  */
 eXide.edit.Editor = (function () {
-    
+
 	var Renderer = require("ace/virtual_renderer").VirtualRenderer;
 	var Editor = require("ace/editor").Editor;
 	var EditSession = require("ace/edit_session").EditSession;
@@ -158,7 +158,7 @@ eXide.edit.Editor = (function () {
     var SnippetManager = require("ace/snippets").snippetManager;
     var net = require("ace/lib/net");
     var event = require("ace/lib/event");
-    
+
     function parseErrMsg(error) {
 		var msg;
 		if (error.line) {
@@ -175,7 +175,7 @@ eXide.edit.Editor = (function () {
 		}
 		return { line: line, msg: msg };
 	}
-    
+
 	Constr = function(container, menubar, projects) {
 		var $this = this;
 		$this.container = container;
@@ -191,44 +191,44 @@ eXide.edit.Editor = (function () {
         $this.recheck = false;
 
         $this.enableEmmet = false;
-        
+
         $this.themes = {};
         $this.initializing = true;
-        
+
         $this.history = new eXide.edit.History();
-		
+
 		$this.tabs = $("#tabs");
-		
+
         var renderer = new Renderer($this.container, "ace/theme/eclipse");
 	    renderer.setShowGutter(true);
-	    
+
 		this.editor = new Editor(renderer);
 		this.editor.setBehavioursEnabled(true);
 		this.editor.setShowFoldWidgets(true);
         this.editor.setFadeFoldWidgets(false);
         //this.editor.setOption("enableBasicAutocompletion", false);
-        
+
         // enable multiple cursors
 		require("ace/multi_select").MultiSelect(this.editor);
-        
+
         // register keybindings
         eXide.edit.commands.init($this);
-        
+
         // all keyboard events in the current window should be handled by editor
         event.addCommandKeyListener(window, $this.onCommandKey.bind($this));
-        
+
         // register editor on menubar to allow regaining focus
         menubar.editor = this;
-        
+
 	    this.outline = new eXide.edit.Outline();
 	    this.directory = new eXide.edit.Directory();
 	    this.validator = new eXide.edit.CodeValidator(this);
 	    this.addEventListener("activate", this.outline, this.outline.updateOutline);
     	this.validator.addEventListener("validate", this.outline, this.outline.updateOutline);
 		this.addEventListener("close", this.outline, this.outline.clearOutline);
-        
-       
-	    
+
+
+
 	    // Set up the status bar
 	    this.status = document.getElementById("error-status");
 	    $(this.status).click(function (ev) {
@@ -241,7 +241,7 @@ eXide.edit.Editor = (function () {
 	    		$this.editor.gotoLine(parseInt(line) + 1);
 	    	}
 	    });
-        
+
         var tabsDiv = $("#tabs-container");
         tabsDiv.css({overflow: 'hidden'});
 
@@ -250,20 +250,20 @@ eXide.edit.Editor = (function () {
             var tabsUl = tabsDiv.find("ul");
             var tabsWidth = tabsDiv.width();
             var lastLi = tabsUl.find('li');
-            
+
             if (lastLi.length > 1) {
                 //As images are loaded ul width increases,
                 //so we recalculate it each time
                 var ulWidth = lastLi[lastLi.length - 2].offsetLeft + lastLi.outerWidth();
-                
+
                 var left = (e.pageX - tabsDiv.offset().left) * (ulWidth-tabsWidth) / tabsWidth;
                 tabsDiv.scrollLeft(left);
             }
         });
-        
+
 		this.validateTimeout = null;
 		this.validationEnabled = true;
-		
+
 		// register mode helpers
 		var xmlModeHelper = new eXide.edit.XMLModeHelper($this, menubar);
 		$this.modes = {
@@ -275,7 +275,7 @@ eXide.edit.Editor = (function () {
             "css": new eXide.edit.CssModeHelper($this),
             "tmsnippet": new eXide.edit.SnippetModeHelper($this)
 		};
-        
+
         $("#dialog-goto-line").dialog({
             modal: false,
             autoOpen: false,
@@ -300,7 +300,7 @@ eXide.edit.Editor = (function () {
                 $(this).find("input[name='row']").val("");
                 $(this).find("input[name='column']").val("");
                 $(this).find("input:first").focus();
-                
+
                 var dialog = $(this);
                 dialog.find("input").keyup(function (e) {
                     if (e.keyCode == 13) {
@@ -309,24 +309,18 @@ eXide.edit.Editor = (function () {
                 });
             }
         });
-        
+
         this.editor.on("guttermousedown", function(ev) {
             if (ev.getButton()) // !editor.isFocused()
                 return;
             var gutterRegion = $this.editor.renderer.$gutterLayer.getRegion(ev);
             if (gutterRegion != "markers")
                 return;
-            
+
             var row = ev.getDocumentPosition().row;
             $this.exec("quickFix", row);
         });
-        
-        var Emmet = require("ace/ext/emmet");
-        net.loadScript("$shared/resources/scripts/emmet.js", function() {
-            Emmet.setCore(window.emmet);
-            $this.editor.setOption("enableEmmet", false);
-        });
-        
+
         // drop handler for appending tab to the end
         $(".drop-placeholder .tab", $this.tabs).droppable({
 		    hoverClass: "dragover",
@@ -347,7 +341,7 @@ eXide.edit.Editor = (function () {
 	            $this.rebuildBuffersMenu();
 		    }
 		});
-		
+
 		 //Set up outline status bar
 		var outlineData = [{label: "outline", cls: "outline"},{label:'directory', cls:"directory"}]
 		d3.select("#tabs-outline").selectAll("li").data(outlineData)
@@ -365,7 +359,7 @@ eXide.edit.Editor = (function () {
 						d3.select(this).classed('active', true)
 					}
 					menubar.editor[d.cls].toggle(i ===0 )
-					
+
 				})
 	};
 
@@ -380,7 +374,7 @@ eXide.edit.Editor = (function () {
             this.editor.onCommandKey(e, hashId, keyCode);
         }
     };
-    
+
 	Constr.prototype.init = function() {
 	    if (this.documents.length == 0)
 	    	this.newDocument(null, "xquery");
@@ -388,12 +382,12 @@ eXide.edit.Editor = (function () {
         var currentDoc = this.getActiveDocument();
         this.$triggerEvent("activate", [currentDoc]);
 	};
-	
+
 	Constr.prototype.setEmmetEnabled = function(enabled) {
 	    this.enableEmmet = enabled;
 	    this.editor.setOption("enableEmmet", enabled);
 	};
-	
+
 	Constr.prototype.exec = function () {
 		if (this.activeDoc.getModeHelper()) {
 			var args = Array.prototype.slice.call(arguments, 1);
@@ -402,15 +396,15 @@ eXide.edit.Editor = (function () {
 		    eXide.util.message("Not supported in this mode.");
 		}
 	};
-	
+
 	Constr.prototype.getActiveDocument = function() {
 		return this.activeDoc;
-	}; 
-	
+	};
+
 	Constr.prototype.getText = function() {
 		return this.activeDoc.getText();
 	};
-	
+
 	Constr.prototype.newDocument = function(data, type) {
 		var $this = this;
 		var newDocId = 0;
@@ -439,7 +433,7 @@ eXide.edit.Editor = (function () {
         }
 		this.$initDocument(newDocument, true);
 	};
-	
+
 	Constr.prototype.newDocumentWithText = function(data, mime, resource) {
 		var doc = new eXide.edit.Document(resource.name, resource.path, new EditSession(data));
 		doc.editable = resource.writable;
@@ -451,7 +445,7 @@ eXide.edit.Editor = (function () {
 		}
 		this.$initDocument(doc);
 	};
-	
+
     Constr.prototype.newDocumentFromTemplate = function(mode, template) {
         if (!template || template.length == 0) {
             this.newDocument(null, mode);
@@ -482,7 +476,7 @@ eXide.edit.Editor = (function () {
 			}
         });
     };
-    
+
 	Constr.prototype.openDocument = function(data, mime, resource, externalPath) {
 		var $this = this;
 		if (!resource.writable)
@@ -518,10 +512,10 @@ eXide.edit.Editor = (function () {
 		this.$initDocument(doc);
 		this.directory.toggleEdit(this.activeDoc.getPath(), true)
 	};
-	
+
 	Constr.prototype.$initDocument = function (doc, setMime) {
 		var $this = this;
-		
+
 		$this.$setMode(doc, setMime);
 		doc.$session.setUndoManager(new UndoManager());
 		doc.$session.addEventListener("change", function (ev) {
@@ -533,27 +527,27 @@ eXide.edit.Editor = (function () {
 			$this.validator.triggerDelayed(doc);
 		});
 		$this.addTab(doc);
-		
+
 		$this.editor.setSession(doc.$session);
 		$this.editor.resize();
 		$this.editor.focus();
-        
+
         doc.$session.getDocument().on("change", function(ev) {
             $this.$triggerEvent("change", [$this.activeDoc]);
             $this.history.push(doc.getPath(), doc.getCurrentLine());
         });
-        
+
         eXide.app.toggleRunStatus(doc);
         if (doc.getModeHelper()) {
             doc.getModeHelper().activate(doc);
         }
 	};
-	
+
 	Constr.prototype.setMode = function(mode) {
 		this.activeDoc.syntax = mode;
 		this.$setMode(this.activeDoc, true);
 	};
-	
+
 	Constr.prototype.$setMode = function(doc, setMime) {
         var mode;
 		switch (doc.getSyntax()) {
@@ -642,7 +636,7 @@ eXide.edit.Editor = (function () {
         }
 		doc.setModeHelper(mode);
 	};
-	
+
 	Constr.prototype.closeDocument = function(docToClose) {
 	    var doc = docToClose || this.activeDoc;
 		this.$triggerEvent("close", [doc]);
@@ -664,7 +658,7 @@ eXide.edit.Editor = (function () {
 			this.$triggerEvent("activate", [this.activeDoc]);
 		}
 	};
-	
+
 	Constr.prototype.saveDocument = function(resource, successHandler, errorHandler) {
 		var $this = this;
 		var oldPath = $this.activeDoc.path;
@@ -673,9 +667,9 @@ eXide.edit.Editor = (function () {
 			$this.activeDoc.path = resource.path,
 			$this.activeDoc.name = resource.name
 		}
-		
+
 		eXide.util.message("Storing resource " + $this.activeDoc.name + "...");
-		
+
 		$.ajax({
 			url: "store" + $this.activeDoc.path,
 			type: "PUT",
@@ -701,7 +695,7 @@ eXide.edit.Editor = (function () {
 					} else {
 						eXide.util.success($this.activeDoc.name + " stored.");
 					}
-                    
+
                     // trigger post-save action on mode helper
                     var mode = $this.activeDoc.getModeHelper();
                 	if (mode) {
@@ -728,7 +722,7 @@ eXide.edit.Editor = (function () {
         this.activeDoc.saved = true;
         this.updateTabStatus(this.activeDoc.path, this.activeDoc);
     };
-    
+
 	/**
 	 * Scan open documents and return the one matching path
 	 */
@@ -750,7 +744,7 @@ eXide.edit.Editor = (function () {
 			mode.onInput(doc, delta);
 		}
 	};
-	
+
 	Constr.prototype.historyBack = function() {
         var item = this.history.pop();
         if (item) {
@@ -758,7 +752,7 @@ eXide.edit.Editor = (function () {
             eXide.app.findDocument(item.path, item.line + 1);
         }
 	};
-	
+
 	Constr.prototype.autocomplete = function(alwaysShow) {
 		var mode = this.activeDoc.getModeHelper();
 		if (mode && mode.autocomplete) {
@@ -766,11 +760,11 @@ eXide.edit.Editor = (function () {
 		}
 		return false;
 	};
-	
+
 	Constr.prototype.getHeight = function () {
 		return $("#fullscreen").height();
 	};
-	
+
 	Constr.prototype.getWidth = function () {
 		return $(this.container).width();
 	};
@@ -782,24 +776,24 @@ eXide.edit.Editor = (function () {
 	Constr.prototype.resize = function () {
 		this.editor.resize();
 	};
-	
+
 	Constr.prototype.clearErrors = function () {
 		this.editor.getSession().clearAnnotations();
 	};
-	
+
     Constr.prototype.forEachDocument = function(callback) {
         var docs = this.documents.slice(0);
         for (var i = 0; i < docs.length; i++) {
     		callback(docs[i]);
         }
     };
-    
+
     Constr.prototype.gotoLine = function() {
         $("#dialog-goto-line").dialog("open");
         $("#dialog-goto-line input[type='text']").val("");
         $('#dialog-goto-line input[name="row"]').focus();
     };
-    
+
 	Constr.prototype.addTab = function(doc) {
 		var $this = this;
 		var tabId = "t" + $this.tabCounter++;
@@ -809,9 +803,9 @@ eXide.edit.Editor = (function () {
 		}
 		if (!doc.saved)
 			label += "*";
-		
+
 		$("li a", $this.tabs).removeClass("active");
-		
+
 		var li = document.createElement("li");
 		var tab = document.createElement("a");
 		tab.appendChild(document.createTextNode(label));
@@ -819,7 +813,7 @@ eXide.edit.Editor = (function () {
 		tab.id = tabId;
 		tab.title = doc.path;
 		li.appendChild(tab);
-		
+
 		$(tab).click(function (ev) {
 			ev.preventDefault();
 			$this.switchTo(doc);
@@ -856,13 +850,13 @@ eXide.edit.Editor = (function () {
 		        }
 		    }
 		});
-		
+
 		$(li).insertBefore($(".drop-placeholder", $this.tabs));
-		
+
         $this.menubar.add("buffers", label, tab.title, $this.documents.length + 1, function() {
             $this.switchTo(doc);
         });
-        
+
 		$this.activeDoc = doc;
 		$this.documents.push(doc);
         if (!$this.initializing) {
@@ -870,7 +864,7 @@ eXide.edit.Editor = (function () {
         }
         $this.scrollToTab($(tab));
 	};
-	
+
 	Constr.prototype.rebuildBuffersMenu = function() {
 	    var self = this;
 	    self.menubar.removeAll("buffers");
@@ -886,7 +880,7 @@ eXide.edit.Editor = (function () {
 	        });
 	    });
 	};
-	
+
 	Constr.prototype.selectTab = function(pos) {
 	    var self = this;
 	    if (pos >= 0 && pos < this.documents.length) {
@@ -894,7 +888,7 @@ eXide.edit.Editor = (function () {
 	    } else {
     	    var popupItems = [];
             for (var i = 0; i < this.documents.length; i++) {
-                item = { 
+                item = {
                     label: this.documents[i].name,
                     pos: i
                 };
@@ -911,7 +905,7 @@ eXide.edit.Editor = (function () {
             }
 	    }
 	};
-	
+
 	Constr.prototype.switchTo = function(doc) {
         var helper = this.activeDoc.getModeHelper();
         if (helper) {
@@ -932,7 +926,7 @@ eXide.edit.Editor = (function () {
 		});
 		this.updateStatus("");
 		this.$triggerEvent("activate", [doc]);
-        
+
         eXide.app.toggleRunStatus(doc);
         helper = doc.getModeHelper();
         if (helper) {
@@ -942,7 +936,7 @@ eXide.edit.Editor = (function () {
             this.validator.triggerNow(this.activeDoc);
         }
 	};
-	
+
 	Constr.prototype.updateTabStatus = function(oldPath, doc) {
 		var label;
 		if (!doc.saved)
@@ -951,7 +945,7 @@ eXide.edit.Editor = (function () {
 			label = doc.name;
 		$("a[title=\"" + oldPath + "\"]", this.tabs).attr("title", doc.path).text(label);
 	};
-	
+
     Constr.prototype.scrollToTab = function (current) {
         var offset = current.offset().left;
         var offsetRight = offset + current.outerWidth();
@@ -969,7 +963,7 @@ eXide.edit.Editor = (function () {
         }
         $.log("Scrolling to %d %d", offset, $("#tabs-container").scrollLeft());
     };
-    
+
 	Constr.prototype.setTheme = function(theme) {
 		$.log("Changing theme to %s", theme);
         var $this = this;
@@ -978,16 +972,16 @@ eXide.edit.Editor = (function () {
             $this.$triggerEvent("setTheme", [ require($this.editor.getTheme()) ]);
         });
 	};
-	
+
     Constr.prototype.loadTheme = function(name, callback) {
         if (this.themes[name])
             return callback();
-        
+
         var net = require("ace/lib/net");
         this.themes[name] = 1;
         var base = name.split("/").pop();
         var fileName = "$shared/resources/scripts/ace/theme-" + base + ".js";
-        
+
         var head = document.getElementsByTagName('head')[0];
         var s = document.createElement('script');
 
@@ -1006,7 +1000,7 @@ eXide.edit.Editor = (function () {
 			this.status.href = href;
 		}
 	};
-	
+
 	/*
 	 * Cannot compile xquery: XPDY0002 : variable '$b' is not set. [at line 5, column 6, source: String]
 	 */
@@ -1020,7 +1014,7 @@ eXide.edit.Editor = (function () {
     		this.editor.focus();
     		this.editor.gotoLine(line);
         }
-        
+
 		var annotation = [{
 				row: line - 1,
 				text: msg,
@@ -1029,11 +1023,11 @@ eXide.edit.Editor = (function () {
         this.updateStatus(msg);
 		this.editor.getSession().setAnnotations(annotation);
 	};
-	
+
 	Constr.prototype.focus = function() {
 		this.editor.focus();
 	};
-	
+
 	Constr.prototype.saveState = function() {
 		var i = 0;
 		$.each(this.documents, function (index, doc) {
@@ -1059,6 +1053,6 @@ eXide.edit.Editor = (function () {
 		});
 		localStorage["eXide.documents"] = i;
 	};
-    
+
 	return Constr;
 }());

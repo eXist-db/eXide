@@ -171,27 +171,27 @@ declare function deploy:create-collection($collection as xs:string, $userData as
 };
 
 declare function deploy:check-group($group as xs:string) {
-    if (xmldb:group-exists($group)) then
+    if (sm:group-exists($group)) then
         ()
     else
-        xmldb:create-group($group)
+        sm:create-group($group)
 };
 
 declare function deploy:check-user($repoConf as element()) as xs:string+ {
     let $perms := $repoConf/repo:permissions
-    let $user := if ($perms/@user) then $perms/@user/string() else xmldb:get-current-user()
-    let $group := if ($perms/@group) then $perms/@group/string() else xmldb:get-user-groups($user)[1]
+    let $user := if ($perms/@user) then $perms/@user/string() else sm:id()//sm:real/sm:username/string()
+    let $group := if ($perms/@group) then $perms/@group/string() else sm:get-user-groups($user)[1]
     let $create :=
-        if (xmldb:exists-user($user)) then
-            if (index-of(xmldb:get-user-groups($user), $group)) then
+        if (sm:user-exists($user)) then
+            if (index-of(sm:get-user-groups($user), $group)) then
                 ()
             else (
                 deploy:check-group($group),
-                xmldb:add-user-to-group($user, $group)
+                sm:add-group-member($user, $group)
             )
         else (
             deploy:check-group($group),
-            xmldb:create-user($user, $perms/@password, $group, ())
+            sm:create-account($user, $perms/@password, $group, ())
         )
     return
         ($user, $group)
@@ -202,7 +202,7 @@ declare function deploy:target-permissions($repoConf as element()) as xs:string 
     return
         if ($permissions) then
             if ($permissions castable as xs:int) then
-                xmldb:permissions-to-string(util:base-to-integer(xs:int($permissions), 8))
+                sm:octal-to-mode($permissions)
             else
                 $permissions
         else
@@ -220,7 +220,7 @@ declare function deploy:copy-templates($target as xs:string, $source as xs:strin
         for $resource in xmldb:get-child-resources($source)
         let $targetPath := xs:anyURI(concat($target, "/", $resource))
         return (
-            xmldb:copy($source, $target, $resource),
+            xmldb:copy-resource($source, $resource, $target, $resource),
             let $mime := xmldb:get-mime-type($targetPath)
             let $perms :=
                 if ($mime eq "application/xquery") then
@@ -620,7 +620,7 @@ let $collection :=
         return
             if ($root) then $root else $collectionParam
     else
-        $target
+        repo:get-root() || "/" || $target
 let $info := request:get-parameter("info", ())
 let $deploy := request:get-parameter("deploy", ())
 let $download := request:get-parameter("download", ())
@@ -635,7 +635,7 @@ return
         else if ($info) then
             apputil:get-info($info)
         else if ($abbrev) then
-            deploy:create-app($collection, $expathConf)
+            deploy:create-app($target, $expathConf)
         else
             deploy:view($collection, $expathConf, $repoConf)
     } catch exerr:EXXQDY0003 {

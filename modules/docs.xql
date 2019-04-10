@@ -1,6 +1,6 @@
 (:
  :  eXide - web-based XQuery IDE
- :  
+ :
  :  Copyright (C) 2011-13 Wolfgang Meier
  :
  :  This program is free software: you can redistribute it and/or modify
@@ -25,22 +25,22 @@ declare option exist:serialize "method=json media-type=application/json";
 
 (: Search for functions matching the supplied query string.
  : Logic for different kinds of query strings:
- :   1. Module namespace prefix only (e.g., "kwic:", "fn:"): show all functions 
+ :   1. Module namespace prefix only (e.g., "kwic:", "fn:"): show all functions
  :        in the module
- :   2. Module namespace prefix + exact function name (e.g., "math:pow"): show 
+ :   2. Module namespace prefix + exact function name (e.g., "math:pow"): show
  :        just this function
- :   3. Module namespace prefix + partial function name (e.g., "ngram:con"): 
+ :   3. Module namespace prefix + partial function name (e.g., "ngram:con"):
  :        show matching functions from the module
- :   4. No module namespace prefix + partial or complete function name (e.g., 
+ :   4. No module namespace prefix + partial or complete function name (e.g.,
  :        "con"): show matching functions from all modules
  : Note: We give special handling to default XPath functions:
- :   1. Since the "fn" namespace prefix is the default function namespace, 
+ :   1. Since the "fn" namespace prefix is the default function namespace,
  :        its functions are included in searches when no namespace prefix is
- :        supplied. Functions from this namespace appear at the top of the list 
- :        of results. The results also omit the "fn" namespace prefix if it 
- :        was omitted in the query string. 
- :   2. If the "fn" namespace prefix is supplied in the query string, we limit 
- :        searches to the default XPath functions, and the results show the 
+ :        supplied. Functions from this namespace appear at the top of the list
+ :        of results. The results also omit the "fn" namespace prefix if it
+ :        was omitted in the query string.
+ :   2. If the "fn" namespace prefix is supplied in the query string, we limit
+ :        searches to the default XPath functions, and the results show the
  :        prefix.
  : :)
 declare function local:get-matching-functions($q as xs:string) {
@@ -55,32 +55,32 @@ declare function local:get-matching-functions($q as xs:string) {
             let $all-modules := (util:registered-modules(), util:mapped-modules()) ! inspect:inspect-module-uri(xs:anyURI(.))
             return
                 if ($supplied-module-namespace-prefix) then
-                    $all-modules[starts-with(@prefix, $supplied-module-namespace-prefix)] 
-                else 
+                    $all-modules[starts-with(@prefix, $supplied-module-namespace-prefix)]
+                else
                     $all-modules
     let $functions := $modules/function[not(deprecated)]
     for $function in $functions
-    let $function-name := 
-        (: Functions in some modules contain the module namespace prefix in 
+    let $function-name :=
+        (: Functions in some modules contain the module namespace prefix in
          : the name attribtue, e.g., @name="map:merge". :)
-        if (contains($function/@name, ':')) then 
+        if (contains($function/@name, ':')) then
             substring-after($function/@name, ':')
         (: Functions in others *do not*, e.g., math:pow > @name="pow" :)
-        else 
+        else
             $function/@name
-    let $module-namespace-prefix := 
-        (: All modules have a @prefix attribute, except the default XPath 
+    let $module-namespace-prefix :=
+        (: All modules have a @prefix attribute, except the default XPath
          : function namespace, whose @prefix is an empty string. (Even though
          : its prefix is conventionally given as "fn" in the spec.) :)
         $function/parent::module/@prefix
     let $complete-function-name := if ($show-fn-prefix) then ('fn:' || $function-name) else ($module-namespace-prefix || ':' || $function-name)
-    where 
+    where
         (
             starts-with($complete-function-name, $function-name-fragment)
             or
             starts-with($function-name, $function-name-fragment)
         )
-    (: Ensure functions in "fn" namespace, or default function namespace, 
+    (: Ensure functions in "fn" namespace, or default function namespace,
      : appear at the top of the list :)
     order by ($module-namespace-prefix, '')[1], lower-case($function-name)
     return
@@ -91,7 +91,7 @@ declare function local:describe-function($function as element(function), $module
     let $signature := local:generate-signature($function, $module-namespace-prefix, $function-name, $show-fn-prefix)
     let $template := local:generate-template($signature)
     let $help := local:generate-help($function)
-    let $visibility := 
+    let $visibility :=
         if ($function/annotation[@name="private"]) then
             "private"
         else
@@ -114,7 +114,7 @@ declare function local:generate-signature($function as element(function), $modul
             "fn:"
         else
             ()
-    ) || 
+    ) ||
     $function-name ||
     "(" ||
     string-join(
@@ -156,7 +156,7 @@ declare function local:generate-help($function as element(function)) {
             </dl>
         </div>
     return
-        util:serialize($help, "method=xml omit-xml-declaration=yes")
+        serialize($help, map { "method": "xml", "omit-xml-declaration": true()})
 };
 
 declare function local:cardinality($cardinality as xs:string) {
