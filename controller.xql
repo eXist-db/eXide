@@ -43,7 +43,7 @@ declare function local:fallback-login($domain as xs:string, $maxAge as xs:dayTim
             if ($user) then
                 let $isLoggedIn := xmldb:login("/db", $user, $password, true())
                 return
-                    if ($isLoggedIn and (not($asDba) or xmldb:is-admin-user($user))) then (
+                    if ($isLoggedIn and (not($asDba) or sm:is-dba($user))) then (
                         session:set-attribute("eXide.user", $user),
                         session:set-attribute("eXide.password", $password),
                         request:set-attribute($domain || ".user", $user),
@@ -75,7 +75,7 @@ declare function local:query-execution-allowed() {
     local:user-allowed()
     )
         or
-    xmldb:is-admin-user((request:get-attribute("org.exist.login.user"),request:get-attribute("xquery.user"), 'nobody')[1])
+    sm:is-dba((request:get-attribute("org.exist.login.user"),request:get-attribute("xquery.user"), 'nobody')[1])
 };
 
 if ($exist:path eq '') then
@@ -104,9 +104,9 @@ else if ($exist:resource = 'login') then
             if (local:user-allowed()) then
                 <status>
                     <user>{request:get-attribute("org.exist.login.user")}</user>
-                    <isAdmin json:literal="true">{ xmldb:is-admin-user((request:get-attribute("org.exist.login.user"),request:get-attribute("xquery.user"), 'nobody')[1]) }</isAdmin>
+                    <isAdmin json:literal="true">{ sm:is-dba((request:get-attribute("org.exist.login.user"),request:get-attribute("xquery.user"), 'guest')[1]) }</isAdmin>
                 </status>
-            else 
+            else
                 (
                     response:set-status-code(401),
                     <status>fail</status>
@@ -137,7 +137,7 @@ else if (starts-with($exist:path, "/check/")) then
         </dispatch>
 
 else if ($exist:resource = "index.html") then
-    if (local:user-allowed()) then 
+    if (local:user-allowed()) then
         <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
             <view>
                 <forward url="modules/view.xql">
@@ -145,7 +145,7 @@ else if ($exist:resource = "index.html") then
                 </forward>
             </view>
         </dispatch>
-    else 
+    else
         (
             response:set-status-code(401),
             <status>fail</status>

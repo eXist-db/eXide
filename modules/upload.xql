@@ -1,6 +1,6 @@
 (:
  :  eXide - web-based XQuery IDE
- :  
+ :
  :  Copyright (C) 2011 Wolfgang Meier
  :
  :  This program is free software: you can redistribute it and/or modify
@@ -39,7 +39,7 @@ declare function upload:get-descriptors($zipPath) {
 declare function upload:deploy($name) {
 let $deploy := request:get-parameter("deploy", ())
 return
-    if ($deploy and ends-with($name, ".xar")) then 
+    if ($deploy and ends-with($name, ".xar")) then
         let $descriptors := upload:get-descriptors($name)
         let $port := request:get-server-port()
         let $url := concat('http://localhost:',$port,"/exist/rest/", $name)
@@ -80,7 +80,7 @@ declare function upload:store($root as xs:string, $path as xs:string, $data) {
 
 declare function upload:upload($collection, $path, $data) {
     let $path := upload:store($collection, $path, $data)
-    
+
     let $upload :=
         <result>
             <files json:array="true">
@@ -100,10 +100,11 @@ let $name := request:get-uploaded-file-name("file[]")
 let $path := ($pathParam, $name)[1]
 let $data := request:get-uploaded-file-data("file[]")
 return
-    util:catch("*",
-        upload:upload($collection, $path, $data),
+    try {
+        upload:upload($collection, $path, $data)
+    } catch * {
         <result>
            <name>{$name}</name>
            <error>{$util:exception-message}</error>
         </result>
-   )
+    }

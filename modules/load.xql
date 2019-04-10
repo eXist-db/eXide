@@ -1,6 +1,6 @@
 (:
  :  eXide - web-based XQuery IDE
- :  
+ :
  :  Copyright (C) 2011 Wolfgang Meier
  :
  :  This program is free software: you can redistribute it and/or modify
@@ -49,7 +49,7 @@ let $header2 :=
     else
         ()
 return
-    if (config:access-allowed($path, xmldb:get-current-user())) then
+    if (config:access-allowed($path, sm:id()//sm:real/sm:username/string())) then
         if ($isBinary) then
             let $data := util:binary-doc($path)
             return

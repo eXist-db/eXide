@@ -8,7 +8,7 @@ declare namespace repo="http://exist-db.org/xquery/repo";
 
 declare namespace test="http://exist-db.org/xquery/xqsuite";
 
-declare 
+declare
     %test:args("/db/apps/shared-resources/test/test2")
     %test:assertEquals("/db/apps/shared-resources")
     %test:args("/db/apps/shared-resources/")
@@ -38,8 +38,8 @@ declare function apputil:get-info-from-descriptor($collection as xs:string) {
     let $expathConf := doc(concat($collection, "/expath-pkg.xml"))/expath:package
     let $repoConf := doc(concat($collection, "/repo.xml"))/repo:meta
     let $gitConf := doc(concat($collection, "/git.xml"))/git:git
-    let $user := xmldb:get-current-user()
-    let $auth := if ($user) then xmldb:is-admin-user($user) else false()
+    let $user := sm:id()//sm:real/sm:username/string()
+    let $auth := if ($user) then sm:is-dba($user) else false()
     return
         <info xmlns:json="http://json.org" root="{$collection}" abbrev="{$expathConf/@abbrev}">
             <target>{$repoConf/repo:target/string()}</target>

@@ -24,7 +24,7 @@ let $collection := request:get-parameter("collection", ())
 let $xconf := request:get-parameter("config", ())
 let $target := "/db/system/config" || $collection
 return
-    if (xmldb:is-admin-user(xmldb:get-current-user())) then
+    if (sm:is-dba(sm:id()//sm:real/sm:username/string())) then
         try {
             (
                 <response json:literal="true">true</response>,

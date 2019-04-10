@@ -27,7 +27,7 @@ declare option exist:serialize "method=json media-type=text/javascript";
 declare variable $catalog := doc($config:app-root || "/resources/schema/catalog.xml")/catalog:catalog;
 
 declare function local:validate($doc as document-node(), $schema as xs:string) {
-    let $report := validation:validate-report($doc, doc($schema))
+    let $report := validation:jing-report($doc, doc($schema))
     return
         if ($report/message[@level = "Error"]) then
             <report status="invalid">
@@ -74,6 +74,6 @@ return
                 local:validate($doc, $schema)
             else
                 <report status="valid"/>
-	} catch exerr:EXXQDY0002  {
+	} catch err:FODC0006  {
 		$err:value
 	}
