@@ -12,6 +12,17 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="2.4.7">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: Compatibility with Internet Explorer</li>
+                <li>Fixed: Removed use of deprecated xmldb functions for compatibility with eXist 5.0</li>
+                <li>Fixed: Mime type and template for HTML5 and XHTML5 - <a href="https://github.com/eXist-db/eXide/issues/198">#198</a></li>
+                <li>Fixed: URL used for downloading r.js - <a href="https://github.com/eXist-db/eXide/issues/200">#200</a></li>
+                <li>Fixed: Recognize .xslt files as XML documents - <a href="https://github.com/eXist-db/eXide/pull/212">#212</a></li>
+                <li>Fixed: XQuery 'output' and 'html' snippeds - <a href="https://github.com/eXist-db/eXide/pull/213">#213</a></li>
+                <li>New: Added continuous integration facility for testing builds</li>
+            </ul>
+        </change>
         <change version="2.4.6">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fixed: Deletion of resources via DB Manager - <a href="https://github.com/eXist-db/eXide/pull/193">#193</a></li>
