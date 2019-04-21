@@ -24,6 +24,24 @@ declare namespace json="http://www.json.org";
 
 declare option exist:serialize "method=json media-type=text/javascript";
 
+(: Handle difference between 4.x.x and 5.x.x releases of eXist :)
+declare variable $local:copy-collection :=
+    let $fnNew := function-lookup(xs:QName("xmldb:copy-collection"), 2)
+    return
+        if (exists($fnNew)) then $fnNew else function-lookup(xs:QName("xmldb:copy"), 2);
+
+declare variable $local:copy-resource :=
+    let $fnNew := function-lookup(xs:QName("xmldb:copy-resource"), 4)
+    return
+        if (exists($fnNew)) then
+            $fnNew
+        else
+            let $fnOld := function-lookup(xs:QName("xmldb:copy"), 3)
+            return
+                function($sourceCol, $sourceName, $targetCol, $targetName) {
+                    $fnOld($sourceCol, $targetCol, $sourceName)
+                };
+
 declare function local:sub-collections($root as xs:string, $children as xs:string*, $user as xs:string) {
         for $child in $children
         let $processChild :=
@@ -226,7 +244,7 @@ declare function local:copyOrMove($operation as xs:string, $target as xs:string,
                             case "move" return
                                 xmldb:move($source, $target)
                             default return
-                                xmldb:copy-collection($source, $target)
+                                $local:copy-collection($source, $target)
                     return
                         <response status="ok"/>
                 else
@@ -236,7 +254,7 @@ declare function local:copyOrMove($operation as xs:string, $target as xs:string,
                             case "move" return
                                 xmldb:move($split[1], $target, $split[2])
                             default return
-                                xmldb:copy-resource($split[1], $split[2], $target, $split[2])
+                                $local:copy-resource($split[1], $split[2], $target, $split[2])
                     return
                         <response status="ok"/>
             } catch * {
