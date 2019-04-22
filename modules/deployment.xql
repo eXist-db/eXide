@@ -46,6 +46,19 @@ declare variable $deploy:ANT_FILE :=
         </target>
     </project>;
 
+(: Handle difference between 4.x.x and 5.x.x releases of eXist :)
+declare variable $local:copy-resource :=
+    let $fnNew := function-lookup(xs:QName("xmldb:copy-resource"), 4)
+    return
+        if (exists($fnNew)) then
+            $fnNew
+        else
+            let $fnOld := function-lookup(xs:QName("xmldb:copy"), 3)
+            return
+                function($sourceCol, $sourceName, $targetCol, $targetName) {
+                    $fnOld($sourceCol, $targetCol, $sourceName)
+                };
+
 declare function deploy:select-option($value as xs:string, $current as xs:string?, $label as xs:string) {
     <option value="{$value}">
     { if (exists($current) and $value eq $current) then attribute selected { "selected" } else (), $label }
@@ -220,7 +233,7 @@ declare function deploy:copy-templates($target as xs:string, $source as xs:strin
         for $resource in xmldb:get-child-resources($source)
         let $targetPath := xs:anyURI(concat($target, "/", $resource))
         return (
-            xmldb:copy-resource($source, $resource, $target, $resource),
+            $local:copy-resource($source, $resource, $target, $resource),
             let $mime := xmldb:get-mime-type($targetPath)
             let $perms :=
                 if ($mime eq "application/xquery") then
