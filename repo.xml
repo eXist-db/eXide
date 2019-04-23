@@ -12,6 +12,11 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="2.4.8">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: Handle difference between 4.x.x and 5.x.x versions of eXist concerning copying collections/resources</li>
+            </ul>
+        </change>
         <change version="2.4.7">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fixed: Compatibility with Internet Explorer</li>
