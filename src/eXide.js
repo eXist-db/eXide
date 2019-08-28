@@ -876,6 +876,7 @@ eXide.app = (function(util) {
         getLogin: function(callback) {
             $.ajax({
                 url: "login",
+                type: "POST",
                 dataType: "json",
                 success: function(data) {
                     if (data && data.user) {
@@ -920,6 +921,8 @@ eXide.app = (function(util) {
                     }
                 });
                 $("#login-dialog").dialog("open");
+                // Why doesn't this set focus when login dialog is opened?
+                $("#login-dialog input:first").focus();
             } else
                 callback();
         },
@@ -1178,6 +1181,7 @@ eXide.app = (function(util) {
                             }
     						$.ajax({
     							url: "login",
+                            	type: "POST",
     							data: params,
                                 dataType: "json",
     							success: function (data) {
