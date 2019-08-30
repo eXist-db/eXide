@@ -12,6 +12,13 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="2.4.9">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: An issue in the xqlint library caused silent errors when using legacy map constructor syntax - <a href="https://github.com/eXist-db/eXide/issues/224">#224</a></li>
+                <li>Fixed: An bug affecting copying, cutting, and pasting of resources in the File > DB Manager pane - <a href="https://github.com/eXist-db/eXide/pull/225">#225</a></li>
+                <li>Security: When logging in, credentials are now submitted via HTTP POST instead of GET  - <a href="https://github.com/eXist-db/eXide/pull/227">#227</a></li>
+            </ul>
+        </change>
         <change version="2.4.8">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fixed: Handle difference between 4.x.x and 5.x.x versions of eXist concerning copying collections/resources</li>
