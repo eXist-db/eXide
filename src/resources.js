@@ -355,6 +355,7 @@ eXide.browse.ResourceBrowser = (function () {
 		$.log("Opening resources for %s", collection);
 		this.grid.gotoCell(0, 0);
         this.setCollection(collection);
+    $('input[name="collection"]').val(collection),
 		this.data.length = 0;
         this.grid.setSelectedRows([]);
         this.grid.resetActiveCell();
@@ -510,11 +511,15 @@ eXide.browse.ResourceBrowser = (function () {
 
     Constr.prototype.cut = function() {
         this.clipboardMode = "move";
-        this.copy();
+        this.copy0();
     };
 
     Constr.prototype.copy = function() {
-        var selected = this.grid.getSelectionModel().getSelectedRows();
+      this.clipboardMode = "copy";
+      this.copy0();
+    };
+    Constr.prototype.copy0 = function() {
+    var selected = this.grid.getSelectionModel().getSelectedRows();
         this.clipboard = [];
 		for (var i = 0; i < selected.length; i++) {
             var path = this.data[selected[i]].name;
@@ -528,7 +533,7 @@ eXide.browse.ResourceBrowser = (function () {
 
     Constr.prototype.paste = function() {
         var $this = this;
-        $.log("Copying resources %o to %s", this.clipboard, this.collection);
+        $.log("Pasting resources %o to %s in mode %s", this.clipboard, this.collection, this.clipboardMode);
         var params = { root: this.collection };
         params[this.clipboardMode] = this.clipboard;
 		$.getJSON("modules/collections.xql", params,
