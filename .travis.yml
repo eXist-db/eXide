@@ -10,7 +10,7 @@ services:
 env:
   - img=existdb/existdb:latest
   - img=existdb/existdb:release
-  - img= existdb/existdb:4.7.1
+  - img=existdb/existdb:4.7.1
 
 jobs:
   include:
