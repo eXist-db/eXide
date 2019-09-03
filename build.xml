@@ -159,6 +159,9 @@
                 <exclude name="*.tmpl"/>
                 <exclude name="*.properties"/>
                 <exclude name=".github/**"/>
+                <exclude name="node_modules/**"/>
+                <exclude name="package-lock.json"/>
+                <exclude name="cypress/**"/>
             </fileset>
         </zip>
     </target>
