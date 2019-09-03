@@ -1,5 +1,12 @@
 language: java
 
+dist: xenial
+
+addons:
+  apt:
+    packages:
+    - libgconf-2-4
+
 jdk:
   - openjdk8
   - openjdk11
@@ -30,15 +37,21 @@ jobs:
 before_install:
   - docker pull $img
   - docker create  --name exist-ci -p 8080:8080 $img
-  
+
 install:
   - ant
+  - npm ci
 
 before_script:
   - docker cp ./build/eXide-*.xar exist-ci:exist/autodeploy
   - docker start exist-ci
   # exist needs time
   - sleep 30
-  - docker ps
 
-script: skip
+script:
+  - docker ps
+  - npm run cypress -- --record
+
+notifications:
+  email: false
+  slack: exist-db:IXzUdqA0n11cnxaDz43ZQgdX
