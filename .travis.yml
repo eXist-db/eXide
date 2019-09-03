@@ -1,8 +1,8 @@
 language: java
 
 jdk:
-  - oraclejdk8
-  - oraclejdk11
+  - openjdk8
+  - openjdk11
 
 services:
   - docker
@@ -10,13 +10,13 @@ services:
 env:
   - img=existdb/existdb:latest
   - img=existdb/existdb:release
-  # - img= existdb/existdb:4.5.0
+  - img= existdb/existdb:4.7.1
 
 jobs:
   include:
     # Define the release stage that runs semantic-release
     - stage: deploy
-      jdk: oraclejdk8
+      jdk: openjdk8
       env: img=existdb/existdb:release
       script: skip
       provider: releases
