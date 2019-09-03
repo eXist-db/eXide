@@ -1,0 +1,30 @@
+{
+  "name": "exide",
+  "version": "2.4.9",
+  "description": "a web-based XQuery IDE",
+  "main": "main.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "cypress": "cypress open"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eXist-db/eXide.git"
+  },
+  "keywords": [
+    "exist-db",
+    "xquery",
+    "ide"
+  ],
+  "author": "Wolfgang Meier",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/eXist-db/eXide/issues"
+  },
+  "homepage": "https://github.com/eXist-db/eXide#readme",
+  "devDependencies": {
+    "cypress": "^3.4.1"
+  }
+}
