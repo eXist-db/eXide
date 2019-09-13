@@ -101,10 +101,10 @@ let $path := ($pathParam, $name)[1]
 let $data := request:get-uploaded-file-data("file[]")
 return
     try {
-        upload:upload($collection, $path, $data)
+        upload:upload(xmldb:encode-uri($collection), encode-for-uri($path), $data)
     } catch * {
         <result>
            <name>{$name}</name>
-           <error>{$util:exception-message}</error>
+           <error>{$err:description}</error>
         </result>
     }
