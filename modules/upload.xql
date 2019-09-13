@@ -104,6 +104,6 @@ return
         upload:upload(xmldb:encode-uri($collection), encode-for-uri($path), $data),
         <result>
            <name>{$name}</name>
-           <error>{$util:exception-message}</error>
+           <error>{$err:description}</error>
         </result>
    )
