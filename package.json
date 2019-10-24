@@ -25,6 +25,6 @@
   },
   "homepage": "https://github.com/eXist-db/eXide#readme",
   "devDependencies": {
-    "cypress": "^3.4.1"
+    "cypress": "^3.5.0"
   }
 }
