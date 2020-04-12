@@ -48,7 +48,9 @@ declare function local:retrieve($num as xs:integer) as element() {
         </output:serialization-parameters>
     let $serialized :=
         serialize(
-            if ($cached-item instance of node() and $auto-expand-matches) then
+            if ($cached-item instance of xs:base64Binary) then
+                "[This placeholder represents a binary value, which eXide is unable to display.]"
+            else if ($cached-item instance of node() and $auto-expand-matches) then
                 util:expand($cached-item, "highlight-matches=both")
             else
                 $cached-item,
