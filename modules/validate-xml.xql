@@ -19,6 +19,8 @@
 xquery version "3.0";
 
 declare namespace catalog="urn:oasis:names:tc:entity:xmlns:xml:catalog";
+declare namespace vc="http://www.w3.org/2007/XMLSchema-versioning";
+declare namespace xs="http://www.w3.org/2001/XMLSchema";
 
 import module namespace config="http://exist-db.org/xquery/apps/config" at "config.xqm";
 
@@ -26,8 +28,15 @@ declare option exist:serialize "method=json media-type=text/javascript";
 
 declare variable $catalog := doc($config:app-root || "/resources/schema/catalog.xml")/catalog:catalog;
 
-declare function local:validate($doc as document-node(), $schema as xs:string) {
-    let $report := validation:jing-report($doc, doc($schema))
+declare function local:validate($doc as document-node(), $schema-path as xs:string) {
+    let $schema := doc($schema-path)
+    let $report := 
+        (: jaxv can only handle XSD and we only need it for XSD 1.1 :)
+        if (ends-with($schema-path, ".xsd") and $schema/xs:schema/@vc:minVersion eq "1.1") then
+            validation:jaxv-report($doc, $schema, "http://www.w3.org/XML/XMLSchema/v1.1")
+        (: jing can handle many more grammar types, but not XSD 1.1 :)
+        else
+            validation:jing-report($doc, $schema)
     return
         if ($report/message[@level = "Error"]) then
             <report status="invalid">
