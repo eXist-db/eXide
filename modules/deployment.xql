@@ -633,7 +633,7 @@ let $collection :=
         return
             if ($root) then $root else $collectionParam
     else
-        repo:get-root() || "/" || $target
+        repo:get-root() || $target
 let $info := request:get-parameter("info", ())
 let $deploy := request:get-parameter("deploy", ())
 let $download := request:get-parameter("download", ())
