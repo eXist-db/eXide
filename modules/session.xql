@@ -97,12 +97,27 @@ declare function local:store-in-session($results as item()*) as element(result) 
 	can reference a result item in the session by passing parameter 'num'.
 :)
 session:create(),
-let $input := request:get-data()
+let $xqueryservlet-error := request:get-data()
 let $results := request:get-attribute("results")
 let $pos := xs:integer(request:get-parameter("num", ()))
 return
-    if (string-length($input) gt 0) then
-        $input
+    (:  From https://exist-db.org/exist/apps/doc/urlrewrite#xq-servlet:
+    
+        > Since controller.xql sets xquery.report-errors to "yes", an error 
+        > in the XQuery will not result in an HTTP error. Instead, the string 
+        > message of the error is enclosed in an element <error> which is 
+        > then written to the response stream. The HTTP status is not changed.
+        
+        This error is captured here as $xqueryservlet-error. Since not all errors 
+        contain descriptions, though, we need to report that an unidentified 
+        error was raised. We will just use the default output from try-catch on 
+        fn:error.
+    :)
+    if (exists($xqueryservlet-error)) then
+        if (string-length($xqueryservlet-error) gt 0) then
+            $xqueryservlet-error
+        else
+            element error { try { error() } catch * { $err:code || ": " || $err:description } }
 	else if ($pos) then
 		local:retrieve($pos)
 	else
