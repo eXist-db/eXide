@@ -16,7 +16,7 @@
  :  You should have received a copy of the GNU General Public License
  :  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  :)
-xquery version "3.0";
+xquery version "3.1";
 
 import module namespace apputil="http://exist-db.org/apps/eXide/apputil" at "util.xql";
 import module namespace tmpl="http://exist-db.org/xquery/template" at "tmpl.xql";
@@ -586,26 +586,31 @@ declare function deploy:package($collection as xs:string, $expathConf as element
         xmldb:store("/db/system/repo", $name, $xar, "application/zip")
 };
 
-declare function deploy:download($app-collection as xs:string, $expathConf as element(), $expand-xincludes as xs:boolean) {
+declare function deploy:download($app-collection as xs:string, $expathConf as element(), $expand-xincludes as xs:boolean, $indent as xs:boolean) {
     let $name := concat($expathConf/@abbrev, "-", $expathConf/@version, ".xar")
     let $entries :=
-        dbutil:scan(xs:anyURI($app-collection), function($collection as xs:anyURI?, $resource as xs:anyURI?) {
-            let $resource-relative-path := substring-after($resource, $app-collection || "/")
-            let $collection-relative-path := substring-after($collection, $app-collection || "/")
-            return
-                if (empty($resource)) then
-                    (: no need to create a collection entry for the app's root directory :)
-                    if ($collection-relative-path eq "") then
-                        ()
+        (: compression:zip uses default serialization parameters, so we'll construct entries manually :)
+        dbutil:scan(xs:anyURI($app-collection), function($collection as xs:anyURI, $resource as xs:anyURI?) {
+            (: compression:zip doesn't seem to store empty collections, so we'll scan for only resources :)
+            if (exists($resource)) then
+                let $relative-path := substring-after($resource, $app-collection || "/")
+                return
+                    if (util:binary-doc-available($resource)) then
+                        <entry type="uri" name="{$relative-path}">{$resource}</entry>
                     else
-                        <entry type="collection" name="{$collection-relative-path}"/>
-                else if (util:binary-doc-available($resource)) then
-                    <entry type="uri" name="{$resource-relative-path}">{$resource}</entry>
-                else
-                    <entry type="xml" name="{$resource-relative-path}">{
-                        util:declare-option("exist:serialize", "expand-xincludes=" || (if ($expand-xincludes) then "yes" else "no")),
-                        doc($resource)
-                    }</entry>
+                        <entry type="xml" name="{$relative-path}">{
+                            (: workaround until https://github.com/eXist-db/exist/issues/2394 is resolved :)
+                            util:declare-option(
+                                "exist:serialize", 
+                                "expand-xincludes=" 
+                                || (if ($expand-xincludes) then "yes" else "no")
+                                || " indent=" 
+                                || (if ($indent) then "yes" else "no")
+                            ),
+                            doc($resource)
+                        }</entry>
+            else
+                ()
         })
     let $xar := compression:zip($entries, true())
     return (
@@ -638,13 +643,14 @@ let $info := request:get-parameter("info", ())
 let $deploy := request:get-parameter("deploy", ())
 let $download := request:get-parameter("download", ())
 let $expand-xincludes := request:get-parameter("expand-xincludes", "false") cast as xs:boolean
+let $indent := request:get-parameter("indent", "false") cast as xs:boolean
 let $expathConf := if ($collection) then xmldb:xcollection($collection)/expath:package else ()
 let $repoConf := if ($collection) then xmldb:xcollection($collection)/repo:meta else ()
 let $abbrev := request:get-parameter("abbrev", ())
 return
     try {
         if ($download) then
-            deploy:download($collection, $expathConf, $expand-xincludes)
+            deploy:download($collection, $expathConf, $expand-xincludes, $indent)
         else if ($info) then
             apputil:get-info($info)
         else if ($abbrev) then
