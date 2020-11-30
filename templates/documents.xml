@@ -4,7 +4,7 @@
         <description>eXist-db Collection Configuration</description>
         <code>&lt;collection xmlns="http://exist-db.org/collection-config/1.0"&gt;
     &lt;index xmlns:xs="http://www.w3.org/2001/XMLSchema"&gt;
-        &lt;fulltext default="none" attributes="false"/&gt;
+        
     &lt;/index&gt;
 &lt;/collection&gt;</code>
     </template>
