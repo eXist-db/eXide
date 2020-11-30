@@ -229,7 +229,7 @@ declare function deploy:set-execute-bit($permissions as xs:string) {
 declare function deploy:copy-templates($target as xs:string, $source as xs:string, $userData as xs:string+, $permissions as xs:string) {
     let $null := deploy:mkcol($target, $userData, $permissions)
     return
-    if (exists(collection($source))) then (
+    if (xmldb:collection-available($source)) then (
         for $resource in xmldb:get-child-resources($source)
         let $targetPath := xs:anyURI(concat($target, "/", $resource))
         return (
