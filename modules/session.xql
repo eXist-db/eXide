@@ -19,14 +19,14 @@
 xquery version "3.0";
 
 (:~
-	Post-processes query results for the sandbox application. The
-	controller first sends the user-supplied query to XQueryServlet
-	for evaluation. The result is then passed to this script, which
-	stores the result set into the HTTP session and returns the number
-	of hits and time elapsed.
+    Post-processes query results for the sandbox application. The
+    controller first sends the user-supplied query to XQueryServlet
+    for evaluation. The result is then passed to this script, which
+    stores the result set into the HTTP session and returns the number
+    of hits and time elapsed.
 
-	Subsequent requests from the sandbox application may retrieve single
-	items from the result set stored in the session (see controller).
+    Subsequent requests from the sandbox application may retrieve single
+    items from the result set stored in the session (see controller).
 :)
 
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
@@ -77,18 +77,18 @@ declare function local:retrieve($num as xs:integer) as element() {
 
 (:~ Take the query results and store them into the HTTP session. :)
 declare function local:store-in-session($results as item()*) as element(result) {
-	let $null := session:set-attribute('cached', $results)
+    let $null := session:set-attribute('cached', $results)
     let $startTime := request:get-attribute("start-time")
     let $elapsed := 
       if ($startTime) then
-	let $current-time := current-time()
-	let $hours :=  hours-from-duration($current-time - xs:time($startTime))
-	let $minutes :=  minutes-from-duration($current-time - xs:time($startTime))
-	let $seconds := seconds-from-duration($current-time - xs:time($startTime))
-	return ($hours * 3600) + ($minutes * 60) + $seconds
+    let $current-time := current-time()
+    let $hours :=  hours-from-duration($current-time - xs:time($startTime))
+    let $minutes :=  minutes-from-duration($current-time - xs:time($startTime))
+    let $seconds := seconds-from-duration($current-time - xs:time($startTime))
+    return ($hours * 3600) + ($minutes * 60) + $seconds
       else 0
-	return
-		<result hits="{count($results)}" elapsed="{$elapsed}"/>
+    return
+        <result hits="{count($results)}" elapsed="{$elapsed}"/>
 };
 
 (: 	When a query has been executed, its results will be passed into
