@@ -19,14 +19,14 @@
 xquery version "3.0";
 
 (:~
-	Post-processes query results for the sandbox application. The
-	controller first sends the user-supplied query to XQueryServlet
-	for evaluation. The result is then passed to this script, which
-	stores the result set into the HTTP session and returns the number
-	of hits and time elapsed.
+    Post-processes query results for the sandbox application. The
+    controller first sends the user-supplied query to XQueryServlet
+    for evaluation. The result is then passed to this script, which
+    stores the result set into the HTTP session and returns the number
+    of hits and time elapsed.
 
-	Subsequent requests from the sandbox application may retrieve single
-	items from the result set stored in the session (see controller).
+    Subsequent requests from the sandbox application may retrieve single
+    items from the result set stored in the session (see controller).
 :)
 
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
@@ -77,48 +77,58 @@ declare function local:retrieve($num as xs:integer) as element() {
 
 (:~ Take the query results and store them into the HTTP session. :)
 declare function local:store-in-session($results as item()*) as element(result) {
-	let $null := session:set-attribute('cached', $results)
+    let $null := session:set-attribute('cached', $results)
     let $startTime := request:get-attribute("start-time")
     let $elapsed := 
       if ($startTime) then
-	let $current-time := current-time()
-	let $hours :=  hours-from-duration($current-time - xs:time($startTime))
-	let $minutes :=  minutes-from-duration($current-time - xs:time($startTime))
-	let $seconds := seconds-from-duration($current-time - xs:time($startTime))
-	return ($hours * 3600) + ($minutes * 60) + $seconds
+    let $current-time := current-time()
+    let $hours :=  hours-from-duration($current-time - xs:time($startTime))
+    let $minutes :=  minutes-from-duration($current-time - xs:time($startTime))
+    let $seconds := seconds-from-duration($current-time - xs:time($startTime))
+    return ($hours * 3600) + ($minutes * 60) + $seconds
       else 0
-	return
-		<result hits="{count($results)}" elapsed="{$elapsed}"/>
+    return
+        <result hits="{count($results)}" elapsed="{$elapsed}"/>
 };
 
-(: 	When a query has been executed, its results will be passed into
-	this script in the request attribute 'results'. The result is then
-	stored into the HTTP session. Subsequent requests from the sandbox
-	can reference a result item in the session by passing parameter 'num'.
+(:  When a query has been executed by XQueryServlet, its results will be passed 
+    into this script via the "results" request attribute. The script then stores 
+    the results into the HTTP session for subsequent retrieval via individual 
+    requests to this endpoint with a "num" parameter.
+    
+    Error reporting must take into account how controller.xql handles 
+    errors thrown by XQueryServlet. From https://exist-db.org/exist/apps/doc/urlrewrite#xq-servlet:
+    
+    > Since controller.xql sets xquery.report-errors to "yes", an error 
+    > in the XQuery will not result in an HTTP error. Instead, the string 
+    > message of the error is enclosed in an element <error> which is 
+    > then written to the response stream. The HTTP status is not changed.
+
+    Thus, this script accesses errors in the response stream via request:get-data(), 
+    which supplies the <error> element wrapped in a document node. 
+    
+    Furthermore, certain low-level errors omit descriptions (i.e., the 
+    description is null), so the <error> element is empty. To aid the user 
+    in such situations, the script reports that an unidentified error was 
+    raised. It also points the user to exist.log, where a hopefully a stack 
+    trace shows the full error. 
 :)
 session:create(),
 let $xqueryservlet-error := request:get-data()
 let $results := request:get-attribute("results")
 let $pos := xs:integer(request:get-parameter("num", ()))
 return
-    (:  From https://exist-db.org/exist/apps/doc/urlrewrite#xq-servlet:
-    
-        > Since controller.xql sets xquery.report-errors to "yes", an error 
-        > in the XQuery will not result in an HTTP error. Instead, the string 
-        > message of the error is enclosed in an element <error> which is 
-        > then written to the response stream. The HTTP status is not changed.
-        
-        This error is captured here as $xqueryservlet-error. Since not all errors 
-        contain descriptions, though, we need to report that an unidentified 
-        error was raised. We will just use the default output from try-catch on 
-        fn:error.
-    :)
-    if (exists($xqueryservlet-error)) then
-        if (string-length($xqueryservlet-error) gt 0) then
-            $xqueryservlet-error
+    (
+        if ($xqueryservlet-error instance of document-node()) then
+            if (string-length(normalize-space($xqueryservlet-error/error)) gt 0) then
+                $xqueryservlet-error
+            else
+                element error {
+                    "eXide tried to execute your query, but the XQueryServlet raised an error without a description. 
+                    Check exist.log for any associated errors."
+                }
+        else if ($pos) then
+            local:retrieve($pos)
         else
-            element error { try { error() } catch * { $err:code || ": " || $err:description } }
-	else if ($pos) then
-		local:retrieve($pos)
-	else
-		local:store-in-session($results)
+            local:store-in-session($results)
+    )
