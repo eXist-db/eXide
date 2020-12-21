@@ -12,6 +12,11 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="2.4.11">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: Incompatibility with eXist 5.2.0 and detection and description of certain XQueryServlet errors - <a href="https://github.com/eXist-db/eXide/pull/284">#284</a></li>
+            </ul>
+        </change>
         <change version="2.4.10">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fixed: Update collection.xconf schema with support for eXist 5 field and facets; update xconf template - <a href="https://github.com/eXist-db/eXide/pull/279">#279</a></li>
