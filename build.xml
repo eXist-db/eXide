@@ -10,7 +10,7 @@
     <property name="templates.default.dir" value="${templates.dir}/default"/>
     <property name="xqlint.dir" value="./support/xqlint"/>
     <property name="closure.compiler.url" value="http://closure-compiler.googlecode.com/files/compiler-latest.zip"/>
-    <property name="rhino.url" value="https://raw.github.com/jrburke/r.js/master/lib/rhino/js.jar"/>
+    <property name="rhino.url" value="https://raw.githubusercontent.com/jrburke/r.js/master/lib/rhino/js.jar"/>
     <property name="rhino.jar" value="tools/js.jar"/>
     <property name="r.js.url" value="https://requirejs.org/docs/release/2.1.4/r.js"/>
     <property name="server.url" value="http://demo.exist-db.org/exist/apps/public-repo/public/"/>
