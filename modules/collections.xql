@@ -47,7 +47,7 @@ declare function local:sub-collections($root as xs:string, $children as xs:strin
         let $processChild :=
     		local:collections(concat($root, '/', $child), $child, $user)
 		where exists($processChild)
-		order by $child ascending
+		order by $child collation "http://www.w3.org/2013/collation/UCA?numeric=yes"
         return
             <children json:array="true">
 			    { $processChild }
@@ -91,7 +91,7 @@ declare function local:list-collection-contents($collection as xs:string, $user 
         return
             $r
     for $resource in ($subcollections, $resources)
-	order by $resource ascending
+	order by $resource collation "http://www.w3.org/2013/collation/UCA?numeric=yes"
 	return
 		$resource
 };
@@ -133,7 +133,7 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
                     else
                         concat($collection, "/", $resource)
                 where sm:has-access(xs:anyURI($path), "r")
-                order by $resource ascending
+                order by $resource collation "http://www.w3.org/2013/collation/UCA?numeric=yes"
                 return
                     let $permissions := sm:get-permissions(xs:anyURI($path))/sm:permission
                     let $owner := $permissions/@owner/string()
@@ -434,7 +434,7 @@ declare function local:edit-properties($resources as xs:string*) {
                     <select name="owner">
                     {
                         for $user in $users
-                        order by $user
+                        order by $user collation "http://www.w3.org/2013/collation/UCA?numeric=yes"
                         return
                             <option value="{$user}">
                             {
@@ -453,7 +453,7 @@ declare function local:edit-properties($resources as xs:string*) {
                     <select name="group">
                     {
                         for $group in sm:list-groups()
-                        order by $group
+                        order by $group collation "http://www.w3.org/2013/collation/UCA?numeric=yes"
                         return
                             <option value="{$group}">
                             {
