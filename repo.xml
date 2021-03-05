@@ -12,6 +12,11 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="2.4.12">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: Sorting of resources in the directory sidebar tab - <a href="https://github.com/eXist-db/eXide/pull/291">#291</a></li>
+            </ul>
+        </change>
         <change version="2.4.11">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fixed: Incompatibility with eXist 5.2.0 and detection and description of certain XQueryServlet errors - <a href="https://github.com/eXist-db/eXide/pull/284">#284</a></li>
