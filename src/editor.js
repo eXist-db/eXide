@@ -480,9 +480,9 @@ eXide.edit.Editor = (function () {
 	Constr.prototype.openDocument = function(data, mime, resource, externalPath) {
 		var $this = this;
 		if (!resource.writable)
-			eXide.util.message("Opening " + resource.path + " readonly!");
+			eXide.util.message("Opening " + encodeURI(resource.path) + " readonly!");
 		else
-			eXide.util.message("Opening " + resource.path);
+			eXide.util.message("Opening " + encodeURI(resource.path));
         if (/\.snippet/.test(resource.name)) {
             mime = "application/tmsnippet";
         } else if (/\.less/.test(resource.name)) {
