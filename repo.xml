@@ -12,6 +12,11 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="2.4.13">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: XSS vulnerability with open parameter - <a href="https://github.com/eXist-db/eXide/pull/306">#306</a></li>
+            </ul>
+        </change>
         <change version="2.4.12">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fixed: Sorting of resources in the directory sidebar tab - <a href="https://github.com/eXist-db/eXide/pull/291">#291</a></li>
