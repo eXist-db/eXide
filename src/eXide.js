@@ -327,7 +327,7 @@ eXide.app = (function(util) {
                     return true;
 				},
 				error: function (xhr, status) {
-					util.error("Failed to load document " + resource.path + ": " + 
+					util.error("Failed to load document " + encodeURI(resource.path) + ": " + 
 							xhr.status + " " + xhr.statusText);
                     if (callback) {
                         callback(null);
