@@ -14,6 +14,8 @@
     <property name="rhino.jar" value="tools/js.jar"/>
     <property name="r.js.url" value="https://requirejs.org/docs/release/2.1.4/r.js"/>
     <property name="server.url" value="http://demo.exist-db.org/exist/apps/public-repo/public/"/>
+    <property name="ace" value="${scripts}/ace"/>
+    <property name="ace.src" value="./support/ace"/>
     <condition property="rhino.optimize.interpret" value="-opt -1" else="">
         <isset property="32bit"/>
     </condition>
@@ -46,7 +48,7 @@
     <target name="prepare" depends="get-closure,get-rhino">
         <taskdef name="jscomp" classname="com.google.javascript.jscomp.ant.CompileTask" classpath="${tools}/compiler.jar"/>
     </target>
-    <target name="all" depends="xqlint,compress,xar"/>
+    <target name="all" depends="ace,xqlint,compress,xar"/>
     <target name="rebuild" depends="clean,all"/>
     <target name="compress" depends="prepare">
         <echo message="Optimizing eXide sources"/>
@@ -113,6 +115,18 @@
             <arg line="-o ${xqlint.dir}/build.js"/>
         </java>
     </target>
+    <target name="ace">
+        <mkdir dir="${ace}"/>
+        <mkdir dir="${ace.src}/build/src-min"/>
+        <mkdir dir="${ace.src}/build/kitchen-sink"/>
+        <copy todir="${ace}">
+            <fileset dir="${ace.src}/build/src-min"/>
+            <fileset dir="${ace.src}/build/kitchen-sink">
+                <!-- Required for snippet manager -->
+                <include name="demo.js"/>
+            </fileset>
+        </copy>
+    </target>
     <target name="clean">
         <delete>
             <fileset dir="${scripts}">
@@ -132,6 +146,7 @@
         </delete>
         <delete file="${scripts}/jquery/jquery.plugins.min.js"/>
         <delete file="${scripts}/xqlint.min.js"/>
+        <delete dir="${ace}"/>
         <delete file="index.html"/>
         <delete file="expath-pkg.xml"/>
     </target>

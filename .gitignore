@@ -3,6 +3,7 @@ build/*
 expath-pkg.xml
 
 resources/scripts/xqlint.min.js
+resources/scripts/ace
 
 tools/r.js
 
