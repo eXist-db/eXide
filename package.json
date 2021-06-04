@@ -1,30 +1,38 @@
 {
-  "name": "exide",
-  "version": "2.4.9",
-  "description": "a web-based XQuery IDE",
-  "main": "main.js",
-  "directories": {
-    "doc": "docs"
-  },
-  "scripts": {
-    "cypress": "cypress run"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/eXist-db/eXide.git"
-  },
-  "keywords": [
-    "exist-db",
-    "xquery",
-    "ide"
-  ],
-  "author": "Wolfgang Meier",
-  "license": "GPL-3.0",
-  "bugs": {
-    "url": "https://github.com/eXist-db/eXide/issues"
-  },
-  "homepage": "https://github.com/eXist-db/eXide#readme",
-  "devDependencies": {
-    "cypress": "^4.12.1"
-  }
+	"name": "exide",
+	"version": "2.4.13",
+	"description": "a web-based XQuery IDE",
+	"main": "main.js",
+	"directories": {
+		"doc": "docs"
+	},
+	"scripts": {
+		"build": "npm run xqlint && node scripts/build.js",
+		"build:dev": "npm run xqlint && node scripts/build.js --dev",
+		"clean": "node scripts/build.js clean",
+		"xqlint": "cd support/xqlint && node r.js -o build.js && cd ../..",
+		"cypress": "cypress run"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/eXist-db/eXide.git"
+	},
+	"keywords": [
+		"exist-db",
+		"xquery",
+		"ide"
+	],
+	"author": "Wolfgang Meier",
+	"license": "GPL-3.0",
+	"bugs": {
+		"url": "https://github.com/eXist-db/eXide/issues"
+	},
+	"homepage": "https://github.com/eXist-db/eXide#readme",
+	"devDependencies": {
+		"chalk": "^2.4.2",
+		"command-line-args": "^5.1.1",
+		"cypress": "^4.12.1",
+		"esbuild": "^0.12.6",
+		"micro-fs": "^1.0.3"
+	}
 }

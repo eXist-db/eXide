@@ -52,10 +52,16 @@ cd eXide
 git submodule update --init --recursive
 ```
 
-Next, call ant on the `build.xml` file in eXide:
+Next, call `npm install` once:
 
 ```bash
-ant
+npm install
+```
+
+And each time you want to build the application:
+
+```bash
+npm run build
 ```
 
 You should now find a `.xar` file in the `build/` directory: `build/eXide-*.*.*.xar`. The `.xar` file is an EXPath Application package containing eXide. Install this into any compatible eXist-db instance using the Dashboard's Package Manager.
