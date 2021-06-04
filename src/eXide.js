@@ -1449,7 +1449,7 @@ eXide.app = (function(util) {
             //     util.Help.show();
             // });
             menu.click("#menu-help-documentation", function(ev) {
-                window.open("docs/doc.html");
+                window.open("https://github.com/eXist-db/eXide#readme");
             });
 			// syntax drop down
 			$("#syntax").change(function () {
