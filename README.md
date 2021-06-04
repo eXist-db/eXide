@@ -22,6 +22,10 @@ eXide consists of two parts:
 1.  a javascript library for the client-side application
 2.  a set of XQuery scripts which are called via AJAX
 
+## Documentation
+
+* [short documentation of all features](./docs/docs.md)
+
 ## Dependencies
 
 eXide requires the [shared-resources](https://github.com/eXist-db/shared-resources) package, which bundles the [ace editor](https://github.com/ajaxorg/ace) files and is included in eXist-db distributions.
@@ -37,8 +41,6 @@ eXide is included in eXist-db distributions and can be opened directly at `http:
 You can upgrade to new releases of eXide via the Dashboard app's Package Manager. 
 
 You can also build eXide from source and install it.
-
-Read eXide's [usage documentation](https://exist-db.org/exist/apps/eXide/docs/doc.html) on eXist-db.org, or on a local system, open `http://localhost:8080/exist/apps/eXide/docs/doc.html`.
 
 ## Building
 
