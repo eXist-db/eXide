@@ -1,8 +1,8 @@
 const esbuild = require("esbuild");
 const chalk = require("chalk");
 const mfs = require("micro-fs");
+const path = require("path");
 const fs = require('fs');
-const path = require('path');
 const commandLineArgs = require("command-line-args");
 const { version } = require("../package.json");
 
@@ -12,8 +12,13 @@ const options = commandLineArgs([
 ]);
 
 async function prepare() {
-    await mfs.copy("./tools/build.js", "./support/xqlint/build.js");
-	await mfs.copy("./tools/main/main.js", "./support/xqlint/main.js");
+	const buildDir = path.join(__dirname, "..", "build");
+	if (!fs.existsSync(buildDir)) {
+		fs.mkdirSync(buildDir);
+	}
+	
+    await mfs.copy("./scripts/xqlint/build.js", "./support/xqlint/build.js");
+	await mfs.copy("./scripts/xqlint/main.js", "./support/xqlint/main.js");
 }
 
 async function clean() {
