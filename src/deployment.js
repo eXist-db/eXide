@@ -100,15 +100,6 @@ eXide.edit.PackageEditor = (function () {
 		var $this = this;
         this.projects = projects;
         this.currentProject = null;
-		this.container = $("#dialog-deploy");
-		this.container.dialog({
-            appendTo: "#layout-container",
-			title: "Deployment Editor",
-			modal: false,
-			autoOpen: false,
-			width: 520,
-			height: 600
-		});
 		
 		this.runDialog = $("#dialog-run-app");
 		this.runDialog.dialog({
@@ -219,52 +210,6 @@ eXide.edit.PackageEditor = (function () {
 	
     // Extend eXide.events.Sender for event support
     eXide.util.oop.inherit(Constr, eXide.events.Sender);
-    
-	/**
-	 * Open the deployment editor wizard
-	 */
-	Constr.prototype.open = function(collection) {
-		var $this = this;
-		var params = null;
-		if (collection)
-			params = { "collection": collection };
-		$.ajax({
-			url: "modules/deployment.xql",
-			type: "POST",
-			data: params,
-			success: function (data) {
-				$this.container.html(data);
-				$this.container.form({
-					done: function () {
-						var params = $this.container.find("form").serialize();
-						$.ajax({
-							url: "modules/deployment.xql",
-							type: "POST",
-                            dataType: "json",
-							data: params,
-							success: function (data) {
-								$this.container.dialog("close");
-                                $this.$triggerEvent("change", [ data ]);
-							},
-							error: function (xhr, status) {
-								eXide.util.error(xhr.responseText);
-							}
-						});
-					},
-					cancel: function () {
-						$this.container.dialog("close");
-					}
-				});
-				$this.container.find(".author-repeat").repeat("#author-add-trigger", { 
-					deleteTrigger: "#author-remove-trigger"
-				});
-				$this.container.dialog("open");
-			},
-			error: function (xhr, status) {
-				eXide.util.error(xhr.responseText);
-			}
-		});
-	};
 	
 	/**
 	 * Deploy the current application package.

@@ -108,10 +108,6 @@ eXide.app = (function(util) {
 			    allowDnd = !isOpen;
 			});
 			
-            deploymentEditor.addEventListener("change", null, function(collection) {
-                dbBrowser.changeToCollection(collection);
-                app.openDocument();
-            });
 			preferences = new util.Preferences(editor);
 			
             editor.addEventListener("setTheme", app.setTheme);
@@ -653,24 +649,6 @@ eXide.app = (function(util) {
                     "Close": function() { $(this).dialog("close"); }
                 });
                 $("#open-dialog").dialog("open");
-			});
-		},
-		
-		/** Open deployment settings for current app */
-		deploymentSettings: function() {
-			var path = editor.getActiveDocument().getPath();
-			var collection = /^(.*)\/[^\/]+$/.exec(path);
-			if (!collection)
-				return;
-			app.requireLogin(function() {
-                $.log("Editing deployment settings for collection: %s", collection[1]);
-    		    deploymentEditor.open(collection[1]);
-			});
-		},
-		
-		newDeployment: function() {
-			app.requireLogin(function() {
-    			deploymentEditor.open();
 			});
 		},
 		
