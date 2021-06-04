@@ -7,8 +7,8 @@
 		"doc": "docs"
 	},
 	"scripts": {
-		"build": "npm run xqlint && node scripts/build.js",
-		"build:dev": "npm run xqlint && node scripts/build.js --dev",
+		"build": "node scripts/build.js prepare && npm run xqlint && node scripts/build.js",
+		"build:dev": "node scripts/build.js prepare && npm run xqlint && node scripts/build.js --dev",
 		"clean": "node scripts/build.js clean",
 		"xqlint": "cd support/xqlint && node r.js -o build.js && cd ../..",
 		"cypress": "cypress run"

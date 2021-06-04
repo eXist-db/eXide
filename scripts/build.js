@@ -11,6 +11,11 @@ const options = commandLineArgs([
     { name: "dev", type: Boolean }
 ]);
 
+async function prepare() {
+    await mfs.copy("./tools/build.js", "./support/xqlint/build.js");
+	await mfs.copy("./tools/main/main.js", "./support/xqlint/main.js");
+}
+
 async function clean() {
     console.log(chalk.blue('Cleaning files ...'));
     await mfs.delete([
@@ -67,10 +72,10 @@ function replace(path, outPath, data) {
     if (options.command === 'clean') {
         await clean();
         return;
+    } else if (options.command === 'prepare') {
+        await prepare();
+        return;
     }
-
-    await mfs.copy("./tools/build.js", "./support/xqlint/build.js");
-    await mfs.copy("./tools/main/main.js", "./support/xqlint/main.js");
 
     await mfs.copy('./support/ace/build/src-min/**', './resources/scripts/ace');
     
