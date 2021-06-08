@@ -156,12 +156,12 @@ eXide.app = (function(util) {
 				app.saveState();
 			});
             
-            eXide.find.Modules.addEventListener("open", null, function (module) {
-                app.findDocument(module.at);
-            });
-            eXide.find.Modules.addEventListener("import", null, function (module) {
-                editor.exec("importModule", module.prefix, module.uri, module.at);
-            });
+            // eXide.find.Modules.addEventListener("open", null, function (module) {
+            //     app.findDocument(module.at);
+            // });
+            // eXide.find.Modules.addEventListener("import", null, function (module) {
+            //     editor.exec("importModule", module.prefix, module.uri, module.at);
+            // });
 		},
 
         version: function() {
@@ -1136,7 +1136,7 @@ eXide.app = (function(util) {
 				modal: false,
 		        autoOpen: false,
 		        height: 480,
-		        width: 600,
+		        width: 640,
 				open: function() { dbBrowser.init(); },
 				resize: function() { dbBrowser.resize(); }
 			});
@@ -1384,10 +1384,10 @@ eXide.app = (function(util) {
             menu.click("#menu-navigate-definition", function () {
                 editor.exec("gotoDefinition");
             });
-            menu.click("#menu-navigate-modules", function () {
-                var doc = editor.getActiveDocument();
-	    		eXide.find.Modules.select(doc.syntax);
-            });
+            // menu.click("#menu-navigate-modules", function () {
+            //     var doc = editor.getActiveDocument();
+	    	// 	eXide.find.Modules.select(doc.syntax);
+            // });
             menu.click("#menu-navigate-info", function() {
                 editor.exec("showFunctionDoc");
             });

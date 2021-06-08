@@ -78,7 +78,7 @@ declare function local:collections($root as xs:string, $child as xs:string,
         ()
 };
 
-declare function local:list-collection-contents($collection as xs:string, $user as xs:string) {
+declare function local:list-collection-contents($collection as xs:string, $user as xs:string, $filter as xs:string?) {
     let $subcollections :=
         for $child in xmldb:get-child-collections($collection)
         let $collpath := concat($collection, "/", $child)
@@ -90,7 +90,8 @@ declare function local:list-collection-contents($collection as xs:string, $user 
         where sm:has-access(xs:anyURI(concat($collection, "/", $r)), "r")
         return
             $r
-    for $resource in ($subcollections, $resources)
+    let $all := if ($filter) then ($subcollections, $resources)[contains(., $filter)] else ($subcollections, $resources)
+    for $resource in $all
 	order by $resource collation "http://www.w3.org/2013/collation/UCA?numeric=yes"
 	return
 		$resource
@@ -99,7 +100,8 @@ declare function local:list-collection-contents($collection as xs:string, $user 
 declare function local:resources($collection as xs:string, $user as xs:string) {
     let $start := number(request:get-parameter("start", 0)) + 1
     let $endParam := number(request:get-parameter("end", 1000000)) + 1
-    let $resources := local:list-collection-contents($collection, $user)
+    let $filter := request:get-parameter("filter", ())
+    let $resources := local:list-collection-contents($collection, $user, $filter)
     let $count := count($resources) + 1
     let $end := if ($endParam gt $count) then $count else $endParam
     let $subset := subsequence($resources, $start, $end - $start + 1)

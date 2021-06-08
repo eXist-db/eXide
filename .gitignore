@@ -4,6 +4,8 @@ expath-pkg.xml
 
 resources/scripts/xqlint.min.js
 resources/scripts/ace
+resources/scripts/eXide.min.*
+resources/scripts/jquery/jquery.plugins.min.*
 
 tools/r.js
 

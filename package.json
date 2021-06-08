@@ -33,6 +33,11 @@
 		"command-line-args": "^5.1.1",
 		"cypress": "^4.12.1",
 		"esbuild": "^0.12.6",
-		"micro-fs": "^1.0.3"
+		"micro-fs": "^1.0.3",
+		"request": "^2.88.2"
+	},
+	"dependencies": {
+		"@ag-grid-community/core": "^25.3.0",
+		"@ag-grid-community/infinite-row-model": "^25.3.0"
 	}
 }
