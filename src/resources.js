@@ -91,7 +91,8 @@ eXide.browse.ResourceBrowser = (function () {
 			floatingFilter: true,
 			cellClass: (params) => {
 				return params.data && params.data.isCollection ? "collection" : "";
-			}
+			},
+			resizable: true,
 		},
 		{
 			colId: "permissions",
@@ -100,15 +101,31 @@ eXide.browse.ResourceBrowser = (function () {
 			minWidth: 90,
 			maxWidth: 110,
 			suppressNavigable: true,
+			resizable: true,
 		},
-		{ colId: "owner", headerName: "Owner", field: "owner", width: 90, suppressNavigable: true },
-		{ colId: "group", headerName: "Group", field: "group", width: 90, suppressNavigable: true },
+		{
+			colId: "owner",
+			headerName: "Owner",
+			field: "owner",
+			width: 90,
+			suppressNavigable: true,
+			resizable: true,
+		},
+		{
+			colId: "group",
+			headerName: "Group",
+			field: "group",
+			width: 90,
+			suppressNavigable: true,
+			resizable: true,
+		},
 		{
 			colId: "lastMod",
 			headerName: "Last Modified",
 			field: "last-modified",
-			width: 90,
+			minWidth: 110,
 			suppressNavigable: true,
+			resizable: true,
 		},
 	];
 
