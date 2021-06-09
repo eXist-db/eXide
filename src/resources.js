@@ -63,7 +63,7 @@ class DataSource {
 	}
 
 	destroy() {
-
+		this.data = [];
 	}
 }
 
@@ -73,13 +73,6 @@ class DataSource {
 eXide.browse.ResourceBrowser = (function () {
 
     var useragent = require("ace/lib/useragent");
-
-	var nameRenderer = function(params) {
-		if (params.node.data.isCollection)
-			return `<span class="collection"><img src="resources/images/folder.png"/>${params.getValue()}</span>`;
-		else
-			return `<span class="collection">${params.getValue()}</span>`;
-	};
 
 	var columns = [
 		{
@@ -92,7 +85,7 @@ eXide.browse.ResourceBrowser = (function () {
 			cellClass: (params) => {
 				return params.data && params.data.isCollection ? "collection" : "";
 			},
-			resizable: true,
+			resizable: true
 		},
 		{
 			colId: "permissions",
@@ -171,7 +164,11 @@ eXide.browse.ResourceBrowser = (function () {
 				this.$triggerEvent("activateCollection", [coll, params.data.writable]);
 				this.update(coll, false);
 			} else {
-				eXide.app.openSelectedDocument();
+				eXide.app.openSelectedDocument({
+					name: params.data.name,
+					path: this.dataSource.collection + "/" + params.data.name,
+					writable: params.data.writable
+				});
 			}
 		};
 		this.gridOptions.onSelectionChanged = (params) => {
@@ -217,7 +214,6 @@ eXide.browse.ResourceBrowser = (function () {
 					case 13:
 						e.event.stopPropagation();
 						e.event.preventDefault();
-						console.log(e.data);
 						if (e.data.isCollection) {
 							// navigate to new collection
 							var coll;
@@ -228,7 +224,11 @@ eXide.browse.ResourceBrowser = (function () {
 							this.$triggerEvent("activateCollection", [ coll, e.data.writable ]);
 							this.update(coll, false);
 						} else {
-							eXide.app.openSelectedDocument();
+							eXide.app.openSelectedDocument({
+								name: e.data.name,
+								path: this.dataSource.collection + "/" + e.data.name,
+								writable: e.data.writable,
+							});
 						}
 						break;
 					// backspace
@@ -783,7 +783,7 @@ eXide.browse.Browser = (function () {
 		button = createButton(toolbar, "Open Selected", "open", 6, "edit");
 		$(button).click(function (ev) {
 			ev.preventDefault();
-			eXide.app.openSelectedDocument(false);
+			eXide.app.openSelectedDocument(null, false);
 		});
 
         this.btnCopy = createButton(toolbar, "Copy", "copy", 7, "copy");

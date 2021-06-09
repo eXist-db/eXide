@@ -287,8 +287,8 @@ eXide.app = (function(util) {
 			$("#open-dialog").dialog("open");
 		},
 
-		openSelectedDocument: function(close) {
-			var resource = dbBrowser.getSelection();
+		openSelectedDocument: function(doc, close) {
+			var resource = doc || dbBrowser.getSelection();
 			if (resource) {
 				app.$doOpenDocument(resource);
 			}
