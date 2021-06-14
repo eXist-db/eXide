@@ -39,8 +39,8 @@ before_install:
   - docker create  --name exist-ci -p 8080:8080 $img
 
 install:
-  - npm run build
   - npm ci
+  - npm run build
 
 before_script:
   - docker cp ./build/eXide-*.xar exist-ci:exist/autodeploy
