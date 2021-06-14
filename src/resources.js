@@ -392,20 +392,11 @@ eXide.browse.ResourceBrowser = (function () {
 		} else {
 			this.gridOptions.rowSelection = "single";
 		}
-		// if (value == "manage") {
-		// 	this.grid.setOptions(gridOptionsManage);
-		// } else {
-		// 	this.grid.setOptions(gridOptionsOpen);
-		// }
 	};
 
 	Constr.prototype.resize = function () {
 	    console.log("Resizing canvas...");
 		this.reload();
-        // var h = $(".eXide-browse-main").height();
-        // $(".eXide-browse-resources").height(h);
-		// this.grid.resizeCanvas();
-		// this.grid.focus();
 	};
 
 	Constr.prototype.update = function(collection, reload) {
@@ -415,13 +406,6 @@ eXide.browse.ResourceBrowser = (function () {
 		// this.grid.gotoCell(0, 0);
         this.setCollection(collection);
     	$('input[name="collection"]').val(collection);
-		// this.data.length = 0;
-        // this.grid.setSelectedRows([]);
-        // this.grid.resetActiveCell();
-		// this.grid.setActiveCell(0, 1);
-		// this.grid.invalidate();
-		// this.grid.onViewportChanged.notify();
-        // this.grid.focus();
         this.search = "";
 	};
 
@@ -445,6 +429,9 @@ eXide.browse.ResourceBrowser = (function () {
 
 	Constr.prototype.startEditing = function() {
 		const cell = this.gridOptions.api.getFocusedCell();
+		if (cell.column.colId !== 'name') {
+			return;
+		}
 		this.oldValue = this.dataSource.data[cell.rowIndex].name;
 		cell.column.colDef.editable = true;
 		this.inEditor = true;
@@ -687,12 +674,6 @@ eXide.browse.Upload = (function () {
 
         }).on('fileuploadfail', function (e, data) {
             console.log("error: ", data);
-            // $.each(data.files, function (index, file) {
-            //     var error = $('<span class="text-danger"/>').text('File upload failed.');
-            //     $(data.context.children()[index])
-            //         .append('<br>')
-            //         .append(error);
-            // })
         });
 	}
 
