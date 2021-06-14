@@ -85,7 +85,9 @@ eXide.browse.ResourceBrowser = (function () {
 			cellClass: (params) => {
 				return params.data && params.data.isCollection ? "collection" : "";
 			},
-			resizable: true
+			resizable: true,
+			editable: true,
+			suppressClickEdit: true
 		},
 		{
 			colId: "permissions",
@@ -296,34 +298,24 @@ eXide.browse.ResourceBrowser = (function () {
 				}
 			}
 		};
-        // this.grid.onBeforeEditCell.subscribe(function(e, args) {
-        //     $this.inEditor = true;
-        //     // save old value before editing
-        //     $this.oldValue = $this.data[args.row].name;
-        // });
-        // this.grid.onBeforeCellEditorDestroy.subscribe(function(e, args) {
-        //     $this.inEditor = false;
-        // });
-        // this.grid.onCellChange.subscribe(function(e, args) {
-        //     if (!$this.oldValue) {
-        //         return;
-        //     }
-        //     $.getJSON("modules/collections.xql", {
-		// 			target: $this.data[args.row].name,
-        //             rename: $this.oldValue,
-		// 			root: $this.collection
-		// 		},
-		// 		function (data) {
-		// 			$this.reload();
-        //             if ($this.data[args.row] && $this.data[args.row].isCollection) {
-        //                 $this.$triggerEvent("activateCollection", [ $this.data[args.row].name ]);
-        //             }
-		// 			if (data.status == "fail") {
-		// 				eXide.util.Dialog.warning("Rename Error", data.message);
-		// 			}
-		// 		}
-		//     );
-        // });
+		this.gridOptions.onCellValueChanged = (params) => {
+			if (!this.oldValue) {
+				return;
+			}
+			$.getJSON('modules/collections.xql', {
+				target: params.data.name,
+				rename: this.oldValue,
+				root: this.dataSource.collection
+			}, (data) => {
+				if (data.status == "fail") {
+					eXide.util.Dialog.warning("Rename Error", data.message);
+				}
+				this.reload();
+			});
+		};
+		this.gridOptions.onCellEditingStopped = (e) => {
+			setTimeout(() => { this.inEditor = false }, 200);
+		};
 
         $("#resource-properties-dialog").dialog({
             title: "Resource/collection properties",
@@ -443,6 +435,16 @@ eXide.browse.ResourceBrowser = (function () {
         }
         return items;
     };
+
+	Constr.prototype.startEditing = function() {
+		const cell = this.gridOptions.api.getFocusedCell();
+		this.oldValue = this.dataSource.data[cell.rowIndex].name;
+		this.inEditor = true;
+		this.gridOptions.api.startEditingCell({
+			rowIndex: cell.rowIndex,
+			colKey: cell.column.colId
+		});
+	};
 
     Constr.prototype.createCollection = function () {
     	var $this = this;
@@ -754,6 +756,11 @@ eXide.browse.Browser = (function () {
             $this.resources.reload(true);
 		});
 
+		this.btnRenameResource = createButton(toolbar, 'Rename', 'rename', 2, 'edit');
+		$(this.btnRenameResource).click((ev) => {
+			this.resources.startEditing();
+		});
+
         this.btnCreateCollection = createButton(toolbar, "Create Collection", "create", 3, "folder-o");
 		$(this.btnCreateCollection).click(function (ev) {
 			ev.preventDefault();
@@ -780,7 +787,7 @@ eXide.browse.Browser = (function () {
             $this.resources.properties();
         });
 
-		button = createButton(toolbar, "Open Selected", "open", 6, "edit");
+		button = createButton(toolbar, "Open Selected", "open", 6, "folder-open-o");
 		$(button).click(function (ev) {
 			ev.preventDefault();
 			eXide.app.openSelectedDocument(null, false);
@@ -884,6 +891,7 @@ eXide.browse.Browser = (function () {
 			$(this.selection).val("");
 		}
 		if (this.mode != "open" && writable) {
+			$(this.btnRenameResource).css("display", "");
 			$(this.btnDeleteResource).css("display", "");
             $(this.btnProperties).css("display", "");
 		} else {
@@ -902,6 +910,7 @@ eXide.browse.Browser = (function () {
                 break;
             default:
                 if (writable) {
+					$(this.btnRenameResource).css('display', '');
     				$(this.btnCreateCollection).css("display", "");
     				$(this.btnUpload).css("display", "");
                     $(this.btnCut).css("display", "");
