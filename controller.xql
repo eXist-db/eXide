@@ -151,16 +151,6 @@ else if ($exist:resource = "index.html") then
             <status>fail</status>
         )
 
-(: Documentation :)
-else if (matches($exist:path, "/docs/.*\.html")) then
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <view>
-            <!-- pass the results through documentation.xql -->
-    		<forward url="{$exist:controller}/modules/documentation.xql">
-            </forward>
-        </view>
-    </dispatch>
-
 else if ($exist:resource eq 'execute') then
     let $query := request:get-parameter("qu", ())
     let $base := request:get-parameter("base", ())
@@ -263,10 +253,6 @@ else if (ends-with($exist:path, ".xql")) then
         <set-attribute name="app-root" value="{$exist:prefix}{$exist:controller}"/>
     </dispatch>
 
-else if (contains($exist:path, "/$shared/")) then
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward url="/shared-resources/{substring-after($exist:path, '/$shared/')}"/>
-    </dispatch>
 else
     (: everything else is passed through :)
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">

@@ -73,7 +73,7 @@ declare function local:search-resource($resource, $searchStr, $flags) {
 <html>
     <head>
         <link rel="stylesheet" type="text/css" href="../resources/css/search.css"/>
-        <script type="text/javascript" src="$shared/resources/scripts/jquery/jquery-1.7.1.min.js"/>
+        <script type="text/javascript" src="../resources/scripts/jquery/jquery-1.9.1.min.js"/>
     </head>
     <body>
     {

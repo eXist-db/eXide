@@ -4,31 +4,30 @@
         <title>eXide</title>
         <meta charset="utf-8"/>
         <link rel="stylesheet" type="text/css" href="resources/css/black-tie/jquery-ui-1.10.3.custom.min.css"/>
-        <link rel="stylesheet" type="text/css" href="$shared/resources/scripts/jquery/css/jquery.pnotify.default.css"/>
-        <link rel="stylesheet" type="text/css" href="resources/scripts/jquery/slick.grid.css"/>
+        <link rel="stylesheet" type="text/css" href="resources/css/jquery.pnotify.default.css"/>
         <link rel="stylesheet" href="resources/css/font-awesome/css/font-awesome.min.css"/>
+        <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/dist/styles/ag-grid.css"/>
+        <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/dist/styles/ag-theme-alpine.css"/>
         <link rel="stylesheet" type="text/css" href="resources/css/eXide.css"/>
         <script type="text/javascript" src="resources/scripts/modernizr.custom.js"/>
         <script type="text/javascript" src="resources/scripts/jquery/jquery-1.9.1.min.js"/>
         <script type="text/javascript" src="resources/scripts/jquery/jquery-ui-1.10.3.custom.min.js"/>
-        <script type="text/javascript" src="$shared/resources/scripts/jquery/jquery.pnotify.min.js"/>
-        <script type="text/javascript" src="$shared/resources/scripts/jquery/jquery-utils.js"/>
+        <script type="text/javascript" src="resources/scripts/jquery/jquery.pnotify.min.js"/>
         <script type="text/javascript" src="resources/scripts/jquery/jquery.plugins.min.js"/>
         <script type="text/javascript" src="resources/scripts/d3.v3.min.js"/>
         <script type="text/javascript" src="resources/scripts/less.min.js"/>
-        <script src="$shared/resources/scripts/ace/ace.js" type="text/javascript" charset="utf-8"/>
-        <script src="$shared/resources/scripts/ace/theme-eclipse.js" type="text/javascript" charset="utf-8"/>
-        <script src="$shared/resources/scripts/ace/mode-javascript.js" type="text/javascript" charset="utf-8"/>
-        <script src="$shared/resources/scripts/ace/mode-xml.js" type="text/javascript" charset="utf-8"/>
-        <script src="$shared/resources/scripts/ace/mode-c_cpp.js" type="text/javascript" charset="utf-8"/>
-        <script src="$shared/resources/scripts/ace/mode-html.js" type="text/javascript" charset="utf-8"/>
-        <script src="$shared/resources/scripts/ace/mode-css.js" type="text/javascript" charset="utf-8"/>
-        <script src="$shared/resources/scripts/ace/mode-less.js" type="text/javascript" charset="utf-8"/>
-        <script src="$shared/resources/scripts/ace/mode-snippets.js" type="text/javascript"/>
-        <script src="$shared/resources/scripts/ace/mode-json.js" type="text/javascript" charset="utf-8"/>
-        <script src="$shared/resources/scripts/ace/mode-markdown.js" type="text/javascript" charset="utf-8"/>
-        <script src="$shared/resources/scripts/ace/ext-language_tools.js" type="text/javascript" charset="utf-8"/>
-        <script src="$shared/resources/scripts/ace/demo.js" type="text/javascript"/>
+        <script src="resources/scripts/ace/ace.js" type="text/javascript" charset="utf-8"/>
+        <script src="resources/scripts/ace/theme-eclipse.js" type="text/javascript" charset="utf-8"/>
+        <script src="resources/scripts/ace/mode-javascript.js" type="text/javascript" charset="utf-8"/>
+        <script src="resources/scripts/ace/mode-xml.js" type="text/javascript" charset="utf-8"/>
+        <script src="resources/scripts/ace/mode-c_cpp.js" type="text/javascript" charset="utf-8"/>
+        <script src="resources/scripts/ace/mode-html.js" type="text/javascript" charset="utf-8"/>
+        <script src="resources/scripts/ace/mode-css.js" type="text/javascript" charset="utf-8"/>
+        <script src="resources/scripts/ace/mode-less.js" type="text/javascript" charset="utf-8"/>
+        <script src="resources/scripts/ace/mode-snippets.js" type="text/javascript"/>
+        <script src="resources/scripts/ace/mode-json.js" type="text/javascript" charset="utf-8"/>
+        <script src="resources/scripts/ace/mode-markdown.js" type="text/javascript" charset="utf-8"/>
+        <script src="resources/scripts/ace/ext-language_tools.js" type="text/javascript" charset="utf-8"/>
         <script type="text/javascript" src="resources/scripts/xqlint.min.js"/>
         <script type="text/javascript" src="resources/scripts/eXide.min.js"/>
         <!--script type="text/javascript" src="src/ace-modes.js"/>
@@ -172,10 +171,10 @@
                                     <a href="#" id="menu-navigate-definition" data-command="gotoDefinition">
                                         <span class="fa fa-crosshairs"/>Go to definition</a>
                                 </li>
-                                <li>
+                                <!--li>
                                     <a href="#" id="menu-navigate-modules" data-command="findModule">
                                         <span class="fa fa-plus"/>Go to/import module</a>
-                                </li>
+                                </li-->
                                 <li>
                                     <a href="#" id="menu-navigate-info" data-command="functionDoc">
                                         <span class="fa fa-info"/>Function doc</a>
@@ -215,25 +214,9 @@
                             <a href="#">Application</a>
                             <ul>
                                 <li>
-                                    <a href="#" id="menu-deploy-new">
-                                        <span class="fa fa-file-o"/>New application</a>
-                                </li>
-                                <li>
                                     <span class="separator">App: <span id="menu-deploy-active">unknown</span>
                                     </span>
                                 </li>
-                                <li>
-                                    <a href="#" id="menu-deploy-edit">
-                                        <span class="fa fa-info"/>Edit descriptors</a>
-                                </li>
-                                <!--li>
-                                    <a href="#" id="menu-deploy-run" data-command="openApp">
-                                        <span class="fa fa-play"/>Run app</a>
-                                </li-->
-                                <!--li>
-                                    <a href="#" id="menu-deploy-deploy">
-                                        <span class="fa fa-cloud-upload"/>Deploy</a>
-                                </li-->
                                 <li>
                                     <a href="#" id="menu-deploy-download">
                                         <span class="fa fa-cloud-download"/>Download app</a>
@@ -308,7 +291,7 @@
                             <a href="#">Help</a>
                             <ul>
                                 <li>
-                                    <a href="docs/doc.html" id="menu-help-documentation">Documentation</a>
+                                    <a href="https://github.com/eXist-db/eXide/docs/docs.md" id="menu-help-documentation">Documentation</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-help-keyboard">Keyboard shortcuts</a>
@@ -473,7 +456,7 @@
                             <div class="eXide-browse-breadcrumbs"/>
                         </div>
                         <div class="eXide-browse-main">
-                            <div class="eXide-browse-resources"/>
+                            <div class="eXide-browse-resources ag-theme-alpine"/>
                             <div class="eXide-browse-upload">
                                 <p>Drop files here or click on the button below to upload them
                           to the selected collection. Maximum file size is 100MB.</p>
@@ -504,11 +487,11 @@
                                 <table id="files"/>
                             </div>
                         </div>
+                        <div class="eXide-browse-form">
+                            <label>Name: </label>
+                            <input name="resource" type="text"/>
+                        </div>
                         <div class="eXide-browse-upload"/>
-                    </div>
-                    <div class="eXide-browse-form">
-                        <label>Name: </label>
-                        <input name="resource" type="text"/>
                     </div>
                 </div>
                 <div id="login-dialog">
@@ -714,7 +697,7 @@
                     <div id="module-list"/>
                 </div>
                 <div id="about-dialog">
-                    <p>eXide version <span id="eXide-version">@project.version@</span>
+                    <p>eXide version <span id="eXide-version">{{version}}</span>
                     </p>
                     <p>Website: <a href="https://github.com/eXist-db/eXide">https://github.com/eXist-db/eXide</a>
                     </p>
@@ -724,7 +707,6 @@
                     <p>Uses the <a href="http://ace.ajax.org">Ajax.org Code Editor (ACE)</a>, originally developed by Ajax.org
                     and licensed under the tri-license MPL/LGPL/GPL.</p>
                 </div>
-                <div id="dialog-deploy"/>
                 <div id="find-dialog">
                     <form>
                         <fieldset>
@@ -817,7 +799,9 @@
             <div id="autocomplete-box" tabindex="100"/>
             <div id="dialog-startup">
                 <h1>Getting Help</h1>
-                <p>eXide 2.0 has many new features. Make sure you read the <a href="docs/doc.html" target="_new">documentation</a>
+                <p>
+                    eXide 2.0 has many new features. Make sure you read the
+                    <a href="https://github.com/eXist-db/eXide#readme" target="_new">documentation</a>
                 to understand code completion, refactorings and keyboard shortcuts.</p>
             </div>
             <div id="dialog-git-checkout">

@@ -17,7 +17,55 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import { Grid } from "@ag-grid-community/core";
+import { InfiniteRowModelModule } from "@ag-grid-community/infinite-row-model";
+
 eXide.namespace("eXide.browse.ResourceBrowser");
+
+class DataSource {
+
+	constructor(gridOptions) {
+		this.gridOptions = gridOptions;
+		this.data = [];
+		this._collection = "/db";
+	}
+
+	set collection(collection) {
+		this._collection = collection;
+		this.data.length = 0;
+		this.gridOptions.api.purgeInfiniteCache();
+	}
+
+	get collection() {
+		return this._collection;
+	}
+
+	getRows(options) {
+		var params = { root: this._collection, view: "r", start: options.startRow, end: options.endRow };
+		if (options.filterModel.name) {
+			params.filter = options.filterModel.name.filter;
+		}
+		$.getJSON("modules/collections.xql", params, (json) => {
+			if (json && json.items) {
+				options.successCallback(json.items, json.total);
+				if (this.data.length === 0) {
+					this.gridOptions.api.deselectAll();
+					this.gridOptions.api.setFocusedCell(0, 'name');
+				}
+				// this.gridOptions.api.sizeColumnsToFit();
+				this.data.length = json.total;
+				for (var i = 0; i < json.items.length; i++) {
+					this.data[params.start + i] = json.items[i];
+				}
+			}
+
+		});
+	}
+
+	destroy() {
+		this.data = [];
+	}
+}
 
 /**
  * Manages a table view of resources within a collection
@@ -26,36 +74,59 @@ eXide.browse.ResourceBrowser = (function () {
 
     var useragent = require("ace/lib/useragent");
 
-	var nameFormatter = function(row, cell, value, columnDef, dataContext) {
-		if (dataContext.isCollection)
-			return '<span class="collection"><img src="resources/images/folder.png"/> ' + value + '</span>';
-		else
-			return value;
-	};
-
 	var columns = [
-        {id: "name", name:"Name", field: "name", width: 180, formatter: nameFormatter, editor: Slick.Editors.Text},
-        {id: "permissions", name: "Permissions", field: "permissions", width: 80},
-        {id: "owner", name: "Owner", field: "owner", width: 65},
-        {id: "group", name: "Group", field: "group", width: 65},
-        {id: "lastMod", name: "Last Modified", field: "last-modified", width: 140}
-    ];
-
-	var gridOptionsOpen = {
+		{
+			colId: "name",
+			headerName: "Name",
+			field: "name",
+			flex: 1,
+			floatingFilter: true,
+			filter: "agTextColumnFilter",
+			filterParams: {
+				filterOptions: ["contains"],
+				defaultOption: "contains",
+			},
+			cellClass: (params) => {
+				return params.data && params.data.isCollection ? "collection" : "";
+			},
+			resizable: true,
 			editable: false,
-			multiSelect: false,
-			forceSyncScrolling: true,
-            forceFitColumns: true
-	};
-	var gridOptionsManage = {
-			editable: true,
-            autoEdit: true,
-			multiSelect: true,
-			autoHeight: false,
-            enableCellNavigation: true,
-            forceSyncScrolling: true,
-            forceFitColumns: true
-	};
+			suppressClickEdit: true
+		},
+		{
+			colId: "permissions",
+			headerName: "Permissions",
+			field: "permissions",
+			minWidth: 90,
+			maxWidth: 110,
+			suppressNavigable: true,
+			resizable: true,
+		},
+		{
+			colId: "owner",
+			headerName: "Owner",
+			field: "owner",
+			width: 90,
+			suppressNavigable: true,
+			resizable: true,
+		},
+		{
+			colId: "group",
+			headerName: "Group",
+			field: "group",
+			width: 90,
+			suppressNavigable: true,
+			resizable: true,
+		},
+		{
+			colId: "lastMod",
+			headerName: "Last Modified",
+			field: "last-modified",
+			minWidth: 110,
+			suppressNavigable: true,
+			resizable: true,
+		},
+	];
 
 	Constr = function(container, parentContainer) {
 		var $this = this;
@@ -72,203 +143,186 @@ eXide.browse.ResourceBrowser = (function () {
 		};
         this.mode = "save";
         this.inEditor = false;
-		this.collection = "/db";
-		this.data = [];
-		this.grid = new Slick.Grid(this.container, this.data, columns, gridOptionsManage);
-		var selectionModel = new Slick.RowSelectionModel();
-		this.grid.setSelectionModel(selectionModel);
-		selectionModel.onSelectedRangesChanged.subscribe(function(e, args) {
-			var rows = selectionModel.getSelectedRows();
-            if ($this.data.length == 0) {
-                return;
-            }
-			var enableWrite = true;
-			for (var i = 0; i < rows.length; i++) {
-				if (rows[i] < $this.data.length && $this.data[rows[i]] && !$this.data[rows[i]].writable) {
+
+		this.gridOptions = {
+			columnDefs: columns,
+			rowSelection: "multiple",
+			rowModelType: "infinite",
+			isRowSelectable: (rowNode) => rowNode.data && rowNode.data.permissions
+		};
+		this.grid = new Grid(document.querySelector(".eXide-browse-resources"), this.gridOptions, { modules: [InfiniteRowModelModule] });
+		this.dataSource = new DataSource(this.gridOptions);
+		this.gridOptions.api.setDatasource(this.dataSource);
+		this.gridOptions.onCellFocused = (params) => {
+			if (this.mode === 'open' || this.mode === 'save') {
+				const row = params.api.getDisplayedRowAtIndex(params.rowIndex);
+				params.api.deselectAll();
+				row.setSelected(true);
+			}
+		};
+		this.gridOptions.onRowDoubleClicked = (params) => {
+			if (params.data.isCollection) {
+				// navigate to new collection
+				var coll;
+				if (params.data.name == "..")
+					coll = this.dataSource.collection.replace(/\/[^\/]+$/, "");
+				else coll = this.dataSource.collection + "/" + params.data.name;
+				this.$triggerEvent("activateCollection", [coll, params.data.writable]);
+				this.update(coll, false);
+			} else {
+				eXide.app.openSelectedDocument({
+					name: params.data.name,
+					path: this.dataSource.collection + "/" + params.data.name,
+					writable: params.data.writable
+				});
+			}
+		};
+		this.gridOptions.onSelectionChanged = (params) => {
+			const rows = params.api.getSelectedRows();
+			let enableWrite = true;
+			for (let i = 0; i < rows.length; i++) {
+				if (!rows[i].writable) {
 					enableWrite = false;
 					break;
 				}
 			}
-			var doc = rows.length == 1 && $this.data[rows[0]] && !$this.data[rows[0]].isCollection ? $this.data[rows[0]] : null;
+			const doc = (rows.length === 1 && !rows[0].isCollection) ? rows[0] : null;
 			$this.$triggerEvent("activate", [ doc, enableWrite]);
-		});
-		this.grid.onDblClick.subscribe(function (e, args) {
-			var cell = $this.grid.getCellFromEvent(e);
-			if ($this.data[cell.row].isCollection) {
-				// navigate to new collection
-                var coll;
-                if ($this.data[cell.row].name == "..")
-                    coll = $this.collection.replace(/\/[^\/]+$/, "")
-                else
-    				coll = $this.collection + "/" + $this.data[cell.row].name;
-                $this.$triggerEvent("activateCollection", [ coll, $this.data[cell.row].writable ]);
-				$this.update(coll, false);
-			} else {
-    		    eXide.app.openSelectedDocument();
-			}
-		});
-		this.grid.onKeyDown.subscribe(function (e) {
-            if ($this.inEditor)
-                return;
-            if ((e.metaKey && useragent.isMac) || (e.ctrlKey && !useragent.isMac)) {
-                switch (e.which) {
-                    case 67: // cmd-c
-                        e.stopPropagation();
-                        e.preventDefault();
-                        $this.copy();
-                        break;
-                    case 86: // cmd-v
-                        e.stopPropagation();
-                        e.preventDefault();
-                        $this.paste();
-                        break;
-                    case 88: // cmd-x
-                        e.stopPropagation();
-                        e.preventDefault();
-                        $this.cut();
-                        break;
-                    default:
-                        // nothing to do
-                        break;
-                }
-            } else if (!e.shiftKey && !e.altKey && !e.ctrlKey) {
-                switch (e.which) {
-                    // enter
-    				case 13:
-    					e.stopPropagation();
-    		            e.preventDefault();
-    		            var rows = selectionModel.getSelectedRows();
-    		            if (rows.length == 1) {
-    						if ($this.data[rows[0]].isCollection) {
-    							// navigate to new collection
-                                var coll;
-                                if ($this.data[rows[0]].name == "..")
-                                    coll = $this.collection.replace(/\/[^\/]+$/, "")
-                                else
-                        			coll = $this.collection + "/" + $this.data[rows[0]].name;
-                                $this.$triggerEvent("activateCollection", [ coll, $this.data[rows[0]].writable ]);
-                                $this.update(coll, false);
-    						} else {
-    							eXide.app.openSelectedDocument();
-    						}
-    		            }
-                        break;
-                    // backspace
-    				case 8:
-                        e.stopPropagation();
-    		            e.preventDefault();
-    					var p = $this.collection.lastIndexOf("/");
-    					if (p > 0) {
-    			            if ($this.collection != "/db") {
-    			            	var parent = $this.collection.substring(0, p);
-								var cell = $this.grid.getActiveCell();
-    							// navigate to parent collection
-                                $this.$triggerEvent("activateCollection", [ parent, $this.data[cell.row].writable ]);
-    							$this.update(parent, false);
-    						}
-    					}
-                        break;
-                    // page down
-                    case 34:
-                        e.stopPropagation();
-                        e.preventDefault();
-                        var cell = $this.grid.getActiveCell();
-                        var target = -1;
-                        if (cell.row + 10 < $this.data.length) {
-                            target = cell.row + 10;
-                        } else if (cell.row + 1 != $this.data.length) {
-                            target = $this.data.length - 1;
-                        }
-                        if (target != -1) {
-                            $this.goto(target);
-                        }
-                        break;
-                    // page up
-                    case 33:
-                        e.stopPropagation();
-                        e.preventDefault();
-                        var cell = $this.grid.getActiveCell();
-                        if (cell.row > 0) {
-                            $this.goto(cell.row > 10 ? cell.row - 10 : 0);
-                        }
-                        break;
-                    // home
-                    case 36:
-                        e.stopPropagation();
-                        e.preventDefault();
-                        $this.goto(0);
-                        break;
-                    // end
-                    case 35:
-                        e.stopPropagation();
-                        e.preventDefault();
-                        $this.goto($this.data.length - 1);
-                        break;
-                    // delete
-                    case 46:
-                        $this.deleteResource();
-                        break;
-                    // escape
-                    case 27:
-                        $this.search = "";
-                        break;
-                    // down/up
-                    case 38:
-                    case 40:
-                        break;
-                    default:
-                        $this.search += String.fromCharCode(e.which);
-                        if ($this.searchTimeout) {
-                            clearTimeout($this.searchTimeout);
-                            $this.searchTimeout = undefined;
-                        }
-                        var regex = new RegExp("^" + $this.search, "i");
-                        var cell = $this.grid.getActiveCell();
-                        for (var i = cell.row; i < $this.data.length; i++) {
-                            if ($this.data[i] && regex.test($this.data[i].name)) {
-                                $this.goto(i);
-                                break;
-                            }
-                        }
-                        $this.searchTimeout = setTimeout(function() {
-                            $this.search = "";
-                        }, 2000);
-                        break;
+		};
+		this.gridOptions.onCellKeyDown = (e) => {
+			if (this.inEditor)
+				return;
+			if ((e.event.metaKey && useragent.isMac) || (e.event.ctrlKey && !useragent.isMac)) {
+				switch (e.which) {
+					case 67: // cmd-c
+						e.event.stopPropagation();
+						e.event.preventDefault();
+						this.copy();
+						break;
+					case 86: // cmd-v
+						e.event.stopPropagation();
+						e.event.preventDefault();
+						this.paste();
+						break;
+					case 88: // cmd-x
+						e.event.stopPropagation();
+						e.event.preventDefault();
+						this.cut();
+						break;
+					default:
+						// nothing to do
+						break;
+				}
+			} else if (!e.event.shiftKey && !e.event.altKey && !e.event.ctrlKey) {
+				let cell;
+				switch (e.event.which) {
+					// enter
+					case 13:
+						e.event.stopPropagation();
+						e.event.preventDefault();
+						if (e.data.isCollection) {
+							// navigate to new collection
+							var coll;
+							if (e.data.name === "..")
+								coll = this.dataSource.collection.replace(/\/[^\/]+$/, "")
+							else
+								coll = this.dataSource.collection + "/" + e.data.name;
+							this.$triggerEvent("activateCollection", [ coll, e.data.writable ]);
+							this.update(coll, false);
+						} else {
+							eXide.app.openSelectedDocument({
+								name: e.data.name,
+								path: this.dataSource.collection + "/" + e.data.name,
+								writable: e.data.writable,
+							});
+						}
+						break;
+					// backspace
+					case 8:
+						e.event.stopPropagation();
+						e.event.preventDefault();
+						const p = this.dataSource.collection.lastIndexOf("/");
+						if (p > 0) {
+							if (this.dataSource.collection != "/db") {
+								const parent = this.dataSource.collection.substring(0, p);
+								const cell = this.gridOptions.api.getFocusedCell();
+								// navigate to parent collection
+								this.$triggerEvent("activateCollection", [ parent, this.dataSource.data[cell.rowIndex].writable ]);
+								this.update(parent, false);
+							}
+						}
+						break;
+					// page down
+					case 34:
+					// page up
+					case 33:
+						break;
+					// home
+					case 36:
+						e.event.stopPropagation();
+						e.event.preventDefault();
+						$this.goto(0);
+						break;
+					// end
+					case 35:
+						e.event.stopPropagation();
+						e.event.preventDefault();
+						$this.goto($this.data.length - 1);
+						break;
+					// delete
+					case 46:
+						cell = e.api.getFocusedCell();
+						this.deleteResource(this.dataSource.data[cell.rowIndex]);
+						break;
+					// escape
+					case 27:
+						$this.search = "";
+						break;
+					// down/up
+					case 38:
+					case 40:
+						break;
+					default:
+						e.event.stopPropagation();
+						e.event.preventDefault();
+						this.search += e.event.key;
+						if (this.searchTimeout) {
+							clearTimeout(this.searchTimeout);
+							this.searchTimeout = undefined;
+						}
+						var regex = new RegExp("^" + this.search, "i");
+						for (let i = e.rowIndex; i < this.dataSource.data.length; i++) {
+							if (this.dataSource.data[i] && regex.test(this.dataSource.data[i].name)) {
+								e.api.setFocusedCell(i, 'name');
+								break;
+							}
+						}
+						this.searchTimeout = setTimeout(() => {
+							this.search = "";
+						}, 2000);
+						break;
 				}
 			}
-		});
-        this.grid.onBeforeEditCell.subscribe(function(e, args) {
-            $this.inEditor = true;
-            // save old value before editing
-            $this.oldValue = $this.data[args.row].name;
-        });
-        this.grid.onBeforeCellEditorDestroy.subscribe(function(e, args) {
-            $this.inEditor = false;
-        });
-        this.grid.onCellChange.subscribe(function(e, args) {
-            if (!$this.oldValue) {
-                return;
-            }
-            $.getJSON("modules/collections.xql", {
-					target: $this.data[args.row].name,
-                    rename: $this.oldValue,
-					root: $this.collection
-				},
-				function (data) {
-					$this.reload();
-                    if ($this.data[args.row] && $this.data[args.row].isCollection) {
-                        $this.$triggerEvent("activateCollection", [ $this.data[args.row].name ]);
-                    }
-					if (data.status == "fail") {
-						eXide.util.Dialog.warning("Rename Error", data.message);
-					}
+		};
+		this.gridOptions.onCellValueChanged = (params) => {
+			if (!this.oldValue) {
+				return;
+			}
+			params.column.colDef.editable = false;
+			$.getJSON('modules/collections.xql', {
+				target: params.data.name,
+				rename: this.oldValue,
+				root: this.dataSource.collection
+			}, (data) => {
+				if (data.status == "fail") {
+					eXide.util.Dialog.warning("Rename Error", data.message);
 				}
-		    );
-        });
-		this.grid.onViewportChanged.subscribe(function(e,args) {
-            var vp = $this.grid.getViewport();
-            $this.load(vp.top, vp.bottom);
-        });
+				this.reload();
+			});
+		};
+		this.gridOptions.onCellEditingStopped = (e) => {
+			setTimeout(() => { this.inEditor = false }, 200);
+		};
 
         $("#resource-properties-dialog").dialog({
             title: "Resource/collection properties",
@@ -280,13 +334,13 @@ eXide.browse.ResourceBrowser = (function () {
                 "Cancel": function () { $(this).dialog("close"); },
                 "Apply": function() {
                     var dialog = this;
-                    var selected = $this.grid.getSelectionModel().getSelectedRows();
+					const selected = $this.gridOptions.api.getSelectedRows();
                     if (selected.length == 0) {
                 		return;
             		}
             		var resources = [];
             		for (var i = 0; i < selected.length; i++) {
-            			resources.push($this.collection + "/" + $this.data[selected[i]].name);
+            			resources.push($this.dataSource.collection + "/" + selected[i].name);
             		}
                     var params = $("form", dialog).serialize();
                     params = params + "&" + $.param({ "modify[]": resources});
@@ -305,14 +359,14 @@ eXide.browse.ResourceBrowser = (function () {
     eXide.util.oop.inherit(Constr, eXide.events.Sender);
 
     Constr.prototype.setCollection = function(collection) {
-        this.collection = collection;
+        this.dataSource.collection = collection;
         this.updateBreadcrumbs();
     };
 
     Constr.prototype.updateBreadcrumbs = function() {
         this.breadcrumbs.empty();
         var self = this;
-        var parts = this.collection.split("/");
+        var parts = this.dataSource.collection.split("/");
         var span = $("<span>/</span>");
         var path = "/";
         for (var i = 0; i < parts.length; i++) {
@@ -333,90 +387,59 @@ eXide.browse.ResourceBrowser = (function () {
 
 	Constr.prototype.setMode = function(value) {
         this.mode = value;
-		if (value == "manage") {
-			this.grid.setOptions(gridOptionsManage);
+		if (value === 'manage') {
+			this.gridOptions.rowSelection = 'multiple';
 		} else {
-			this.grid.setOptions(gridOptionsOpen);
+			this.gridOptions.rowSelection = "single";
 		}
 	};
 
 	Constr.prototype.resize = function () {
 	    console.log("Resizing canvas...");
-// 		this.grid.render();
-        var h = $(".eXide-browse-main").height();
-        $(".eXide-browse-resources").height(h);
-		this.grid.resizeCanvas();
-		this.grid.focus();
+		this.reload();
 	};
 
 	Constr.prototype.update = function(collection, reload) {
-        if (!reload && collection === this.collection)
+        if (!reload && collection === this.dataSource.collection)
             return;
 		$.log("Opening resources for %s", collection);
-		this.grid.gotoCell(0, 0);
+		// this.grid.gotoCell(0, 0);
         this.setCollection(collection);
-    $('input[name="collection"]').val(collection),
-		this.data.length = 0;
-        this.grid.setSelectedRows([]);
-        this.grid.resetActiveCell();
-		this.grid.setActiveCell(0, 1);
-		this.grid.invalidate();
-		this.grid.onViewportChanged.notify();
-        this.grid.focus();
+    	$('input[name="collection"]').val(collection);
         this.search = "";
 	};
 
-	Constr.prototype.load = function (start, end) {
-	   if (this.loading) {
-	       return;
-       }
-        if (this.data[start] && (end >= this.data.length || this.data[end])) {
-            return;
-        }
-		var $this = this;
-		this.loading = true;
-        end += 20;
-		var params = { root: this.collection, view: "r", start: start, end: end };
-		$.getJSON("modules/collections.xql", params, function (data) {
-		    $this.loading = false;
-			for (var i = start; i <= end; i++) {
-				$this.grid.invalidateRow(i);
-			}
-			if (data && data.items) {
-				$this.data.length = data.total;
-				for (var i = 0; i < data.items.length; i++) {
-					$this.data[start + i] = data.items[i];
-				}
-			} else {
-				$this.data.length = 0;
-			}
-			$this.grid.updateRowCount();
-			$this.grid.render();
-			if (start == 0) {
-                $this.grid.resetActiveCell();
-                $this.grid.setActiveCell(0, 1);
-			    $this.grid.focus();
-			}
-		});
-	};
-
 	Constr.prototype.hasSelection = function () {
-		var rows = this.grid.getSelectionModel().getSelectedRows();
-		return rows && rows.length > 0;
+		const selected = this.gridOptions.api.getSelectedRows();
+		return selected && selected.length > 0;
 	};
 
     Constr.prototype.getSelected = function() {
-        var selected = this.grid.getSelectionModel().getSelectedRows();
+		const selected = this.gridOptions.api.getSelectedRows();
 		if (selected.length == 0) {
 			return null;
 		}
         var items = [];
         for (var i = 0; i < selected.length; i++) {
-            var item = this.collection + "/" + this.data[selected[i]].name;
+            var item = this.dataSource.collection + "/" + selected[i].name;
             items.push(item);
         }
         return items;
     };
+
+	Constr.prototype.startEditing = function() {
+		const cell = this.gridOptions.api.getFocusedCell();
+		if (cell.column.colId !== 'name') {
+			return;
+		}
+		this.oldValue = this.dataSource.data[cell.rowIndex].name;
+		cell.column.colDef.editable = true;
+		this.inEditor = true;
+		this.gridOptions.api.startEditingCell({
+			rowIndex: cell.rowIndex,
+			colKey: cell.column.colId
+		});
+	};
 
     Constr.prototype.createCollection = function () {
     	var $this = this;
@@ -429,7 +452,7 @@ eXide.browse.ResourceBrowser = (function () {
 			    $("#eXide-browse-spinner").show();
 				$.getJSON("modules/collections.xql", {
 						create: $("#eXide-browse-collection-name").val(),
-						collection: $this.collection
+						collection: $this.dataSource.collection
 					},
 					function (data) {
 					    $("#eXide-browse-spinner").hide();
@@ -450,7 +473,7 @@ eXide.browse.ResourceBrowser = (function () {
 			function () {
 			    $("#eXide-browse-spinner").show();
 				$.getJSON("modules/collections.xql", {
-    					remove: $this.collection
+    					remove: $this.dataSource.collection
     				},
     				function (data) {
     				    $("#eXide-browse-spinner").hide();
@@ -464,22 +487,23 @@ eXide.browse.ResourceBrowser = (function () {
 		});
 	};
 
-	Constr.prototype.deleteResource = function() {
-		var selected = this.grid.getSelectionModel().getSelectedRows();
+	Constr.prototype.deleteResource = function(row) {
+		const selected = row ? [row] : this.gridOptions.api.getSelectedRows();
 		if (selected.length == 0) {
 			return;
 		}
 		var resources = [];
 		for (var i = 0; i < selected.length; i++) {
-			resources.push(this.data[selected[i]].key);
+			resources.push(selected[i].key);
 		}
+		console.log('resources to delete: %o', selected);
 		var $this = this;
 		eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete the selected resources?",
 				function () {
 				    $("#eXide-browse-spinner").show();
 					$.getJSON("modules/collections.xql", {
 							remove: resources,
-							root: $this.collection
+							root: $this.dataSource.collection
 						},
 						function (data) {
 						    $("#eXide-browse-spinner").hide();
@@ -493,14 +517,14 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
     Constr.prototype.properties = function() {
-        var selected = this.grid.getSelectionModel().getSelectedRows();
+		const selected = this.gridOptions.api.getSelectedRows();
     	if (selected.length == 0) {
 			return;
 		}
 		var resources = [];
 		for (var i = 0; i < selected.length; i++) {
-            if (this.data[selected[i]].name != "..") {
-			    resources.push(this.collection + "/" + this.data[selected[i]].name);
+            if (selected[i].name != "..") {
+			    resources.push(this.dataSource.collection + "/" + selected[i].name);
             }
 		}
         if (resources.length > 0) {
@@ -519,12 +543,15 @@ eXide.browse.ResourceBrowser = (function () {
       this.copy0();
     };
     Constr.prototype.copy0 = function() {
-    var selected = this.grid.getSelectionModel().getSelectedRows();
+		const selected = this.gridOptions.api.getSelectedRows();
+		if (selected.length == 0) {
+			return;
+		}
         this.clipboard = [];
 		for (var i = 0; i < selected.length; i++) {
-            var path = this.data[selected[i]].name;
+            var path = selected[i].name;
             if (path.substr(0, 1) != "/") {
-                path = this.collection + "/" + path;
+                path = this.dataSource.collection + "/" + path;
             }
 			this.clipboard.push(path);
 		}
@@ -533,8 +560,8 @@ eXide.browse.ResourceBrowser = (function () {
 
     Constr.prototype.paste = function() {
         var $this = this;
-        $.log("Pasting resources %o to %s in mode %s", this.clipboard, this.collection, this.clipboardMode);
-        var params = { root: this.collection };
+        $.log("Pasting resources %o to %s in mode %s", this.clipboard, this.dataSource.collection, this.clipboardMode);
+        var params = { root: this.dataSource.collection };
         params[this.clipboardMode] = this.clipboard;
 		$.getJSON("modules/collections.xql", params,
 			function (data) {
@@ -549,14 +576,7 @@ eXide.browse.ResourceBrowser = (function () {
     };
 
     Constr.prototype.goto = function(row) {
-        this.grid.gotoCell(0, 0);
-        this.grid.setSelectedRows([]);
-        this.grid.resetActiveCell();
-        this.grid.setActiveCell(row, 1);
-        this.grid.invalidate();
-        this.grid.onViewportChanged.notify();
-        this.grid.scrollRowToTop(row);
-        this.grid.focus();
+		this.gridOptions.api.setFocusedCell(row);
     };
 
     Constr.prototype.focus = function() {
@@ -564,11 +584,9 @@ eXide.browse.ResourceBrowser = (function () {
     };
 
 	Constr.prototype.reload = function() {
-        this.grid.invalidate();
-    	this.data.length = 0;
-		this.update(this.collection, true);
+		this.update(this.dataSource.collection, true);
 		//TODO : modify this to add an event mechanism instead
-		eXide.app.syncDirectory(this.collection);
+		eXide.app.syncDirectory(this.dataSource.collection);
 	};
 
 	return Constr;
@@ -656,12 +674,6 @@ eXide.browse.Upload = (function () {
 
         }).on('fileuploadfail', function (e, data) {
             console.log("error: ", data);
-            // $.each(data.files, function (index, file) {
-            //     var error = $('<span class="text-danger"/>').text('File upload failed.');
-            //     $(data.context.children()[index])
-            //         .append('<br>')
-            //         .append(error);
-            // })
         });
 	}
 
@@ -733,6 +745,11 @@ eXide.browse.Browser = (function () {
             $this.resources.reload(true);
 		});
 
+		this.btnRenameResource = createButton(toolbar, 'Rename Selected', 'rename', 2, 'edit');
+		$(this.btnRenameResource).click((ev) => {
+			this.resources.startEditing();
+		});
+
         this.btnCreateCollection = createButton(toolbar, "Create Collection", "create", 3, "folder-o");
 		$(this.btnCreateCollection).click(function (ev) {
 			ev.preventDefault();
@@ -759,10 +776,10 @@ eXide.browse.Browser = (function () {
             $this.resources.properties();
         });
 
-		button = createButton(toolbar, "Open Selected", "open", 6, "edit");
+		button = createButton(toolbar, "Open Selected", "open", 6, "folder-open-o");
 		$(button).click(function (ev) {
 			ev.preventDefault();
-			eXide.app.openSelectedDocument(false);
+			eXide.app.openSelectedDocument(null, false);
 		});
 
         this.btnCopy = createButton(toolbar, "Copy", "copy", 7, "copy");
@@ -771,7 +788,7 @@ eXide.browse.Browser = (function () {
 
 		this.selection = $(".eXide-browse-form input", container);
 		this.container = container;
-		this.resources = new eXide.browse.ResourceBrowser($(".eXide-browse-resources", container), container);
+		this.resources = new eXide.browse.ResourceBrowser(container, container);
 		this.upload = new eXide.browse.Upload($(".eXide-browse-upload", container).hide());
 
 		this.resources.addEventListener("activate", this, this.onActivateResource);
@@ -838,7 +855,6 @@ eXide.browse.Browser = (function () {
 	};
 
     Constr.prototype.deleteSelected = function () {
-        var selected = this.resources.getSelected();
         this.resources.deleteResource();
     };
 
@@ -848,7 +864,7 @@ eXide.browse.Browser = (function () {
 			return null;
 		return {
 			name: name,
-			path: this.resources.collection + "/" + name,
+			path: this.resources.dataSource.collection + "/" + name,
 			writable: true
 		};
 	};
@@ -864,6 +880,7 @@ eXide.browse.Browser = (function () {
 			$(this.selection).val("");
 		}
 		if (this.mode != "open" && writable) {
+			$(this.btnRenameResource).css("display", "");
 			$(this.btnDeleteResource).css("display", "");
             $(this.btnProperties).css("display", "");
 		} else {
@@ -882,6 +899,7 @@ eXide.browse.Browser = (function () {
                 break;
             default:
                 if (writable) {
+					$(this.btnRenameResource).css('display', '');
     				$(this.btnCreateCollection).css("display", "");
     				$(this.btnUpload).css("display", "");
                     $(this.btnCut).css("display", "");

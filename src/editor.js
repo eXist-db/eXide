@@ -980,7 +980,7 @@ eXide.edit.Editor = (function () {
         var net = require("ace/lib/net");
         this.themes[name] = 1;
         var base = name.split("/").pop();
-        var fileName = "$shared/resources/scripts/ace/theme-" + base + ".js";
+        var fileName = "resources/scripts/ace/theme-" + base + ".js";
 
         var head = document.getElementsByTagName('head')[0];
         var s = document.createElement('script');

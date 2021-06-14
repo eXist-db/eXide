@@ -108,10 +108,6 @@ eXide.app = (function(util) {
 			    allowDnd = !isOpen;
 			});
 			
-            deploymentEditor.addEventListener("change", null, function(collection) {
-                dbBrowser.changeToCollection(collection);
-                app.openDocument();
-            });
 			preferences = new util.Preferences(editor);
 			
             editor.addEventListener("setTheme", app.setTheme);
@@ -160,12 +156,12 @@ eXide.app = (function(util) {
 				app.saveState();
 			});
             
-            eXide.find.Modules.addEventListener("open", null, function (module) {
-                app.findDocument(module.at);
-            });
-            eXide.find.Modules.addEventListener("import", null, function (module) {
-                editor.exec("importModule", module.prefix, module.uri, module.at);
-            });
+            // eXide.find.Modules.addEventListener("open", null, function (module) {
+            //     app.findDocument(module.at);
+            // });
+            // eXide.find.Modules.addEventListener("import", null, function (module) {
+            //     editor.exec("importModule", module.prefix, module.uri, module.at);
+            // });
 		},
 
         version: function() {
@@ -291,8 +287,8 @@ eXide.app = (function(util) {
 			$("#open-dialog").dialog("open");
 		},
 
-		openSelectedDocument: function(close) {
-			var resource = dbBrowser.getSelection();
+		openSelectedDocument: function(doc, close) {
+			var resource = doc || dbBrowser.getSelection();
 			if (resource) {
 				app.$doOpenDocument(resource);
 			}
@@ -653,24 +649,6 @@ eXide.app = (function(util) {
                     "Close": function() { $(this).dialog("close"); }
                 });
                 $("#open-dialog").dialog("open");
-			});
-		},
-		
-		/** Open deployment settings for current app */
-		deploymentSettings: function() {
-			var path = editor.getActiveDocument().getPath();
-			var collection = /^(.*)\/[^\/]+$/.exec(path);
-			if (!collection)
-				return;
-			app.requireLogin(function() {
-                $.log("Editing deployment settings for collection: %s", collection[1]);
-    		    deploymentEditor.open(collection[1]);
-			});
-		},
-		
-		newDeployment: function() {
-			app.requireLogin(function() {
-    			deploymentEditor.open();
 			});
 		},
 		
@@ -1158,7 +1136,7 @@ eXide.app = (function(util) {
 				modal: false,
 		        autoOpen: false,
 		        height: 480,
-		        width: 600,
+		        width: 640,
 				open: function() { dbBrowser.init(); },
 				resize: function() { dbBrowser.resize(); }
 			});
@@ -1406,10 +1384,10 @@ eXide.app = (function(util) {
             menu.click("#menu-navigate-definition", function () {
                 editor.exec("gotoDefinition");
             });
-            menu.click("#menu-navigate-modules", function () {
-                var doc = editor.getActiveDocument();
-	    		eXide.find.Modules.select(doc.syntax);
-            });
+            // menu.click("#menu-navigate-modules", function () {
+            //     var doc = editor.getActiveDocument();
+	    	// 	eXide.find.Modules.select(doc.syntax);
+            // });
             menu.click("#menu-navigate-info", function() {
                 editor.exec("showFunctionDoc");
             });
@@ -1449,7 +1427,7 @@ eXide.app = (function(util) {
             //     util.Help.show();
             // });
             menu.click("#menu-help-documentation", function(ev) {
-                window.open("docs/doc.html");
+                window.open("https://github.com/eXist-db/eXide#readme");
             });
 			// syntax drop down
 			$("#syntax").change(function () {

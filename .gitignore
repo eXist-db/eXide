@@ -3,6 +3,9 @@ build/*
 expath-pkg.xml
 
 resources/scripts/xqlint.min.js
+resources/scripts/ace
+resources/scripts/eXide.min.*
+resources/scripts/jquery/jquery.plugins.min.*
 
 tools/r.js
 
@@ -10,3 +13,6 @@ tools/js.jar
 index.html
 
 node_modules/
+
+cypress/videos/*.mp4
+cypress/screenshots/**/*.png

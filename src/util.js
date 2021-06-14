@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-var eXide = eXide || {};
+window.eXide = window.eXide || {};
 
 /**
  * Namespace function. Required by all other classes.

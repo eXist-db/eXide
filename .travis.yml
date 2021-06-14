@@ -1,4 +1,5 @@
-language: java
+language: node_js
+node_js: "14"
 
 dist: xenial
 
@@ -6,10 +7,6 @@ addons:
   apt:
     packages:
     - libgconf-2-4
-
-jdk:
-  - openjdk8
-  - openjdk11
 
 services:
   - docker
@@ -23,7 +20,6 @@ jobs:
   include:
     # Define the release stage that runs semantic-release
     - stage: deploy
-      jdk: openjdk8
       env: img=existdb/existdb:release
       script: skip
       provider: releases
@@ -39,8 +35,8 @@ before_install:
   - docker create  --name exist-ci -p 8080:8080 $img
 
 install:
-  - ant
   - npm ci
+  - npm run build
 
 before_script:
   - docker cp ./build/eXide-*.xar exist-ci:exist/autodeploy
