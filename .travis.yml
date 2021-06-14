@@ -1,4 +1,5 @@
-language: java
+language: node_js
+node_js: "14"
 
 dist: xenial
 
@@ -6,10 +7,6 @@ addons:
   apt:
     packages:
     - libgconf-2-4
-
-jdk:
-  - openjdk8
-  - openjdk11
 
 services:
   - docker
@@ -23,7 +20,6 @@ jobs:
   include:
     # Define the release stage that runs semantic-release
     - stage: deploy
-      jdk: openjdk8
       env: img=existdb/existdb:release
       script: skip
       provider: releases
