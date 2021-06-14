@@ -39,7 +39,7 @@ before_install:
   - docker create  --name exist-ci -p 8080:8080 $img
 
 install:
-  - ant
+  - npm run build
   - npm ci
 
 before_script:
