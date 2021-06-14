@@ -90,8 +90,8 @@ eXide.browse.ResourceBrowser = (function () {
 				return params.data && params.data.isCollection ? "collection" : "";
 			},
 			resizable: true,
-			editable: true,
-			suppressClickEdit: true,
+			editable: false,
+			suppressClickEdit: true
 		},
 		{
 			colId: "permissions",
@@ -283,6 +283,8 @@ eXide.browse.ResourceBrowser = (function () {
 					case 40:
 						break;
 					default:
+						e.event.stopPropagation();
+						e.event.preventDefault();
 						this.search += e.event.key;
 						if (this.searchTimeout) {
 							clearTimeout(this.searchTimeout);
@@ -306,6 +308,7 @@ eXide.browse.ResourceBrowser = (function () {
 			if (!this.oldValue) {
 				return;
 			}
+			params.column.colDef.editable = false;
 			$.getJSON('modules/collections.xql', {
 				target: params.data.name,
 				rename: this.oldValue,
@@ -443,6 +446,7 @@ eXide.browse.ResourceBrowser = (function () {
 	Constr.prototype.startEditing = function() {
 		const cell = this.gridOptions.api.getFocusedCell();
 		this.oldValue = this.dataSource.data[cell.rowIndex].name;
+		cell.column.colDef.editable = true;
 		this.inEditor = true;
 		this.gridOptions.api.startEditingCell({
 			rowIndex: cell.rowIndex,
@@ -760,7 +764,7 @@ eXide.browse.Browser = (function () {
             $this.resources.reload(true);
 		});
 
-		this.btnRenameResource = createButton(toolbar, 'Rename', 'rename', 2, 'edit');
+		this.btnRenameResource = createButton(toolbar, 'Rename Selected', 'rename', 2, 'edit');
 		$(this.btnRenameResource).click((ev) => {
 			this.resources.startEditing();
 		});
