@@ -13,3 +13,6 @@ tools/js.jar
 index.html
 
 node_modules/
+
+src/test/cypress/videos/*.mp4
+src/test/cypress/screenshots/**/*.png
