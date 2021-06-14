@@ -80,14 +80,18 @@ eXide.browse.ResourceBrowser = (function () {
 			headerName: "Name",
 			field: "name",
 			flex: 1,
-			filter: true,
 			floatingFilter: true,
+			filter: "agTextColumnFilter",
+			filterParams: {
+				filterOptions: ["contains"],
+				defaultOption: "contains",
+			},
 			cellClass: (params) => {
 				return params.data && params.data.isCollection ? "collection" : "";
 			},
 			resizable: true,
 			editable: true,
-			suppressClickEdit: true
+			suppressClickEdit: true,
 		},
 		{
 			colId: "permissions",
