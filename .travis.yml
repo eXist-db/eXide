@@ -39,7 +39,7 @@ install:
   - npm run build
 
 before_script:
-  - docker cp ./build/eXide-*.xar exist-ci:exist/autodeploy
+  - docker cp ./build/eXide-*.xar exist-ci:exist/autodeploy/111.xar
   - docker start exist-ci
   # exist needs time
   - sleep 30
