@@ -1,7 +1,5 @@
 # Feature Documentation
 
-<iframe id="ytplayer" type="text/html" width="853" height="480" src="http://www.youtube.com/embed/U7Cd9h6UPoc?autoplay=0&amp;theme=light&amp;showinfo=0&amp;vq=hd720" frameborder="0"></iframe>
-
 ## Validation as you type
 
 eXide constantly validates code while you edit an XQuery. It combines a client-side XQuery parser 

@@ -22,13 +22,16 @@ eXide consists of two parts:
 1.  a javascript library for the client-side application
 2.  a set of XQuery scripts which are called via AJAX
 
+## Note concerning eXide 3.0.0
+
+eXide 3.0.0 removes the *app generation* feature as it was generating outdated code with potential security risks. We recommend the much better [yeoman generator](https://github.com/eXist-db/generator-exist) for eXist-db.
+
 ## Documentation
 
 * [short documentation of all features](./docs/docs.md)
+* [screencast](https://youtu.be/U7Cd9h6UPoc) demonstrating most features
 
 ## Dependencies
-
-eXide requires the [shared-resources](https://github.com/eXist-db/shared-resources) package, which bundles the [ace editor](https://github.com/ajaxorg/ace) files and is included in eXist-db distributions.
 
 Building eXide requires [git](https://git-scm.com/) and [Apache Ant](https://ant.apache.org/). 
 
