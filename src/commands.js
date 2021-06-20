@@ -214,14 +214,6 @@ eXide.edit.commands = (function () {
         		    		parent.search.open();
         		    	}
         		    });
-                    // commands.addCommand({
-            	    // 	name: "findModule",
-        		    // 	bindKey: bindKey(bindings.findModule),
-        		    // 	exec: function(editor) {
-                    //         var doc = parent.getActiveDocument();
-        		    // 		eXide.find.Modules.select(doc.syntax);
-        		    // 	}
-        		    // });
         		    commands.addCommand({
         		    	name: "escape",
         		    	bindKey: bindKey(bindings.escape),

@@ -155,13 +155,6 @@ eXide.app = (function(util) {
 			$(window).unload(function () {
 				app.saveState();
 			});
-            
-            // eXide.find.Modules.addEventListener("open", null, function (module) {
-            //     app.findDocument(module.at);
-            // });
-            // eXide.find.Modules.addEventListener("import", null, function (module) {
-            //     editor.exec("importModule", module.prefix, module.uri, module.at);
-            // });
 		},
 
         version: function() {
@@ -1384,10 +1377,6 @@ eXide.app = (function(util) {
             menu.click("#menu-navigate-definition", function () {
                 editor.exec("gotoDefinition");
             });
-            // menu.click("#menu-navigate-modules", function () {
-            //     var doc = editor.getActiveDocument();
-	    	// 	eXide.find.Modules.select(doc.syntax);
-            // });
             menu.click("#menu-navigate-info", function() {
                 editor.exec("showFunctionDoc");
             });
