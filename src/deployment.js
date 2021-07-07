@@ -212,7 +212,9 @@ eXide.edit.PackageEditor = (function () {
     eXide.util.oop.inherit(Constr, eXide.events.Sender);
 
     Constr.prototype.download = function (collection) {
-        window.location.href = "modules/deployment.xql?download=true&collection=" + encodeURIComponent(collection);
+        var indentOnLoad = $("#indent-on-load").is(":checked");
+        var expandXIncludesOnLoad = $("#expand-xincludes-on-load").is(":checked");
+		window.location.href = "modules/deployment.xql?download=true&collection=" + encodeURIComponent(collection) + "&indent=" + indentOnLoad + "&expand-xincludes=" + expandXIncludesOnLoad;
     };
     
 	/**
