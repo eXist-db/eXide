@@ -121,6 +121,14 @@ Drag a file on the editor to open its contents in a new tab.
 Use File > Manage > Upload Files > Upload Directory to upload
 entire directories and preserve their structure. Or drag and drop onto the Upload Files pane.
 
+## Options for XML documents loaded from the database
+
+When loading XML documents from the database into an editor window, you can control whether indentation is automatically applied 
+or not and whether XInclude elements are automatically expanded or not. Set this preference in "Edit > Preferences > When 
+opening or downloading XML documents." The same preference applies to the download of XML documents via "File > Download" and
+the serialization of XML documents included in application packages via ["Application > Download app"](#Support-for-EXPath-Packages).
+By default, indentation is turned on and XInclude expansion is turned off.
+
 # Security
 
 Keeping eXide installed on a production server can pose a security risk. eXide fully respects eXist's security model, 
