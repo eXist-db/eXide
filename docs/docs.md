@@ -121,6 +121,18 @@ Drag a file on the editor to open its contents in a new tab.
 Use File > Manage > Upload Files > Upload Directory to upload
 entire directories and preserve their structure. Or drag and drop onto the Upload Files pane.
 
+## Run XQSuite tests
+
+Execute [XQSuite test suites](https://exist-db.org/exist/apps/doc/xqsuite) embedded in XQuery library modules by
+saving the module to the database (e.g., as `/db/test.xqm`) and selecting "XQuery > Run as test".
+
+## Support for EXPath Packages
+
+- Download packages stored in the database via "Application > Download app"
+- Synchronize your changes made on an application collection in the database to a directory on disk via "Application > Synchronize"
+- [Live reload](#Live-Reload) of resources in an application package
+- Upload and auto-install a package via "File > Manage > Upload" with the "Auto deploy uploaded .xar packages" checkbox selected
+
 ## Options for XML documents loaded from the database
 
 When loading XML documents from the database into an editor window, you can control whether indentation is automatically applied 
@@ -128,6 +140,30 @@ or not and whether XInclude elements are automatically expanded or not. Set this
 opening or downloading XML documents." The same preference applies to the download of XML documents via "File > Download" and
 the serialization of XML documents included in application packages via ["Application > Download app"](#Support-for-EXPath-Packages).
 By default, indentation is turned on and XInclude expansion is turned off.
+
+## Options for displaying query results
+
+To see the results of a query, hit the "Eval" button in eXide's toolbar. (The "Run" button opens the query in a new tab 
+and is only available for queries that have been saved to the database.) To automatically submit a query as you edit it, 
+select the "Live Preview" checkbox at the top of the query results window.
+
+eXide displays query results in groups of 10 (i.e., a query `1 to 100` would be split into 10 pages). Navigate through these 
+results with the `<<` and `>>` icons at the top of the query results window. To see all results in a single screen, surround your
+query with an array constructor: `array { 1 to 100 }`.
+
+When displaying query results, use the dropdown menu above the query results window to select a serialization method to apply
+to the results. The options available include all serialization options supported by eXist: Adaptive Output (eXide's default), 
+JSON, Text, XML, HTML5, XHTML, XHTML5, MicroXML, and  "Direct". In all but the last option, the selection overrides any 
+serialization declarations in a query's prolog, and the results are displayed as plain text. The "Direct" option allows the 
+serialization method to be set in the query, but the results are shown in the display window not as plain text but as the 
+browser would render them assuming HTML. 
+
+Besides controls for the serialization method, you can also control whether results are indented (pretty-printed) via the "Indent"
+checkbox just above the query results window. 
+
+When viewing the results of queries to eXist's full text index via `ft:query()`, you can automatically view the hits
+wrapped in `<exist:match>` elements by selecting the "Highlight Index Matches" checkbox above the query results window. This 
+simply applies the `util:expand()` function to the query's results.
 
 # Security
 
