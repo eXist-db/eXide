@@ -1,9 +1,22 @@
-# Feature Documentation
+# eXide Feature Documentation
+
+eXide is a web-based XQuery IDE built around the [ace editor](https://ace.c9.io/). It is tightly integrated with the [eXist-db native XML database](https://exist-db.org). 
+
+## Highlights
+
+*   XQuery function and variable completion (press Ctrl-Space or Opt-Space)
+*   Outline view showing all functions and variables reachable from the current file
+*   Powerful navigation (press F3 on a function call to see its declaration)
+*   Templates and snippets
+*   Background syntax checks for XQuery and XML
+*   Database manager
+*   Support for EXPath application packages: scaffolding, deployment...
+*   And more ...
 
 ## Validation as you type
 
-eXide constantly validates code while you edit an XQuery. It combines a client-side XQuery parser 
-(<a href="https://github.com/wcandillon/xqlint">xqlint</a>) with
+eXide constantly validates code while you edit an XQuery. It combines a client-side XQuery parser,
+[xqlint](https://github.com/wcandillon/xqlint), with
 the errors reported by the eXist-db server.
 
 Validation on the server finds errors across all related modules,
@@ -23,13 +36,13 @@ A popup will be shown if there's more than one possible completion. Otherwise th
 
 As an alternative to the `tab` key, you can also press `Ctrl-Space`, `Cmd-Space` or
 `Option-Space` (Mac). Unlike `tab`, this will also work if the cursor is placed in white space
-or inside the prefix or namespace declarations of an <i>import module</i> or <i>declare namespace</i> expression.
+or inside the prefix or namespace declarations of an *import module* or *declare namespace* expression.
 
 ## Code Snippets
 
 Snippets are triggered by pressing
-`tab` after typing a known keyword. For example, to create a new XQuery function, type
-<i>fun</i> and press `tab`. A snippet may have one or more parameters to change: after insertion, 
+the `tab` key after typing a known keyword. For example, to create a new XQuery function, type
+*fun* and press `tab`. A snippet may have one or more parameters to change: after insertion, 
 the function name will be selected so you can edit it. Pressing `tab` will move to the next snippet parameter.
 Press `ESC` when you are done editing parameters.
 
@@ -41,10 +54,8 @@ to edit them. All snippet files reside in the templates collection inside the eX
 
 ## Refactoring
 
-Extract function or variable from selected block
-
 When writing XQuery code, one often ends up with long FLWOR expressions or markup with lots of enclosed XQuery.
-In good functional style you want to clean this up and extract code into functions. eXide 2.0 simplifies this by
+In good functional style you want to clean this up and extract code into functions. eXide simplifies this by
 providing refactorings for functions and variables.
 
 To extract code into a function, select it in the editor (the block has to be syntactically valid) and choose
@@ -73,8 +84,7 @@ Press `ESC` when you are done.
 eXide continually parses the XQuery code while you type and displays an error or warning icon in the gutter of
 the corresponding line. But instead of just complaining, eXide is able to suggest a quick fix for some types
 of warnings or errors. To see if a quick fix is available, click on the icon or press the quick fix shortcut
-(`Ctrl-Shift-Q` or `Command-Ctrl-Q`) to see a list of suggestions. Quick fixes are available for
-(we'll add more over time):
+(`Ctrl-Shift-Q` or `Command-Ctrl-Q`) to see a list of suggestions. Quick fixes are available for:
 
 * undeclared namespaces
 * calls to unknown functions
@@ -91,12 +101,12 @@ To quickly navigate to any known function or variable declaration, press `Ctrl-S
 or `Cmd-Shift-U` and choose a target from the popup. Btw, within the popup, just type to
 limit the displayed list to items containing the typed string.
 
+eXide displays a list of all XQuery functions defined and imported in the "outline" pane to the left
+of the query editor.
+
 ## Module Import
 
-There are two ways to quickly import another XQuery module into the current code:
-
-1. Choose the "Import Module" dialog from the menu or type `F4`
-2. Create an "import module" statement (type "import" and press `tab`) and enter the prefix. When you are within the quotes for 
+Create an "import module" statement (type "import" and press `tab`) and enter the prefix. When you are within the quotes for 
 the namespace URI, press `Ctrl-Space` or `Cmd-Space` to call autocomplete. This should pop up any module currently stored in the db which matches the prefix you entered.
 
 ## Live Reload
@@ -105,20 +115,22 @@ When developing an XQuery application, enable *Live Reload* and the browser
 tab or window containing the application's web page will automatically reload whenever
 you save a resource belonging to the app's package.
 
-Just start the app via the `Application/Run app` menu entry and check
+Just start the app via the `Application > Live Reload` menu entry and check
 *activate live reload*.
 
-Note: due to browser security restrictions, live reload will only work if the app window has been
-opened from within eXide, not via the dashboard. A web page cannot control other windows unless it
+Then follow the instructions to enable live reload. Due to browser security restrictions, Live Reload
+will only work if the app window has been
+opened from within eXide, not via the Dashboard. A web page cannot control other windows unless it
 created them.
 
 ## Drop Files
 
-Drag a file on the editor to open its contents in a new tab.
+Drag a file on the editor to open its contents in a new tab. The new tab will not have the original file's name, 
+but you can provide a name via "File > Save".
 
 ## Directory Uploads
 
-Use File > Manage > Upload Files > Upload Directory to upload
+Use "File > Manage > Upload Files > Upload Directory" to upload
 entire directories and preserve their structure. Or drag and drop onto the Upload Files pane.
 
 ## Run XQSuite tests
@@ -184,14 +196,14 @@ within the eXide app collection:
 </configuration>
 ```
 
-* The **execute-query=yes|no** attribute controls if non-dba users are allowed to execute XQuery code 
+* The `execute-query=yes|no` attribute controls if non-dba users are allowed to execute XQuery code 
 from within eXide.
-* **guest=yes|no**: if set to "no", the default guest user will not be able to log in. eXide will
+* `guest=yes|no`: if set to "no", the default guest user will not be able to log in. eXide will
     thus always show a login window before the editor is loaded - unless you already provided credentials during
     a previous, still valid session.
-* One or more **<deny>** elements can be specified to block access to particular collections, even if the user
+* One or more `<deny>` elements can be specified to block access to particular collections, even if the user
     has the appropriate database permissions to see those collections.
 
 The additional security checks are done on the server, so hacking the client won't be fruitful. However, if you use
-the <deny> feature, **you must make sure** that access to eXide's own collection is denied as well.
+the `<deny>` feature, **you must make sure** that access to eXide's own collection is denied as well.
 If not, logged in users could simply change eXide's code.
