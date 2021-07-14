@@ -171,10 +171,6 @@
                                     <a href="#" id="menu-navigate-definition" data-command="gotoDefinition">
                                         <span class="fa fa-crosshairs"/>Go to definition</a>
                                 </li>
-                                <!--li>
-                                    <a href="#" id="menu-navigate-modules" data-command="findModule">
-                                        <span class="fa fa-plus"/>Go to/import module</a>
-                                </li-->
                                 <li>
                                     <a href="#" id="menu-navigate-info" data-command="functionDoc">
                                         <span class="fa fa-info"/>Function doc</a>
@@ -589,6 +585,7 @@
                 <div id="preferences-dialog">
                     <form>
                         <fieldset>
+                            <legend>Editor</legend>
                             <ol>
                                 <li>
                                     <select id="theme" name="theme">
@@ -670,7 +667,7 @@
                                         <option value="4">4 spaces</option>
                                         <option value="8">8 spaces</option>
                                     </select>
-                                    <label for="indent-size">indent size:</label>
+                                    <label for="indent-size">Indent size:</label>
                                 </li>
                                 <li>
                                     <select name="soft-wrap">
@@ -688,6 +685,19 @@
                                 <li>
                                     <input type="checkbox" name="emmet"/>
                                     <label for="emmet">Enable emmet in HTML mode:</label>
+                                </li>
+                            </ol>
+                        </fieldset>
+                        <fieldset>
+                            <legend>When opening or downloading XML documents</legend>
+                            <ol>
+                                <li>
+                                    <input type="checkbox" name="indent-on-load" id="indent-on-load"/>
+                                    <label for="indent-on-load">Indent:</label>
+                                </li>
+                                <li>
+                                    <input type="checkbox" name="expand-xincludes-on-load" id="expand-xincludes-on-load"/>
+                                    <label for="expand-xincludes-on-load">Expand XIncludes:</label>
                                 </li>
                             </ol>
                         </fieldset>
@@ -800,9 +810,9 @@
             <div id="dialog-startup">
                 <h1>Getting Help</h1>
                 <p>
-                    eXide 2.0 has many new features. Make sure you read the
+                    eXide has many features. Make sure you read the
                     <a href="https://github.com/eXist-db/eXide#readme" target="_new">documentation</a>
-                to understand code completion, refactorings and keyboard shortcuts.</p>
+                to understand code completion, refactorings, and keyboard shortcuts.</p>
             </div>
             <div id="dialog-git-checkout">
                 <p>Checkout git working directory to another branch</p>
