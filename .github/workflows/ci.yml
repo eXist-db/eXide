@@ -1,0 +1,90 @@
+# This workflow builds a xar archive, deploys it into exist and execute its test suites.
+# It also includes code for using semantic-release to upload packages as part of GitHub releases
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: exist-db CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+       matrix:
+         exist-version: [latest, release]
+         java-version: [8]
+         node-version: ['12', '14']
+    # TODO: see #563 could still be usefull for gulp builds 
+    # services:
+    #   # Label used to access the service container
+    #   exist:
+    #     image: existdb/existdb:${{ matrix.exist-version}}
+    #     ports:
+    #       - 8080:8080
+
+    steps:
+      # Checkout code
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      # Install dependencies and build EXPath Package
+      - name: Build frontend Using node.js ${{ matrix.node-version }} and build EXPath Package
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+            
+      # Deploy Package in Container
+      - name: Pull Base Image
+        run: docker pull existdb/existdb:${{ matrix.exist-version }}
+
+      - name: Create CI Container
+        run: docker create  --name exist-ci -p 8080:8080 existdb/existdb:${{ matrix.exist-version }} 
+
+      - name: Prep CI Container
+        run: docker cp ./build/*.xar exist-ci:exist/autodeploy
+
+      - name: Start Exist Container
+        run: docker start exist-ci && sleep 30
+
+      # Testing 
+      - name: Run Unit Tests     
+        run: npm test
+      - name: Run Integration Tests  
+        run: npm run cypress
+  # TODO: Add upload to dockerhub   
+  # release:
+  #   name: Release
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   if: github.ref == 'refs/heads/main'
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v2
+  #       with:
+  #         node-version: 14
+  #         cache: 'npm'
+  #     - name: Install dependencies
+  #       run: npm ci
+  #     - name: Create package
+  #       run: npm run build
+  #     - name: Release
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #       run: npx semantic-release
+    
+
