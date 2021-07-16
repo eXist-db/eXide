@@ -12,6 +12,11 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="3.1.0">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Feature: Added Preference options that govern indentation and XInclude expansion when opening and downloading XML documents from database, and expanded documentation to cover commonly used features of eXide, such as XQSuite and EXPath Package support and query result controls - <a href="https://github.com/eXist-db/eXide/pull/328">#328</a>.</li>
+            </ul>
+        </change>
         <change version="3.0.0">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Remove dependency on deprecated shared-resources package</li>

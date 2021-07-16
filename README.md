@@ -24,7 +24,7 @@ eXide consists of two parts:
 
 ## Note concerning eXide 3.0.0
 
-eXide 3.0.0 removes the *app generation* feature as it was generating outdated code with potential security risks. We recommend the much better [yeoman generator](https://github.com/eXist-db/generator-exist) for eXist-db.
+eXide 3.0.0 removes the *app generation* feature as it was generating outdated code with potential security risks. We recommend the much better yeoman-based [generator-exist](https://github.com/eXist-db/generator-exist) for eXist-db.
 
 ## Documentation
 
