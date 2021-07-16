@@ -1,6 +1,6 @@
 ![eXide logo](resources/images/logo.png)
 
-[![Build Status](https://travis-ci.com/eXist-db/eXide.svg?branch=develop)](https://travis-ci.com/eXist-db/eXide)
+[![Build Status](https://github.com/eXist-db/eXide/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/eXist-db/eXide/actions)
 
 # eXide - a web-based XQuery IDE
 
