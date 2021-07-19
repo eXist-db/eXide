@@ -27,7 +27,6 @@ import module namespace dbutil="http://exist-db.org/xquery/dbutil";
     Functions to read, update the descriptors and deploy an app.
 :)
 declare namespace deploy="http://exist-db.org/eXide/deploy";
-declare namespace git="http://exist-db.org/eXide/git";
 declare namespace expath="http://expath.org/ns/pkg";
 declare namespace repo="http://exist-db.org/xquery/repo";
 
