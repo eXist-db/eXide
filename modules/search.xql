@@ -1,7 +1,7 @@
 xquery version "3.1";
 
 
-import module namespace dbutil="http://exist-db.org/xquery/dbutil";
+import module namespace dbutil="http://exist-db.org/xquery/dbutil" at "dbutils.xql";
 
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
 
