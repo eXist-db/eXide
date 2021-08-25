@@ -1057,35 +1057,30 @@ Sub level menu list items (undo style from Top level List Items)
 
 #outline {
     font-family: 'Ubuntu Mono', 'Monaco', 'Menlo', 'Droid Sans Mono', 'Courier New', monospace;
-    line-height: 0.9em;
+    line-height: 1.3em;
     list-style: none;
     margin: 8px 4px 16px 4px;
     padding: 0;
-    height: 100%;
     white-space: pre-wrap;
-    /*  Added by CG  */
-    font-size: 75%;
-    /*  End Added */
+    font-size: .7em;
 }
 
-#outline li {
-    /*  Added by CG  */
-    margin: 0px 0px 2px 0px;
-    /*  End Added */
-}
-
-#outline .private, #outline .public {
-    background-repeat: no-repeat;
-    background-position: left;
-    padding-left: 15px;
+#outline .public {
+    background-image: url(../images/public.png);
 }
 
 #outline .private {
     background-image: url(../images/private.png);
 }
 
-#outline .public {
-    background-image: url(../images/public.png);
+#outline li {
+    margin: 0 0 2px 0;
+    padding: 0 0 0 18px;
+    text-align: left;
+    background-size: 4%;
+    background-position-x: 0%;
+    background-position-y: 100%;
+    background-repeat: no-repeat;
 }
 
 #outline a:link, #outline a:visited {

@@ -140,6 +140,10 @@ eXide.edit.Outline = (function () {
                             ? "ace_support.ace_function"
                             : "ace_variable";
                     })
+                    .attr("class",function(d) {
+                      var cl =  d.type == eXide.edit.Document.TYPE_FUNCTION ?  "t.function" : "t_variable";
+                      return cl + " " + (d.visibility === "private" ? "private" : "public" );
+                    })
                     .append("a")
                         .style("opacity", 0)
                         .attr("title", function(d) {
@@ -148,10 +152,6 @@ eXide.edit.Outline = (function () {
                         })
                         .attr("href", function(d) {
                             return  "#" + (d.source ? d.source : "");
-                        })
-                        .attr("class",function(d) {
-                            var cl =  d.type == eXide.edit.Document.TYPE_FUNCTION ?  "t.function" : "t_variable";
-                            return cl + " " + (d.visibility === "private" ? "private" : "public" );
                         })
                        .text(function(d) {
                             if (d.type == eXide.edit.Document.TYPE_VARIABLE) {
