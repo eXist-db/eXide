@@ -38,6 +38,6 @@
 	},
 	"dependencies": {
 		"@ag-grid-community/core": "^25.3.0",
-		"@ag-grid-community/infinite-row-model": "^25.3.0"
+		"@ag-grid-community/infinite-row-model": "^26.0.0"
 	}
 }
