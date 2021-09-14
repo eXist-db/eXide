@@ -31,7 +31,7 @@
 	"devDependencies": {
 		"chalk": "^4.1.2",
 		"command-line-args": "^5.2.0",
-		"cypress": "^8.3.1",
+		"cypress": "^8.4.0",
 		"esbuild": "^0.12.28",
 		"micro-fs": "^1.0.3",
 		"request": "^2.88.2"
