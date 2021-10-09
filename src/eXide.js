@@ -274,8 +274,8 @@ eXide.app = (function(util) {
 			dbBrowser.reload(["reload"], "open");
 			$("#open-dialog").dialog("option", "title", "Open Document");
 			$("#open-dialog").dialog("option", "buttons", { 
-				"cancel": function() { $(this).dialog("close"); editor.focus(); },
-				"open": app.openSelectedDocument
+			    "cancel": function() { $(this).dialog("close"); editor.focus(); },
+			    "open": function(){ app.openSelectedDocument(null, false);}
 			});
 			$("#open-dialog").dialog("open");
 		},
