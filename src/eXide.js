@@ -275,7 +275,7 @@ eXide.app = (function(util) {
 			$("#open-dialog").dialog("option", "title", "Open Document");
 			$("#open-dialog").dialog("option", "buttons", { 
 			    "cancel": function() { $(this).dialog("close"); editor.focus(); },
-			    "open": function(){ app.openSelectedDocument(null, false);}
+			    "open": function(){ app.openSelectedDocument(null, true);}
 			});
 			$("#open-dialog").dialog("open");
 		},
