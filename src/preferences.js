@@ -33,8 +33,6 @@ eXide.util.Preferences = (function () {
 		showHScroll: false,
         indent: -1,
         indentSize: 4,
-        indentOnLoad: true,
-        expandXIncludesOnLoad: false,
         softWrap: -1,
         emmet: false
 	};
@@ -76,8 +74,6 @@ eXide.util.Preferences = (function () {
         $("select[name=\"theme\"]", form).val(this.preferences.theme);
 		$("select[name=\"font-size\"]", form).val(this.preferences.fontSize);
         $("select[name=\"font\"]", form).val(this.preferences.font);
-		$("input[name=\"indent-on-load\"]", form).attr("checked", this.preferences.indentOnLoad);
-		$("input[name=\"expand-xincludes-on-load\"]", form).attr("checked", this.preferences.expandXIncludesOnLoad);
 		$("input[name=\"show-invisibles\"]", form).attr("checked", this.preferences.showInvisibles);
 		$("input[name=\"print-margin\"]", form).attr("checked", this.preferences.showPrintMargin);
 		$("input[name=\"emmet\"]", form).attr("checked", this.preferences.emmet);
@@ -106,8 +102,6 @@ eXide.util.Preferences = (function () {
         this.preferences.theme = $("select[name=\"theme\"]", form).val();
 		this.preferences.fontSize = parseInt($("select[name=\"font-size\"]", form).val());
         this.preferences.font = $("select[name=\"font\"]", form).val();
-        this.preferences.indentOnLoad = $("select[name=\"indent-on-load\"]", form).val().is(":checked");
-        this.preferences.expandXIncludesOnLoad = $("select[name=\"expand-xincludes-on-load\"]", form).val().is(":checked");
 		this.preferences.showInvisibles = $("input[name=\"show-invisibles\"]", form).is(":checked");
 		this.preferences.showPrintMargin = $("input[name=\"print-margin\"]", form).is(":checked");
 		this.preferences.emmet = $("input[name=\"emmet\"]", form).is(":checked");

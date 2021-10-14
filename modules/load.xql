@@ -20,6 +20,8 @@ xquery version "3.0";
 
 import module namespace config="http://exist-db.org/xquery/apps/config" at "config.xqm";
 
+declare option exist:serialize "indent=yes expand-xincludes=no";
+
 declare function local:get-run-path($path) {
     let $appRoot := repo:get-root()
     return
@@ -35,8 +37,6 @@ declare function local:get-run-path($path) {
 
 let $path := request:get-parameter("path", ())
 let $download := request:get-parameter("download", ())
-let $indent := request:get-parameter("indent", true()) cast as xs:boolean
-let $expand-xincludes := request:get-parameter("expand-xincludes", false()) cast as xs:boolean
 let $mime := xmldb:get-mime-type($path)
 let $isBinary := util:is-binary-doc($path)
 (: Disable betterFORM filter :)
@@ -55,19 +55,11 @@ return
             return
                 response:stream-binary($data, $mime, ())
         else
-            if (doc-available($path)) then
-                (
-                    (: workaround until https://github.com/eXist-db/exist/issues/2394 is resolved :)
-                    util:declare-option(
-                        "exist:serialize", 
-                        "indent=" 
-                            || (if ($indent) then "yes" else "no")
-                            || " expand-xincludes=" 
-                            || (if ($expand-xincludes) then "yes" else "no")
-                    ),
-                    doc($path)
-                )
-            else
-                response:set-status-code(404)
+            let $doc := doc($path)
+            return
+                if ($doc) then
+                    $doc
+                else
+                    response:set-status-code(404)
     else
         response:set-status-code(404)

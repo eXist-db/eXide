@@ -291,8 +291,6 @@ eXide.app = (function(util) {
 
 		$doOpenDocument: function(resource, callback, reload) {
 			resource.path = util.normalizePath(resource.path);
-            var indentOnLoad = $("#indent-on-load").is(":checked");
-            var expandXIncludesOnLoad = $("#expand-xincludes-on-load").is(":checked");
             var doc = editor.getDocument(resource.path);
             if (doc && !reload) {
                 editor.switchTo(doc);
@@ -302,9 +300,8 @@ eXide.app = (function(util) {
                 return true;
             }
 			$.ajax({
-				url: "modules/load.xql",
+				url: "modules/load.xql?path=" + resource.path,
 				dataType: 'text',
-				data: { "path": resource.path, "indent": indentOnLoad, "expand-xincludes": expandXIncludesOnLoad },
 				success: function (data, status, xhr) {
                     if (reload) {
                         editor.reload(data);
@@ -449,14 +446,12 @@ eXide.app = (function(util) {
         },
         
 		download: function() {
-            var indentOnLoad = $("#indent-on-load").is(":checked");
-            var expandXIncludesOnLoad = $("#expand-xincludes-on-load").is(":checked");
 			var doc = editor.getActiveDocument();
 			if (doc.getPath().match("^__new__") || !doc.isSaved()) {
 				util.error("There are unsaved changes in the document. Please save it first.");
 				return;
 			}
-			window.location.href = "modules/load.xql?download=true&path=" + encodeURIComponent(doc.getPath()) + "&indent=" + indentOnLoad + "&expand-xincludes=" + expandXIncludesOnLoad;
+			window.location.href = "modules/load.xql?download=true&path=" + encodeURIComponent(doc.getPath());
 		},
         
 		runQuery: function(path, livePreview) {
