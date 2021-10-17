@@ -12,6 +12,15 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="3.1.1">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: Scrollbar missing in Directory &amp; Outline sidebar pane - <a href="https://github.com/eXist-db/eXide/issues/317">#317</a></li>
+                <li>Fixed: Open button inoperative in DB Manager dialog - <a href="https://github.com/eXist-db/eXide/issues/322">#322</a></li>
+                <li>Fixed: Scrollbar missing in output area for large outputs - <a href="https://github.com/eXist-db/eXide/issues/325">#325</a></li>
+                <li>Fixed: Long lines in output area not wrapped - <a href="https://github.com/eXist-db/eXide/issues/326">#326</a></li>
+                <li>Reverted serialization options from 3.1.0 pending solution to <a href="https://github.com/eXist-db/eXide/issues/334">#334</a>.</li>
+            </ul>
+        </change>
         <change version="3.1.0">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Feature: Added Preference options that govern indentation and XInclude expansion when opening and downloading XML documents from database, and expanded documentation to cover commonly used features of eXide, such as XQSuite and EXPath Package support and query result controls - <a href="https://github.com/eXist-db/eXide/pull/328">#328</a>.</li>
