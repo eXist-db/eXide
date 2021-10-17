@@ -641,8 +641,8 @@ let $collection :=
         repo:get-root() || $target
 let $info := request:get-parameter("info", ())
 let $download := request:get-parameter("download", ())
-let $expand-xincludes := request:get-parameter("expand-xincludes", ()) cast as xs:boolean
-let $indent := request:get-parameter("indent", ()) cast as xs:boolean
+let $expand-xincludes := request:get-parameter("expand-xincludes", "false") cast as xs:boolean
+let $indent := request:get-parameter("indent", "false") cast as xs:boolean
 let $expathConf := if ($collection) then xmldb:xcollection($collection)/expath:package else ()
 let $repoConf := if ($collection) then xmldb:xcollection($collection)/repo:meta else ()
 let $abbrev := request:get-parameter("abbrev", ())
