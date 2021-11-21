@@ -167,13 +167,14 @@ eXide.util.Preferences = (function () {
     Constr.prototype.read = function() {
         var sameVersion = false;
         if (localStorage["eXide.preferences"]) {
-            this.preferences = JSON.parse(localStorage.getItem("eXide.preferences"));
-            sameVersion = (this.preferences.version === eXide.app.version());
+            const loaded = JSON.parse(localStorage.getItem("eXide.preferences"));
+            this.preferences = Object.assign({}, defaultPreferences, loaded);
         }
 
         this.preferences.version = eXide.app.version();
         
 		this.applyPreferences();
+		this.updateForm();
 		return sameVersion;
     };
     
