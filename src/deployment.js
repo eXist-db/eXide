@@ -212,7 +212,10 @@ eXide.edit.PackageEditor = (function () {
     eXide.util.oop.inherit(Constr, eXide.events.Sender);
 
     Constr.prototype.download = function (collection) {
-        window.location.href = "modules/deployment.xql?download=true&collection=" + encodeURIComponent(collection);
+        var indentOnDownloadPackage = $("#indent-on-download-package").is(":checked");
+        var expandXIncludesOnDownloadPackage = $("#expand-xincludes-on-download-package").is(":checked");
+        var omitXMLDeclatarionOnDownloadPackage = $("#omit-xml-decl-on-download-package").is(":checked");
+        window.location.href = "modules/deployment.xql?download=true&collection=" + encodeURIComponent(collection) + "&indent=" + indentOnDownloadPackage + "&expand-xincludes=" + expandXIncludesOnDownloadPackage + "&omit-xml-decl=" + omitXMLDeclatarionOnDownloadPackage;
     };
     
 	/**

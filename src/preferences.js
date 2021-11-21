@@ -33,6 +33,15 @@ eXide.util.Preferences = (function () {
 		showHScroll: false,
         indent: -1,
         indentSize: 4,
+        indentOnOpen: true,
+        indentOnDownload: true,
+        indentOnDownloadPackage: false,
+        expandXIncludesOnOpen: false,
+        expandXIncludesOnDownload: false,
+        expandXIncludesOnDownloadPackage: false,
+        omitXMLDeclarationOnOpen: true,
+        omitXMLDeclarationOnDownload: true,
+        omitXMLDeclarationOnDownloadPackage: true,
         softWrap: -1,
         emmet: false
 	};
@@ -74,6 +83,15 @@ eXide.util.Preferences = (function () {
         $("select[name=\"theme\"]", form).val(this.preferences.theme);
 		$("select[name=\"font-size\"]", form).val(this.preferences.fontSize);
         $("select[name=\"font\"]", form).val(this.preferences.font);
+		$("input[name=\"indent-on-open\"]", form).attr("checked", this.preferences.indentOnOpen);
+		$("input[name=\"indent-on-download\"]", form).attr("checked", this.preferences.indentOnDownload);
+		$("input[name=\"indent-on-download-package\"]", form).attr("checked", this.preferences.indentOnDownloadPackage);
+		$("input[name=\"expand-xincludes-on-open\"]", form).attr("checked", this.preferences.expandXIncludesOnOpen);
+		$("input[name=\"expand-xincludes-on-download\"]", form).attr("checked", this.preferences.expandXIncludesOnDownload);
+		$("input[name=\"expand-xincludes-on-download-package\"]", form).attr("checked", this.preferences.expandXIncludesOnDownloadPackage);
+		$("input[name=\"omit-xml-decl-on-open\"]", form).attr("checked", this.preferences.omitXMLDeclarationOnOpen);
+		$("input[name=\"omit-xml-decl-on-download\"]", form).attr("checked", this.preferences.omitXMLDeclarationOnDownload);
+		$("input[name=\"omit-xml-decl-on-download-package\"]", form).attr("checked", this.preferences.omitXMLDeclarationOnDownloadPackage);
 		$("input[name=\"show-invisibles\"]", form).attr("checked", this.preferences.showInvisibles);
 		$("input[name=\"print-margin\"]", form).attr("checked", this.preferences.showPrintMargin);
 		$("input[name=\"emmet\"]", form).attr("checked", this.preferences.emmet);
@@ -105,6 +123,15 @@ eXide.util.Preferences = (function () {
 		this.preferences.showInvisibles = $("input[name=\"show-invisibles\"]", form).is(":checked");
 		this.preferences.showPrintMargin = $("input[name=\"print-margin\"]", form).is(":checked");
 		this.preferences.emmet = $("input[name=\"emmet\"]", form).is(":checked");
+        this.preferences.indentOnOpen = $("input[name=\"indent-on-open\"]", form).is(":checked");
+        this.preferences.indentOnDownload = $("input[name=\"indent-on-download\"]", form).is(":checked");
+        this.preferences.indentOnDownloadPackage = $("input[name=\"indent-on-download-package\"]", form).is(":checked");
+        this.preferences.expandXIncludesOnOpen = $("input[name=\"expand-xincludes-on-open\"]", form).is(":checked");
+        this.preferences.expandXIncludesOnDownload = $("input[name=\"expand-xincludes-on-download\"]", form).is(":checked");
+        this.preferences.expandXIncludesOnDownloadPackage = $("input[name=\"expand-xincludes-on-download-package\"]", form).is(":checked");
+        this.preferences.omitXMLDeclarationOnOpen = $("input[name=\"omit-xml-decl-on-open\"]", form).is(":checked");
+        this.preferences.omitXMLDeclarationOnDownload = $("input[name=\"omit-xml-decl-on-download\"]", form).is(":checked");
+        this.preferences.omitXMLDeclarationOnDownloadPackage = $("input[name=\"omit-xml-decl-on-download-package\"]", form).is(":checked");
 
         var indent = $("select[name=\"indent\"]", form).val();
         var indentSize = parseInt($("select[name=\"indent-size\"]", form).val(), 10);
