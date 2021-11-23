@@ -14,7 +14,7 @@
     <changelog>
         <change version="3.2.0">
             <ul xmlns="http://www.w3.org/1999/xhtml">
-                <li>Featire: Expanded serialization preferences (in Edit > Preferences) with separate settings governing serialization when opening documents in the editor, downloading documents to disk, and downloading EXPath applications; these settings now control 3 serialization parameters indent, XInclude expansion, and XML declarations - <a href="https://github.com/eXist-db/eXide/pull/335">#335</a></li>
+                <li>Feature: Restored v3.1.0 serialization preferences (accessed via Edit > Preferences) and expanded them with separate settings governing serialization when opening documents in the editor, downloading documents to disk, and downloading EXPath applications; these settings now control 3 serialization parameters: indent, XInclude expansion, and XML declarations - <a href="https://github.com/eXist-db/eXide/pull/335">#335</a></li>
                 <li>Fixed: Preferences added in new versions of eXide were not picked up when upgrading from old versions - <a href="https://github.com/eXist-db/eXide/issues/334">#334</a></li>
                 <li>Fixed: Bug caused by lingering references to the shared-resources package after it was removed from the list of declared dependencies - <a href="https://github.com/eXist-db/eXide/issues/333">#333</a></li>
                 <li>Fixed: Long lines in output area not wrapped - <a href="https://github.com/eXist-db/eXide/issues/326">#326</a></li>
