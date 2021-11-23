@@ -454,7 +454,8 @@
                           to the selected collection. Maximum file size is 100MB.</p>
                                 <form class="file_upload" action="modules/upload.xql" method="POST" enctype="multipart/form-data">
                                     <div class="options">
-                                        <input type="checkbox" name="deploy"/> Auto deploy uploaded .xar packages
+                                        <input type="checkbox" name="deploy" id="auto-deploy"/> 
+                                        <label for="auto-deploy">Auto deploy uploaded .xar packages</label>
                                     </div>
                                     <div class="file_upload_drop">Drop files here ...</div>
                                     <div class="file_upload_body">
@@ -581,6 +582,7 @@
                 <div id="preferences-dialog">
                     <form>
                         <fieldset>
+                            <legend>Editor</legend>
                             <ol>
                                 <li>
                                     <select id="theme" name="theme">
@@ -646,7 +648,7 @@
                                     <label for="font-size">Font Size:</label>
                                 </li>
                                 <li>
-                                    <input type="checkbox" name="print-margin" checked="checked"/>
+                                    <input type="checkbox" name="print-margin"/>
                                     <label for="print-margin">Show Print Margin:</label>
                                 </li>
                                 <li>
@@ -662,7 +664,7 @@
                                         <option value="4">4 spaces</option>
                                         <option value="8">8 spaces</option>
                                     </select>
-                                    <label for="indent-size">indent size:</label>
+                                    <label for="indent-size">Indent size:</label>
                                 </li>
                                 <li>
                                     <select name="soft-wrap">
@@ -680,6 +682,58 @@
                                 <li>
                                     <input type="checkbox" name="emmet"/>
                                     <label for="emmet">Enable emmet in HTML mode:</label>
+                                </li>
+                            </ol>
+                        </fieldset>
+                        <fieldset>
+                            <legend>Serialization</legend>
+                            <p>Control common serialization parameters when opening or downloading
+                                resources and EXPath packages: (a) whether indentation is applied to
+                                XML documents, (b) whether XInclude elements are expanded, and (c)
+                                whether the XML declaration should be omitted.</p>
+                            <h3>Opening files (via File > Open)</h3>
+                            <ol>
+                                <li>
+                                    <label for="indent-on-open">Indent:</label>
+                                    <input type="checkbox" name="indent-on-open" id="indent-on-open"/>
+                                </li>
+                                <li>
+                                    <label for="expand-xincludes-on-open">Expand XIncludes:</label>
+                                    <input type="checkbox" name="expand-xincludes-on-open" id="expand-xincludes-on-open"/>
+                                </li>
+                                <li>
+                                    <label for="omit-xml-decl-on-open">Omit XML Declaration:</label>
+                                    <input type="checkbox" name="omit-xml-decl-on-open" id="omit-xml-decl-on-open"/>
+                                </li>
+                            </ol>
+                            <h3>Downloading files (via File > Download)</h3>
+                            <ol>
+                                <li>
+                                    <label for="indent-on-download">Indent:</label>
+                                    <input type="checkbox" name="indent-on-download" id="indent-on-download"/>
+                                </li>
+                                <li>
+                                    <label for="expand-xincludes-on-download">Expand XIncludes:</label>
+                                    <input type="checkbox" name="expand-xincludes-on-download" id="expand-xincludes-on-download"/>
+                                </li>
+                                <li>
+                                    <label for="omit-xml-decl-on-download">Omit XML Declaration:</label>
+                                    <input type="checkbox" name="omit-xml-decl-on-download" id="omit-xml-decl-on-download"/>
+                                </li>
+                            </ol>
+                            <h3>Downloading EXPath packages (via Application > Download App)</h3>
+                            <ol>
+                                <li>
+                                    <label for="indent-on-download-package">Indent:</label>
+                                    <input type="checkbox" name="indent-on-download-package" id="indent-on-download-package"/>
+                                </li>
+                                <li>
+                                    <label for="expand-xincludes-on-download-package">Expand XIncludes:</label>
+                                    <input type="checkbox" name="expand-xincludes-on-download-package" id="expand-xincludes-on-download-package"/>
+                                </li>
+                                <li>
+                                    <label for="omit-xml-decl-on-download-package">Omit XML Declaration:</label>
+                                    <input type="checkbox" name="omit-xml-decl-on-download-package" id="omit-xml-decl-on-download-package"/>
                                 </li>
                             </ol>
                         </fieldset>

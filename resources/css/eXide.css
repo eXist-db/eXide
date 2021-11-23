@@ -1156,6 +1156,14 @@ fieldset legend {
     margin-bottom: 8px;
 }
 
+#preferences-dialog h3 {
+    padding-left: 2em;
+}
+
+#preferences-dialog p {
+    padding-left: 1em;
+}
+
 #dialog-deploy legend {
     background: url("../images/bubble.gif") top right no-repeat;
 }
