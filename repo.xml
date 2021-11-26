@@ -12,6 +12,11 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="3.2.1">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Hotfix - revert unintended change to default font for editor - <a href="https://github.com/eXist-db/eXide/issues/391">#391</a></li>
+            </ul>
+        </change>
         <change version="3.2.0">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Feature: Restored v3.1.0 serialization preferences (accessed via Edit > Preferences) and expanded them with separate settings governing serialization when opening documents in the editor, downloading documents to disk, and downloading EXPath applications; these settings now control 3 serialization parameters: indent, XInclude expansion, and XML declarations - <a href="https://github.com/eXist-db/eXide/pull/335">#335</a></li>
