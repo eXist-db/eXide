@@ -6,6 +6,7 @@ resources/scripts/xqlint.min.js
 resources/scripts/ace
 resources/scripts/eXide.min.*
 resources/scripts/jquery/jquery.plugins.min.*
+resources/css/ag-grid-community/
 
 tools/r.js
 
