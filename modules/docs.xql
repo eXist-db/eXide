@@ -52,7 +52,7 @@ declare function local:get-matching-functions($q as xs:string) {
         if ($supplied-module-namespace-prefix eq 'fn') then
             inspect:inspect-module-uri(xs:anyURI('http://www.w3.org/2005/xpath-functions'))
         else
-            let $all-modules := (util:registered-modules(), util:mapped-modules()) ! inspect:inspect-module-uri(xs:anyURI(.))
+            let $all-modules := (util:registered-modules(), util:mapped-modules()) ! (try { inspect:inspect-module-uri(xs:anyURI(.)) } catch * { () })
             return
                 if ($supplied-module-namespace-prefix) then
                     $all-modules[starts-with(@prefix, $supplied-module-namespace-prefix)]
