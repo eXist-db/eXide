@@ -65,7 +65,8 @@ snippet json
 	declare option output:media-type "application/json";
 	
 snippet html5
-	declare option output:method "html5";
+	declare option output:method "html";
+	declare option output:html-version "5.0";
 	declare option output:media-type "text/html";
 
 snippet html
@@ -107,7 +108,7 @@ snippet case
 	case element(${1:name}) return
 
 snippet xq
-	xquery version="3.0";
+	xquery version "3.1";
 	
 snippet tei
 	declare namespace tei="http://www.tei-c.org/ns/1.0";
