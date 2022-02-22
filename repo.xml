@@ -12,6 +12,12 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="3.3.1">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: Snippets for XQuery 3.1 - <a href="https://github.com/eXist-db/eXide/pull/420">#420</a></li>
+                <li>Fixed: Ensure errors in module inspection don’t halt docs lookup - <a href="https://github.com/eXist-db/eXide/pull/433">#420</a></li>
+            </ul>
+        </change>
         <change version="3.3.0">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Include ag-grid in build to allow offline use of eXide - <a href="https://github.com/eXist-db/eXide/pull/411">#411</a></li>
