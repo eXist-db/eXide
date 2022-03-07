@@ -29,7 +29,7 @@
 	},
 	"homepage": "https://github.com/eXist-db/eXide#readme",
 	"devDependencies": {
-		"chalk": "^4.1.2",
+		"chalk": "^5.0.0",
 		"command-line-args": "^5.2.1",
 		"cypress": "^9.5.1",
 		"esbuild": "^0.14.25",
