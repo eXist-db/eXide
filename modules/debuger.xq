@@ -18,7 +18,7 @@
  :)
 xquery version "3.0";
 
-import module namespace sandbox="http://exist-db.org/xquery/sandbox" at "session.xql";
+import module namespace sandbox="http://exist-db.org/xquery/sandbox" at "session.xq";
 
 declare namespace json="http://json.org/";
 declare namespace dbg="urn:debugger_protocol_v1";

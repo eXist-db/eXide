@@ -453,7 +453,7 @@ eXide.edit.Editor = (function () {
         }
         var self = this;
         $.ajax({
-    		url: "modules/get-template.xql",
+    		url: "modules/get-template.xq",
 			type: "POST",
 			data: { template: template },
 			dataType: "text",

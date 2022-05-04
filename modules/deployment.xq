@@ -18,9 +18,9 @@
  :)
 xquery version "3.1";
 
-import module namespace apputil="http://exist-db.org/apps/eXide/apputil" at "util.xql";
-import module namespace tmpl="http://exist-db.org/xquery/template" at "tmpl.xql";
-import module namespace dbutil="http://exist-db.org/xquery/dbutil" at "dbutils.xql";
+import module namespace apputil="http://exist-db.org/apps/eXide/apputil" at "util.xqm";
+import module namespace tmpl="http://exist-db.org/xquery/template" at "tmpl.xqm";
+import module namespace dbutil="http://exist-db.org/xquery/dbutil" at "dbutils.xqm";
 
 (:~
     Edit the expath and repo app descriptors.

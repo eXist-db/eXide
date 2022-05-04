@@ -96,10 +96,10 @@ declare function local:store-in-session($results as item()*) as element(result) 
     the results into the HTTP session for subsequent retrieval via individual 
     requests to this endpoint with a "num" parameter.
     
-    Error reporting must take into account how controller.xql handles 
+    Error reporting must take into account how controller.xq handles 
     errors thrown by XQueryServlet. From https://exist-db.org/exist/apps/doc/urlrewrite#xq-servlet:
     
-    > Since controller.xql sets xquery.report-errors to "yes", an error 
+    > Since controller.xq sets xquery.report-errors to "yes", an error 
     > in the XQuery will not result in an HTTP error. Instead, the string 
     > message of the error is enclosed in an element <error> which is 
     > then written to the response stream. The HTTP status is not changed.

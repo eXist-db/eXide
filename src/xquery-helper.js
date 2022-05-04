@@ -116,7 +116,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		var $this = this;
 		$.ajax({
 			type: "PUT",
-			url: "modules/compile.xql",
+			url: "modules/compile.xq",
 			data: text,
 			contentType: "application/octet-stream",
 			headers: {
@@ -155,7 +155,7 @@ eXide.edit.XQueryModeHelper = (function () {
         
 		$.ajax({
 			type: "PUT",
-			url: "modules/compile.xql",
+			url: "modules/compile.xq",
 			data: code,
 			dataType: "json",
 			headers: {
@@ -455,7 +455,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		var $this = this;
 		// Call docs.xql to retrieve declared functions and variables
 		$.ajax({
-			url: "modules/docs.xql",
+			url: "modules/docs.xq",
 			dataType: "text",
 			type: "POST",
 			data: { prefix: prefix},
@@ -511,7 +511,7 @@ eXide.edit.XQueryModeHelper = (function () {
     
     Constr.prototype.moduleLookup = function(doc, prefix, wordrange, complete) {
         var self = this;
-        $.getJSON("modules/find.xql", { prefix: prefix }, function (data) {
+        $.getJSON("modules/find.xq", { prefix: prefix }, function (data) {
             if (data) {
                 var popupItems = [];
                 for (var i = 0; i < data.length; i++) {
@@ -1057,7 +1057,7 @@ eXide.edit.XQueryModeHelper = (function () {
         if (info.isModule() && info.hasTests()) {
             $.ajax({
                 type: "POST",
-                url: "modules/run-test.xql",
+                url: "modules/run-test.xq",
                 data: { source: doc.getPath() },
                 dataType: "html",
                 success: function (html) {

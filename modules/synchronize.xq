@@ -19,7 +19,7 @@
 xquery version "1.0";
 
 import module namespace file="http://exist-db.org/xquery/file" at "java:org.exist.xquery.modules.file.FileModule";
-import module namespace apputil="http://exist-db.org/apps/eXide/apputil" at "util.xql";
+import module namespace apputil="http://exist-db.org/apps/eXide/apputil" at "util.xqm";
  
 declare function local:format-output($output) {
     if ($output//file:update) then
