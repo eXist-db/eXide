@@ -398,7 +398,7 @@ eXide.app = (function(util) {
     					"Save": function() {
                             // force saving XQuery files
                             if(editor.getActiveDocument().isXQuery() && !/([^\s\\])*\.xq*/.test(dbBrowser.getSelection().name)) {
-                                util.Dialog.warning("Failed to Save Document", "you are saving XQuery file without .xq*");
+                                util.Dialog.warning("Failed to Save Document", "you are saving XQuery file without .xq* format");
                                 return;
                             }
                             
@@ -438,7 +438,7 @@ eXide.app = (function(util) {
     				"Save": function() {
                          // force saving XQuery files
                          if(editor.getActiveDocument().isXQuery() && !/([^\s\\])*\.xq*/.test(dbBrowser.getSelection().name)) {
-                            util.Dialog.warning("Failed to Save Document", "you are saving XQuery file without .xq*");
+                            util.Dialog.warning("Failed to Save Document", "you are saving XQuery file without .xq* format");
                             return;
                         }
                         
