@@ -396,6 +396,12 @@ eXide.app = (function(util) {
                             $(this).dialog("close");
         				},
     					"Save": function() {
+                            // force saving XQuery files
+                            if(editor.getActiveDocument().isXQuery() && !/([^\s\\])*\.xq*/.test(dbBrowser.getSelection().name)) {
+                                util.Dialog.warning("Failed to Save Document", "you are saving XQuery file without .xq*");
+                                return;
+                            }
+                            
     						editor.saveDocument(dbBrowser.getSelection(), function () {
     							$("#open-dialog").dialog("close");
                                 deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
@@ -430,6 +436,12 @@ eXide.app = (function(util) {
                         $(this).dialog("close");
     				},
     				"Save": function() {
+                         // force saving XQuery files
+                         if(editor.getActiveDocument().isXQuery() && !/([^\s\\])*\.xq*/.test(dbBrowser.getSelection().name)) {
+                            util.Dialog.warning("Failed to Save Document", "you are saving XQuery file without .xq*");
+                            return;
+                        }
+                        
     					editor.saveDocument(dbBrowser.getSelection(), function () {
     						$("#open-dialog").dialog("close");
                             deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
