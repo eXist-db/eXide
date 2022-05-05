@@ -398,7 +398,7 @@ eXide.app = (function(util) {
     					"Save": function() {
                             // force saving XQuery files
                             if(editor.getActiveDocument().isXQuery() && !/([^\s\\])*\.xq.?/.test(dbBrowser.getSelection().name)) {
-                                util.Dialog.warning("Failed to Save Document", "you are saving XQuery file without .xq* format ,if you are working on xml file consider copying and pasting the file into a new window using the `New` button instead of the `New XQuery`");
+                                util.Dialog.warning("Failed to Save Document", "Your current file is an XQuery, but you are trying to save it with a non XQuery File Extension  (e.g. not .xq). If you intended this to be an XML file, or an other file type, then please copy and paste the content of your file into a New file that you create using the “New” button.");
                                 return;
                             }
                             
@@ -438,7 +438,7 @@ eXide.app = (function(util) {
     				"Save": function() {
                          // force saving XQuery files
                          if(editor.getActiveDocument().isXQuery() && !/([^\s\\])*\.xq.?/.test(dbBrowser.getSelection().name)) {
-                            util.Dialog.warning("Failed to Save Document", "you are saving XQuery file without .xq* format ,if you are working on xml file consider copying and pasting the file into a new window using the `New` button instead of the `New XQuery`");
+                            util.Dialog.warning("Failed to Save Document", "Your current file is an XQuery, but you are trying to save it with a non XQuery File Extension  (e.g. not .xq). If you intended this to be an XML file, or an other file type, then please copy and paste the content of your file into a New file that you create using the “New” button.");
                             return;
                         }
                         
