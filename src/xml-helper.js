@@ -95,7 +95,7 @@ eXide.edit.XMLModeHelper = (function () {
 		var $this = this;
 		$.ajax({
 			type: "PUT",
-			url: "modules/validate-xml.xql",
+			url: "modules/validate-xml.xq",
 			data: code,
 			contentType: "application/octet-stream",
 			dataType: "json",
@@ -138,7 +138,7 @@ eXide.edit.XMLModeHelper = (function () {
         $.log("Getting suggestions for %s", text);
         $.ajax({
     		type: "POST",
-			url: "modules/validate-xml.xql",
+			url: "modules/validate-xml.xq",
 			data: { 
                 xml: text,
                 row: row,
@@ -164,7 +164,7 @@ eXide.edit.XMLModeHelper = (function () {
                     eXide.util.message("Apply configuration and reindex...");
                     $.ajax({
                         type: "POST",
-                        url: "modules/apply-config.xql",
+                        url: "modules/apply-config.xq",
                         data: {
                             collection: doc.getBasePath(),
                             config: doc.getName()

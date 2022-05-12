@@ -120,7 +120,7 @@ else if (starts-with($exist:path, "/store/")) then
     let $resource := substring-after($exist:path, "/store")
     return
         <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-            <forward url="{$exist:controller}/modules/store.xql">
+            <forward url="{$exist:controller}/modules/store.xq">
                 <add-parameter name="path" value="{$resource}"/>
                 {$login("org.exist.login", (), false())}
             </forward>
@@ -130,7 +130,7 @@ else if (starts-with($exist:path, "/check/")) then
     let $resource := substring-after($exist:path, "/validate")
     return
         <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-            <forward url="{$exist:controller}/modules/validate-xml.xql">
+            <forward url="{$exist:controller}/modules/validate-xml.xq">
                 <add-parameter name="validate" value="no"/>
                 {$login("org.exist.login", (), false())}
             </forward>
@@ -140,7 +140,7 @@ else if ($exist:resource = "index.html") then
     if (local:user-allowed()) then
         <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
             <view>
-                <forward url="modules/view.xql">
+                <forward url="modules/view.xq">
                     <set-header name="Cache-Control" value="max-age=3600"/>
                 </forward>
             </view>
@@ -187,7 +187,7 @@ else if ($exist:resource eq 'execute') then
                         <view>
                             <!-- Post process the result: store it into the HTTP session
                                and return the number of hits only. -->
-                            <forward url="modules/session.xql">
+                            <forward url="modules/session.xq">
                                <clear-attribute name="xquery.source"/>
                                <clear-attribute name="xquery.attribute"/>
                                <set-attribute name="elapsed"
@@ -217,7 +217,7 @@ else if ($exist:resource eq 'execute') then
  : item in the result set :)
 else if (starts-with($exist:path, '/results/')) then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward url="../modules/session.xql">
+        <forward url="../modules/session.xq">
             {$login("org.exist.login", (), false())}
             <set-header name="Cache-Control" value="no-cache"/>
             <add-parameter name="num" value="{$exist:resource}"/>
@@ -230,7 +230,7 @@ else if ($exist:resource eq "outline") then
 	return
         <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
 	        <!-- Query is executed by XQueryServlet -->
-            <forward url="modules/outline.xql">
+            <forward url="modules/outline.xq">
                 {$login("org.exist.login", (), false())}
                 <set-header name="Cache-Control" value="no-cache"/>
 	            <set-attribute name="xquery.module-load-path" value="{$base}"/>
@@ -240,13 +240,13 @@ else if ($exist:resource eq "outline") then
 else if ($exist:resource eq "debug") then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <!-- Query is executed by XQueryServlet -->
-        <forward url="modules/debuger.xql">
+        <forward url="modules/debuger.xq">
             {$login("org.exist.login", (), false())}
             <set-header name="Cache-Control" value="no-cache"/>
         </forward>
     </dispatch>
 
-else if (ends-with($exist:path, ".xql")) then
+else if (ends-with($exist:path, ".xq")) then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         {$login("org.exist.login", (), false())}
         <set-header name="Cache-Control" value="no-cache"/>

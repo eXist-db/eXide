@@ -8,7 +8,7 @@
     <copyright>true</copyright>
     <type>application</type>
     <target>eXide</target>
-    <prepare>pre-install.xql</prepare>
+    <prepare>pre-install.xq</prepare>
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>

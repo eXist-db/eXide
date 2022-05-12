@@ -57,7 +57,7 @@ eXide.XQueryDebuger = (function () {
         params.resource = this.existURL + this.doc.getPath();
 		$.ajax({
 			type: "POST",
-			url: "modules/debuger.xql",
+			url: "modules/debuger.xq",
 			data: params,
 			dataType: "json",
 			success: function (data) {

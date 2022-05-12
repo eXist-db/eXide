@@ -35,7 +35,7 @@ eXide.edit.Projects = (function(oop) {
     
     Constr.prototype.getProject = function (collection, callback) {
         var $this = this;
-        $.getJSON("modules/deployment.xql", { info: collection }, function (data) {
+        $.getJSON("modules/deployment.xq", { info: collection }, function (data) {
             if (!data) {
                 if (typeof callback == "function") {
                     callback(null);
@@ -144,7 +144,7 @@ eXide.edit.PackageEditor = (function () {
                     
                     var params = $this.syncDialog.find("form").serialize();
 					$("#synchronize-report").text("Synchronization in progress ...");
-					$("#synchronize-report").load("modules/synchronize.xql", params);
+					$("#synchronize-report").load("modules/synchronize.xq", params);
 				},
 				"Close": function () { $(this).dialog("close"); }
 			}
@@ -195,7 +195,7 @@ eXide.edit.PackageEditor = (function () {
                     
                     $(statusAnchor).text("Synchronization in progress ...");
 					$(statusAnchor).load(
-                        "modules/synchronize.xql", 
+                        "modules/synchronize.xq", 
                         { collection : $this.currentProject.root, start :start},
                         function(responseText, status){if(status == 'success') {eXide.app.git.command($this.currentProject, 'commit', option);}}
                         );
@@ -215,7 +215,7 @@ eXide.edit.PackageEditor = (function () {
         var indentOnDownloadPackage = $("#indent-on-download-package").is(":checked");
         var expandXIncludesOnDownloadPackage = $("#expand-xincludes-on-download-package").is(":checked");
         var omitXMLDeclatarionOnDownloadPackage = $("#omit-xml-decl-on-download-package").is(":checked");
-        window.location.href = "modules/deployment.xql?download=true&collection=" + encodeURIComponent(collection) + "&indent=" + indentOnDownloadPackage + "&expand-xincludes=" + expandXIncludesOnDownloadPackage + "&omit-xml-decl=" + omitXMLDeclatarionOnDownloadPackage;
+        window.location.href = "modules/deployment.xq?download=true&collection=" + encodeURIComponent(collection) + "&indent=" + indentOnDownloadPackage + "&expand-xincludes=" + expandXIncludesOnDownloadPackage + "&omit-xml-decl=" + omitXMLDeclatarionOnDownloadPackage;
     };
     
 	/**
@@ -258,7 +258,7 @@ eXide.edit.PackageEditor = (function () {
                  dir: project.dir
              };
              $.ajax({
-                url: "modules/synchronize.xql",
+                url: "modules/synchronize.xq",
                 type: "GET",
                 data: params,
                 success: function(data) {

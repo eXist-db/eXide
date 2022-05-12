@@ -1,7 +1,6 @@
 xquery version "3.0";
 
-import module namespace test="http://exist-db.org/xquery/xqsuite"
-at "resource:org/exist/xquery/lib/xqsuite/xqsuite.xql";
+import module namespace test="http://exist-db.org/xquery/xqsuite" at "resource:org/exist/xquery/lib/xqsuite/xqsuite.xql";
 
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
 

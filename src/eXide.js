@@ -303,7 +303,7 @@ eXide.app = (function(util) {
                 return true;
             }
 			$.ajax({
-				url: "modules/load.xql",
+				url: "modules/load.xq",
 				dataType: 'text',
                 data: { "path": resource.path, "indent": indentOnOpen, "expand-xincludes": expandXIncludesOnOpen, "omit-xml-decl": omitXMLDeclatarionOnOpen },
 				success: function (data, status, xhr) {
@@ -470,7 +470,7 @@ eXide.app = (function(util) {
 				util.error("There are unsaved changes in the document. Please save it first.");
 				return;
 			}
-            window.location.href = "modules/load.xql?download=true&path=" + encodeURIComponent(doc.getPath()) + "&indent=" + indentOnDownload + "&expand-xincludes=" + expandXIncludesOnDownload + "&omit-xml-decl=" + omitXMLDeclatarionOnDownload;
+            window.location.href = "modules/load.xq?download=true&path=" + encodeURIComponent(doc.getPath()) + "&indent=" + indentOnDownload + "&expand-xincludes=" + expandXIncludesOnDownload + "&omit-xml-decl=" + omitXMLDeclatarionOnDownload;
 		},
         
 		runQuery: function(path, livePreview) {
@@ -1007,7 +1007,7 @@ eXide.app = (function(util) {
         },
        
         git: function() {
-            var gitUrl ='modules/git.xql',
+            var gitUrl ="modules/git.xq",
                 gitError = function(xhr, status) {
                            util.error("Failed to apply configuration: " + xhr.responseText);
                        },
@@ -1091,7 +1091,7 @@ eXide.app = (function(util) {
                     iframe.contentWindow.document.write("<html><body><p>Searching ...</p></body></html>");
                     iframe.contentWindow.document.close();
                     
-                    iframe.src = "modules/search.xql?" + searchParams;
+                    iframe.src = "modules/search.xq?" + searchParams;
                 });
             });
         },
@@ -1259,7 +1259,7 @@ eXide.app = (function(util) {
                 dataType: "json",
                 open: function() {
                     $.ajax({
-                	    url: "modules/get-template.xql",
+                	    url: "modules/get-template.xq",
             			type: "POST",
             			success: function(data) {
                 		    templates = data;
