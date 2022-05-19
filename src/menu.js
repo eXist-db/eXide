@@ -113,6 +113,9 @@ eXide.util.Menubar = (function() {
             if ($this.editor) {
                 $this.editor.focus();
             }
+            if($('#login-dialog').is(':visible')) {
+                $("#login-dialog input:first").focus();
+            }
             $("ul li ul", $this.container).fadeOut(100);
             $("ul li>a", $this.container).removeClass("open");
         });
