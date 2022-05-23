@@ -428,6 +428,7 @@ eXide.app = (function(util) {
 
         saveDocumentAs: function() {
             app.requireLogin(function () {
+                dbBrowser.changeToCollection(editor.getActiveDocument().getBasePath());
                 dbBrowser.reload(["reload", "create"], "save");
     			$("#open-dialog").dialog("option", "title", "Save Document As ...");
     			$("#open-dialog").dialog("option", "buttons", { 
