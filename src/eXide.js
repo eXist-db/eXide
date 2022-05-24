@@ -389,6 +389,7 @@ eXide.app = (function(util) {
 		saveDocument: function() {
             app.requireLogin(function () {
                 if (editor.getActiveDocument().getPath().match('^__new__')) {
+                    dbBrowser.changeToCollection("/db");
         			dbBrowser.reload(["reload", "create"], "save");
     				$("#open-dialog").dialog("option", "title", "Save Document");
     				$("#open-dialog").dialog("option", "buttons", { 
@@ -428,7 +429,11 @@ eXide.app = (function(util) {
 
         saveDocumentAs: function() {
             app.requireLogin(function () {
-                dbBrowser.changeToCollection(editor.getActiveDocument().getBasePath());
+                if (editor.getActiveDocument().getPath().match('^__new__')) {
+                    dbBrowser.changeToCollection("/db");
+                }else {
+                    dbBrowser.changeToCollection(editor.getActiveDocument().getBasePath());
+                }
                 dbBrowser.reload(["reload", "create"], "save");
     			$("#open-dialog").dialog("option", "title", "Save Document As ...");
     			$("#open-dialog").dialog("option", "buttons", { 
