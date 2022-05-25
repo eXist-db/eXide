@@ -197,7 +197,7 @@ define("eXide/mode/behaviour/xquery", function(require, exports, module) {
                 }
             }
             if (text == ":") {
-                if (line.slice(cursor.column -1 ,cursor.column)) {
+                if (line.slice(cursor.column -1 ,cursor.column) === '(') {
                     return {
                         text: ":  :",
                         selection: [2, 2]
