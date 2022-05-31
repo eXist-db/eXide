@@ -226,7 +226,7 @@ define("eXide/mode/xquery_highlight_rules", function(require, exports, module) {
                 if (text == "\"") {
                     return {
                         text: "\"",
-                        selection: []
+                        selection: [1,1]
                     }
                 }
                 return false;
@@ -236,7 +236,7 @@ define("eXide/mode/xquery_highlight_rules", function(require, exports, module) {
                 if (text == "(") {
                     return {
                         text: "(",
-                        selection: []
+                        selection: [1,1]
                     }
                 }
                 return false;
@@ -246,7 +246,7 @@ define("eXide/mode/xquery_highlight_rules", function(require, exports, module) {
                 if (text == "{") {
                     return {
                         text: "{",
-                        selection: []
+                        selection: [1,1]
                     }
                 }
                 return false;
