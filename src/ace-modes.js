@@ -194,6 +194,11 @@ define("eXide/mode/behaviour/xquery", function(require, exports, module) {
                         text: '\n' + " : ",
                         selection: [1, 3, 1, 3]
                     }
+                }else if (line.match(/^\s:/) && line.match(/.*:\)/) && cursor.column < line.length) {
+                    return {
+                      text: "\n : ",
+                      selection: [1, 3, 1, 3]
+                    };
                 }
             }
             if (text == ":") {
