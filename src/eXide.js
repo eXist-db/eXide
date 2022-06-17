@@ -289,6 +289,15 @@ eXide.app = (function(util) {
 				$("#open-dialog").dialog("close");
 		},
 
+        saveSelectedDocument: function(doc, close) {
+			var resource = doc || dbBrowser.getSelection();
+			if (resource) {
+				app.download(resource.path);
+			}
+			if (close == undefined || close)
+				$("#open-dialog").dialog("close");
+		},
+
 		$doOpenDocument: function(resource, callback, reload) {
 			resource.path = util.normalizePath(resource.path);
             var indentOnOpen = $("#indent-on-open").is(":checked");
@@ -461,16 +470,17 @@ eXide.app = (function(util) {
             editor.exec(arguments);
         },
         
-		download: function() {
+        download: function(path) {
             var indentOnDownload = $("#indent-on-download").is(":checked");
             var expandXIncludesOnDownload = $("#expand-xincludes-on-download").is(":checked");
             var omitXMLDeclatarionOnDownload = $("#omit-xml-decl-on-download").is(":checked");
 			var doc = editor.getActiveDocument();
-			if (doc.getPath().match("^__new__") || !doc.isSaved()) {
+			if (!path && (doc.getPath().match("^__new__") || !doc.isSaved())) {
 				util.error("There are unsaved changes in the document. Please save it first.");
 				return;
 			}
-            window.location.href = "modules/load.xq?download=true&path=" + encodeURIComponent(doc.getPath()) + "&indent=" + indentOnDownload + "&expand-xincludes=" + expandXIncludesOnDownload + "&omit-xml-decl=" + omitXMLDeclatarionOnDownload;
+            var path = path || doc.getPath()
+            window.location.href = "modules/load.xql?download=true&path=" + encodeURIComponent(path) + "&indent=" + indentOnDownload + "&expand-xincludes=" + expandXIncludesOnDownload + "&omit-xml-decl=" + omitXMLDeclatarionOnDownload;
 		},
         
 		runQuery: function(path, livePreview) {

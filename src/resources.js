@@ -785,7 +785,7 @@ eXide.browse.Browser = (function () {
 		button = createButton(toolbar, "Download Selected", "download", 11, "download");
 		$(button).click(function (ev) {
 			ev.preventDefault();
-			alert("download")
+			eXide.app.saveSelectedDocument(null, false);
 		});
 
         this.btnCopy = createButton(toolbar, "Copy", "copy", 7, "copy");
