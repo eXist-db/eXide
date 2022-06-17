@@ -655,7 +655,7 @@ eXide.app = (function(util) {
 		
 		manage: function() {
 			app.requireLogin(function() {
-                dbBrowser.reload(["reload", "create", "upload", "properties", "open", "cut", "copy", "paste"], "manage");
+                dbBrowser.reload(["reload", "create", "upload", "properties", "open", "download", "cut", "copy", "paste"], "manage");
                 $("#open-dialog").dialog("option", "title", "DB Manager");
                 $("#open-dialog").dialog("option", "buttons", { 
                     "Close": function() { $(this).dialog("close"); }

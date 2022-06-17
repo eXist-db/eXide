@@ -782,6 +782,12 @@ eXide.browse.Browser = (function () {
 			eXide.app.openSelectedDocument(null, false);
 		});
 
+		button = createButton(toolbar, "Download Selected", "download", 11, "download");
+		$(button).click(function (ev) {
+			ev.preventDefault();
+			alert("download")
+		});
+
         this.btnCopy = createButton(toolbar, "Copy", "copy", 7, "copy");
         this.btnCut = createButton(toolbar, "Cut", "cut", 8, "cut");
         this.btnPaste = createButton(toolbar, "Paste", "paste", 9, "paste");
