@@ -367,6 +367,7 @@ eXide.browse.ResourceBrowser = (function () {
         this.breadcrumbs.empty();
         var self = this;
         var parts = this.dataSource.collection.split("/");
+		parts = parts.map(part => decodeURI(part));
         var span = $("<span>/</span>");
         var path = "/";
         for (var i = 0; i < parts.length; i++) {
