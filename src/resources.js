@@ -166,13 +166,13 @@ eXide.browse.ResourceBrowser = (function () {
 				var coll;
 				if (params.data.name == "..")
 					coll = this.dataSource.collection.replace(/\/[^\/]+$/, "");
-				else coll = this.dataSource.collection + "/" + params.data.name;
+				else coll = params.data.key;
 				this.$triggerEvent("activateCollection", [coll, params.data.writable]);
 				this.update(coll, false);
 			} else {
 				eXide.app.openSelectedDocument({
 					name: params.data.name,
-					path: this.dataSource.collection + "/" + params.data.name,
+					path: params.data.key,
 					writable: params.data.writable
 				});
 			}
@@ -226,13 +226,13 @@ eXide.browse.ResourceBrowser = (function () {
 							if (e.data.name === "..")
 								coll = this.dataSource.collection.replace(/\/[^\/]+$/, "")
 							else
-								coll = this.dataSource.collection + "/" + e.data.name;
+								coll = e.data.key;
 							this.$triggerEvent("activateCollection", [ coll, e.data.writable ]);
 							this.update(coll, false);
 						} else {
 							eXide.app.openSelectedDocument({
 								name: e.data.name,
-								path: this.dataSource.collection + "/" + e.data.name,
+								path: e.data.key,
 								writable: e.data.writable,
 							});
 						}
