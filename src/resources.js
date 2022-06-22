@@ -340,7 +340,7 @@ eXide.browse.ResourceBrowser = (function () {
             		}
             		var resources = [];
             		for (var i = 0; i < selected.length; i++) {
-            			resources.push($this.dataSource.collection + "/" + selected[i].name);
+            			resources.push(selected[i].key);
             		}
                     var params = $("form", dialog).serialize();
                     params = params + "&" + $.param({ "modify[]": resources});
@@ -421,7 +421,7 @@ eXide.browse.ResourceBrowser = (function () {
 		}
         var items = [];
         for (var i = 0; i < selected.length; i++) {
-            var item = this.dataSource.collection + "/" + selected[i].name;
+            var item = selected[i].key;
             items.push(item);
         }
         return items;
@@ -524,7 +524,7 @@ eXide.browse.ResourceBrowser = (function () {
 		var resources = [];
 		for (var i = 0; i < selected.length; i++) {
             if (selected[i].name != "..") {
-			    resources.push(this.dataSource.collection + "/" + selected[i].name);
+			    resources.push(selected[i].key);
             }
 		}
         if (resources.length > 0) {
@@ -549,10 +549,8 @@ eXide.browse.ResourceBrowser = (function () {
 		}
         this.clipboard = [];
 		for (var i = 0; i < selected.length; i++) {
-            var path = selected[i].name;
-            if (path.substr(0, 1) != "/") {
-                path = this.dataSource.collection + "/" + path;
-            }
+            var path = selected[i].key;
+
 			this.clipboard.push(path);
 		}
         $.log("Clipboard: %o", this.clipboard);
