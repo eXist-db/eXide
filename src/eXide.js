@@ -480,7 +480,7 @@ eXide.app = (function(util) {
 				return;
 			}
             var path = path || doc.getPath()
-            window.location.href = "modules/load.xql?download=true&path=" + encodeURIComponent(path) + "&indent=" + indentOnDownload + "&expand-xincludes=" + expandXIncludesOnDownload + "&omit-xml-decl=" + omitXMLDeclatarionOnDownload;
+            window.location.href = "modules/load.xq?download=true&path=" + encodeURIComponent(path) + "&indent=" + indentOnDownload + "&expand-xincludes=" + expandXIncludesOnDownload + "&omit-xml-decl=" + omitXMLDeclatarionOnDownload;
 		},
         
 		runQuery: function(path, livePreview) {
