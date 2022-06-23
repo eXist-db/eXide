@@ -176,18 +176,33 @@ define("eXide/mode/behaviour/xquery", function(require, exports, module) {
         this.add("comments", "insertion", function (state, action, editor, session, text) {
             var cursor = editor.getCursorPosition();
             var line = session.doc.getLine(cursor.row);
+            var nextLine = session.doc.getLine(cursor.row + 1);
             if (text == "\n") {
-                // if user presses return within a comment, insert ' : ' 
-                if (line.match(/^[\(\s]:/)) {
+                if(line.match(/^\(:.*:\)/) && cursor.column < line.length){
                     return {
                         text: '\n' + " : ",
                         selection: [1, 3, 1, 3]
                     }
+                }else if(line.match(/^\(:/) && !line.match(/.*:\)/)){
+                    return {
+                        text: '\n' + " : ",
+                        selection: [1, 3, 1, 3]
+                    }
+                    
+                }else if(line.match(/^\s:/) && (nextLine.match(/.*:\)/) || nextLine.match(/^\s:/))) {
+                    return {
+                        text: '\n' + " : ",
+                        selection: [1, 3, 1, 3]
+                    }
+                }else if (line.match(/^\s:/) && line.match(/.*:\)/) && cursor.column < line.length) {
+                    return {
+                      text: "\n : ",
+                      selection: [1, 3, 1, 3]
+                    };
                 }
             }
             if (text == ":") {
-                var leftChar = line.substring(cursor.column - 1, 1);
-                if (leftChar == "(") {
+                if (line.slice(cursor.column -1 ,cursor.column) === '(') {
                     return {
                         text: ":  :",
                         selection: [2, 2]
