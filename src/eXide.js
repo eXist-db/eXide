@@ -1393,11 +1393,6 @@ eXide.app = (function(util) {
 			menu.click("#menu-edit-preferences", function() {
                 preferences.show(); 		
 			});
-            menu.click("#menu-toggle-autoPair", function() {
-                let autoPairDisabled = eXide.app.getEditor().getActiveDocument().disableAutoPair
-                eXide.app.getEditor().getActiveDocument().setDisableAutoPair(!autoPairDisabled)	
-                document.getElementById("menu-toggle-autoPair").innerHTML = autoPairDisabled ? `<span class="fa fa-check"></span>autoPair` : `<span class="fa"></span>autoPair` ;
-			});
             menu.click("#menu-navigate-definition", function () {
                 editor.exec("gotoDefinition");
             });

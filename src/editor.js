@@ -38,7 +38,6 @@ eXide.edit.Document = (function() {
         this.lastChangeEvent = new Date().getTime();
         this.lastValidation = 0;
         this.ast = null;
-		this.disableAutoPair = false
         var wrap = eXide.app.getPreference("softWrap");
         this.$session.setUseWrapMode(wrap != 0);
         if (wrap > 0) {
@@ -140,10 +139,6 @@ eXide.edit.Document = (function() {
 
     Constr.prototype.getExternalLink = function() {
         return this.externalLink;
-    };
-
-	Constr.prototype.setDisableAutoPair = function(disableAutoPair) {
-        this.disableAutoPair = disableAutoPair;
     };
 
 	return Constr;

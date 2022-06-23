@@ -261,9 +261,9 @@ define("eXide/mode/xquery_highlight_rules", function(require, exports, module) {
                 return false;
             });
     
-            this.add("autoPairDisabled", "insertion", function(state, action, editor, session, text) {
-                var disablePair = eXide.app.getEditor().getActiveDocument().disableAutoPair
-                if(!disablePair) return null;
+            this.add("autoPair", "insertion", function(state, action, editor, session, text) {
+                var autoPair = eXide.app.getPreference("autoPair")
+                if(autoPair) return null;
                 if (['(',"\"","'","{"].includes(text)) {
                     return {
                         text,
