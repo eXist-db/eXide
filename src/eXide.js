@@ -289,7 +289,7 @@ eXide.app = (function(util) {
 				$("#open-dialog").dialog("close");
 		},
 
-        saveSelectedDocument: function(doc, close) {
+        downloadSelectedDocument: function(doc, close) {
 			var resource = doc || dbBrowser.getSelection();
 			if (resource) {
 				app.download(resource.path);
