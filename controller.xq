@@ -64,8 +64,8 @@ declare function local:fallback-login($domain as xs:string, $maxAge as xs:dayTim
 declare function local:user-allowed() {
     (
         session:get-attribute("org.exist.login.user") and 
-        session:get-attribute("org.exist.login.user") != "guest" 
-        ) or config:get-configuration()/restrictions/@guest = "yes"
+        session:get-attribute("org.exist.login.user") ne "guest" 
+        ) or config:get-configuration()/restrictions/@guest eq "yes"
 };
 
 declare function local:query-execution-allowed() {
