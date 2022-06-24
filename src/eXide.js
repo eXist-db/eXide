@@ -293,7 +293,9 @@ eXide.app = (function(util) {
 			var resource = doc || dbBrowser.getSelection();
 			if (resource) {
 				app.download(resource.path);
-			}
+			}else {
+                util.Dialog.warning("Error in selection","eXide didn't recognize your selection please select a single resource first. current state doesn't support selecting collections or multiple resources")
+            }
 			if (close == undefined || close)
 				$("#open-dialog").dialog("close");
 		},
