@@ -289,12 +289,19 @@ eXide.app = (function(util) {
 				$("#open-dialog").dialog("close");
 		},
 
-        downloadSelectedDocument: function(doc, close) {
-			var resource = doc || dbBrowser.getSelection();
-			if (resource) {
-				app.download(resource.path);
+        downloadSelectedDocument: function(docs, close) {
+			var resources = docs;
+			if (resources) {
+                let collectionsExist = resources.filter(res => res.isCollection).length > 0;
+                if(!collectionsExist) {
+                    resources.forEach(resource => {
+                        app.download(resource.key);
+                    })
+                }else {
+                    util.Dialog.warning("Invalid selection","The Download Selected command requires that only resources be selected (not collections). Please select a resources for download.")
+                }
 			}else {
-                util.Dialog.warning("Error in selection","eXide didn't recognize your selection please select a single resource first. current state doesn't support selecting collections or multiple resources")
+                util.Dialog.warning("Invalid selection","The Download Selected command requires that resources be selected. Please select a resources for download.")
             }
 			if (close == undefined || close)
 				$("#open-dialog").dialog("close");
@@ -482,7 +489,19 @@ eXide.app = (function(util) {
 				return;
 			}
             var path = path || doc.getPath()
-            window.location.href = "modules/load.xq?download=true&path=" + encodeURIComponent(path) + "&indent=" + indentOnDownload + "&expand-xincludes=" + expandXIncludesOnDownload + "&omit-xml-decl=" + omitXMLDeclatarionOnDownload;
+            const url = "modules/load.xq?download=true&path=" + encodeURIComponent(path) + "&indent=" + indentOnDownload + "&expand-xincludes=" + expandXIncludesOnDownload + "&omit-xml-decl=" + omitXMLDeclatarionOnDownload;
+            fetch(url)
+            .then(resp => resp.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = decodeURI(path.split("/").slice(-1)[0]);;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+            })
 		},
         
 		runQuery: function(path, livePreview) {
