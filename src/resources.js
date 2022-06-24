@@ -310,7 +310,7 @@ eXide.browse.ResourceBrowser = (function () {
 			}
 			params.column.colDef.editable = false;
 			$.getJSON("modules/collections.xq", {
-				target: params.data.name,
+				target: encodeURI(params.data.name),
 				rename: this.oldValue,
 				root: this.dataSource.collection
 			}, (data) => {
@@ -433,7 +433,7 @@ eXide.browse.ResourceBrowser = (function () {
 		if (cell.column.colId !== 'name') {
 			return;
 		}
-		this.oldValue = this.dataSource.data[cell.rowIndex].name;
+		this.oldValue = this.dataSource.data[cell.rowIndex].key;
 		cell.column.colDef.editable = true;
 		this.inEditor = true;
 		this.gridOptions.api.startEditingCell({
