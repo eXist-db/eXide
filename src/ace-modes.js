@@ -148,7 +148,7 @@ define("eXide/mode/xquery_highlight_rules", function(require, exports, module) {
         var oop = require("ace/lib/oop");
         var Behaviour = require('ace/mode/behaviour').Behaviour;
         var CstyleBehaviour = require('ace/mode/behaviour/cstyle').CstyleBehaviour;
-    
+
         var context;
         var contextCache = {};
         var defaultQuotes = {'"' : '"', "'" : "'"};
@@ -228,7 +228,7 @@ define("eXide/mode/xquery_highlight_rules", function(require, exports, module) {
                             text: '\n' + " : ",
                             selection: [1, 3, 1, 3]
                         }
-                    }else if (line.match(/^\s:/) && line.match(/^\s:/) && cursor.column < line.length) {
+                    }else if (line.match(/^\s:/) && line.match(/.*:\)/) && cursor.column < line.length) {
                         return {
                           text: "\n : ",
                           selection: [1, 3, 1, 3]
@@ -239,7 +239,7 @@ define("eXide/mode/xquery_highlight_rules", function(require, exports, module) {
                     if (line.slice(cursor.column -1 ,cursor.column) === '(') {
                         return {
                             text: ":  :",
-                            selection: []
+                            selection: [2, 2]
                         }
                     }
                 }
@@ -260,7 +260,7 @@ define("eXide/mode/xquery_highlight_rules", function(require, exports, module) {
                 }
                 return false;
             });
-    
+        
             this.add("autoPair", "insertion", function(state, action, editor, session, text) {
                 var autoPair = eXide.app.getPreference("autoPair")
                 if(autoPair) return null;
@@ -271,11 +271,11 @@ define("eXide/mode/xquery_highlight_rules", function(require, exports, module) {
                     };
                 }
             });
-            
+
             this.inherit(CstyleBehaviour, ["braces", "parens", "string_dquotes"]); // Get string behaviour
             this.parent = parent;
         }
-    
+
         oop.inherits(XQueryBehaviour, Behaviour);
     
         exports.XQueryBehaviour = XQueryBehaviour;
@@ -617,4 +617,3 @@ define("eXide/mode/xquery_highlight_rules", function(require, exports, module) {
     
         exports.Mode = Mode;
     });
-    
