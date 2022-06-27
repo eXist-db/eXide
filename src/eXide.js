@@ -292,14 +292,14 @@ eXide.app = (function(util) {
         downloadSelectedDocument: function(docs, close) {
 			var resources = docs;
 			if (resources) {
-                let collectionsExist = resources.filter(res => res.isCollection).length > 0;
-                if(!collectionsExist) {
-                    resources.forEach(resource => {
-                        app.download(resource.key);
-                    })
-                }else {
-                    util.Dialog.warning("Invalid selection","The Download Selected command requires that only resources be selected (not collections). Please select a resources for download.")
-                }
+                resources.filter(res => res.isCollection).forEach(collection => {
+                    deploymentEditor.download(collection.key);
+                });
+
+                resources.filter(res => !res.isCollection).forEach(resource => {
+                    app.download(resource.key);
+                })
+
 			}else {
                 util.Dialog.warning("Invalid selection","The Download Selected command requires that resources be selected. Please select a resources for download.")
             }

@@ -215,7 +215,19 @@ eXide.edit.PackageEditor = (function () {
         var indentOnDownloadPackage = $("#indent-on-download-package").is(":checked");
         var expandXIncludesOnDownloadPackage = $("#expand-xincludes-on-download-package").is(":checked");
         var omitXMLDeclatarionOnDownloadPackage = $("#omit-xml-decl-on-download-package").is(":checked");
-        window.location.href = "modules/deployment.xq?download=true&collection=" + encodeURIComponent(collection) + "&indent=" + indentOnDownloadPackage + "&expand-xincludes=" + expandXIncludesOnDownloadPackage + "&omit-xml-decl=" + omitXMLDeclatarionOnDownloadPackage;
+        const url = "modules/deployment.xq?download=true&collection=" + encodeURIComponent(collection) + "&indent=" + indentOnDownloadPackage + "&expand-xincludes=" + expandXIncludesOnDownloadPackage + "&omit-xml-decl=" + omitXMLDeclatarionOnDownloadPackage;
+        fetch(url)
+            .then(resp => resp.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = decodeURI(collection.split("/").slice(-1)[0]);
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+            })
     };
     
 	/**
