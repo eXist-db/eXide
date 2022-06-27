@@ -585,17 +585,21 @@ declare function deploy:package($collection as xs:string, $expathConf as element
         xmldb:store("/db/system/repo", $name, $xar, "application/zip")
 };
 
-declare function deploy:download($app-collection as xs:string, $expathConf as element(), $expand-xincludes as xs:boolean, $indent as xs:boolean, $omit-xml-declaration as xs:boolean) {
-    let $name := concat($expathConf/@abbrev, "-", $expathConf/@version, ".xar")
+declare function deploy:download($collection as xs:string, $expathConf as element()?, $expand-xincludes as xs:boolean, $indent as xs:boolean, $omit-xml-declaration as xs:boolean) {
+    let $name := 
+        if ($expathConf) then
+            concat($expathConf/@abbrev, "-", $expathConf/@version, ".xar")
+        else
+            replace($collection, "^.+/([^/]+)$", "$1") || ".zip"
     let $entries :=
         (: compression:zip uses default serialization parameters, so we'll construct entries manually :)
-        dbutil:scan(xs:anyURI($app-collection), function($collection as xs:anyURI, $resource as xs:anyURI?) {
+        dbutil:scan(xs:anyURI($collection), function($coll as xs:anyURI, $res as xs:anyURI?) {
             (: compression:zip doesn't seem to store empty collections, so we'll scan for only resources :)
-            if (exists($resource)) then
-                let $relative-path := substring-after($resource, $app-collection || "/")
+            if (exists($res)) then
+                let $relative-path := substring-after($res, $collection || "/")
                 return
-                    if (util:binary-doc-available($resource)) then
-                        <entry type="uri" name="{$relative-path}">{$resource}</entry>
+                    if (util:binary-doc-available($res)) then
+                        <entry type="uri" name="{$relative-path}">{$res}</entry>
                     else
                         <entry type="xml" name="{$relative-path}">{
                             (: workaround until https://github.com/eXist-db/exist/issues/2394 is resolved :)
@@ -608,15 +612,15 @@ declare function deploy:download($app-collection as xs:string, $expathConf as el
                                 || " omit-xml-declaration=" 
                                 || (if ($omit-xml-declaration) then "yes" else "no")
                             ),
-                            doc($resource)
+                            doc($res)
                         }</entry>
             else
                 ()
         })
-    let $xar := compression:zip($entries, true())
+    let $archive := compression:zip($entries, true())
     return (
         response:set-header("Content-Disposition", concat("attachment; filename=", $name)),
-        response:stream-binary($xar, "application/zip", $name)
+        response:stream-binary($archive, "application/zip", $name)
     )
 };
 
