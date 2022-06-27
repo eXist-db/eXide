@@ -419,12 +419,8 @@ eXide.browse.ResourceBrowser = (function () {
 		if (selected.length == 0) {
 			return null;
 		}
-        var items = [];
-        for (var i = 0; i < selected.length; i++) {
-            var item = this.dataSource.collection + "/" + selected[i].name;
-            items.push(item);
-        }
-        return items;
+        
+        return selected;
     };
 
 	Constr.prototype.startEditing = function() {
@@ -780,6 +776,13 @@ eXide.browse.Browser = (function () {
 		$(button).click(function (ev) {
 			ev.preventDefault();
 			eXide.app.openSelectedDocument(null, false);
+		});
+
+		button = createButton(toolbar, "Download Selected", "download", 11, "download");
+		$(button).click(function (ev) {
+			ev.preventDefault();
+			const selected = $this.resources.getSelected();
+			eXide.app.downloadSelectedDocument(selected, false);
 		});
 
         this.btnCopy = createButton(toolbar, "Copy", "copy", 7, "copy");

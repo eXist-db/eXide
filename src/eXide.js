@@ -289,6 +289,24 @@ eXide.app = (function(util) {
 				$("#open-dialog").dialog("close");
 		},
 
+        downloadSelectedDocument: function(docs, close) {
+			var resources = docs;
+			if (resources) {
+                resources.filter(res => res.isCollection).forEach(collection => {
+                    deploymentEditor.download(collection.key);
+                });
+
+                resources.filter(res => !res.isCollection).forEach(resource => {
+                    app.download(resource.key);
+                })
+
+			}else {
+                util.Dialog.warning("Invalid selection","The Download Selected command requires that resources be selected. Please select a resources for download.")
+            }
+			if (close == undefined || close)
+				$("#open-dialog").dialog("close");
+		},
+
 		$doOpenDocument: function(resource, callback, reload) {
 			resource.path = util.normalizePath(resource.path);
             var indentOnOpen = $("#indent-on-open").is(":checked");
@@ -467,16 +485,29 @@ eXide.app = (function(util) {
             editor.exec(arguments);
         },
         
-		download: function() {
+        download: function(path) {
             var indentOnDownload = $("#indent-on-download").is(":checked");
             var expandXIncludesOnDownload = $("#expand-xincludes-on-download").is(":checked");
             var omitXMLDeclatarionOnDownload = $("#omit-xml-decl-on-download").is(":checked");
 			var doc = editor.getActiveDocument();
-			if (doc.getPath().match("^__new__") || !doc.isSaved()) {
+			if (!path && (doc.getPath().match("^__new__") || !doc.isSaved())) {
 				util.error("There are unsaved changes in the document. Please save it first.");
 				return;
 			}
-            window.location.href = "modules/load.xq?download=true&path=" + encodeURIComponent(doc.getPath()) + "&indent=" + indentOnDownload + "&expand-xincludes=" + expandXIncludesOnDownload + "&omit-xml-decl=" + omitXMLDeclatarionOnDownload;
+            var path = path || doc.getPath()
+            const url = "modules/load.xq?download=true&path=" + encodeURIComponent(path) + "&indent=" + indentOnDownload + "&expand-xincludes=" + expandXIncludesOnDownload + "&omit-xml-decl=" + omitXMLDeclatarionOnDownload;
+            fetch(url)
+            .then(resp => resp.blob())
+            .then(blob => {
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = decodeURI(path.split("/").slice(-1)[0]);;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+            })
 		},
         
 		runQuery: function(path, livePreview) {
@@ -661,7 +692,7 @@ eXide.app = (function(util) {
 		
 		manage: function() {
 			app.requireLogin(function() {
-                dbBrowser.reload(["reload", "create", "upload", "properties", "open", "cut", "copy", "paste"], "manage");
+                dbBrowser.reload(["reload", "create", "upload", "properties", "open", "download", "cut", "copy", "paste"], "manage");
                 $("#open-dialog").dialog("option", "title", "DB Manager");
                 $("#open-dialog").dialog("option", "buttons", { 
                     "Close": function() { $(this).dialog("close"); }
