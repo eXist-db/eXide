@@ -149,43 +149,6 @@ define("eXide/mode/behaviour/xquery", function (require, exports, module) {
     var Behaviour = require('ace/mode/behaviour').Behaviour;
     var CstyleBehaviour = require('ace/mode/behaviour/cstyle').CstyleBehaviour;
 
-    var context;
-    var contextCache = {};
-    var defaultQuotes = { '"': '"', "'": "'" };
-
-    var initContext = function (editor) {
-        var id = -1;
-        if (editor.multiSelect) {
-            id = editor.selection.index;
-            if (contextCache.rangeCount != editor.multiSelect.rangeCount)
-                contextCache = { rangeCount: editor.multiSelect.rangeCount };
-        }
-        if (contextCache[id])
-            return context = contextCache[id];
-        context = contextCache[id] = {
-            autoInsertedBrackets: 0,
-            autoInsertedRow: -1,
-            autoInsertedLineEnd: "",
-            maybeInsertedBrackets: 0,
-            maybeInsertedRow: -1,
-            maybeInsertedLineStart: "",
-            maybeInsertedLineEnd: ""
-        };
-    };
-
-    var getWrapped = function (selection, selected, opening, closing) {
-        var rowDiff = selection.end.row - selection.start.row;
-        return {
-            text: opening + selected + closing,
-            selection: [
-                0,
-                selection.start.column + 1,
-                rowDiff,
-                selection.end.column + (rowDiff ? 0 : 1)
-            ]
-        };
-    };
-
     var XQueryBehaviour = function (parent) {
 
         this.add("brackets", "insertion", function (state, action, editor, session, text) {
@@ -272,7 +235,22 @@ define("eXide/mode/behaviour/xquery", function (require, exports, module) {
             }
         });
 
-        this.inherit(CstyleBehaviour, ["braces", "parens", "string_dquotes"]); // Get string behaviour
+        this.add("braces&brackets", "insertion", function (state, action, editor, session, text) {
+            var autoPair = eXide.app.getPreference("autoPair")
+            if (!autoPair) return null;
+            let pair = {
+                "[":"[]",
+                "{":"{}",
+            }
+            if (['[', "{"].includes(text)) {
+                return {
+                    text: pair[text],
+                    selection: [1, 1]
+                };
+            }
+        });
+
+        this.inherit(CstyleBehaviour, ["parens", "string_dquotes"]); // Get string behaviour
         this.parent = parent;
     }
 
