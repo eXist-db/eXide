@@ -898,6 +898,10 @@ Sub level menu list items (undo style from Top level List Items)
 
 .item {
     min-height: 2.5em;
+    -ms-user-select: text;
+    -moz-user-select: text;
+    -webkit-user-select: text;
+    user-select: text;
 }
 
 /* Hack for internet explorer */
