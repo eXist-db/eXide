@@ -250,6 +250,17 @@ define("eXide/mode/behaviour/xquery", function (require, exports, module) {
             }
         });
 
+        this.add("braces&brackets", "deletion", function (state, action, editor, session, range) {
+            var cursor = editor.getCursorPosition();
+            var line = session.doc.getLine(cursor.row);
+            var rightChar = line.substring(cursor.column, cursor.column + 1);
+
+            if (['[', "{"].includes(rightChar)) {
+                range.end.column++
+                return range;
+            }
+        });
+
         this.inherit(CstyleBehaviour, ["parens", "string_dquotes"]); // Get string behaviour
         this.parent = parent;
     }
