@@ -305,13 +305,13 @@ eXide.browse.ResourceBrowser = (function () {
 			}
 		};
 		this.gridOptions.onCellValueChanged = (params) => {
-			if (!this.oldValue) {
+			if (!params.oldValue) {
 				return;
 			}
 			params.column.colDef.editable = false;
 			$.getJSON("modules/collections.xq", {
-				target: encodeURI(params.data.name),
-				rename: this.oldValue,
+				target: encodeURI(params.newValue),
+				rename: encodeURI(params.oldValue),
 				root: this.dataSource.collection
 			}, (data) => {
 				if (data.status == "fail") {
