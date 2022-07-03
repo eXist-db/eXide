@@ -29,6 +29,7 @@ eXide.util.Preferences = (function () {
 		fontSize: 14,
         font: "Default",
 		showInvisibles: false,
+        autoPair: true,
 		showPrintMargin: true,
 		showHScroll: false,
         indent: -1,
@@ -93,6 +94,7 @@ eXide.util.Preferences = (function () {
 		$("input[name=\"omit-xml-decl-on-download\"]", form).attr("checked", this.preferences.omitXMLDeclarationOnDownload);
 		$("input[name=\"omit-xml-decl-on-download-package\"]", form).attr("checked", this.preferences.omitXMLDeclarationOnDownloadPackage);
 		$("input[name=\"show-invisibles\"]", form).attr("checked", this.preferences.showInvisibles);
+        $("input[name=\"auto-pair\"]", form).attr("checked", this.preferences.autoPair);
 		$("input[name=\"print-margin\"]", form).attr("checked", this.preferences.showPrintMargin);
 		$("input[name=\"emmet\"]", form).attr("checked", this.preferences.emmet);
 
@@ -121,6 +123,7 @@ eXide.util.Preferences = (function () {
 		this.preferences.fontSize = parseInt($("select[name=\"font-size\"]", form).val());
         this.preferences.font = $("select[name=\"font\"]", form).val();
 		this.preferences.showInvisibles = $("input[name=\"show-invisibles\"]", form).is(":checked");
+        this.preferences.autoPair = $("input[name=\"auto-pair\"]", form).is(":checked");
 		this.preferences.showPrintMargin = $("input[name=\"print-margin\"]", form).is(":checked");
 		this.preferences.emmet = $("input[name=\"emmet\"]", form).is(":checked");
         this.preferences.indentOnOpen = $("input[name=\"indent-on-open\"]", form).is(":checked");
