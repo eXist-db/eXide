@@ -634,14 +634,39 @@ eXide.app = (function(util) {
 					dataType: 'html',
 					data: { "output": serializationMode, "auto-expand-matches": autoExpandMatches, "indent": indentResults },
 					success: function (data) {
-						$('.results-container .results').append(data);
-						$(".results-container .current").text("Showing results " + startOffset + " to " + (currentOffset - 1) +
-								" of " + hitCount);
-						$(".results-container .pos:last a").click(function () {
-							app.findDocument($(this).data("path"));
-							return false;
-						});
-						app.retrieveNext();
+                        var config = require('ace/config');
+                        config.loadModule('ace/mode/jsoniq', function ({ Mode: JSONiqLexer }) {
+                            config.loadModule('ace/mode/xquery', function ({ Mode: XQueryLexer }) {
+                                const el = $(data);
+                                const content = el.find('.content');
+                                let lines = content.text().split('\n');
+                                let lexer = serializationMode === 'json' ? new JSONiqLexer() : new XQueryLexer();
+                                let result = '', lastState;
+                                const getClass = type => type.split('.').map(type => `ace_${type}`).join(' ');
+                                const encodeHTMLEntities = text => text.replace(/[\u00A0-\u9999<>\&]/g, (i) => '&#' + i.charCodeAt(0) + ';');
+                                lines.forEach(function (line) {
+                                    let output = '';
+                                    const { state, tokens} = lexer.getTokenizer().getLineTokens(line, lastState);
+                                    tokens.forEach(function (token) {
+                                        output += `<span class='${getClass(token.type)}'>${encodeHTMLEntities(token.value)}</span>`;
+                                    });
+                                    result += output + '<br/>';
+                                    lastState = state;
+                                });
+                                el.find('> *:first-child').css('width', (Math.ceil(Math.log(endOffset + 1) / Math.LN10)) + 'ch');
+                                content.html(result);
+                                if (!$(".results-container .results").parent().hasClass("ace_gutter")) {
+                                    $(".results-container .results").parent().addClass("ace_gutter").css("position", "initial");
+                                }
+                                $('.results-container .results').append(el[0].outerHTML);
+                                $('.results-container .current').text('Showing results ' + startOffset + ' to ' + (currentOffset - 1) + ' of ' + hitCount);
+                                $(".results-container .pos:last a").click(function () {
+                                    app.findDocument($(this).data("path"));
+                                    return false;
+                                });
+                                app.retrieveNext();
+                            });
+                        });
 					}
 				});
 			} else {
