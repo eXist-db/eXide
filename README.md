@@ -77,8 +77,29 @@ eXide's GitHub repository is configured to run tests automatically on each PR vi
 
 To run tests locally, build and install eXide on localhost, and start the tests:
 
-```bash
-npm run cypress
+```shell
+# clone the repo
+git clone git://github.com/eXist-db/eXide.git
+cd eXide
+git submodule update --init --recursive
+# build exide
+npm install
+# at this point if you are planning to build another branch change it now
+npm run build
+#start exist docker container
+docker create  --name exist-ci -p 8080:8080 existdb/existdb:latest
+
+#deploy exide
+docker cp ./build/*.xar exist-ci:exist/autodeploy
+
+#start the docker container
+docker start exist-ci && sleep 30
+
+# by this time you should be able to visit http://localhost:8080 and get exist-db home page
+# run cypress tests
+npm run cypress # this runs the tests in console 
+# or use to view the tests in a GUI environment
+#npm run cypress open 
 ```
 
 If successful, the test runner should report, "All specs passed!"

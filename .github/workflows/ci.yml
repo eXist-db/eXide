@@ -62,6 +62,19 @@ jobs:
         run: npm test
       - name: Run Integration Tests  
         run: npm run cypress
+
+        #upload artifacs 
+      - uses: actions/upload-artifact@v2
+        if: failure()
+        with:
+          name: cypress-screenshots
+          path: cypress/screenshots
+      # Test run video was always captured, so this action uses "always()" condition
+      - uses: actions/upload-artifact@v2
+        if: always()
+        with:
+          name: cypress-videos
+          path: cypress/videos
   # TODO: Add upload to dockerhub   
   # release:
   #   name: Release
