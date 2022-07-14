@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
        matrix:
-         exist-version: [latest, release]
+         exist-version: [latest]
          java-version: [8]
-         node-version: ['12', '14']
+         node-version: ['14','16']
     # TODO: see #563 could still be usefull for gulp builds 
     # services:
     #   # Label used to access the service container
@@ -37,7 +37,7 @@ jobs:
 
       # Install dependencies and build EXPath Package
       - name: Build frontend Using node.js ${{ matrix.node-version }} and build EXPath Package
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
@@ -50,16 +50,14 @@ jobs:
 
       - name: Create CI Container
         run: docker create  --name exist-ci -p 8080:8080 existdb/existdb:${{ matrix.exist-version }} 
-
+      
       - name: Prep CI Container
         run: docker cp ./build/*.xar exist-ci:exist/autodeploy
-
+      
       - name: Start Exist Container
         run: docker start exist-ci && sleep 30
 
       # Testing 
-      - name: Run Unit Tests     
-        run: npm test
       - name: Run Integration Tests  
         run: npm run cypress
 
