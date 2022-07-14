@@ -218,6 +218,7 @@ context("DB Manager", () => {
         cy.get("div.eXide-browse-main").within(() => {
           cy.contains("div[role=gridcell][col-id=name]", "toBeCopiedAéB").click()
         })
+        cy.wait(500)
         //click on toolbar action
         cy.get("#eXide-browse-toolbar-copy").click()
 
@@ -241,14 +242,19 @@ context("DB Manager", () => {
         cy.get("#fullscreen > div.editor-header > div > ul > li:nth-child(1) > a").click()
         cy.get("#fullscreen > div.editor-header > div > ul > li:nth-child(1) > ul").find("#menu-file-manager").click()
         cy.get("div.eXide-browse-main").within(() => {
+          cy.wait(500)
           cy.contains("div[role=gridcell][col-id=name]", "toBeCopiedInAéB").click()
         })
+        cy.wait(500)
         cy.get("#eXide-browse-toolbar-delete-resource").click()
         cy.get("body > div:nth-child(4) > div.ui-dialog-buttonpane.ui-widget-content.ui-helper-clearfix > div > button:nth-child(1)").click()
+        cy.wait(500)
 
         cy.get("div.eXide-browse-main").within(() => {
+          cy.wait(500)
           cy.contains("div[role=gridcell][col-id=name]", "toBeCopiedAéB").click()
         })
+        cy.wait(500)
 
         cy.get("#eXide-browse-toolbar-delete-resource").click()
         cy.get("body > div:nth-child(4) > div.ui-dialog-buttonpane.ui-widget-content.ui-helper-clearfix > div > button:nth-child(1)").click()
