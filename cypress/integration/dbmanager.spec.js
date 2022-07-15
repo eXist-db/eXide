@@ -9,12 +9,15 @@ context("DB Manager", () => {
         cy.get("#ui-id-1").parents("div.ui-dialog ").within(() => {
           cy.get("div.ui-dialog-buttonset button").click()
         })
-        Cypress.Cookies.debug(true)
+        cy.wait(500)
         cy.get("div.ui-dialog div.ui-dialog-buttonset button").filter(':visible').click()
         cy.get("#fullscreen > div.editor-header > div > ul > li:nth-child(1) > a").click()
         cy.get("#fullscreen > div.editor-header > div > ul > li:nth-child(1) > ul").find("#menu-file-manager").click()
+        cy.wait(500)
         cy.get("#login-form input[name=user]").type("admin")
+        cy.wait(500)
         cy.get("#layout-container > div:nth-child(12) > div.ui-dialog-buttonpane.ui-widget-content.ui-helper-clearfix > div > button:nth-child(1)").click()
+        cy.wait(500)
       })
     })
 
@@ -45,6 +48,7 @@ context("DB Manager", () => {
         cy.get("#fullscreen > div.editor-header > div > ul > li:nth-child(1) > ul").find("#menu-file-manager").click()
         cy.get("#eXide-browse-toolbar-create").click()
         cy.get("#eXide-browse-collection-name").type(collectionName)
+        cy.wait(500)
         cy.get("body > div:nth-child(4) > div.ui-dialog-buttonpane.ui-widget-content.ui-helper-clearfix > div > button:nth-child(1)").click()
   
         cy.get("div.eXide-browse-main").within(() => {
@@ -78,6 +82,7 @@ context("DB Manager", () => {
         // create collection to be renamed
         cy.get("#eXide-browse-toolbar-create").click()
         cy.get("#eXide-browse-collection-name").type("toBeRenamed")
+        cy.wait(500)
         cy.get("body > div:nth-child(4) > div.ui-dialog-buttonpane.ui-widget-content.ui-helper-clearfix > div > button:nth-child(1)").click()
 
         cy.get("div.eXide-browse-main").within(() => {
@@ -135,6 +140,7 @@ context("DB Manager", () => {
         // create collection to be renamed
         cy.get("#eXide-browse-toolbar-create").click()
         cy.get("#eXide-browse-collection-name").type("AéB")
+        cy.wait(500)
         cy.get("body > div:nth-child(4) > div.ui-dialog-buttonpane.ui-widget-content.ui-helper-clearfix > div > button:nth-child(1)").click()
 
         cy.get("div.eXide-browse-main").within(() => {
@@ -183,6 +189,7 @@ context("DB Manager", () => {
         // create collection to be renamed
         cy.get("#eXide-browse-toolbar-create").click()
         cy.get("#eXide-browse-collection-name").type("toBeCopiedAéB")
+        cy.wait(500)
         cy.get("body > div:nth-child(4) > div.ui-dialog-buttonpane.ui-widget-content.ui-helper-clearfix > div > button:nth-child(1)").click()
 
         cy.get("div.eXide-browse-main").within(() => {
@@ -199,6 +206,7 @@ context("DB Manager", () => {
         // create collection to be renamed
         cy.get("#eXide-browse-toolbar-create").click()
         cy.get("#eXide-browse-collection-name").type("toBeCopiedInAéB")
+        cy.wait(500)
         cy.get("body > div:nth-child(4) > div.ui-dialog-buttonpane.ui-widget-content.ui-helper-clearfix > div > button:nth-child(1)").click()
 
         cy.get("div.eXide-browse-main").within(() => {
@@ -277,6 +285,7 @@ context("DB Manager", () => {
         // create collection to be renamed
         cy.get("#eXide-browse-toolbar-create").click()
         cy.get("#eXide-browse-collection-name").type("toBeCopiedAéB")
+        cy.wait(500)
         cy.get("body > div:nth-child(4) > div.ui-dialog-buttonpane.ui-widget-content.ui-helper-clearfix > div > button:nth-child(1)").click()
 
         cy.get("div.eXide-browse-main").within(() => {
@@ -293,6 +302,7 @@ context("DB Manager", () => {
         // create collection to be renamed
         cy.get("#eXide-browse-toolbar-create").click()
         cy.get("#eXide-browse-collection-name").type("toBeCopiedInAéB")
+        cy.wait(500)
         cy.get("body > div:nth-child(4) > div.ui-dialog-buttonpane.ui-widget-content.ui-helper-clearfix > div > button:nth-child(1)").click()
 
         cy.get("div.eXide-browse-main").within(() => {
