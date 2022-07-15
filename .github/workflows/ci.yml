@@ -11,9 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
        matrix:
-         exist-version: [latest, release]
+         exist-version: [latest]
          java-version: [8]
-         node-version: ['12', '14']
+         node-version: ['14', '16']
     # TODO: see #563 could still be usefull for gulp builds 
     # services:
     #   # Label used to access the service container
@@ -23,58 +23,47 @@ jobs:
     #       - 8080:8080
 
     steps:
-      # Checkout code
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-      - name: Cache Docker layers
-        uses: actions/cache@v2
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
 
       # Install dependencies and build EXPath Package
-      - name: Build frontend Using node.js ${{ matrix.node-version }} and build EXPath Package
-        uses: actions/setup-node@v2
+      - name: Install node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
-      - run: npm ci
-      - run: npm run build
-            
-      # Deploy Package in Container
-      - name: Pull Base Image
-        run: docker pull existdb/existdb:${{ matrix.exist-version }}
 
-      - name: Create CI Container
-        run: docker create  --name exist-ci -p 8080:8080 existdb/existdb:${{ matrix.exist-version }} 
+      - name: Run npm CI
+        run: npm ci
+      
+      - name: Build frontend Using node.js ${{ matrix.node-version }} and build EXPath Package
+        run: npm run build
 
-      - name: Prep CI Container
-        run: docker cp ./build/*.xar exist-ci:exist/autodeploy
+      - name: Start eXist-db Docker Container
+        run: docker run --rm --name exist --volume $(pwd)/build:/exist/autodeploy:ro --publish 8080:8080 --detach existdb/existdb:${{ matrix.exist-version }}
 
-      - name: Start Exist Container
-        run: docker start exist-ci && sleep 30
+      - name: Wait for eXist-db Startup
+        run: timeout 90 sh -c 'until nc -z $0 $1; do sleep 3; done' localhost 8080
 
-      # Testing 
-      - name: Run Unit Tests     
-        run: npm test
-      - name: Run Integration Tests  
-        run: npm run cypress
+      - name: Run Cypress Integration Tests
+        run: npx cypress run
 
-        #upload artifacs 
-      - uses: actions/upload-artifact@v2
+      - name: Upload Cypress Screenshots (on failure)
+        uses: actions/upload-artifact@v2
         if: failure()
         with:
           name: cypress-screenshots
           path: cypress/screenshots
+
       # Test run video was always captured, so this action uses "always()" condition
-      - uses: actions/upload-artifact@v2
+      - name: Upload Cypress Videos
+        uses: actions/upload-artifact@v2
         if: always()
         with:
           name: cypress-videos
           path: cypress/videos
+
   # TODO: Add upload to dockerhub   
   # release:
   #   name: Release
@@ -99,5 +88,3 @@ jobs:
   #       env:
   #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   #       run: npx semantic-release
-    
-
