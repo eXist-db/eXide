@@ -53,7 +53,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: failure()
         with:
-          name: cypress-screenshots
+          name: cypress-screenshots-${{ matrix.exist-version }}-${{ matrix.java-version }}-${{ matrix.node-version }}
           path: cypress/screenshots
 
       # Test run video was always captured, so this action uses "always()" condition
@@ -61,7 +61,7 @@ jobs:
         uses: actions/upload-artifact@v2
         if: always()
         with:
-          name: cypress-videos
+          name: cypress-videos-${{ matrix.exist-version }}-${{ matrix.java-version }}-${{ matrix.node-version }}
           path: cypress/videos
 
   # TODO: Add upload to dockerhub   
