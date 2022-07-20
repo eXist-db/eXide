@@ -1016,7 +1016,7 @@ eXide.app = (function(util) {
         
         updateStatus: function(doc) {
             $("#syntax").val(doc.getSyntax());
-            $("#status .path").text(util.normalizePath(doc.getPath()));
+            $("#status .path").text(decodeURI(util.normalizePath(doc.getPath())));
             if (!doc.isNew() && (doc.getSyntax() == "xquery" || doc.getSyntax() == "html" || doc.getSyntax() == "xml")) {
                 $("#status a").attr("href", doc.getExternalLink());
                 $("#status a").css("visibility", "visible");
