@@ -76,7 +76,7 @@ eXide.edit.Directory = (function () {
 			}
 			return fn(d)
 		}
-		d3.json("modules/collections.xq?root=" + (sel.datum().key || "/db") + "&view=r", function(error, data){
+		d3.json("modules/collections.xq?root=" + encodeURIComponent(sel.datum().key || "/db") + "&view=r", function(error, data){
 			if(error)	{
 				return
 			}

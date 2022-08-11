@@ -8,6 +8,7 @@ describe('eXide', function() {
 
   })
   it('should display editor', function () {
+    cy.visit('/eXide/index.html')
     cy.get('.path')
     cy.contains('__new__1')
   })
