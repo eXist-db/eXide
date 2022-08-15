@@ -1556,7 +1556,7 @@ eXide.app = (function(util) {
                 document.querySelectorAll("#results-body > div > div > div > div.item").forEach(item => res += item.innerText)
                 navigator.clipboard.writeText(res).then(function() {
                     console.log('Async: Copying to clipboard was successful!');
-                    eXide.util.message("Copyed to clipboard");
+                    eXide.util.message("Copied results to clipboard");
                   }, function(err) {
                     console.error('Async: Could not copy text: ', err);
                   });
