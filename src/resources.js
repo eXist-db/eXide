@@ -166,13 +166,13 @@ eXide.browse.ResourceBrowser = (function () {
 				var coll;
 				if (params.data.name == "..")
 					coll = this.dataSource.collection.replace(/\/[^\/]+$/, "");
-				else coll = this.dataSource.collection + "/" + params.data.name;
+				else coll = params.data.key;
 				this.$triggerEvent("activateCollection", [coll, params.data.writable]);
 				this.update(coll, false);
 			} else {
 				eXide.app.openSelectedDocument({
 					name: params.data.name,
-					path: this.dataSource.collection + "/" + params.data.name,
+					path: params.data.key,
 					writable: params.data.writable
 				});
 			}
@@ -226,13 +226,13 @@ eXide.browse.ResourceBrowser = (function () {
 							if (e.data.name === "..")
 								coll = this.dataSource.collection.replace(/\/[^\/]+$/, "")
 							else
-								coll = this.dataSource.collection + "/" + e.data.name;
+								coll = e.data.key;
 							this.$triggerEvent("activateCollection", [ coll, e.data.writable ]);
 							this.update(coll, false);
 						} else {
 							eXide.app.openSelectedDocument({
 								name: e.data.name,
-								path: this.dataSource.collection + "/" + e.data.name,
+								path: e.data.key,
 								writable: e.data.writable,
 							});
 						}
@@ -305,13 +305,13 @@ eXide.browse.ResourceBrowser = (function () {
 			}
 		};
 		this.gridOptions.onCellValueChanged = (params) => {
-			if (!this.oldValue) {
+			if (!params.oldValue) {
 				return;
 			}
 			params.column.colDef.editable = false;
 			$.getJSON("modules/collections.xq", {
-				target: params.data.name,
-				rename: this.oldValue,
+				target: encodeURI(params.newValue),
+				rename: encodeURI(params.oldValue),
 				root: this.dataSource.collection
 			}, (data) => {
 				if (data.status == "fail") {
@@ -340,7 +340,7 @@ eXide.browse.ResourceBrowser = (function () {
             		}
             		var resources = [];
             		for (var i = 0; i < selected.length; i++) {
-            			resources.push($this.dataSource.collection + "/" + selected[i].name);
+            			resources.push(selected[i].key);
             		}
                     var params = $("form", dialog).serialize();
                     params = params + "&" + $.param({ "modify[]": resources});
@@ -367,6 +367,7 @@ eXide.browse.ResourceBrowser = (function () {
         this.breadcrumbs.empty();
         var self = this;
         var parts = this.dataSource.collection.split("/");
+		parts = parts.map(part => decodeURI(part));
         var span = $("<span>/</span>");
         var path = "/";
         for (var i = 0; i < parts.length; i++) {
@@ -418,8 +419,7 @@ eXide.browse.ResourceBrowser = (function () {
 		const selected = this.gridOptions.api.getSelectedRows();
 		if (selected.length == 0) {
 			return null;
-		}
-        
+		}  
         return selected;
     };
 
@@ -428,7 +428,7 @@ eXide.browse.ResourceBrowser = (function () {
 		if (cell.column.colId !== 'name') {
 			return;
 		}
-		this.oldValue = this.dataSource.data[cell.rowIndex].name;
+		this.oldValue = this.dataSource.data[cell.rowIndex].key;
 		cell.column.colDef.editable = true;
 		this.inEditor = true;
 		this.gridOptions.api.startEditingCell({
@@ -520,7 +520,7 @@ eXide.browse.ResourceBrowser = (function () {
 		var resources = [];
 		for (var i = 0; i < selected.length; i++) {
             if (selected[i].name != "..") {
-			    resources.push(this.dataSource.collection + "/" + selected[i].name);
+			    resources.push(selected[i].key);
             }
 		}
         if (resources.length > 0) {
@@ -545,10 +545,8 @@ eXide.browse.ResourceBrowser = (function () {
 		}
         this.clipboard = [];
 		for (var i = 0; i < selected.length; i++) {
-            var path = selected[i].name;
-            if (path.substr(0, 1) != "/") {
-                path = this.dataSource.collection + "/" + path;
-            }
+            var path = selected[i].key;
+
 			this.clipboard.push(path);
 		}
         $.log("Clipboard: %o", this.clipboard);

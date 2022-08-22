@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
        matrix:
-         exist-version: [latest]
+         exist-version: [release ,latest]
          java-version: [8]
          node-version: ['14', '16']
     # TODO: see #563 could still be usefull for gulp builds 
@@ -50,18 +50,18 @@ jobs:
         run: npx cypress run
 
       - name: Upload Cypress Screenshots (on failure)
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: failure()
         with:
-          name: cypress-screenshots
+          name: cypress-screenshots-${{ matrix.exist-version }}-${{ matrix.java-version }}-${{ matrix.node-version }}
           path: cypress/screenshots
 
       # Test run video was always captured, so this action uses "always()" condition
       - name: Upload Cypress Videos
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: cypress-videos
+          name: cypress-videos-${{ matrix.exist-version }}-${{ matrix.java-version }}-${{ matrix.node-version }}
           path: cypress/videos
 
   # TODO: Add upload to dockerhub   

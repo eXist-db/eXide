@@ -1016,7 +1016,7 @@ eXide.app = (function(util) {
         
         updateStatus: function(doc) {
             $("#syntax").val(doc.getSyntax());
-            $("#status .path").text(util.normalizePath(doc.getPath()));
+            $("#status .path").text(decodeURI(util.normalizePath(doc.getPath())));
             if (!doc.isNew() && (doc.getSyntax() == "xquery" || doc.getSyntax() == "html" || doc.getSyntax() == "xml")) {
                 $("#status a").attr("href", doc.getExternalLink());
                 $("#status a").css("visibility", "visible");
@@ -1556,7 +1556,7 @@ eXide.app = (function(util) {
                 document.querySelectorAll("#results-body > div > div > div > div.item").forEach(item => res += item.innerText)
                 navigator.clipboard.writeText(res).then(function() {
                     console.log('Async: Copying to clipboard was successful!');
-                    eXide.util.message("Copyed to clipboard");
+                    eXide.util.message("Copied results to clipboard");
                   }, function(err) {
                     console.error('Async: Could not copy text: ', err);
                   });
