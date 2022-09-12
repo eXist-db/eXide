@@ -1,6 +1,6 @@
 describe('Navbar', function () {
 
-  it("should display notification", () => {
+  it.skip("should display notification", () => {
     cy.visit('/eXide/index.html')
     cy.wait(500)
     cy.get("#ui-id-1").parents("div.ui-dialog ").within(() => {
