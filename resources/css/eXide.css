@@ -896,6 +896,15 @@ Sub level menu list items (undo style from Top level List Items)
     margin-right: 8px;
 }
 
+#copy-all-clipboard {
+    margin: 0 0.5rem;
+    transition: all .2s ease-in-out; 
+}
+
+#copy-all-clipboard * {
+    margin: 0 0.1rem;
+}
+
 .item {
     min-height: 2.5em;
     -ms-user-select: text;
