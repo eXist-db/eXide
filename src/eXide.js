@@ -1552,6 +1552,16 @@ eXide.app = (function(util) {
                 util.requestFullScreen(document.getElementById("fullscreen"));
             });
             $(".results-container .layout-switcher").click(app.switchResultsPanel);
+			$('.results-container #copy-all-clipboard').click(() => {
+                let res = '';
+                document.querySelectorAll("#results-body > div > div > div > div.item").forEach(item => res += item.innerText)
+                navigator.clipboard.writeText(res).then(function() {
+                    console.log('Async: Copying to clipboard was successful!');
+                    eXide.util.message("Copied results to clipboard");
+                  }, function(err) {
+                    console.error('Async: Could not copy text: ', err);
+                  });
+            });
 			$('.results-container .next').click(app.browseNext);
 			$('.results-container .previous').click(app.browsePrevious);
             $("#number-of-results").change(function(ev) {
