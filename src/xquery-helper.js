@@ -163,6 +163,10 @@ eXide.edit.XQueryModeHelper = (function () {
 			},
 			contentType: "application/octet-stream",
 			success: function (data) {
+                if (data.result !== 'fail' && doc.error) {
+                    data.result = 'fail';
+                    data.error = doc.error;
+                }
 				var valid = $this.compileError(data, doc);
                 if (onComplete) {
 				    onComplete.call(this, valid);
@@ -206,6 +210,7 @@ eXide.edit.XQueryModeHelper = (function () {
             return;
         }
         $.log("Running xqlint...");
+        doc.error = false;
         var session = doc.getSession();
         var value = doc.getText();    
         var h = new JSONParseTreeHandler(value);
@@ -214,6 +219,7 @@ eXide.edit.XQueryModeHelper = (function () {
             parser.parse_XQuery();
         } catch(e) {
             $.log("Error while parsing XQuery: %s", parser.getErrorMessage(e));
+            doc.error = parser.getErrorMessage(e);
             if(e instanceof parser.ParseException) {
                 h.closeParseTree();
             }
@@ -255,6 +261,7 @@ eXide.edit.XQueryModeHelper = (function () {
             session.setAnnotations(annotations);
         } catch(e) {
             $.log("Error while processing ast: %s", e.message);
+            doc.error = doc.error || e.message;
         }
     };
     
