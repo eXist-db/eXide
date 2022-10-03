@@ -73,6 +73,7 @@ eXide.app = (function(util) {
 	var startOffset = 0;
 	var currentOffset = 0;
 	var endOffset = 0;
+    var numberOfResults = 10;
 	
 	var login = null;
     
@@ -587,7 +588,7 @@ eXide.app = (function(util) {
                 					} else {
                 						showResultsPanel();
                 						hitCount = elem.getAttribute("hits");
-                						endOffset = startOffset + 10 - 1;
+                						endOffset = startOffset + numberOfResults - 1;
                 						if (hitCount < endOffset)
                 							endOffset = hitCount;
                 						util.message("Query returned " + hitCount + " item(s) in " + elem.getAttribute("elapsed") + "s");
@@ -677,7 +678,7 @@ eXide.app = (function(util) {
 		browseNext: function() {
 			if (currentOffset > 0 && endOffset < hitCount) {
 				startOffset = currentOffset;
-		        var howmany = 10;
+		        var howmany = numberOfResults;
 		        endOffset = currentOffset + howmany - 1;
 				if (hitCount < endOffset)
 					endOffset = hitCount;
@@ -690,7 +691,7 @@ eXide.app = (function(util) {
 		/** Called if user clicks on "previous" link in query results. */
 		browsePrevious: function() {
 			if (currentOffset > 0 && startOffset > 1) {
-		        var count = 10;
+		        var count = numberOfResults;
 		        startOffset = startOffset - count;
 				if (startOffset < 1)
 					startOffset = 1;
@@ -1563,6 +1564,9 @@ eXide.app = (function(util) {
             });
 			$('.results-container .next').click(app.browseNext);
 			$('.results-container .previous').click(app.browsePrevious);
+            $("#number-of-results").change(function(ev) {
+                numberOfResults = +document.getElementById("number-of-results").value;
+            });
             $("#serialization-mode").change(function(ev) {
                 if (lastQuery) {
                     app.runQuery(lastQuery);
