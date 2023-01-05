@@ -32,7 +32,7 @@
 		"chalk": "^4.1.2",
 		"command-line-args": "^5.2.1",
 		"cypress": "^9.7.0",
-		"esbuild": "^0.15.16",
+		"esbuild": "^0.16.14",
 		"micro-fs": "^1.0.3",
 		"request": "^2.88.2"
 	},
