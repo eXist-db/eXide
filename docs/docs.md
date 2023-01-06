@@ -123,15 +123,20 @@ will only work if the app window has been
 opened from within eXide, not via the Dashboard. A web page cannot control other windows unless it
 created them.
 
-## Drop Files
+## Drag and Drop Files
 
 Drag a file on the editor to open its contents in a new tab. The new tab will not have the original file's name, 
 but you can provide a name via "File > Save".
 
-## Directory Uploads
+## Upload Directories
 
 Use "File > Manage > Upload Files > Upload Directory" to upload
 entire directories and preserve their structure. Or drag and drop onto the Upload Files pane.
+
+## Download Resources
+
+Use "File > Manage > (select a resource or collection) > Download Selected" to download an individual files or 
+entire collections from the database and preserve their structure.
 
 ## Run XQSuite tests
 
@@ -161,14 +166,16 @@ To see the results of a query, hit the "Eval" button in eXide's toolbar. (The "R
 and is only available for queries that have been saved to the database.) To automatically submit a query as you edit it, 
 select the "Live Preview" checkbox at the top of the query results window.
 
-eXide displays query results in groups of 10 (i.e., a query `1 to 100` would be split into 10 pages). Navigate through these 
+eXide displays query results 10 at a time (i.e., a query `1 to 100` would be split into 10 pages), or customize the number of 
+results. Navigate through pages of 
 results with the `<<` and `>>` icons at the top of the query results window. To see all results in a single screen, surround your
-query with an array constructor: `array { 1 to 100 }`.
+query with an array constructor: `array { 1 to 100 }`. Use the "Copy to Clipboard" button to copy the current page's worth of 
+results.
 
 When displaying query results, use the dropdown menu above the query results window to select a serialization method to apply
 to the results. The options available include all serialization options supported by eXist: Adaptive Output (eXide's default), 
-JSON, Text, XML, HTML5, XHTML, XHTML5, MicroXML, and  "Direct". In all but the last option, the selection overrides any 
-serialization declarations in a query's prolog, and the results are displayed as plain text. The "Direct" option allows the 
+JSON, Text, XML, HTML5, XHTML, XHTML5, MicroXML, and "Direct". In all but the last option, the selection overrides any 
+serialization declarations in a query's prolog, and the results are displayed as plain text. The final, "Direct" option allows the 
 serialization method to be set in the query, but the results are shown in the display window not as plain text but as the 
 browser would render them assuming HTML. 
 

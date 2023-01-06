@@ -12,6 +12,18 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="3.5.0">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: Login dialog should focus on User input field with File > Manage - <a href="https://github.com/eXist-db/eXide/pull/468">#468</a></li>
+                <li>New: Save as uses current file's collection - <a href="https://github.com/eXist-db/eXide/pull/469">#469</a></li>
+                <li>New: Add preference to toggle auto-pairing of comments and brackets, and improve auto-pairing - <a href="https://github.com/eXist-db/eXide/pull/471">#471</a>, <a href="https://github.com/eXist-db/eXide/pull/475">#475</a></li>
+                <li>New: Add download button to DB Manager view - <a href="https://github.com/eXist-db/eXide/pull/484">#484</a></li>
+                <li>Fixed: Handling of resources with special characters - <a href="https://github.com/eXist-db/eXide/pull/489">#489</a></li>
+                <li>New: Syntax highlighting applied to query results - <a href="https://github.com/eXist-db/eXide/pull/491">#491</a></li>
+                <li>New: Copy results pane to clipboard - <a href="https://github.com/eXist-db/eXide/pull/513">#513</a></li>
+                <li>New: Set the number of results displayed - <a href="https://github.com/eXist-db/eXide/pull/527">#527</a></li>
+            </ul>
+        </change>
         <change version="3.4.0">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>New: Warn user when saving contents of XQuery window with non-XQuery file extension - <a href="https://github.com/eXist-db/eXide/pull/462">#462</a></li>
