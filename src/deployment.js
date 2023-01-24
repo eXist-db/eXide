@@ -142,7 +142,15 @@ eXide.edit.PackageEditor = (function () {
 					}
                     $this.currentProject.dir = dir;
                     
-                    var params = $this.syncDialog.find("form").serialize();
+                    var params = {
+                        start: $this.syncDialog.find("input[name=\"start\"]").val(),
+                        dir: dir,
+                        auto: $this.syncDialog.find("input[name=\"auto\"]").val(),
+                        collection: $this.syncDialog.find("input[name=\"collection\"]").val(),
+                        indent: $("#indent-on-download-package").is(":checked"),
+                        "expand-xincludes": $("#expand-xincludes-on-download-package").is(":checked"),
+                        "omit-xml-declarationaration": $("#omit-xml-declaration-on-download-package").is(":checked")
+                    };
 					$("#synchronize-report").text("Synchronization in progress ...");
 					$("#synchronize-report").load("modules/synchronize.xq", params);
 				},
@@ -193,10 +201,17 @@ eXide.edit.PackageEditor = (function () {
 						return;
 					}
                     
+                    var params = {
+                        collection: $this.currentProject.root, 
+                        start: start,
+                        indent: $("#indent-on-download-package").is(":checked"),
+                        "expand-xincludes": $("#expand-xincludes-on-download-package").is(":checked"),
+                        "omit-xml-declaration": $("#omit-xml-declaration-on-download-package").is(":checked")
+                    };
                     $(statusAnchor).text("Synchronization in progress ...");
 					$(statusAnchor).load(
                         "modules/synchronize.xq", 
-                        { collection : $this.currentProject.root, start :start},
+                        params,
                         function(responseText, status){if(status == 'success') {eXide.app.git.command($this.currentProject, 'commit', option);}}
                         );
                     
@@ -214,8 +229,8 @@ eXide.edit.PackageEditor = (function () {
     Constr.prototype.download = function (collection) {
         var indentOnDownloadPackage = $("#indent-on-download-package").is(":checked");
         var expandXIncludesOnDownloadPackage = $("#expand-xincludes-on-download-package").is(":checked");
-        var omitXMLDeclatarionOnDownloadPackage = $("#omit-xml-decl-on-download-package").is(":checked");
-        const url = "modules/deployment.xq?download=true&collection=" + encodeURIComponent(collection) + "&indent=" + indentOnDownloadPackage + "&expand-xincludes=" + expandXIncludesOnDownloadPackage + "&omit-xml-decl=" + omitXMLDeclatarionOnDownloadPackage;
+        var omitXMLDeclatarionOnDownloadPackage = $("#omit-xml-declaration-on-download-package").is(":checked");
+        const url = "modules/deployment.xq?download=true&collection=" + encodeURIComponent(collection) + "&indent=" + indentOnDownloadPackage + "&expand-xincludes=" + expandXIncludesOnDownloadPackage + "&omit-xml-declaration=" + omitXMLDeclatarionOnDownloadPackage;
         fetch(url)
             .then(resp => resp.blob())
             .then(blob => {
@@ -267,7 +282,10 @@ eXide.edit.PackageEditor = (function () {
              var params = {
                  collection: project.root,
                  start: project.deployed,
-                 dir: project.dir
+                 dir: project.dir,
+                 indent: $("#indent-on-download-package").is(":checked"),
+                 "expand-xincludes": $("#expand-xincludes-on-download-package").is(":checked"),
+                 "omit-xml-declaration": $("#omit-xml-declaration-on-download-package").is(":checked")
              };
              $.ajax({
                 url: "modules/synchronize.xq",
