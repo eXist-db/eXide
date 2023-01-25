@@ -156,8 +156,8 @@ When loading XML documents from the database into an editor window, you can cont
 as whether indentation is automatically applied, whether XInclude elements are automatically expanded, and whether XML 
 declarations are omitted. Set these preferences in "Edit > Preferences > Serialization." Additional sets of these preferences 
 are available for download of XML documents via "File > Download" and for
-the serialization of XML documents included in application packages via ["Application > Download app"](#Support-for-EXPath-Packages).
-By default, indentation is turned on for opening and downloading files but is off for downloading EXPath Packages; XInclude 
+the serialization of XML documents included in application packages via ["Application > Download app and Synchronize"](#Support-for-EXPath-Packages).
+By default, indentation is turned on for opening and downloading files but is off for downloading and synchronizing EXPath Packages; XInclude 
 expansion is turned off in all cases; and the XML declaration is omitted in all cases. 
 
 ## Options for displaying query results
