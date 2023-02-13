@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign In</title>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+        :root {
+            --primary-color: #1976d2;
+            --primary-color-dark: #2a3e7e;
+            --secondary-color: rgb(143, 50, 41);
+            --text-color: #4d4d53;
+            --white: #fbfaf9;
+        }
+
+        * { box-sizing: border-box }
+
+        html { height: 100%; -ms-text-size-adjust: 100%; -webkit-text-size-adjust: 100%; }
+
+        body {
+            color: var(--text-color);
+            background-color: var(--white);
+            background-image: url(backdrop.svg);
+            position: relative;
+            height: 100%;
+            min-height: 100%;
+            margin: 0;
+            line-height: 1.115;
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 16px;
+            font-weight: 400;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-position: center;
+            background-size: 125%;
+        }
+
+        main { display: block }
+
+        label, input {
+            margin: 0;
+            line-height: 1.5;
+            font-family: Helvetica, Arial, sans-serif;
+            font-size: 1.2rem;
+            width: 100%;
+        }
+
+        input {
+            color: var(--text-color);
+            font-weight: 400;
+            box-shadow: none;
+            overflow: visible;
+            border: thin solid;
+            border-radius: .2rem;
+            padding: .4rem .6rem;
+            background-color: rgba(163, 172, 194, 0.2);
+        }
+        input::placeholder { color: #888; }
+        input::-ms-clear { display: none; width: 0; height: 0 }
+        input:-webkit-autofill {
+            -webkit-box-shadow: 0 0 0 2rem var(--white) inset;
+            -webkit-text-fill-color: var(--primary-color) !important;
+        }
+
+        label { color: var(--primary-color); display: block; font-weight: 300; }
+
+        .login-page { display: grid; justify-content: center; align-items: center; }
+
+        .login-box {
+            padding: 2rem 2.5rem;
+            border-radius: .2rem;
+            background: rgba(255, 255, 255, 0.666);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            box-shadow: 0 4px 5px 0 rgba(0, 0, 0, 0.14),
+                        0 1px 10px 0 rgba(0, 0, 0, 0.12),
+                        0 2px 4px -1px rgba(0, 0, 0, 0.4);
+        }
+
+        .form-group { padding: 0; margin: 0 0 .5rem 0; }
+
+        .header {
+            color: var(--primary-color-dark);
+            font-size: 2rem;
+            font-family: Helvetica, Arial, sans-serif;
+            font-weight: 400;
+            margin: 0 0 .5rem 0;
+        }
+
+        .submit-button {
+            overflow: visible;
+            color: var(--white);
+            border: none;
+            box-shadow: none;
+            outline: none;
+            text-transform: none;
+            padding: .25rem 0;
+            -webkit-appearance: button;
+            margin-top: 1.25rem;
+            font-weight: 600;
+            background: var(--primary-color);
+            border: thin solid var(--primary-color-dark);
+            text-shadow: 0 0 3px var(--primary-color-dark);
+        }
+        .submit-button::-moz-focus-inner { border-style: none; padding: 0; }
+        .submit-button:-moz-focusring { outline: 1px dotted ButtonText }
+
+    </style>
+</head>
+<body class="login-page">
+    <main class="login-box">
+        <h1 class="header">Sign in</h1>
+        <form action="login" method="post">
+            <input type="hidden" name="duration" value="P7D"/>
+            <input id="route" type="hidden" name="route"/>
+            <div class="form-group">
+                <label for="user">Username</label>
+                <input id="user" name="user" class="form-control" 
+                    placeholder="itsme" autofocus="autofocus" tab-index="0"/>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input id="password" name="password" class="form-control" 
+                    type="password" placeholder="··········" tab-index="1"/>
+            </div>
+            <div class="form-group">
+                <input type="submit" class="submit-button" value="Login"
+                    tab-index="2"/>
+            </div>
+        </form>
+    </main>
+</body>
+</html>
