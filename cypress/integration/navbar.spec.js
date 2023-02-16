@@ -13,7 +13,7 @@ describe('Navbar', function () {
     cy.wait(1300)
 
     cy.get("#copy-all-clipboard").click({ force: true })
-    cy.get('body > div:nth-child(8) > div > div.ui-pnotify-text').contains('Copyed to clipboard')
+    cy.get('body > div:nth-child(8) > div > div.ui-pnotify-text').contains('Copied to clipboard')
   })
 
   // as of now cypress does not provide a way to provide clipboard permissions
