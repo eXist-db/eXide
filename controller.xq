@@ -73,7 +73,7 @@ if ($exist:path eq '') then
         <redirect url="{$local:uri}/"/>
     </dispatch>
 
-else if ($exist:path eq '/' and $user-allowed) then
+else if ($exist:path eq '/') then
     let $path := 
         if (
             lower-case($local:uri) = "/exist/apps/exide/" and 
@@ -105,23 +105,6 @@ else if ($local:method = 'get' and $exist:resource = "backdrop.svg") then
         </forward>
     </dispatch>
 
-(:
- : Login a user via AJAX. Just returns a 401 if login fails.
- :)
-else if (
-    $local:wants-json and
-    $local:method = ('post') and
-    $exist:resource = 'login' and
-    $user-allowed
-)
-then (
-    util:declare-option("output:method", "json"),
-    <status>
-        <user>{$user}</user>
-        <isAdmin json:literal="true">{$user-is-dba}</isAdmin>
-    </status>
-)
-
 (: handle unauthorized request :)
 
 else if (not($user-allowed))
@@ -141,7 +124,21 @@ then (
 )
 
 (: restricted resources :)
-
+(:
+ : Login a user via AJAX. Just returns a 401 if login fails.
+ :)
+else if (
+    $local:wants-json and
+    $local:method = 'post' and
+    $exist:resource = 'login'
+)
+then (
+    util:declare-option("output:method", "json"),
+    <status>
+        <user>{$user}</user>
+        <isAdmin json:literal="true">{$user-is-dba}</isAdmin>
+    </status>
+)
 else if ($local:method = ('get', 'post') and $exist:resource = ('login.html', 'login'))
 then (
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
