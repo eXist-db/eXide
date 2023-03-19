@@ -155,7 +155,7 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
                             sm:has-access(xs:anyURI($collection || "/" || $resource), "w")
                     return
                         <json:value json:array="true">
-                            <name>{xmldb:decode-uri(if ($isCollection) then substring-after($resource, "/") else $resource)}</name>
+                            <name>{xmldb:decode-uri(xs:anyURI(if ($isCollection) then substring-after($resource, "/") else $resource))}</name>
                             <permissions>{if($isCollection)then "c" else "-"}{string($permissions/@mode)}{if($permissions/sm:acl/@entries ne "0")then "+" else ""}</permissions>
                             <owner>{$owner}</owner>
                             <group>{$group}</group>
