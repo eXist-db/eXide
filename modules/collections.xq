@@ -78,23 +78,23 @@ declare function local:collections($root as xs:string, $child as xs:string,
         ()
 };
 
-declare function local:list-collection-contents($collection as xs:string, $user as xs:string, $filter as xs:string?) {
+declare function local:list-collection-contents($collection as xs:string, $user as xs:string, $filter as xs:string?) as xs:string* {
     let $subcollections :=
-        for $child in xmldb:get-child-collections($collection)
-        let $collpath := concat($collection, "/", $child)
-        where sm:has-access(xs:anyURI($collpath), "r") and config:access-allowed($collpath, $user)
-        return
-            concat("/", $child)
+            for $child in xmldb:get-child-collections($collection)
+            let $collpath := concat($collection, "/", $child)
+            where sm:has-access(xs:anyURI($collpath), "r") and config:access-allowed($collpath, $user)
+            return
+                concat("/", $child)
     let $resources :=
-        for $r in xmldb:get-child-resources($collection)
-        where sm:has-access(xs:anyURI(concat($collection, "/", $r)), "r")
-        return
-            $r
+            for $r in xmldb:get-child-resources($collection)
+            where sm:has-access(xs:anyURI(concat($collection, "/", $r)), "r")
+            return
+                $r
     let $all := if ($filter) then ($subcollections, $resources)[contains(., $filter)] else ($subcollections, $resources)
     for $resource in $all
-	order by $resource collation "http://www.w3.org/2013/collation/UCA?numeric=yes"
-	return
-		$resource
+	  order by $resource collation "http://www.w3.org/2013/collation/UCA?numeric=yes"
+	  return
+		    $resource
 };
 
 declare function local:resources($collection as xs:string, $user as xs:string) {
