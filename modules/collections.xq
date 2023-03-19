@@ -261,7 +261,8 @@ declare function local:copyOrMove($operation as xs:string, $target as xs:string,
                         <response status="ok"/>
             } catch * {
                 <response status="fail">
-                    <message>{ $err:description }</message>
+                    <context module="{$err:module}" line-number="{$err:line-number}" column-number="{$err:column-number}"/>
+                    <message code="{$err:code}">{ $err:description }</message>
                 </response>
             }
     else
@@ -286,7 +287,8 @@ declare function local:rename($collection as xs:string, $source as xs:string) {
                     <response status="ok"/>
         } catch * {
             <response status="fail">
-                <message>{ $err:description }</message>
+                <context module="{$err:module}" line-number="{$err:line-number}" column-number="{$err:column-number}"/>
+                <message code="{$err:code}">{ $err:description }</message>
             </response>
         }
 };
@@ -557,5 +559,8 @@ return
         else
             local:resources($collection, $user)
     } catch * {
-        <response status="fail">{$err:description}</response>
+        <response status="fail">
+            <context module="{$err:module}" line-number="{$err:line-number}" column-number="{$err:column-number}"/>
+            <message code="{$err:code}">{$err:description}</message>
+        </response>
     }
