@@ -39,7 +39,7 @@
 	},
 	"dependencies": {
 		"@ag-grid-community/core": "^26.2.1",
-		"@ag-grid-community/infinite-row-model": "^27.0.0"
+		"@ag-grid-community/infinite-row-model": "^29.3.4"
 	},
 	"overrides": {
 		"glob-stream": "$glob-stream"
