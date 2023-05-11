@@ -33,7 +33,7 @@ eXide 3.0.0 removes the *app generation* feature as it was generating outdated c
 
 ## Dependencies
 
-Building eXide requires [git](https://git-scm.com/) and [Apache Ant](https://ant.apache.org/). 
+Building eXide requires [git](https://git-scm.com/) and [node.js](https://nodejs.org/) (version 14+).
 
 Running tests requires [npm](https://www.npmjs.com/) and [node.js](https://nodejs.org/).
 
