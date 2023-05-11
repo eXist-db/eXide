@@ -12,6 +12,12 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="3.5.1">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: With configuration.xml set to guest=no, login is impossible - <a href="https://github.com/eXist-db/eXide/pull/595">#598</a></li>
+                <li>Fixed: Made compatible with the upcoming eXist-db 7.0.0 version - <a href="https://github.com/eXist-db/eXide/pull/609">#609</a></li>
+            </ul>
+        </change>
         <change version="3.5.0">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fixed: Login dialog should focus on User input field with File > Manage - <a href="https://github.com/eXist-db/eXide/pull/468">#468</a></li>
