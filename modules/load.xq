@@ -19,6 +19,7 @@
 xquery version "3.0";
 
 import module namespace config="http://exist-db.org/xquery/apps/config" at "config.xqm";
+import module namespace dbutil="http://exist-db.org/xquery/dbutil" at "dbutils.xqm";
 
 declare function local:get-run-path($path) {
     let $appRoot := repo:get-root()
@@ -34,43 +35,78 @@ declare function local:get-run-path($path) {
 };
 
 let $path := request:get-parameter("path", ())
-let $download := request:get-parameter("download", ())
+let $download := request:get-parameter("download", false()) cast as xs:boolean
 let $indent := request:get-parameter("indent", true()) cast as xs:boolean
 let $expand-xincludes := request:get-parameter("expand-xincludes", false()) cast as xs:boolean
 let $omit-xml-declaration := request:get-parameter("omit-xml-decl", true()) cast as xs:boolean
-let $mime := xmldb:get-mime-type($path)
-let $isBinary := util:is-binary-doc($path)
+let $isBinary := util:binary-doc-available($path)
+let $isCollection := xmldb:collection-available($path)
+let $name := replace($path, "^.+/([^/]+)$", "$1")
 (: Disable betterFORM filter :)
 let $attribute := request:set-attribute("betterform.filter.ignoreResponseBody", "true")
-let $header := response:set-header("Content-Type", if ($mime) then $mime else "application/binary")
-let $header := response:set-header("X-Link", local:get-run-path($path))
-let $header2 :=
-    if ($download) then
-        response:set-header("Content-Disposition", concat("attachment; filename=", replace($path, "^.*/([^/]+)$", "$1")))
-    else
-        ()
 return
-    if (config:access-allowed($path, sm:id()//sm:real/sm:username/string())) then
-        if ($isBinary) then
-            let $data := util:binary-doc($path)
-            return
-                response:stream-binary($data, $mime, ())
-        else
-            if (doc-available($path)) then
+    if (config:access-allowed($path, sm:id()//sm:real/sm:username)) then
+        if ($isCollection and $download) then
+            let $entries :=
+                (: compression:zip uses default serialization parameters, so we'll construct entries manually :)
+                dbutil:scan(xs:anyURI($path), function($coll as xs:anyURI, $res as xs:anyURI?) {
+                    (: compression:zip doesn't seem to store empty collections, so we'll scan for only resources :)
+                    if (exists($res)) then
+                        let $relative-path := $name || "/" || substring-after($res, $path || "/")
+                        return
+                            if (util:binary-doc-available($res)) then
+                                <entry type="uri" name="{$relative-path}">{$res}</entry>
+                            else
+                                <entry type="xml" name="{$relative-path}">{
+                                    util:declare-option(
+                                        "exist:serialize", 
+                                        "expand-xincludes=" 
+                                        || (if ($expand-xincludes) then "yes" else "no")
+                                        || " indent=" 
+                                        || (if ($indent) then "yes" else "no")
+                                        || " omit-xml-declaration=" 
+                                        || (if ($omit-xml-declaration) then "yes" else "no")
+                                    ),
+                                    doc($res)
+                                }</entry>
+                    else
+                        ()
+                })
+            let $archive := compression:zip($entries, true())
+            let $archive-name := $name || ".zip"
+            return 
                 (
-                    (: workaround until https://github.com/eXist-db/exist/issues/2394 is resolved :)
-                    util:declare-option(
-                        "exist:serialize", 
-                        "indent=" 
-                            || (if ($indent) then "yes" else "no")
-                            || " expand-xincludes=" 
+                    response:set-header("Content-Disposition", concat("attachment; filename=", $archive-name)),
+                    response:stream-binary($archive, "application/zip", $archive-name)
+                )
+        else
+            let $mime := xmldb:get-mime-type($path)
+            let $headers := 
+                (
+                    response:set-header("Content-Type", if (exists($mime)) then $mime else "application/binary"),
+                    response:set-header("X-Link", local:get-run-path($path)),
+                    if ($download) then
+                        response:set-header("Content-Disposition", concat("attachment; filename=", $name))
+                    else
+                        ()
+                )
+            return
+                if ($isBinary) then
+                    let $data := util:binary-doc($path)
+                    return
+                        response:stream-binary($data, $mime, $name)
+                else
+                    (
+                        util:declare-option(
+                            "exist:serialize", 
+                            "expand-xincludes=" 
                             || (if ($expand-xincludes) then "yes" else "no")
+                            || " indent=" 
+                            || (if ($indent) then "yes" else "no")
                             || " omit-xml-declaration=" 
                             || (if ($omit-xml-declaration) then "yes" else "no")
-                    ),
-                    doc($path)
-                )
-            else
-                response:set-status-code(404)
+                        ),
+                        doc($path)
+                    )
     else
         response:set-status-code(404)
