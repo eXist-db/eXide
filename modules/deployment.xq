@@ -585,12 +585,8 @@ declare function deploy:package($collection as xs:string, $expathConf as element
         xmldb:store("/db/system/repo", $name, $xar, "application/zip")
 };
 
-declare function deploy:download($collection as xs:string, $expathConf as element()?, $expand-xincludes as xs:boolean, $indent as xs:boolean, $omit-xml-declaration as xs:boolean) {
-    let $name := 
-        if ($expathConf) then
-            concat($expathConf/@abbrev, "-", $expathConf/@version, ".xar")
-        else
-            replace($collection, "^.+/([^/]+)$", "$1") || ".zip"
+declare function deploy:download($collection as xs:string, $expathConf as element(), $expand-xincludes as xs:boolean, $indent as xs:boolean, $omit-xml-declaration as xs:boolean) {
+    let $name := concat($expathConf/@abbrev, "-", $expathConf/@version, ".xar")
     let $entries :=
         (: compression:zip uses default serialization parameters, so we'll construct entries manually :)
         dbutil:scan(xs:anyURI($collection), function($coll as xs:anyURI, $res as xs:anyURI?) {
@@ -602,7 +598,6 @@ declare function deploy:download($collection as xs:string, $expathConf as elemen
                         <entry type="uri" name="{$relative-path}">{$res}</entry>
                     else
                         <entry type="xml" name="{$relative-path}">{
-                            (: workaround until https://github.com/eXist-db/exist/issues/2394 is resolved :)
                             util:declare-option(
                                 "exist:serialize", 
                                 "expand-xincludes=" 

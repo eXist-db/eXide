@@ -780,7 +780,7 @@ eXide.browse.Browser = (function () {
 		$(button).click(function (ev) {
 			ev.preventDefault();
 			const selected = $this.resources.getSelected();
-			eXide.app.downloadSelectedDocument(selected, false);
+			eXide.app.downloadSelectedResources(selected, false);
 		});
 
         this.btnCopy = createButton(toolbar, "Copy", "copy", 7, "copy");

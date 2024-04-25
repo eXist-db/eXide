@@ -290,19 +290,13 @@ eXide.app = (function(util) {
 				$("#open-dialog").dialog("close");
 		},
 
-        downloadSelectedDocument: function(docs, close) {
-			var resources = docs;
+        downloadSelectedResources: function(resources, close) {
 			if (resources) {
-                resources.filter(res => res.isCollection).forEach(collection => {
-                    deploymentEditor.download(collection.key);
-                });
-
-                resources.filter(res => !res.isCollection).forEach(resource => {
+                resources.forEach(resource => {
                     app.download(resource.key);
                 })
-
 			}else {
-                util.Dialog.warning("Invalid selection","The Download Selected command requires that resources be selected. Please select a resources for download.")
+                util.Dialog.warning("Invalid selection","The Download Selected command requires that resources be selected. Please select resources for download.")
             }
 			if (close == undefined || close)
 				$("#open-dialog").dialog("close");
