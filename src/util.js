@@ -288,12 +288,12 @@ eXide.util.mimeTypes = (function () {
         'xquery': ['application/xquery'],
         'css': ['text/css'],
         'html': ['text/html'],
-        'javascript': ['application/x-javascript'],
+        'javascript': ['application/javascript'],
         'text': ['text/text'],
         'less': ['application/less'],
         'tmsnippet': ['application/tmsnippet'],
         'json': ['application/json'],
-        'markdown': ['text/x-markdown']
+        'markdown': ['text/markdown']
     };
 
     return {
