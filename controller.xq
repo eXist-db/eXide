@@ -240,7 +240,7 @@ else if ($local:method = 'get' and starts-with($exist:path, '/results/')) then
         </forward>
     </dispatch>
 
-else if ($local:method = 'get' and $exist:resource eq "outline") then
+else if ($local:method = 'post' and $exist:resource eq "outline") then
     let $query := request:get-parameter("qu", ())
     let $base := request:get-parameter("base", ())
     return
