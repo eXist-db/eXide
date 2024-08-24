@@ -222,7 +222,7 @@ else if ($exist:resource eq 'execute') then
                             <set-header name="Cache-Control" value="no-cache"/>
                             <!-- Query is passed via the attribute 'xquery.source' -->
                             <set-attribute name="xquery.source" value="{$query}"/>
-                	        <set-attribute name="xquery.module-load-path" value="{$base}"/>
+                            <set-attribute name="xquery.module-load-path" value="{$base}"/>
                             <!-- Errors should be passed through instead of terminating the request -->
                             <set-attribute name="xquery.report-errors" value="yes"/>
                             <set-attribute name="start-time" value="{util:system-time()}"/>
@@ -240,15 +240,15 @@ else if ($local:method = 'get' and starts-with($exist:path, '/results/')) then
         </forward>
     </dispatch>
 
-else if ($local:method = 'get' and $exist:resource eq "outline") then
+else if ($local:method = 'post' and $exist:resource eq "outline") then
     let $query := request:get-parameter("qu", ())
     let $base := request:get-parameter("base", ())
-	return
+    return
         <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-	        <!-- Query is executed by XQueryServlet -->
+            <!-- Query is executed by XQueryServlet -->
             <forward url="modules/outline.xq">
                 <set-header name="Cache-Control" value="no-cache"/>
-	            <set-attribute name="xquery.module-load-path" value="{$base}"/>
+                <set-attribute name="xquery.module-load-path" value="{$base}"/>
             </forward>
     </dispatch>
 
