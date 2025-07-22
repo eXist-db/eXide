@@ -10,7 +10,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
-       matrix:
+       fail-fast: false
+       matrix:  
          exist-version: [release, latest]
          node-version: ['22']
     # TODO: see #563 could still be usefull for gulp builds 
