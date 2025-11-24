@@ -23,7 +23,7 @@ jobs:
     #       - 8080:8080
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           submodules: recursive
 
