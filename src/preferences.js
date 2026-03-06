@@ -157,27 +157,14 @@ eXide.util.Preferences = (function () {
     };
     
     Constr.prototype.applyPreferences = function () {
-        var $this = this;
 		this.editor.setTheme(this.preferences.theme);
-		this.editor.editor.setShowInvisibles(this.preferences.showInvisibles);
-		this.editor.editor.setShowPrintMargin(this.preferences.showPrintMargin);
-		this.editor.setEmmetEnabled(this.preferences.emmet);
-        this.editor.forEachDocument(function (doc) {
-            if ($this.preferences.softWrap > 0) {
-                doc.getSession().setWrapLimitRange($this.preferences.softWrap, $this.preferences.softWrap);
-            } else if ($this.preferences.softWrap < 0) {
-                doc.getSession().setWrapLimitRange(null, null);
-            }
-            doc.getSession().setUseWrapMode($this.preferences.softWrap != 0);
 
-            if ($this.preferences.indent < 0) {
-                doc.getSession().setTabSize($this.preferences.indentSize);
-		        doc.getSession().setUseSoftTabs(true);
-            } else if ($this.preferences.indent >= 0) {
-                doc.getSession().setUseSoftTabs(false);
-            }
+        // Store preferences on editor for use during document switching
+        this.editor._preferences = this.preferences;
 
-        });
+        // Apply wrap and indent settings via CSS / CM6 extensions
+        // CM6 handles word wrap via EditorView.lineWrapping extension (configured in editor.js)
+        // Indent/tab settings are applied when building extensions
 
         if (this.preferences.font) {
             var font = this.preferences.font + ", monospace";
@@ -185,8 +172,9 @@ eXide.util.Preferences = (function () {
             $("#outline").css("font-family", font);
             $("#results-body").css("font-family", font);
         }
-            
-        this.editor.editor.setFontSize(this.preferences.fontSize + "px");
+
+        // Font size via CSS on the CM6 container
+        $(".cm-editor").css("font-size", this.preferences.fontSize + "px");
 		this.editor.resize();
 	};
 	
@@ -199,10 +187,11 @@ eXide.util.Preferences = (function () {
         if (localStorage["eXide.preferences"]) {
             const loaded = JSON.parse(localStorage.getItem("eXide.preferences"));
             this.preferences = Object.assign({}, defaultPreferences, loaded);
+            sameVersion = (loaded.version === eXide.app.version());
         }
 
         this.preferences.version = eXide.app.version();
-        
+
 		this.applyPreferences();
 		this.updateForm();
 		return sameVersion;
