@@ -249,17 +249,17 @@ eXide.edit.XQueryModeHelper = (function () {
 
             var markers = doc.ast.markers;
             if (markers) {
-                var annotations = this.clearAnnotations(doc, "warning");
+                // Clear previous client-side markers (both warnings and errors)
+                // but keep any server-side compile errors that are still relevant
+                var annotations = [];
                 for (var i = 0; i < markers.length; i++) {
-                    if (markers[i].type !== "error") {
-                        annotations.push({
-                            row: markers[i].pos.sl,
-                            column: markers[i].pos.sc,
-                            text: markers[i].message,
-                            type: markers[i].type,
-                            pos: markers[i].pos
-                        });
-                    }
+                    annotations.push({
+                        row: markers[i].pos.sl,
+                        column: markers[i].pos.sc,
+                        text: markers[i].message,
+                        type: markers[i].type,
+                        pos: markers[i].pos
+                    });
                 }
                 editorShim.setAnnotations(this.editor, annotations);
             }
