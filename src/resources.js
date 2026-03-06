@@ -27,7 +27,7 @@ function buildQueryString(params) {
 		var val = params[key];
 		if (Array.isArray(val)) {
 			val.forEach(function(v) {
-				parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(v));
+				parts.push(encodeURIComponent(key + "[]") + "=" + encodeURIComponent(v));
 			});
 		} else {
 			parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(val));
