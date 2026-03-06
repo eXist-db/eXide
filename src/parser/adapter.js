@@ -257,8 +257,9 @@ function parseXQuery(input, ParserConstructor) {
     return { ast: ast, error: error };
 }
 
-// Browser global for eXide (Closure-compiled bundle)
+// Browser global for eXide
 var rexParserAdapter = { parseXQuery: parseXQuery };
+globalThis.rexParserAdapter = rexParserAdapter;
 
 // Export for CommonJS (Node.js testing)
 if (typeof module !== "undefined" && module.exports) {

@@ -63,3 +63,6 @@ var prettierFormat = (function () {
         }
     };
 }());
+
+// Browser global (needed when bundled by esbuild)
+globalThis.prettierFormat = prettierFormat;
