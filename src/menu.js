@@ -123,9 +123,12 @@ eXide.util.Menubar = (function() {
                 $this.editor.focus();
             }
             var loginDialog = document.getElementById("login-dialog");
-            if (loginDialog && loginDialog.open) {
-                var firstInput = loginDialog.querySelector("input");
-                if (firstInput) firstInput.focus();
+            if (loginDialog) {
+                var parentDialog = loginDialog.closest("dialog");
+                if (parentDialog && parentDialog.open) {
+                    var firstInput = loginDialog.querySelector("input");
+                    if (firstInput) firstInput.focus();
+                }
             }
             closeMenus($this);
         });
@@ -159,7 +162,7 @@ eXide.util.Menubar = (function() {
         var menuEl = this.container.querySelector("ul li[title=\"" + menu + "\"]");
         if (!menuEl) return;
         var link = menuEl.querySelector("ul li a[title=\"" + title + "\"]");
-        if (link && link.parentNode) link.parentNode.removeChild(link.parentNode);
+        if (link && link.parentNode) link.parentNode.remove();
     };
 
     Constr.prototype.removeAll = function(menu) {

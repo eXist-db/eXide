@@ -1571,6 +1571,10 @@ div#valueHighLight {
     color: #0083CB;
 }
 
+#find-dialog {
+    display: none;
+}
+
 #find-dialog input[type=text], #find-dialog input[type=search] {
     width: 300px;
 }
@@ -1742,6 +1746,16 @@ div#valueHighLight {
     box-shadow: 0 4px 16px rgba(0,0,0,.2);
     max-height: 80vh;
     overflow: hidden;
+}
+/* Non-modal dialogs use <div>, position them like jQuery UI dialogs */
+div.eXide-dialog {
+    position: absolute;
+    z-index: 100;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    flex-direction: column;
 }
 .eXide-dialog::backdrop {
     background: rgba(0,0,0,.35);

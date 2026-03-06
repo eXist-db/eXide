@@ -36,16 +36,18 @@ Cypress.Commands.add("loginXHR", (user, password) => {
     })
 })
 
-// cy.dismissDialog() -- wait for editor to load, then dismiss any visible dialog
+// cy.dismissDialog() -- wait for editor to load and login to complete, then dismiss any visible dialog
 Cypress.Commands.add("dismissDialog", () => {
     // Wait for the editor to be initialized
     cy.get('#editor .cm-editor', { timeout: 10000 }).should('exist')
-    // Wait for any startup dialogs to appear, then dismiss
-    cy.wait(500)
+    // Wait for the login check to complete (user text changes from default)
+    cy.get('#user', { timeout: 10000 }).should('not.have.text', 'Login')
+    // Dismiss any startup dialogs
+    cy.wait(300)
     cy.get('body').then(($body) => {
-        const btn = $body.find('dialog.eXide-dialog[open] .eXide-dialog-buttons button')
+        const btn = $body.find('.eXide-dialog[open] .eXide-dialog-buttons button')
         if (btn.length) {
-            btn.trigger('click')
+            btn[0].click()
         }
     })
 })

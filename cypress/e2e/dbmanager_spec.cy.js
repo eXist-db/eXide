@@ -19,8 +19,8 @@ context('DB Manager', () => {
     })
 
     it('should open the db manager', () => {
-      cy.get('#open-dialog').closest('dialog.eXide-dialog').should('be.visible')
-      cy.get('#open-dialog').closest('dialog.eXide-dialog').find('.eXide-dialog-title').invoke('text').should('eq', 'Open file')
+      cy.get('#open-dialog').closest('.eXide-dialog').should('be.visible')
+      cy.get('#open-dialog').closest('.eXide-dialog').find('.eXide-dialog-title').invoke('text').should('eq', 'DB Manager')
     })
 
     it('should select the clicked document', () => {

@@ -1031,7 +1031,8 @@ eXide.app = (function(util) {
 
         getLogin: function(callback) {
             fetch("login", {
-                method: "POST"
+                method: "POST",
+                headers: { "Accept": "application/json" }
             })
             .then(function(response) {
                 if (!response.ok) throw new Error(response.statusText);

@@ -23,14 +23,20 @@ eXide.util.DialogManager = (function() {
             return { dialog: document.createElement("dialog"), content: document.createElement("div"), open: function(){}, close: function(){}, setTitle: function(){}, setButtons: function(){} };
         }
 
-        // Wrap content in a <dialog> element
-        var dialog = document.createElement("dialog");
+        var isModal = options.modal !== false;
+        // Use <dialog> for modal, <div> for non-modal (avoids top-layer stacking issues)
+        var dialog = document.createElement(isModal ? "dialog" : "div");
         dialog.className = "eXide-dialog";
         if (options.width) dialog.style.width = options.width + "px";
         if (options.height) {
             dialog.style.height = options.height + "px";
-            dialog.style.display = "flex";
             dialog.style.flexDirection = "column";
+        }
+        if (isModal) {
+            // Don't set inline display on <dialog> — browser UA stylesheet handles it
+            // via dialog:not([open]) { display: none }
+        } else {
+            dialog.style.display = "none";
         }
 
         // Title bar
@@ -71,14 +77,23 @@ eXide.util.DialogManager = (function() {
             dialog: dialog,
             content: el,
             open: function() {
-                if (options.modal !== false) {
+                if (isModal) {
                     dialog.showModal();
+                    if (options.height) dialog.style.display = "flex";
                 } else {
-                    dialog.show();
+                    dialog.style.display = "flex";
+                    dialog.setAttribute("open", "");
                 }
             },
             close: function() {
-                if (dialog.open) dialog.close();
+                if (isModal) {
+                    if (dialog.hasAttribute("open")) dialog.close();
+                    dialog.style.display = "";
+                } else {
+                    dialog.style.display = "none";
+                    dialog.removeAttribute("open");
+                    dialog.dispatchEvent(new Event("close"));
+                }
             },
             setTitle: function(title) {
                 titleSpan.textContent = title || "";
@@ -112,10 +127,17 @@ eXide.util.DialogManager = (function() {
             controller.close();
         });
 
-        // ESC key closes (native dialog handles this for modal, but not for non-modal)
-        dialog.addEventListener("cancel", function(e) {
-            e.preventDefault();
-            controller.close();
+        // ESC key closes
+        if (isModal) {
+            dialog.addEventListener("cancel", function(e) {
+                e.preventDefault();
+                controller.close();
+            });
+        }
+        dialog.addEventListener("keydown", function(e) {
+            if (e.key === "Escape" && !isModal) {
+                controller.close();
+            }
         });
 
         return controller;
