@@ -113,18 +113,14 @@ async function prepare() {
 	if (!fs.existsSync(buildDir)) {
 		fs.mkdirSync(buildDir);
 	}
-	
-    await mfs.copy("./scripts/xqlint/build.js", "./support/xqlint/build.js");
-	await mfs.copy("./scripts/xqlint/main.js", "./support/xqlint/main.js");
 }
 
 async function clean() {
     console.log(chalk.blue('Cleaning files ...'));
     await mfs.delete([
         'resources/scripts/eXide.min.*',
-        'resources/scripts/jquery/jquery.plugins.min.js', 
-        'resources/scripts/xqlint.min.js', 
-        'resources/scripts/ace/**',
+        'resources/scripts/jquery/jquery.plugins.min.js',
+        'resources/scripts/prettier-bundle.js',
         'resources/css/ag-grid-community/**',
         'index.html',
         'expath-pkg.xml'
