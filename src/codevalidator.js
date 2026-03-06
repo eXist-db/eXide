@@ -1,7 +1,7 @@
 eXide.namespace("eXide.edit.CodeValidator");
 
 /**
- * The main editor component. Handles the ACE editor as well as tabs, keybindings, commands...
+ * Code validation component. Validates documents on change and displays diagnostics.
  */
 eXide.edit.CodeValidator = (function () {
 

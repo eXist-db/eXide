@@ -817,7 +817,7 @@ Sub level menu list items (undo style from Top level List Items)
     padding: 0;
     overflow: hidden;
     z-index: 1;
-    margin: 0 4px 0 0;
+    margin: 0 4px;
     border-left: 1px solid #bbb;
     min-width: 0;
     min-height: 0;
@@ -841,7 +841,7 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 .results-container .results {
-    margin: 0 15px;
+    margin: 0 15px 0 0;
     /*white-space: pre-line;*/
     /*word-wrap: break-word;*/
 }
@@ -862,7 +862,8 @@ Sub level menu list items (undo style from Top level List Items)
     position: relative;
     background-color: #F0F0F0;
     padding: 2px 4px;
-    height: 20px;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .navbar img {
@@ -875,7 +876,8 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 .navbar img.layout-switcher {
-    margin-left: 1em;
+    float: right;
+    margin-top: 2px;
     cursor: pointer;
 }
 
@@ -884,10 +886,6 @@ Sub level menu list items (undo style from Top level List Items)
     vertical-align: middle;
 }
 
-.previous {
-    float: left;
-    margin-left: 8px;
-}
 
 .current {
     position: absolute;
@@ -903,22 +901,53 @@ Sub level menu list items (undo style from Top level List Items)
     display: none;
 }
 
-.next {
-    float: right;
-    margin-right: 8px;
+
+.navbar .toggle-btn {
+    display: inline-block;
+    padding: 2px 6px;
+    margin: 0 1px;
+    color: #aaa;
+    text-decoration: none;
+    border-radius: 3px;
+    vertical-align: middle;
+    transition: color 0.15s, background-color 0.15s;
+    cursor: pointer;
 }
 
-#copy-all-clipboard {
-    margin: 0 0.5rem;
-    transition: all .2s ease-in-out; 
+.navbar .toggle-btn:hover {
+    color: #555;
+    background-color: rgba(0, 0, 0, 0.06);
 }
 
-#copy-all-clipboard * {
-    margin: 0 0.1rem;
+.navbar .toggle-btn.active {
+    color: #336;
+    background-color: #e2f2ff;
+}
+
+.navbar .toggle-btn.first-page,
+.navbar .toggle-btn.previous,
+.navbar .toggle-btn.next,
+.navbar .toggle-btn.last-page,
+.navbar .toggle-btn.result-prev,
+.navbar .toggle-btn.result-next,
+.navbar .toggle-btn#copy-all-clipboard {
+    color: #333;
+}
+
+.navbar .toggle-btn .nav-double {
+    margin-left: -0.45em;
+}
+
+.navbar .toggle-btn.copied {
+    color: #2e7d32;
+    background-color: #c8e6c9;
 }
 
 .item {
+    flex: 1;
+    min-width: 0;
     min-height: 2.5em;
+    padding-left: 12px;
     -ms-user-select: text;
     -moz-user-select: text;
     -webkit-user-select: text;
@@ -933,20 +962,76 @@ Sub level menu list items (undo style from Top level List Items)
     height: 2.5em;
 }
 
-.even {
-    background-color: rgba(255, 255, 255, 0.02);
+.even, .uneven {
+    display: flex;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-.uneven {
-    background-color: rgba(0, 0, 0, 0.02);
+.even {
+    background-color: #f6f7f9;
 }
 
 .pos {
-    text-align: right;
-    float: left;
-    font-size: 1em;
-    padding: 2px;
-    margin-right: 5px;
+    flex-shrink: 0;
+    min-width: 4.2em;
+    padding: 4px 8px;
+    text-align: center;
+    background-color: #f5f5f5;
+    border-right: 1px solid #ddd;
+    box-sizing: border-box;
+}
+
+.pos .badge {
+    display: inline-block;
+    min-width: 1.6em;
+    padding: 2px 6px;
+    font-size: 0.85em;
+    font-weight: 600;
+    line-height: 1.4;
+    color: #446;
+    background-color: #e2f2ff;
+    border-radius: 4px;
+    user-select: none;
+}
+
+.pos a.badge {
+    text-decoration: none;
+    color: #446;
+    transition: background-color 0.15s;
+}
+
+.pos a.badge:hover {
+    background-color: #cceeff;
+}
+
+.copy-result {
+    float: right;
+    cursor: pointer;
+    font-size: 0.9em;
+    padding: 1px 4px;
+    color: #333;
+    border-radius: 3px;
+    transition: color 0.15s, background-color 0.15s;
+    user-select: none;
+}
+
+.copy-result:hover {
+    color: #111;
+    background-color: #e8eaf0;
+}
+
+.copy-result.copied {
+    color: #2e7d32;
+    background-color: #c8e6c9;
+}
+
+
+.results .even.result-active,
+.results .uneven.result-active {
+    outline: 2px solid #8ab4f8;
+    outline-offset: -2px;
+    border-radius: 2px;
 }
 
 /* Auto-complete box */
@@ -1620,3 +1705,30 @@ div#valueHighLight {
 .tree .resource span {
     font-weight: normal;
 }
+
+/* Syntax highlighting for query results (tok-* classes from @lezer/highlight classHighlighter) */
+.results .tok-keyword { color: #708; }
+.results .tok-atom { color: #219; }
+.results .tok-number { color: #164; }
+.results .tok-definition { color: #00f; }
+.results .tok-variableName { color: #05a; }
+.results .tok-punctuation { color: #555; }
+.results .tok-propertyName { color: #00c; }
+.results .tok-operator { color: #940; }
+.results .tok-comment { color: #a50; font-style: italic; }
+.results .tok-string { color: #a11; }
+.results .tok-string2 { color: #f50; }
+.results .tok-meta { color: #555; }
+.results .tok-qualifier { color: #555; }
+.results .tok-builtin { color: #30a; }
+.results .tok-bracket { color: #997; }
+.results .tok-tag { color: #170; }
+.results .tok-attributeName { color: #00c; }
+.results .tok-attributeValue { color: #a11; }
+.results .tok-heading { color: #170; font-weight: bold; }
+.results .tok-link { color: #219; text-decoration: underline; }
+.results .tok-invalid { color: #f00; }
+.results .tok-typeName { color: #085; }
+.results .tok-angleBracket { color: #5b7; }
+.results .tok-content { color: #333; }
+.results .tok-processingInstruction { color: #555; }

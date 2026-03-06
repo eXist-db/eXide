@@ -69,25 +69,15 @@ eXide.util = (function () {
 		},
 		
 		supportsFullScreen: function() {
-			if (document["cancelFullScreen"] || document["webkitCancelFullScreen"] || document["mozCancelFullScreen"]) {
-				return true;
-			}
-			return false;
+			return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
 		},
 
 		requestFullScreen: function(el) {
-			var state = document["fullScreen"] || document["webkitIsFullScreen"] || document["mozFullScreen"];
-			if (state) {
-				var func = document["cancelFullScreen"] || document["webkitCancelFullScreen"] || document["mozCancelFullScreen"];
-				func.call(document);
+			if (document.fullscreenElement || document.webkitFullscreenElement) {
+				(document.exitFullscreen || document.webkitExitFullscreen).call(document);
 			} else {
-				var func = (el["requestFullScreen"])
-	            || (el["webkitRequestFullScreen"])
-	            || (el["mozRequestFullScreen"]);
-	            if (func) {
-	            	func.call(el, true);
-	            }
-	        }
+				(el.requestFullscreen || el.webkitRequestFullscreen).call(el);
+			}
 		},
 
 		/**

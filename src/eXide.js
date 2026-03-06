@@ -74,6 +74,7 @@ eXide.app = (function(util) {
 	var currentOffset = 0;
 	var endOffset = 0;
     var numberOfResults = 10;
+    var activeResultIdx = -1;
 	
 	var login = null;
     
@@ -83,7 +84,67 @@ eXide.app = (function(util) {
     var hasFocus = true;
     
     var resultPanel = "south";
-    
+
+    /**
+     * Apply CM6 syntax highlighting to a result content element.
+     * Detects the language from the serialization mode and uses
+     * highlightTree to produce highlighted spans.
+     */
+    function highlightResultContent(contentEl) {
+        if (!CM6.highlightTree) return;
+        var text = contentEl.textContent;
+        if (!text || text.length === 0) return;
+
+        var serializationMode = $("#serialization-mode").val();
+        var langSupport;
+        switch (serializationMode) {
+            case "xml":
+            case "xhtml":
+            case "xhtml5":
+            case "microxml":
+                langSupport = CM6.xml();
+                break;
+            case "json":
+                langSupport = CM6.json();
+                break;
+            case "html5":
+                langSupport = CM6.html();
+                break;
+            default:
+                // Sniff content: XML starts with < or whitespace+<
+                if (/^\s*</.test(text)) {
+                    langSupport = CM6.xml();
+                } else if (/^\s*[\[{]/.test(text)) {
+                    langSupport = CM6.json();
+                } else {
+                    return; // plain text, no highlighting
+                }
+        }
+        var lang = langSupport.language;
+        var tree = lang.parser.parse(text);
+        var parts = [];
+        var pos = 0;
+        CM6.highlightTree(tree, CM6.classHighlighter, function(from, to, classes) {
+            if (from > pos) {
+                parts.push(document.createTextNode(text.slice(pos, from)));
+            }
+            var span = document.createElement("span");
+            span.className = classes;
+            span.textContent = text.slice(from, to);
+            parts.push(span);
+            pos = to;
+        });
+        if (pos < text.length) {
+            parts.push(document.createTextNode(text.slice(pos)));
+        }
+        if (parts.length > 0) {
+            contentEl.textContent = "";
+            for (var i = 0; i < parts.length; i++) {
+                contentEl.appendChild(parts[i]);
+            }
+        }
+    }
+
     var webResources = {
         "html": 1,
         "javascript": 1,
@@ -510,9 +571,10 @@ eXide.app = (function(util) {
                 editor.updateStatus("");
 				editor.clearErrors();
 				app.showResultsPanel();
-				
+
 				startOffset = 1;
 				currentOffset = 1;
+                activeResultIdx = -1;
             }
 
             if (!(eXide.configuration.allowExecution || app.login.isAdmin)) {
@@ -631,11 +693,27 @@ eXide.app = (function(util) {
 					success: function (data) {
                         const el = $(data);
                         el.find('> *:first-child').css('width', (Math.ceil(Math.log(endOffset + 1) / Math.LN10)) + 'ch');
-                        $('.results-container .results').append(el[0].outerHTML);
+                        var resultNode = el[0];
+                        $('.results-container .results').append(resultNode);
+                        var contentDiv = resultNode.querySelector('.content');
+                        if (contentDiv) {
+                            highlightResultContent(contentDiv);
+                        }
                         $('.results-container .current').text('Showing results ' + startOffset + ' to ' + (currentOffset - 1) + ' of ' + hitCount);
                         $(".results-container .pos:last a").click(function () {
                             app.findDocument($(this).data("path"));
                             return false;
+                        });
+                        // Copy individual result to clipboard
+                        $(resultNode).find('.copy-result').click(function () {
+                            var btn = this;
+                            var text = $(btn).siblings('.content')[0].textContent;
+                            navigator.clipboard.writeText(text).then(function () {
+                                $(btn).removeClass('fa-clipboard').addClass('fa-check copied');
+                                setTimeout(function () {
+                                    $(btn).removeClass('fa-check copied').addClass('fa-clipboard');
+                                }, 1200);
+                            });
                         });
                         app.retrieveNext();
 					}
@@ -652,12 +730,13 @@ eXide.app = (function(util) {
 		        endOffset = currentOffset + howmany - 1;
 				if (hitCount < endOffset)
 					endOffset = hitCount;
+				activeResultIdx = -1;
 				$(".results-container .results").empty();
 				app.retrieveNext();
 			}
 			return false;
 		},
-		
+
 		/** Called if user clicks on "previous" link in query results. */
 		browsePrevious: function() {
 			if (currentOffset > 0 && startOffset > 1) {
@@ -669,12 +748,37 @@ eXide.app = (function(util) {
 				endOffset = currentOffset + (count - 1);
 				if (hitCount < endOffset)
 					endOffset = hitCount;
+				activeResultIdx = -1;
 				$(".results-container .results").empty();
 				app.retrieveNext();
 			}
 			return false;
 		},
 		
+		browseFirst: function() {
+			if (currentOffset > 0 && startOffset > 1) {
+				startOffset = 1;
+				currentOffset = 1;
+				endOffset = Math.min(numberOfResults, hitCount);
+				activeResultIdx = -1;
+				$(".results-container .results").empty();
+				app.retrieveNext();
+			}
+			return false;
+		},
+
+		browseLast: function() {
+			if (currentOffset > 0 && endOffset < hitCount) {
+				startOffset = Math.floor((hitCount - 1) / numberOfResults) * numberOfResults + 1;
+				currentOffset = startOffset;
+				endOffset = hitCount;
+				activeResultIdx = -1;
+				$(".results-container .results").empty();
+				app.retrieveNext();
+			}
+			return false;
+		},
+
 		syncDirectory : function(collection) {
 			editor.directory.reload(collection)
 		},
@@ -1527,18 +1631,59 @@ eXide.app = (function(util) {
                 util.requestFullScreen(document.getElementById("fullscreen"));
             });
             $(".results-container .layout-switcher").click(app.switchResultsPanel);
-			$('.results-container #copy-all-clipboard').click(() => {
-                let res = '';
-                document.querySelectorAll("#results-body > div > div > div > div.item").forEach(item => res += item.innerText)
+
+            // Toggle buttons for result options
+            $('.navbar .toggle-btn[id$="-btn"]').click(function (e) {
+                e.preventDefault();
+                var cb = $(this).find('input[type="checkbox"]');
+                var checked = !cb.is(':checked');
+                cb.prop('checked', checked);
+                $(this).toggleClass('active', checked);
+            });
+
+			$('.results-container #copy-all-clipboard').click(function (e) {
+                e.preventDefault();
+                var btn = $(this);
+                var icon = btn.find('.fa');
+                var res = '';
+                document.querySelectorAll("#results-body > div > div > div > div.item").forEach(function (item) { res += item.innerText; });
                 navigator.clipboard.writeText(res).then(function() {
-                    console.log('Async: Copying to clipboard was successful!');
+                    icon.removeClass('fa-clipboard').addClass('fa-check');
+                    btn.addClass('copied');
                     eXide.util.message("Copied results to clipboard");
-                  }, function(err) {
-                    console.error('Async: Could not copy text: ', err);
-                  });
+                    setTimeout(function () {
+                        icon.removeClass('fa-check').addClass('fa-clipboard');
+                        btn.removeClass('copied');
+                    }, 1200);
+                }, function(err) {
+                    console.error('Could not copy text: ', err);
+                });
             });
 			$('.results-container .next').click(app.browseNext);
 			$('.results-container .previous').click(app.browsePrevious);
+			$('.results-container .first-page').click(app.browseFirst);
+			$('.results-container .last-page').click(app.browseLast);
+
+            // Navigate between individual results within the current page
+            function scrollToResult(idx) {
+                var items = $('.results-container .results > .even, .results-container .results > .uneven');
+                if (items.length === 0) return;
+                idx = Math.max(0, Math.min(idx, items.length - 1));
+                activeResultIdx = idx;
+                items.removeClass('result-active');
+                var target = items.eq(idx);
+                target.addClass('result-active');
+                target[0].scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            $('.results-container .result-prev').click(function (e) {
+                e.preventDefault();
+                scrollToResult(activeResultIdx <= 0 ? 0 : activeResultIdx - 1);
+            });
+            $('.results-container .result-next').click(function (e) {
+                e.preventDefault();
+                // After a fresh query, the first result is already visible, so skip to the second
+                scrollToResult(activeResultIdx < 0 ? 1 : activeResultIdx + 1);
+            });
             $("#number-of-results").change(function(ev) {
                 numberOfResults = +document.getElementById("number-of-results").value;
             });

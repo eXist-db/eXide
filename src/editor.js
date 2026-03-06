@@ -1057,18 +1057,11 @@ eXide.edit.Editor = (function () {
 
     Constr.prototype.setTheme = function(theme) {
         $.log("Changing theme to %s", theme);
-        var $this = this;
-        var themeExt = [];
-        // Map Ace theme names to CM6 themes
-        if (theme === "monokai" || theme === "one_dark" || theme === "twilight" ||
-            theme === "tomorrow_night" || theme === "tomorrow_night_blue") {
-            themeExt = CM6.oneDark;
-        }
-        // For light themes (eclipse, tomorrow, etc.), use default (no theme extension)
-        $this.editor.dispatch({
-            effects: $this._themeCompartment.reconfigure(themeExt)
+        var isDark = (theme === "dark");
+        this.editor.dispatch({
+            effects: this._themeCompartment.reconfigure(isDark ? CM6.oneDark : [])
         });
-        $this.$triggerEvent("setTheme", [{ isDark: themeExt.length > 0 }]);
+        this.$triggerEvent("setTheme", [{ isDark: isDark }]);
     };
 
     /**

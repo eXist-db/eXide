@@ -25,7 +25,7 @@ eXide.namespace("eXide.util.Preferences");
 eXide.util.Preferences = (function () {
 
     var defaultPreferences = {
-        theme: "tomorrow",
+        theme: "light",
 		fontSize: 14,
         font: "Default",
 		showInvisibles: false,
@@ -156,7 +156,24 @@ eXide.util.Preferences = (function () {
 	this.applyPreferences();
     };
     
+    // Map old Ace theme names to "light" or "dark"
+    var ACE_DARK_THEMES = {
+        ambiance: true, chaos: true, clouds_midnight: true, cobalt: true,
+        dracula: true, idle_fingers: true, kr_theme: true, merbivore: true,
+        merbivore_soft: true, mono_industrial: true, monokai: true,
+        pastel_on_dark: true, solarized_dark: true, terminal: true,
+        tomorrow_night: true, tomorrow_night_blue: true,
+        tomorrow_night_bright: true, tomorrow_night_eighties: true,
+        twilight: true, vibrant_ink: true
+    };
+
+    function migrateTheme(theme) {
+        if (theme === "light" || theme === "dark") return theme;
+        return ACE_DARK_THEMES[theme] ? "dark" : "light";
+    }
+
     Constr.prototype.applyPreferences = function () {
+        this.preferences.theme = migrateTheme(this.preferences.theme);
 		this.editor.setTheme(this.preferences.theme);
 
         // Store preferences on editor for use during document switching

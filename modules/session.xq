@@ -61,14 +61,15 @@ declare function local:retrieve($num as xs:integer) as element() {
             <div class="pos">
             {
                 if (string-length($documentURI) > 0) then
-                    <a href="{$documentURI}#{util:node-id($cached-item)}" data-path="{$documentURI}"
+                    <a class="badge" href="{$documentURI}#{util:node-id($cached-item)}" data-path="{$documentURI}"
                         title="Click to load source document">{$num}</a>
                 else
-                    $num
+                    <span class="badge">{$num}</span>
             }
             </div>
             <div class="item">
-                <div class="content ace_editor ace-tomorrow" style="white-space: pre-wrap">
+                <i class="fa fa-clipboard copy-result" title="Copy this item to clipboard"/>
+                <div class="content" style="white-space: pre-wrap">
                     { $serialized }
                 </div>
             </div>

@@ -388,9 +388,6 @@
                                     <span title="Click to close results"/>
                                 </div>
                                 <div class="navbar">
-                                    <a class="previous" href="#">
-                                        <span class="fa fa-backward"/>
-                                    </a>
                                     <select name="output-mode" id="serialization-mode">
                                         <option value="adaptive">Adaptive Output</option>
                                         <option value="json">JSON Output</option>
@@ -403,30 +400,45 @@
                                         <option disabled="disabled">-</option>
                                         <option value="direct">Direct Output</option>
                                     </select>
-                                    <label title="number-of-results">
-                                        Number of results: 
+                                    <a class="toggle-btn active" id="indent-results-btn" href="#" title="Indent results (effective in Adaptive, JSON, (X)HTML, and XML Output modes)">
+                                        <i class="fa fa-indent" aria-hidden="true"></i>
+                                        <input type="checkbox" id="indent-results" name="indent-results" checked="checked" style="display:none"/>
+                                    </a>
+                                    <a class="toggle-btn active" id="auto-expand-btn" href="#" title="Highlight Index Matches: highlight hits from index-based queries (e.g., Lucene full text, Range)">
+                                        <i class="fa fa-bolt" aria-hidden="true"></i>
+                                        <input type="checkbox" id="auto-expand-matches" name="auto-expand-matches" checked="checked" style="display:none"/>
+                                    </a>
+                                    <a class="toggle-btn" id="live-preview-btn" href="#" title="Live Preview: auto-update results while typing XQuery or saving HTML">
+                                        <i class="fa fa-eye" aria-hidden="true"></i>
+                                        <input type="checkbox" id="live-preview" name="live-preview" style="display:none"/>
+                                    </a>
+                                    <label title="Number of results per page">
+                                        <i class="fa fa-list-ol" aria-hidden="true"></i>
                                         <input value="10" id="number-of-results" style="width:3ch;"/>
                                     </label>
-                                    <label class="checkbox" title="Indent results; effective only in Adaptive, JSON, (X)HTML, and XML Output modes.">
-                                        <input type="checkbox" id="indent-results" name="indent-results" checked="checked"/>
-                                        Indent
-                                    </label>
-                                    <label class="checkbox" title="Update query results automatically while you type XQuery or when saving HTML">
-                                        <input type="checkbox" id="live-preview" name="live-preview"/>
-                                        Live Preview
-                                    </label>
-                                    <label class="checkbox" title="Automatically highlight hits from index-based queries (e.g., Lucene full text, Range); effective only in Adaptive and XML Output modes when outputting XML nodes.">
-                                        <input type="checkbox" id="auto-expand-matches" name="auto-expand-matches" checked="checked"/>
-                                        Highlight Index Matches
-                                    </label>
-                                    <label id="copy-all-clipboard" title="Copy the displayed results into the clipboard">
-                                    <i class="fa fa-clipboard" aria-hidden="true"></i> Copy to clipboard
-                                    </label>
-                                    <img class="layout-switcher" src="resources/images/layouts_split.png" title="Switch results panel location between bottom and right"/>
-                                    <span class="current"/>
-                                    <a class="next" href="#">
-                                        <span class="fa fa-forward"/>
+                                    <a class="toggle-btn first-page" href="#" title="First page">
+                                        <i class="fa fa-chevron-left" aria-hidden="true"></i><i class="fa fa-chevron-left nav-double" aria-hidden="true"></i>
                                     </a>
+                                    <a class="toggle-btn previous" href="#" title="Previous page">
+                                        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                                    </a>
+                                    <a class="toggle-btn result-prev" href="#" title="Previous result">
+                                        <i class="fa fa-chevron-up" aria-hidden="true"></i>
+                                    </a>
+                                    <a class="toggle-btn result-next" href="#" title="Next result">
+                                        <i class="fa fa-chevron-down" aria-hidden="true"></i>
+                                    </a>
+                                    <a class="toggle-btn next" href="#" title="Next page">
+                                        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                                    </a>
+                                    <a class="toggle-btn last-page" href="#" title="Last page">
+                                        <i class="fa fa-chevron-right" aria-hidden="true"></i><i class="fa fa-chevron-right nav-double" aria-hidden="true"></i>
+                                    </a>
+                                    <a class="toggle-btn" id="copy-all-clipboard" href="#" title="Copy all displayed results to clipboard">
+                                        <i class="fa fa-clipboard" aria-hidden="true"></i>
+                                    </a>
+                                    <span class="current"/>
+                                    <img class="layout-switcher" src="resources/images/layouts_split.png" title="Switch results panel location between bottom and right"/>
                                 </div>
                                 <div id="results-body">
                                     <div class="marker-layer">
@@ -589,38 +601,8 @@
                             <ol>
                                 <li>
                                     <select id="theme" name="theme">
-                                        <option value="ambiance">Ambiance</option>
-                                        <option value="chaos">Chaos</option>
-                                        <option value="chrome">Chrome</option>
-                                        <option value="clouds">Clouds</option>
-                                        <option value="clouds_midnight">Clouds Midnight</option>
-                                        <option value="cobalt">Cobalt</option>
-                                        <option value="crimson_editor">Crimson Editor</option>
-                                        <option value="dawn">Dawn</option>
-                                        <option value="dreamweaver">Dreamweaver</option>
-                                        <option value="eclipse">Eclipse</option>
-                                        <option value="github">Github</option>
-                                        <option value="idle_fingers">Idle Fingers</option>
-                                        <option value="katzenmilch">Katzenmilch</option>
-                                        <option value="kr_theme">Kr Theme</option>
-                                        <option value="kuroir">Kuroir</option>
-                                        <option value="merbivore">Merbivore</option>
-                                        <option value="merbivore_soft">Merbivore Soft</option>
-                                        <option value="mono_industrial">Mono Industrial</option>
-                                        <option value="monokai">Monokai</option>
-                                        <option value="pastel_on_dark">Pastel on dark</option>
-                                        <option value="solarized_dark">Solarized Dark</option>
-                                        <option value="solarized_light">Solarized Light</option>
-                                        <option value="terminal">Terminal</option>
-                                        <option value="textmate">Textmate</option>
-                                        <option value="tomorrow">Tomorrow</option>
-                                        <option value="tomorrow_night">Tomorrow Night</option>
-                                        <option value="tomorrow_night_blue">Tomorrow Night Blue</option>
-                                        <option value="tomorrow_night_bright">Tomorrow Night Bright</option>
-                                        <option value="tomorrow_night_eighties">Tomorrow Night Eighties</option>
-                                        <option value="twilight">Twilight</option>
-                                        <option value="vibrant_ink">Vibrant Ink</option>
-                                        <option value="xcode">XCode</option>
+                                        <option value="light">Light</option>
+                                        <option value="dark">Dark</option>
                                     </select>
                                     <label for="theme">Theme: </label>
                                 </li>

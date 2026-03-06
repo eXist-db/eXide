@@ -27,7 +27,7 @@ eXide.util.Snippets = (function () {
     var snippetsForMode = {};
 
     /**
-     * Parse Ace-format snippet files into an array of {name, content} objects.
+     * Parse snippet files into an array of {name, content} objects.
      */
     function parseSnippetFile(data) {
         var snippets = [];

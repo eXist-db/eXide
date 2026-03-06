@@ -17,7 +17,7 @@ import {syntaxHighlighting, HighlightStyle, indentOnInput, foldGutter, foldKeyma
         bracketMatching, defaultHighlightStyle, indentUnit, StreamLanguage,
         syntaxTree, foldNodeProp, foldInside, Language, LRLanguage,
         LanguageSupport, LanguageDescription} from "@codemirror/language";
-import {defaultKeymap, history, historyKeymap, indentWithTab, undo, redo} from "@codemirror/commands";
+import {defaultKeymap, history, historyKeymap, indentWithTab, undo, redo, toggleComment} from "@codemirror/commands";
 import {searchKeymap, openSearchPanel, closeSearchPanel, search, findNext, findPrevious,
         replaceNext, replaceAll, SearchQuery, setSearchQuery, getSearchQuery,
         SearchCursor} from "@codemirror/search";
@@ -35,7 +35,7 @@ import {json} from "@codemirror/lang-json";
 import {markdown} from "@codemirror/lang-markdown";
 import {oneDark, oneDarkTheme, oneDarkHighlightStyle} from "@codemirror/theme-one-dark";
 import {languages} from "@codemirror/language-data";
-import {tags} from "@lezer/highlight";
+import {tags, classHighlighter, highlightTree} from "@lezer/highlight";
 
 globalThis.CM6 = {
     // @codemirror/state
@@ -90,6 +90,7 @@ globalThis.CM6 = {
     indentWithTab,
     undo,
     redo,
+    toggleComment,
 
     // @codemirror/search
     searchKeymap,
@@ -141,8 +142,10 @@ globalThis.CM6 = {
     oneDarkTheme,
     oneDarkHighlightStyle,
 
-    // Lezer highlight tags
-    tags
+    // Lezer highlight tags & tree highlighting
+    tags,
+    classHighlighter,
+    highlightTree
 };
 `;
 

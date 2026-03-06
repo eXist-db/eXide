@@ -135,11 +135,6 @@ eXide.edit.Outline = (function () {
 
             var li = sel.enter()
                 .append("li")
-                    .attr("class", function(d) {
-                        return d.type == eXide.edit.Document.TYPE_FUNCTION
-                            ? "ace_support.ace_function"
-                            : "ace_variable";
-                    })
                     .attr("class",function(d) {
                       var cl =  d.type == eXide.edit.Document.TYPE_FUNCTION ?  "t.function" : "t_variable";
                       return cl + " " + (d.visibility === "private" ? "private" : "public" );
