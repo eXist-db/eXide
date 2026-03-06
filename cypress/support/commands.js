@@ -79,3 +79,15 @@ Cypress.Commands.add("setConf", function (executeQuery, restrictAccess) {
 //
 // -- This is will overwrite an existing command --
 // Cypress.Commands.overwrite("visit", (originalFn, url, options) => { ... })
+
+// Dismiss any visible dialog (e.g. version upgrade notification) after page load
+Cypress.Commands.add("dismissDialog", () => {
+    cy.get('.ace_editor, #editor', { timeout: 10000 }).should('exist')
+    cy.wait(500)
+    cy.get('body').then(($body) => {
+        const btn = $body.find('div.ui-dialog:visible div.ui-dialog-buttonset button')
+        if (btn.length) {
+            btn.trigger('click')
+        }
+    })
+})

@@ -697,6 +697,9 @@ var staticAnalysis = (function () {
     return { analyze: analyze };
 })();
 
+// Browser global (needed when bundled by esbuild)
+globalThis.staticAnalysis = staticAnalysis;
+
 if (typeof module !== "undefined" && module.exports) {
     module.exports = staticAnalysis;
 }
