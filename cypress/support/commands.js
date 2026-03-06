@@ -36,6 +36,20 @@ Cypress.Commands.add("loginXHR", (user, password) => {
     })
 })
 
+// cy.dismissDialog() -- wait for editor to load, then dismiss any visible dialog
+Cypress.Commands.add("dismissDialog", () => {
+    // Wait for the editor to be initialized
+    cy.get('#editor .cm-editor', { timeout: 10000 }).should('exist')
+    // Wait for any startup dialogs to appear, then dismiss
+    cy.wait(500)
+    cy.get('body').then(($body) => {
+        const btn = $body.find('div.ui-dialog:visible div.ui-dialog-buttonset button')
+        if (btn.length) {
+            btn.trigger('click')
+        }
+    })
+})
+
 // cy.logout() -- does not work reliably
 Cypress.Commands.add("logout", () => cy.request('/eXide/index.html', {logout: true}))
 

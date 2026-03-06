@@ -1,4 +1,3 @@
-import '../src/ace-modes.js';
 import '../src/util.js';
 import '../src/history.js';
 import '../src/popup.js';

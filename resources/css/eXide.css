@@ -55,6 +55,7 @@ body {
     -ms-flex-direction: column;
     flex-direction: column;
     position: relative;
+    min-height: 0;
 }
 
 .content {
@@ -307,6 +308,16 @@ a:link, a:visited {
     /* background-color: #E8E8E8; */
     padding: 0 0 0 0;
     border-left: 1px solid #bbb;
+    min-height: 0;
+    overflow: hidden;
+}
+
+#editor .cm-editor {
+    height: 100%;
+}
+
+#editor .cm-scroller {
+    overflow: auto;
 }
 
 .header {
@@ -549,6 +560,7 @@ Sub level menu list items (undo style from Top level List Items)
     /*width: 500px; */
     /* Add scroll-bars */
     overflow: hidden;
+    flex-shrink: 0;
 }
 
 #tabs, #tabs-outline {
@@ -834,14 +846,14 @@ Sub level menu list items (undo style from Top level List Items)
     /*word-wrap: break-word;*/
 }
 
-#results-body .ace_scroller {
+#results-body .panel-scroller {
     height: 100%;
     width: 100%;
     overflow: auto;
     z-index: 1;
 }
 
-#results-body .ace_marker-layer {
+#results-body .marker-layer {
     height: 100%;
     overflow: auto;
 }
@@ -1037,6 +1049,7 @@ Sub level menu list items (undo style from Top level List Items)
     padding: 0;
     font-size: 85%;
     border: 0;
+    overflow: hidden;
 }
 
 #outline-container h3 {
@@ -1058,7 +1071,7 @@ Sub level menu list items (undo style from Top level List Items)
     width: 100%;
 }
 
-#outline-body .ace_scroller, #directory-body .ace_scroller {
+#outline-body .panel-scroller, #directory-body .panel-scroller {
     position: absolute;
     top: 0;
     bottom: 0;
@@ -1068,7 +1081,7 @@ Sub level menu list items (undo style from Top level List Items)
     overflow-x: none;
 }
 
-#directory-body .ace_scroller {
+#directory-body .panel-scroller {
     overflow-x: auto;
 }
 
@@ -1106,6 +1119,7 @@ Sub level menu list items (undo style from Top level List Items)
 
 .outline-status {
     height: 20px;
+    flex-shrink: 0;
 }
 
 #outline-filter {

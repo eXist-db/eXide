@@ -1,6 +1,6 @@
 /*
  *  eXide - web-based XQuery IDE
- *  
+ *
  *  Copyright (C) 2013 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -23,82 +23,64 @@ eXide.namespace("eXide.edit.ModeHelper");
  * Base class for helper methods needed by specific editing modes (like XQuery, XML...)
  */
 eXide.edit.ModeHelper = (function () {
-	
-    var SnippetManager = require("ace/snippets").snippetManager;
-    var Range = require("ace/range").Range;
-    
-	Constr = function(editor) {
-		this.parent = editor;
-		this.editor = this.parent.editor;
 
-		this.commands = {};
+    Constr = function(editor) {
+        this.parent = editor;
+        this.editor = this.parent.editor;
+
+        this.commands = {};
         this.addCommand("locate", this.locate);
         this.addCommand("format", this.format);
-	}
-	
-	Constr.prototype = {
+    }
+
+    Constr.prototype = {
 
         activate: function() {
         },
-        
+
         deactivate: function() {
         },
-        
-		/**
-		 * Add a command which can be invoked dynamically by the editor
-		 */
-		addCommand: function (name, func) {
-			if (!this.commands) {
-				this.commands = {};
-			}
-			this.commands[name] = func;
-		},
-		
-		/**
-		 * Dynamically call a method of this class.
-		 */
-		exec: function (command, doc, args) {
-			if (this.commands && this.commands[command]) {
-				var nargs = [doc];
-				for (var i = 0; i < args.length; i++) {
-					nargs.push(args[i]);
-				}
-				$.log("Calling command %s ...", command);
-				this.commands[command].apply(this, nargs);
-			} else {
+
+        addCommand: function (name, func) {
+            if (!this.commands) {
+                this.commands = {};
+            }
+            this.commands[name] = func;
+        },
+
+        exec: function (command, doc, args) {
+            if (this.commands && this.commands[command]) {
+                var nargs = [doc];
+                for (var i = 0; i < args.length; i++) {
+                    nargs.push(args[i]);
+                }
+                $.log("Calling command %s ...", command);
+                this.commands[command].apply(this, nargs);
+            } else {
                 eXide.util.message(command + " not supported in this mode.")
             }
-		},
-        
+        },
+
         validate: function(doc, code, onComplete) {
             if (onComplete)
                 onComplete(doc);
         },
-        
-        /**
-         * Parse the document and add functions to the
-         * document for the outline view.
-         */
+
         createOutline: function(doc, onComplete) {
-            // implemented by subclasses
             d3.select("#outline").selectAll("li")
                 .transition()
                     .duration(400)
                     .style("opacity",0)
                     .remove();
         },
-        
-        /**
-         * Called after a document was saved.
-         */
+
         documentSaved: function(doc) {
-            // implemented by subclasses
         },
-        
+
         locate: function(doc, type, row) {
             if (typeof row == "number") {
-                this.editor.gotoLine(row + 1);
-            	this.editor.focus();
+                editorShim.gotoLine(this.editor, row + 1);
+                this.editor.focus();
             }
             return false;
         },
@@ -109,8 +91,8 @@ eXide.edit.ModeHelper = (function () {
                 return;
             }
             var self = this;
-            var range = this.editor.getSelectionRange();
-            var code = doc.getSession().getTextRange(range);
+            var range = editorShim.getSelectionRange(this.editor);
+            var code = editorShim.getTextRange(this.editor, range);
             var isSelection = code.length > 0;
             if (!isSelection) {
                 code = doc.getText();
@@ -119,47 +101,44 @@ eXide.edit.ModeHelper = (function () {
             prettierFormat.format(code, mode).then(function (formatted) {
                 formatted = formatted.replace(/\n$/, "");
                 if (isSelection) {
-                    doc.getSession().replace(range, formatted);
+                    editorShim.replaceRange(self.editor, range, formatted);
                 } else {
-                    var pos = self.editor.getCursorPosition();
-                    doc.getSession().setValue(formatted);
-                    self.editor.moveCursorToPosition(pos);
-                    self.editor.clearSelection();
+                    var pos = editorShim.getCursorPosition(self.editor);
+                    editorShim.setValue(self.editor, formatted);
+                    editorShim.moveCursorToPosition(self.editor, pos);
+                    editorShim.clearSelection(self.editor);
                 }
             }).catch(function (e) {
                 console.log("Error formatting code: %s", e.message);
                 eXide.util.error("Code could not be formatted: " + e.message);
             });
         },
-        
-        /**
-         * General autocomplete method: shows template popup.
-         */
+
         autocomplete : function(doc, alwaysShow) {
             var self = this;
             var range;
             if (alwaysShow === undefined) {
                 alwaysShow = true;
             }
-            
+
             function apply(selected) {
                 if (range) {
-                    self.editor.getSession().remove(range);
+                    editorShim.removeRange(self.editor, range);
                 }
-                SnippetManager.insertSnippet(self.editor, selected.template);
+                editorShim.insertSnippet(self.editor, selected.template);
             }
-            
+
             if (alwaysShow === undefined) {
                 alwaysShow = true;
             }
-            
-            var sel   = this.editor.getSelection();
-            var lead = sel.getSelectionLead();
-            var pos = this.editor.renderer.textToScreenCoordinates(lead.row, lead.column);
+
+            var lead = editorShim.getSelectionLead(this.editor);
+            var pos = editorShim.textToScreenCoordinates(this.editor, lead.row, lead.column);
             var token;
-            if (sel.isEmpty()) {
+            var isEmpty = editorShim.isSelectionEmpty(this.editor);
+            if (isEmpty) {
                 var row = lead.row;
-                var line = this.editor.getSession().getDisplayLine(lead.row);
+                var line = editorShim.getLine(this.editor, lead.row);
                 var start = lead.column - 1;
                 var end = lead.column;
                 while (start >= 0) {
@@ -175,18 +154,18 @@ eXide.edit.ModeHelper = (function () {
                 }
                 token = line.substring(start, end);
                 end++;
-                
+
                 if (token === "" && !alwaysShow) {
                     return false;
                 } else {
-                    range = new Range(row, start, row, end);
+                    range = editorShim.createRange(row, start, row, end);
                 }
             } else if (!alwaysShow) {
                 return false;
             }
-            
+
             eXide.util.Popup.position(pos);
-    
+
             var popupItems = this.getTemplates(doc, token, []);
             if (popupItems.length == 0) {
                 return false;
@@ -201,22 +180,21 @@ eXide.edit.ModeHelper = (function () {
             }
             return true;
         },
-        
+
         getTemplates: function (doc, prefix, popupItems) {
             var templates = eXide.util.Snippets.getTemplates(doc, prefix);
-        	// add templates
-    		for (var i = 0; i < templates.length; i++) {
-    			var item = {
-    				type: "template",
-    				label: "[S] " + templates[i].name,
-    				template: templates[i].template,
+            for (var i = 0; i < templates.length; i++) {
+                var item = {
+                    type: "template",
+                    label: "[S] " + templates[i].name,
+                    template: templates[i].template,
                     completion: templates[i].completion
-    			};
-    			popupItems.push(item);
-    		}
+                };
+                popupItems.push(item);
+            }
             return popupItems;
-    	}
-	};
-	
-	return Constr;
+        }
+    };
+
+    return Constr;
 }());

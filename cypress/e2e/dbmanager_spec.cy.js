@@ -14,7 +14,7 @@ context('DB Manager', () => {
           win.localStorage.setItem('eXide.firstTime', '0')
         }
       })
-      cy.get('div.ui-dialog div.ui-dialog-buttonset button').filter(':visible').click({ multiple: true, force: true })
+      cy.dismissDialog()
       openDbManager()
     })
 
@@ -281,7 +281,7 @@ context('DB Manager', () => {
 
       it('should open resource', () => {
         cy.visit(`/eXide/index.html`)
-        cy.get('div.ui-dialog div.ui-dialog-buttonset button').filter(':visible').click()
+        cy.dismissDialog()
         cy.get('#fullscreen > div.editor-header > div > ul > li:nth-child(1) > a').click()
         cy.get('#fullscreen > div.editor-header > div > ul > li:nth-child(1) > ul').find('#menu-file-manager').click()
         cy.get('div.eXide-browse-main').within(() => {
@@ -297,7 +297,7 @@ context('DB Manager', () => {
 
       it('should delete the created collection', () => {
         cy.visit(`/eXide/index.html`)
-        cy.get('div.ui-dialog div.ui-dialog-buttonset button').filter(':visible').click()
+        cy.dismissDialog()
         cy.get('#fullscreen > div.editor-header > div > ul > li:nth-child(1) > a').click()
         cy.get('#fullscreen > div.editor-header > div > ul > li:nth-child(1) > ul').find('#menu-file-manager').click()
         cy.get('div.eXide-browse-main').within(() => {

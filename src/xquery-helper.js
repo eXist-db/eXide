@@ -51,9 +51,13 @@ eXide.edit.XQueryModeHelper = (function () {
     // staticAnalysis loaded as global from src/static-analysis.js (concatenated before this file)
     // Code formatting handled by prettierFormat (src/prettier-format.js)
 
-    var Range = require("ace/range").Range;
-    var Anchor = require("ace/anchor").Anchor;
-    var SnippetManager = require("ace/snippets").snippetManager;
+    // Ace compatibility: use editorShim for Range/Anchor, CM6 snippets for SnippetManager
+    var Range = {
+        // Compatibility constructor — returns a plain range object
+    };
+    function createRange(sr, sc, er, ec) {
+        return editorShim.createRange(sr, sc, er, ec);
+    }
     
 	Constr = function(editor, menubar) {
 		this.parent = editor;
@@ -145,11 +149,11 @@ eXide.edit.XQueryModeHelper = (function () {
 					var err = parseErrMsg(data.error);
 					var tag = /constructor:\s([^\)]+)\)?$/.exec(err.msg);
 					if (tag && tag.length > 0) {
-						$this.editor.insert(tag[1] + ">");
+						editorShim.insert($this.editor, tag[1] + ">");
 					} else {
 					    tag = /tag:.*;\sexpected:\s(.*)$/.exec(err.msg);
                         if (tag && tag.length > 0) {
-						    $this.editor.insert(tag[1] + ">");
+						    editorShim.insert($this.editor, tag[1] + ">");
                         }
 					}
 				}
@@ -209,10 +213,10 @@ eXide.edit.XQueryModeHelper = (function () {
 			this.parent.updateStatus(err.msg, doc.getPath() + "#" + err.line);
             var annotations = this.clearAnnotations(doc, "error");
             annotations.push(annotation);
-			doc.getSession().setAnnotations(annotations);
+			editorShim.setAnnotations(this.editor, annotations);
             return false;
 		} else {
-			doc.getSession().setAnnotations(this.clearAnnotations(doc, "error"));
+			editorShim.setAnnotations(this.editor, this.clearAnnotations(doc, "error"));
 			this.parent.updateStatus("");
             return true;
 		}
@@ -223,7 +227,6 @@ eXide.edit.XQueryModeHelper = (function () {
             return;
         }
         $.log("Running xqlint...");
-        var session = doc.getSession();
         var value = doc.getText();
         var result = rexAdapter.parseXQuery(value, RExParser);
         if (result.error) {
@@ -241,18 +244,8 @@ eXide.edit.XQueryModeHelper = (function () {
                 $.log("Static analysis error (non-fatal): %s", te.message);
             }
 
-            var mode = doc.getSession().getMode();
-
-            mode.$tokenizer.tokens = semanticHighlight(result.ast);
-            mode.$tokenizer.lines  = session.getDocument().getAllLines();
-            session.bgTokenizer.lines = [];
-            session.bgTokenizer.states = [];
-
-            var rows = Object.keys(mode.$tokenizer.tokens);
-            for(var i=0; i < rows.length; i++) {
-                var row = parseInt(rows[i]);
-                session.bgTokenizer.fireUpdateEvent(row, row);
-            }
+            // CM6: semantic highlighting via decorations will be added in a future pass.
+            // For now, skip the bgTokenizer manipulation that was Ace-specific.
 
             var markers = doc.ast.markers;
             if (markers) {
@@ -268,7 +261,7 @@ eXide.edit.XQueryModeHelper = (function () {
                         });
                     }
                 }
-                session.setAnnotations(annotations);
+                editorShim.setAnnotations(this.editor, annotations);
             }
         } catch(e) {
             $.log("Error while processing ast: %s", e.message);
@@ -277,7 +270,7 @@ eXide.edit.XQueryModeHelper = (function () {
     
     Constr.prototype.clearAnnotations = function(doc, type) {
         var na = [];
-        var a = doc.getSession().getAnnotations();
+        var a = editorShim.getAnnotations(this.editor);
         for (var i = 0; i < a.length; i++) {
             if (a[i].type !== type) {
                 na.push(a[i]);
@@ -293,18 +286,15 @@ eXide.edit.XQueryModeHelper = (function () {
             alwaysShow = true;
         }
 
-        var sel   = this.editor.getSelection();
-        var session   = doc.getSession();
+        var lead = editorShim.getSelectionLead(this.editor);
 
-        var lead = sel.getSelectionLead();
-        
         var token = "";
         var mode = "templates";
         var row, start, end;
         var range;
-        
+
         // if text is selected we show templates only
-        if (sel.isEmpty()) {
+        if (editorShim.isSelectionEmpty(this.editor)) {
             // try to determine the ast node where the cursor is located
             var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
             
@@ -314,7 +304,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 // no ast node: scan preceding text
                 mode = "functions";
                 row = lead.row;
-                line = session.getDisplayLine(lead.row);
+                line = editorShim.getLine(this.editor, lead.row);
                 start = lead.column - 1;
                 end = lead.column;
                 while (start >= 0) {
@@ -404,7 +394,7 @@ eXide.edit.XQueryModeHelper = (function () {
                     }
                 }
             }
-            range = new Range(row, start, row, end);
+            range = createRange(row, start, row, end);
         } else {
             mode = "templates";
             range = null;
@@ -415,10 +405,10 @@ eXide.edit.XQueryModeHelper = (function () {
         }
 		$.log("completing token: %s, mode: %s, range: %o", token, mode, range);
 
-		var pos = this.editor.renderer.textToScreenCoordinates(lead.row, lead.column);
+		var pos = editorShim.textToScreenCoordinates(this.editor, lead.row, lead.column);
         eXide.util.Popup.position(pos);
-        
-		
+
+
 		if (mode == "templates") {
 			this.templateLookup(doc, token, range, true);
 		} else if (mode == "functions") {
@@ -608,12 +598,12 @@ eXide.edit.XQueryModeHelper = (function () {
                     expansion = selected.template;   
     			}
                 if (wordrange) {
-                    $this.editor.getSession().remove(wordrange);
+                    editorShim.removeRange($this.editor, wordrange);
                 }
                 if (selected.type === "variable") {
-                    $this.editor.insert(expansion);
+                    editorShim.insert($this.editor, expansion);
                 } else {
-                    SnippetManager.insertSnippet($this.editor, expansion);
+                    editorShim.insertSnippet($this.editor, expansion);
                 }
                 if (selected.completion) {
                     $this.autocomplete(doc);
@@ -644,8 +634,7 @@ eXide.edit.XQueryModeHelper = (function () {
         
         if (!name) {
     		var row = lead.row;
-    	    var session = this.editor.getSession();
-    		var line = session.getDisplayLine(row);
+    		var line = editorShim.getLine(this.editor, row);
     		var start = lead.column;
     		do {
     			start--;
@@ -672,10 +661,9 @@ eXide.edit.XQueryModeHelper = (function () {
 	
 	Constr.prototype.showFunctionDoc = function (doc) {
         this.xqlint(doc);
-		var sel = this.editor.getSelection();
-		var lead = sel.getSelectionLead();
-		
-		var pos = this.editor.renderer.textToScreenCoordinates(lead.row, lead.column);
+		var lead = editorShim.getSelectionLead(this.editor);
+
+		var pos = editorShim.textToScreenCoordinates(this.editor, lead.row, lead.column);
         eXide.util.Popup.position(pos);
 		var func = this.getFunctionAtCursor(doc, lead);
 		this.functionLookup(doc, func, null, false);
@@ -683,14 +671,14 @@ eXide.edit.XQueryModeHelper = (function () {
 	
     Constr.prototype.quickFix = function (doc, row) {
         if (!row) {
-            row = this.editor.getCursorPosition().row;
+            row = editorShim.getCursorPosition(this.editor).row;
         }
         $.log("Requesting quick fix for %s at %d", doc.getName(), row);
-        var pos = this.editor.renderer.textToScreenCoordinates(row, 0);
+        var pos = editorShim.textToScreenCoordinates(this.editor, row, 0);
     	eXide.util.Popup.position(pos);
-        
+
         var resolutions = [];
-        var an = doc.getSession().getAnnotations();
+        var an = editorShim.getAnnotations(this.editor);
         for (var i = 0; i < an.length; i++) {
             if (an[i].row === row) {
                 var qf = eXide.edit.XQueryQuickFix.getResolutions(this, this.editor, doc, an[i]);
@@ -719,8 +707,7 @@ eXide.edit.XQueryModeHelper = (function () {
     
 	Constr.prototype.gotoDefinition = function (doc) {
         this.xqlint(doc);
-		var sel = this.editor.getSelection();
-		var lead = sel.getSelectionLead();
+		var lead = editorShim.getSelectionLead(this.editor);
 		var funcName = this.getFunctionAtCursor(doc, lead);
 		if (funcName) {
 			this.parent.outline.gotoDefinition(doc, funcName);
@@ -745,20 +732,18 @@ eXide.edit.XQueryModeHelper = (function () {
     Constr.prototype.extractVariable = function(doc) {
         this.xqlint(doc);
         // get text of selection
-        var range = this.editor.getSelectionRange();
-        var value = doc.getSession().getTextRange(range);   
+        var range = editorShim.getSelectionRange(this.editor);
+        var value = editorShim.getTextRange(this.editor, range);
         if (value.length == 0) {
             eXide.util.error("Please select code to extract.");
             return;
         }
 
-        var anchor = new Anchor(doc.getSession().getDocument(), range.start.row, range.start.column);
-        
         // disable validation while refactoring
         this.parent.validationEnabled = false;
 
         var template;
-        var currentNode = eXide.edit.XQueryUtils.findNode(doc.ast, 
+        var currentNode = eXide.edit.XQueryUtils.findNode(doc.ast,
             {line: range.start.row, col: range.start.column + 1});
         var contextNode = eXide.edit.XQueryUtils.findAncestor(currentNode, ["IntermediateClause", "InitialClause", "ReturnClause"]);
         if (contextNode) {
@@ -771,37 +756,25 @@ eXide.edit.XQueryModeHelper = (function () {
                 return;
             }
             template = "let $${1} := " + value.replace("$", "\\$") + "\nreturn";
-            
         }
         $.log("extract variable: context: %o", contextNode);
-        
-        this.editor.insert("$");
-        
-        this.editor.gotoLine(contextNode.pos.sl + 1, contextNode.pos.sc);
-        this.editor.insert("\n");
-        this.editor.gotoLine(contextNode.pos.sl + 1, contextNode.pos.sc);
-        SnippetManager.insertSnippet(this.editor, template);
+
+        editorShim.insert(this.editor, "$");
+
+        editorShim.gotoLine(this.editor, contextNode.pos.sl + 1, contextNode.pos.sc);
+        editorShim.insert(this.editor, "\n");
+        editorShim.gotoLine(this.editor, contextNode.pos.sl + 1, contextNode.pos.sc);
+        editorShim.insertSnippet(this.editor, template);
         this.editor.focus();
-        
-        var sel = this.editor.getSelection();
-        
-        sel.toOrientedRange();
-        var pos = anchor.getPosition();
-        var callRange = new Range(pos.row, pos.column, pos.row, pos.column);
-        callRange.cursor = pos;
-        
-        sel.addRange(callRange);
-        
-        anchor.detach();
-        
+
         this.parent.validationEnabled = true;
     };
     
     Constr.prototype.extractFunction = function(doc) {
         this.xqlint(doc);
         // get text of selection
-        var range = this.editor.getSelectionRange();
-        var value = doc.getSession().getTextRange(range);   
+        var range = editorShim.getSelectionRange(this.editor);
+        var value = editorShim.getTextRange(this.editor, range);
         if (value.length == 0) {
             eXide.util.error("Please select code to extract.");
             return;
@@ -810,7 +783,7 @@ eXide.edit.XQueryModeHelper = (function () {
         // disable validation while refactoring
         this.parent.validationEnabled = false;
 
-        var currentNode = eXide.edit.XQueryUtils.findNode(doc.ast, 
+        var currentNode = eXide.edit.XQueryUtils.findNode(doc.ast,
             {line: range.start.row, col: range.start.column + 1});
 
         // parse selection code to get list of variables which need to be parameters
@@ -845,10 +818,9 @@ eXide.edit.XQueryModeHelper = (function () {
 
         var adder = new eXide.edit.PrologAdder(this.parent, doc);
         var insertRow = adder.getInsertionPoint(currentNode);
-        var funcAnchor = new Anchor(doc.getSession().getDocument(), insertRow, 0);
 
         // remove selected range and replace with parameter list
-        this.editor.remove(range);
+        editorShim.removeRange(this.editor, range);
         var params = "(";
         for (var i = 0; i < variables.length; i++) {
             if (i > 0)
@@ -856,27 +828,13 @@ eXide.edit.XQueryModeHelper = (function () {
             params += "$" + variables[i];
         }
         params += ")";
-        this.editor.insert(params);
+        editorShim.insert(this.editor, params);
         // reset cursor
-        this.editor.gotoLine(range.start.row, range.start.column);
-        // remember cursor position
-        var anchor = new Anchor(doc.getSession().getDocument(), range.start.row, range.start.column);
-        
-        adder.createFunction(variables, value, funcAnchor.getPosition().row);
+        editorShim.gotoLine(this.editor, range.start.row + 1, range.start.column);
+
+        adder.createFunction(variables, value, insertRow);
 
         this.editor.focus();
-        
-        var sel = this.editor.getSelection();
-        
-        sel.toOrientedRange();
-        var pos = anchor.getPosition();
-        var callRange = new Range(pos.row, pos.column, pos.row, pos.column);
-        callRange.cursor = pos;
-        
-        sel.addRange(callRange);
-        
-        anchor.detach();
-        funcAnchor.detach();
 
         this.parent.validationEnabled = true;
     };
@@ -887,17 +845,17 @@ eXide.edit.XQueryModeHelper = (function () {
         if (prefix != null) {
 			name = name.replace(/[^:]+:/, prefix + ":");
 		}
-        var len = doc.$session.getLength();
+        var lines = editorShim.getAllLines(this.editor);
+        var len = lines.length;
         var lineNb;
         var returnLine = function(regexp) {
             for (var i = 0; i < len; i++) {
-                var line = doc.$session.getLine(i);
-                if (line.match(regexp)) { return i }
+                if (lines[i].match(regexp)) { return i }
             }
-        };  
+        };
         var focus = function(lineNb) {
             this.parent.history.push(doc.getPath(), doc.getCurrentLine());
-            this.editor.gotoLine(lineNb + 1);
+            editorShim.gotoLine(this.editor, lineNb + 1);
             return this.editor.focus();
         };
         
@@ -917,12 +875,11 @@ eXide.edit.XQueryModeHelper = (function () {
 		
 		$.log("Goto variable declaration %s", name);
 		var regexp = new RegExp("variable\\s+\\" + name);
-		var len = doc.$session.getLength();
-		for (var i = 0; i < len; i++) {
-			var line = doc.$session.getLine(i);
-			if (line.match(regexp)) {
+		var lines = editorShim.getAllLines(this.editor);
+		for (var i = 0; i < lines.length; i++) {
+			if (lines[i].match(regexp)) {
 				this.parent.history.push(doc.getPath(), doc.getCurrentLine());
-				this.editor.gotoLine(i + 1);
+				editorShim.gotoLine(this.editor, i + 1);
 				this.editor.focus();
 				return;
 			}
@@ -931,10 +888,9 @@ eXide.edit.XQueryModeHelper = (function () {
 	
 	Constr.prototype.getModuleNamespacePrefix = function () {
 		var moduleRe = /^\s*module\s+namespace\s+([^=\s]+)\s*=/;
-		var len = this.parent.getActiveDocument().$session.getLength();
-		for (var i = 0; i < len; i++) {
-			var line = this.parent.getActiveDocument().$session.getLine(i);
-			var matches = line.match(moduleRe);
+		var lines = editorShim.getAllLines(this.editor);
+		for (var i = 0; i < lines.length; i++) {
+			var matches = lines[i].match(moduleRe);
 			if (matches) {
 				return matches[1];
 			}
@@ -959,15 +915,14 @@ eXide.edit.XQueryModeHelper = (function () {
     
     Constr.prototype.expandSelection = function(doc) {
         this.xqlint(doc);
-        var sel   = this.editor.getSelection();
-        var selRange = sel.getRange();
+        var selRange = editorShim.getSelectionRange(this.editor);
 
         // try to determine the ast node where the cursor is located
         var astNode;
-        if (selRange.start.column == selRange.end.column && selRange.start.line == selRange.end.line) {
+        if (selRange.start.column == selRange.end.column && selRange.start.row == selRange.end.row) {
             astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: selRange.start.row, col: selRange.start.column });
         } else {
-            astNode = eXide.edit.XQueryUtils.findNodeForRange(doc.ast, { line: selRange.start.row, col: selRange.start.column }, 
+            astNode = eXide.edit.XQueryUtils.findNodeForRange(doc.ast, { line: selRange.start.row, col: selRange.start.column },
                 { line: selRange.end.row, col: selRange.end.column });
         }
 
@@ -981,8 +936,8 @@ eXide.edit.XQueryModeHelper = (function () {
                 }
             }
 
-            var range = new Range(parent.pos.sl, parent.pos.sc, parent.pos.el, parent.pos.ec);
-            sel.setSelectionRange(range);
+            var range = editorShim.createRange(parent.pos.sl, parent.pos.sc, parent.pos.el, parent.pos.ec);
+            editorShim.setSelectionRange(this.editor, range);
         }
     };
     
@@ -990,21 +945,21 @@ eXide.edit.XQueryModeHelper = (function () {
      * Rename variable or function call.
      */
     Constr.prototype.rename = function(doc) {
-        
+
         function doRename(references) {
-            sel.toOrientedRange();
-            $.each(references, function(i, node) {
-                var range = new Range(node.pos.sl, node.pos.sc, node.pos.el, node.pos.ec);
-                range.cursor = range.end;
-                sel.addRange(range);
-            });
+            // Select the first reference for manual rename
+            // Note: CM6 multi-cursor rename not yet supported via shim
+            if (references.length > 0) {
+                var node = references[0];
+                var range = editorShim.createRange(node.pos.sl, node.pos.sc, node.pos.el, node.pos.ec);
+                editorShim.setSelectionRange(self.editor, range);
+            }
             self.editor.focus();
         }
-        
+
         this.xqlint(doc);
         var self = this;
-        var sel = this.editor.getSelection();
-        var lead = sel.getSelectionLead();
+        var lead = editorShim.getSelectionLead(this.editor);
         var ast = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
         if (ast) {
             if (ast.name == "QName" && ast.getParent.name == "DirElemConstructor") {

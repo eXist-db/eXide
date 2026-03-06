@@ -24,30 +24,45 @@ eXide.namespace("eXide.util.Snippets");
  */
 eXide.util.Snippets = (function () {
     
-    var SnippetManager = require("ace/snippets").snippetManager;
-    
     var snippetsForMode = {};
-    
+
+    /**
+     * Parse Ace-format snippet files into an array of {name, content} objects.
+     */
+    function parseSnippetFile(data) {
+        var snippets = [];
+        var lines = data.split("\n");
+        var current = null;
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            if (line.indexOf("snippet ") === 0) {
+                if (current) snippets.push(current);
+                current = { name: line.substring(8).trim(), content: "" };
+            } else if (current && (line.charAt(0) === "\t" || line === "")) {
+                current.content += (current.content ? "\n" : "") + (line.charAt(0) === "\t" ? line.substring(1) : line);
+            }
+        }
+        if (current) snippets.push(current);
+        return snippets;
+    }
+
     function load(mode) {
         if (snippetsForMode[mode]) {
             return;
         }
         snippetsForMode[mode] = [];
         $.ajax({
-            url: "templates/" + mode + ".snippets", 
+            url: "templates/" + mode + ".snippets",
             dataType: "text",
             success: function(data) {
-                var snippets = SnippetManager.parseSnippetFile(data);
-                SnippetManager.register(snippets, mode);
-                snippetsForMode[mode] = snippets;
+                snippetsForMode[mode] = parseSnippetFile(data);
             }
         });
     }
-    
+
     function reload(mode, data) {
-        var snippets = SnippetManager.parseSnippetFile(data);
+        var snippets = parseSnippetFile(data);
         $.log("Replacing snippets %o for mode %s", snippets, mode);
-        SnippetManager.register(snippets, mode);
         snippetsForMode[mode] = snippets;
     }
     

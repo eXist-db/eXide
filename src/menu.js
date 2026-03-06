@@ -88,11 +88,6 @@ eXide.util.Menubar = (function() {
         if (action) {
             var shortcut = eXide.edit.commands.getShortcut(action);
             if (shortcut) {
-                // replace "Command" with Apple Command Symbol
-                shortcut = shortcut.replace(/Command/g, String.fromCharCode(8984));
-                shortcut = shortcut.replace(/Shift/g, String.fromCharCode(8679));
-                shortcut = shortcut.replace(/Option/g, String.fromCharCode(8997));
-                shortcut = shortcut.replace(/Control/g, "^");
                 item.each(function() {
                     var span = document.createElement("span");
                     span.className = "shortcut";

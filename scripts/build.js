@@ -136,7 +136,7 @@ async function bundle() {
 			bundle: true,
 			minify: !args.dev,
 			sourcemap: !args.dev,
-			external: ["ace/*", "lib/*", "eXide/mode/*"],
+			external: ["lib/*"],
 			logLevel: "info",
 		})
 		.catch((err) => {
@@ -176,7 +176,6 @@ function replace(path, outPath, data) {
         return;
     }
 
-    await mfs.copy('./support/ace/build/src-min/**', './resources/scripts/ace');
     await mfs.copy('./node_modules/@ag-grid-community/core/LICENSE.txt', './resources/css/ag-grid-community');
     await mfs.copy('./node_modules/@ag-grid-community/core/dist/styles/*.css', './resources/css/ag-grid-community');
     

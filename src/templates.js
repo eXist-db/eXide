@@ -35,7 +35,7 @@ eXide.edit.Template = (function () {
     		this.startLine = range.start.row;
             this.startColumn = range.start.column;
         } else {
-            var cursor = this.editor.getCursorPosition();
+            var cursor = editorShim.getCursorPosition(this.editor);
             this.startLine = cursor.row;
             this.startColumn = cursor.column;
         }
@@ -55,13 +55,14 @@ eXide.edit.Template = (function () {
 		 */
 		insert: function() {
             if (this.range) {
-			    this.editor.getSession().remove(this.range);
+			    editorShim.removeRange(this.editor, this.range);
             }
-			this.editor.insert(this.code);
-			var sel = this.editor.getSelection();
-			var lead = sel.getSelectionLead();
-			if (this.code.substring(0, 1) != "$" && lead.column > 0)
-				this.editor.navigateLeft();
+			editorShim.insert(this.editor, this.code);
+			var lead = editorShim.getSelectionLead(this.editor);
+			if (this.code.substring(0, 1) != "$" && lead.column > 0) {
+				var pos = editorShim.getCursorPosition(this.editor);
+				editorShim.moveCursorToPosition(this.editor, { row: pos.row, column: pos.column - 1 });
+			}
 			if (this.type != "variable")
 				this.nextParam();
 			this.editor.focus();
@@ -72,27 +73,26 @@ eXide.edit.Template = (function () {
 		 * false to stop template mode.
 		 */
 		nextParam: function() {
-			var session = this.editor.getSession();
-			var sel = this.editor.getSelection();
-			var lead = sel.getSelectionLead();
-			
+			var lead = editorShim.getSelectionLead(this.editor);
+
 			$.log("lead.row = %i startLine = %i", lead.row, this.startLine);
 			// return immediately if the cursor is outside the template
 			if (lead.row < this.startLine || lead.row > this.endLine)
 				return false;
-			
+
 			var loop = false;
 			var found = false;
 			while (this.currentLine <= this.endLine) {
-				var line = session.getDisplayLine(this.currentLine);
+				var line = editorShim.getLine(this.editor, this.currentLine);
 				$.log("Checking line %s", line);
 				var match = this.regex.exec(line);
 				if (match) {
 					$.log("Matched %s", match[0]);
-					sel.setSelectionAnchor(this.currentLine, match.index);
-					sel.selectTo(this.currentLine, match.index + match[0].length);
+					var range = editorShim.createRange(this.currentLine, match.index, this.currentLine, match.index + match[0].length);
                     if (match[0].length === 1) {
-                        session.remove(sel.getRange());
+                        editorShim.removeRange(this.editor, range);
+                    } else {
+                        editorShim.setSelectionRange(this.editor, range);
                     }
 					this.lineOffset = match.index;
 					found = true;

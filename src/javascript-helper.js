@@ -1,6 +1,6 @@
 /*
  *  eXide - web-based XQuery IDE
- *  
+ *
  *  Copyright (C) 2011 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -19,58 +19,52 @@
 eXide.namespace("eXide.edit.JavascriptModeHelper");
 
 /**
- * XML specific helper methods.
+ * JavaScript specific helper methods.
  */
 eXide.edit.JavascriptModeHelper = (function () {
-    
+
     var RE_FUNC_NAME = /^[\$\w\-_]+/;
-    
-    var TokenIterator = require("ace/token_iterator").TokenIterator;
-    
+
     Constr = function(editor) {
-		this.parent = editor;
-		this.editor = this.parent.editor;
+        this.parent = editor;
+        this.editor = this.parent.editor;
         this.addCommand("gotoDefinition", this.gotoDefinition);
         this.addCommand("locate", this.locate);
         this.addCommand("gotoSymbol", this.gotoSymbol);
         this.addCommand("format", this.format);
-	}
-	
-	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
-    
-    // Constr.prototype.activate = function(doc) {
-    //     this.editor.setOption("enableBasicAutocompletion", true);
-    // };
-    
-    // Constr.prototype.deactivate = function(doc) {
-    //     this.editor.setOption("enableBasicAutocompletion", false);
-    // };
-    
+    }
+
+    eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
+
     Constr.prototype.createOutline = function(doc, onComplete) {
-        var iterator = new TokenIterator(doc.getSession(), 0, 0);
-        var next = iterator.stepForward();
-        while (next != null) {
-            if (next.type == "entity.name.function") {
-                doc.functions.push({
-            		type: eXide.edit.Document.TYPE_FUNCTION,
-    				name: next.value,
-    				signature: next.value,
-                    sort: next.value,
-                    row: iterator.getCurrentTokenRow(),
-                    column: iterator.getCurrentTokenColumn()
-    			});
+        // Use regex to find function definitions instead of TokenIterator
+        var lines = doc.getText().split("\n");
+        var funcRe = /(?:function\s+(\w+)|(\w+)\s*[:=]\s*function|(\w+)\s*\(.*\)\s*\{)/;
+        for (var i = 0; i < lines.length; i++) {
+            var match = funcRe.exec(lines[i]);
+            if (match) {
+                var name = match[1] || match[2] || match[3];
+                if (name) {
+                    doc.functions.push({
+                        type: eXide.edit.Document.TYPE_FUNCTION,
+                        name: name,
+                        signature: name,
+                        sort: name,
+                        row: i,
+                        column: 0
+                    });
+                }
             }
-            next = iterator.stepForward();
         }
         if (onComplete)
             onComplete(doc);
     };
-    
+
     Constr.prototype.gotoSymbol = function(doc) {
         var self = this;
         var popupItems = [];
         for (var i = 0; i < doc.functions.length; i++) {
-            item = { 
+            item = {
                 label: doc.functions[i].name,
                 name: doc.functions[i].name,
                 type: doc.functions[i].type,
@@ -84,7 +78,7 @@ eXide.edit.JavascriptModeHelper = (function () {
             eXide.util.Popup.show(popupItems, function (selected) {
                 if (selected) {
                     self.parent.history.push(doc.getPath(), doc.getCurrentLine());
-                    self.editor.gotoLine(selected.row + 1);
+                    editorShim.gotoLine(self.editor, selected.row + 1);
                 }
                 self.editor.focus();
             });
@@ -92,41 +86,39 @@ eXide.edit.JavascriptModeHelper = (function () {
     };
 
     Constr.prototype.gotoDefinition = function (doc) {
-    	var sel = this.editor.getSelection();
-		var lead = sel.getSelectionLead();
-		var funcName = this.getFunctionAtCursor(lead);
-		if (funcName) {
-			this.locate(doc, null, funcName);
-		}
-	};
-    
+        var lead = editorShim.getSelectionLead(this.editor);
+        var funcName = this.getFunctionAtCursor(lead);
+        if (funcName) {
+            this.locate(doc, null, funcName);
+        }
+    };
+
     Constr.prototype.locate = function(doc, type, name) {
         if (typeof name == "number") {
-            this.editor.gotoLine(name + 1);
+            editorShim.gotoLine(this.editor, name + 1);
         } else {
-        	var func = this.parent.outline.findDefinition(doc, name);
+            var func = this.parent.outline.findDefinition(doc, name);
             if (func && func.row) {
                 this.parent.history.push(doc.getPath(), doc.getCurrentLine());
-                this.editor.gotoLine(func.row + 1);
+                editorShim.gotoLine(this.editor, func.row + 1);
             }
         }
-	};
-    
+    };
+
     Constr.prototype.getFunctionAtCursor = function (lead) {
-    	var row = lead.row;
-	    var session = this.editor.getSession();
-		var line = session.getDisplayLine(row);
-		var start = lead.column;
-		do {
-			start--;
-		} while (start >= 0 && line.charAt(start).match(RE_FUNC_NAME));
-		start++;
-		var end = lead.column;
-		while (end < line.length && line.charAt(end).match(RE_FUNC_NAME)) {
-			end++;
-		}
-		return line.substring(start, end);
-	};
-    
+        var row = lead.row;
+        var line = editorShim.getLine(this.editor, row);
+        var start = lead.column;
+        do {
+            start--;
+        } while (start >= 0 && line.charAt(start).match(RE_FUNC_NAME));
+        start++;
+        var end = lead.column;
+        while (end < line.length && line.charAt(end).match(RE_FUNC_NAME)) {
+            end++;
+        }
+        return line.substring(start, end);
+    };
+
     return Constr;
 }());

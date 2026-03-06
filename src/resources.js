@@ -17,8 +17,9 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import { Grid } from "@ag-grid-community/core";
-import { InfiniteRowModelModule } from "@ag-grid-community/infinite-row-model";
+// ag-grid exposed as globalThis.agGrid by resources/scripts/ag-grid-bundle.js
+var Grid = agGrid.Grid;
+var InfiniteRowModelModule = agGrid.InfiniteRowModelModule;
 
 eXide.namespace("eXide.browse.ResourceBrowser");
 
@@ -72,7 +73,7 @@ class DataSource {
  */
 eXide.browse.ResourceBrowser = (function () {
 
-    var useragent = require("ace/lib/useragent");
+    var useragent = { isMac: /Mac/.test(navigator.platform) };
 
 	var columns = [
 		{

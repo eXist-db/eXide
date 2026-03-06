@@ -1,6 +1,6 @@
 /*
  *  eXide - web-based XQuery IDE
- *  
+ *
  *  Copyright (C) 2011 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -22,15 +22,12 @@ eXide.namespace("eXide.edit.XMLModeHelper");
  * XML specific helper methods.
  */
 eXide.edit.XMLModeHelper = (function () {
-    
-    var TokenIterator = require("ace/token_iterator").TokenIterator;
-    var Range = require("ace/range").Range;
-    
-	Constr = function(editor, menubar) {
+
+    Constr = function(editor, menubar) {
         var self = this;
-		this.parent = editor;
-		this.editor = this.parent.editor;
-		
+        this.parent = editor;
+        this.editor = this.parent.editor;
+
         this.menu = $("#menu-xml").hide();
         menubar.click("#menu-xml-rename", function() {
             self.rename(editor.getActiveDocument());
@@ -41,122 +38,114 @@ eXide.edit.XMLModeHelper = (function () {
         menubar.click("#menu-xml-remove-tag", function() {
             self.deleteTags(editor.getActiveDocument());
         });
-		this.addCommand("closeTag", this.closeTag);
-		this.addCommand("removeTags", this.deleteTags);
+        this.addCommand("closeTag", this.closeTag);
+        this.addCommand("removeTags", this.deleteTags);
         this.addCommand("suggest", this.suggest);
         this.addCommand("rename", this.rename);
         this.addCommand("expandSelection", this.selectElement);
         this.addCommand("format", this.format);
-	}
-	
-	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
-    
+    }
+
+    eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
+
     Constr.prototype.activate = function(doc) {
         this.menu.show();
-		this.editor.setOption("enableEmmet", this.parent.enableEmmet);
-// 		var syntax = doc.getSyntax();
-//         if ( syntax === "html" && this.parent.enableEmmet || syntax === 'xml') {
-//             this.editor.setOption("enableEmmet", true);
-//         } else {
-//             this.editor.setOption("enableEmmet", false);
-//         }
     };
-    
+
     Constr.prototype.deactivate = function(doc) {
         this.menu.hide();
-        this.editor.setOption("enableEmmet", false);
     };
-    
-	Constr.prototype.closeTag = function (doc, text, row) {
-		var basePath = "xmldb:exist://" + doc.getBasePath();
-		var $this = this;
-		$.ajax({
-			type: "PUT",
-			url: "check/",
-			data: text,
-			contentType: "application/octet-stream",
-			dataType: "json",
-			success: function (data) {
-				if (data.status && data.status == "invalid") {
-					var line = parseInt(data.message.line) - 1;
-					if (line <= row) {
-						var tag = /element type \"([^\"]+)\"/.exec(data.message["#text"]);
-						if (tag && tag.length > 0) {
-							$this.editor.insert(tag[1] + ">");
-						}
-					}
-				}
-			},
-			error: function (xhr, status) {
-			}
-		});
-	}
-	
-	Constr.prototype.validate = function(doc, code, onComplete) {
-		var $this = this;
-		$.ajax({
-			type: "PUT",
-			url: "modules/validate-xml.xq",
-			data: code,
-			contentType: "application/octet-stream",
-			dataType: "json",
-			success: function (data) {
-				$this.compileError(data, doc);
-				onComplete.call(this, true);
-			},
-			error: function (xhr, status) {
-				onComplete.call(this, true);
-				$.log("Compile error: %s - %s", status, xhr.responseText);
-			}
-		});
-	}
-	
-	Constr.prototype.compileError = function(data, doc) {
-		$.log("Validation returned %o", data);
-		if (data.status && data.status == "invalid") {
+
+    Constr.prototype.closeTag = function (doc, text, row) {
+        var basePath = "xmldb:exist://" + doc.getBasePath();
+        var $this = this;
+        $.ajax({
+            type: "PUT",
+            url: "check/",
+            data: text,
+            contentType: "application/octet-stream",
+            dataType: "json",
+            success: function (data) {
+                if (data.status && data.status == "invalid") {
+                    var line = parseInt(data.message.line) - 1;
+                    if (line <= row) {
+                        var tag = /element type "([^"]+)"/.exec(data.message["#text"]);
+                        if (tag && tag.length > 0) {
+                            editorShim.insert($this.editor, tag[1] + ">");
+                        }
+                    }
+                }
+            },
+            error: function (xhr, status) {
+            }
+        });
+    }
+
+    Constr.prototype.validate = function(doc, code, onComplete) {
+        var $this = this;
+        $.ajax({
+            type: "PUT",
+            url: "modules/validate-xml.xq",
+            data: code,
+            contentType: "application/octet-stream",
+            dataType: "json",
+            success: function (data) {
+                $this.compileError(data, doc);
+                onComplete.call(this, true);
+            },
+            error: function (xhr, status) {
+                onComplete.call(this, true);
+                $.log("Compile error: %s - %s", status, xhr.responseText);
+            }
+        });
+    }
+
+    Constr.prototype.compileError = function(data, doc) {
+        $.log("Validation returned %o", data);
+        if (data.status && data.status == "invalid") {
             var messages;
             if (data.message instanceof Array)
                 messages = data.message;
             else
                 messages = [ data.message ];
             var annotations = [];
-            for (var i = 0; i < messages.length; i++) {    
-    			annotations.push({
-    				row: parseInt(messages[i].line) - 1,
-    				text: messages[i]["#text"],
-    				type: "error"
-    			});
+            for (var i = 0; i < messages.length; i++) {
+                annotations.push({
+                    row: parseInt(messages[i].line) - 1,
+                    text: messages[i]["#text"],
+                    type: "error"
+                });
             }
-			this.parent.updateStatus(messages[0]["#text"], doc.getPath() + "#" + messages[0].line);
-			doc.getSession().setAnnotations(annotations);
-		} else {
-			this.parent.clearErrors();
-			this.parent.updateStatus("");
-		}
-	};
-    
+            this.parent.updateStatus(messages[0]["#text"], doc.getPath() + "#" + messages[0].line);
+            editorShim.setAnnotations(this.editor, annotations);
+        } else {
+            this.parent.clearErrors();
+            this.parent.updateStatus("");
+        }
+    };
+
     Constr.prototype.suggest = function(doc, text, row, column) {
         $.log("Getting suggestions for %s", text);
         $.ajax({
-    		type: "POST",
-			url: "modules/validate-xml.xq",
-			data: { 
+            type: "POST",
+            url: "modules/validate-xml.xq",
+            data: {
                 xml: text,
                 row: row,
                 column: column
             },
-			dataType: "json",
-			success: function (data) {
-				$this.compileError(data, doc);
-				onComplete.call(this, true);
-			},
-			error: function (xhr, status) {
-				onComplete.call(this, true);
-				$.log("Compile error: %s - %s", status, xhr.responseText);
-			}
-		});
+            dataType: "json",
+            success: function (data) {
+                $this.compileError(data, doc);
+                onComplete.call(this, true);
+            },
+            error: function (xhr, status) {
+                onComplete.call(this, true);
+                $.log("Compile error: %s - %s", status, xhr.responseText);
+            }
+        });
     }
-	
+
     Constr.prototype.documentSaved = function(doc) {
         if (/.*\.xconf$/.test(doc.getName())) {
             var collection = doc.getBasePath();
@@ -185,156 +174,137 @@ eXide.edit.XMLModeHelper = (function () {
             });
         }
     };
-    
+
+    /**
+     * Find matching start/end tags using text-based search.
+     * Replaces the TokenIterator-based approach.
+     */
+    Constr.prototype.findStartEndTags = function(doc) {
+        var text = doc.getText();
+        var cursorPos = editorShim.getCursorPosition(this.editor);
+        var cursorOffset = editorShim.rowColToOffset(this.editor.state, cursorPos.row, cursorPos.column);
+
+        // Find all tags in the document
+        var tagRe = /<\/?([a-zA-Z][\w:\-.]*)(?:\s[^>]*)?\/?>/g;
+        var stack = [];
+        var match;
+        var startTag = null, endTag = null;
+
+        while ((match = tagRe.exec(text)) !== null) {
+            var tagStart = match.index;
+            var tagEnd = tagStart + match[0].length;
+            var isClose = match[0].charAt(1) === "/";
+            var isSelfClose = match[0].charAt(match[0].length - 2) === "/";
+            var tagName = match[1];
+
+            if (isSelfClose) continue;
+
+            if (!isClose) {
+                var pos = editorShim.offsetToRowCol(this.editor.state, tagStart);
+                var nameStart = tagStart + 1; // after '<'
+                var namePos = editorShim.offsetToRowCol(this.editor.state, nameStart);
+                stack.push({
+                    name: tagName,
+                    row: namePos.row,
+                    column: namePos.column,
+                    offset: tagStart
+                });
+                if (cursorOffset >= tagStart && cursorOffset <= tagEnd) {
+                    startTag = stack[stack.length - 1];
+                }
+            } else {
+                var last = stack.pop();
+                var nameStart = tagStart + 2; // after '</'
+                var namePos = editorShim.offsetToRowCol(this.editor.state, nameStart);
+                if (startTag === last || (cursorOffset >= tagStart && cursorOffset <= tagEnd)) {
+                    if (!startTag) startTag = last;
+                    endTag = {
+                        name: tagName,
+                        row: namePos.row,
+                        column: namePos.column,
+                        offset: tagStart
+                    };
+                    break;
+                }
+                if (startTag && startTag === last) {
+                    endTag = {
+                        name: tagName,
+                        row: namePos.row,
+                        column: namePos.column,
+                        offset: tagStart
+                    };
+                    break;
+                }
+            }
+        }
+        return { start: startTag, end: endTag };
+    };
+
     Constr.prototype.selectElement = function(doc) {
         var tags = this.findStartEndTags(doc, false);
-        if (!tags.start) {
-            return;
-        }
-        // expand end tag
-        var iterator = new TokenIterator(doc.getSession(), tags.end.row, tags.end.column);
-        var token = iterator.stepForward();
-        while(token) {
-            if (token.value === ">") {
-                tags.end.row = iterator.getCurrentTokenRow();
-                tags.end.column = iterator.getCurrentTokenColumn() + 1;
-                break;
-            }
-            token = iterator.stepForward();
-        }
-        // expand start tag
-        iterator = new TokenIterator(doc.getSession(), tags.start.row, tags.start.column);
-        token = iterator.getCurrentToken();
-        while(token) {
-            if (token.value === "<") {
-                tags.start.row = iterator.getCurrentTokenRow();
-                tags.start.column = iterator.getCurrentTokenColumn();
-                break;
-            }
-            token = iterator.stepBackward();
-        }
-        
-        var sel = this.editor.getSelection();
-        var range = new Range(tags.start.row, tags.start.column, tags.end.row, tags.end.column);
-        sel.setSelectionRange(range);
+        if (!tags.start || !tags.end) return;
+
+        // Find the full extent of the start and end tags
+        var text = doc.getText();
+        var startOffset = tags.start.offset;
+        var endIdx = text.indexOf(">", tags.end.offset);
+        if (endIdx < 0) return;
+        var endOffset = endIdx + 1;
+
+        var startPos = editorShim.offsetToRowCol(this.editor.state, startOffset);
+        var endPos = editorShim.offsetToRowCol(this.editor.state, endOffset);
+        var range = editorShim.createRange(startPos.row, startPos.column, endPos.row, endPos.column);
+        editorShim.setSelectionRange(this.editor, range);
     };
-    
+
     Constr.prototype.rename = function(doc) {
         var tags = this.findStartEndTags(doc, true);
-        if (!tags.start) {
-            return;
-        }
-        
-        var sel = this.editor.getSelection();
-        var range = new Range(tags.start.row, tags.start.column, tags.start.row, tags.start.column + tags.start.name.length);
-        range.cursor = range.end;
-        sel.setSelectionRange(range);
-        sel.toOrientedRange();
-        if (tags.end) {
-            range = new Range(tags.end.row, tags.end.column, tags.end.row, tags.end.column + tags.end.name.length);
-            range.cursor = range.end;
-            sel.addRange(range);
-        }
+        if (!tags.start) return;
+
+        // Select the start tag name
+        var range = editorShim.createRange(
+            tags.start.row, tags.start.column,
+            tags.start.row, tags.start.column + tags.start.name.length
+        );
+        editorShim.setSelectionRange(this.editor, range);
         this.editor.focus();
+        // Note: multi-cursor rename of end tag is not yet supported in CM6 shim
     };
-    
+
     Constr.prototype.deleteTags = function(doc) {
         var tags = this.findStartEndTags(doc, false);
-        if (!tags.start) {
-            return;
+        if (!tags.start || !tags.end) return;
+
+        var text = doc.getText();
+        // Remove end tag first (so offsets for start tag remain valid)
+        var endStart = tags.end.offset;
+        var endEnd = text.indexOf(">", endStart);
+        if (endEnd >= 0) {
+            // Include the '</' before the tag name
+            var actualEnd = endEnd + 1;
+            var endRange = editorShim.createRange(
+                editorShim.offsetToRowCol(this.editor.state, endStart).row,
+                editorShim.offsetToRowCol(this.editor.state, endStart).column,
+                editorShim.offsetToRowCol(this.editor.state, actualEnd).row,
+                editorShim.offsetToRowCol(this.editor.state, actualEnd).column
+            );
+            editorShim.removeRange(this.editor, endRange);
         }
-        
-        var range = this.selectTag(doc, tags.end);
-        doc.getSession().remove(range);
-        
-        range = this.selectTag(doc, tags.start);
-        doc.getSession().remove(range);
+
+        // Remove start tag
+        var startStart = tags.start.offset;
+        var startEnd = doc.getText().indexOf(">", startStart);
+        if (startEnd >= 0) {
+            var actualStartEnd = startEnd + 1;
+            var startRange = editorShim.createRange(
+                editorShim.offsetToRowCol(this.editor.state, startStart).row,
+                editorShim.offsetToRowCol(this.editor.state, startStart).column,
+                editorShim.offsetToRowCol(this.editor.state, actualStartEnd).row,
+                editorShim.offsetToRowCol(this.editor.state, actualStartEnd).column
+            );
+            editorShim.removeRange(this.editor, startRange);
+        }
     };
-    
-    Constr.prototype.findStartEndTags = function(doc) {
-        function matches(iterator, position) {
-            var column = iterator.getCurrentTokenColumn();
-            return (iterator.getCurrentTokenRow() == position.row && position.column >= column &&
-                position.column <= column + iterator.getCurrentToken().value.length);
-        }
-        
-        var sel   = this.editor.getSelection();
-        var selRange = sel.getRange();
-        var position = selRange.start;
-        
-        var iterator = new TokenIterator(doc.getSession(), 0, 0);
-        var stack = [];
-        var inClosingTag = false;
-        var token = iterator.stepForward();
-        var startTag, endTag;
-        while(token) {
-            if (/^(meta.tag.name|.*.tag-name.xml)/.test(token.type)) {
-                if (!inClosingTag) {
-                    var tag = {
-                        name: token.value,
-                        length: token.value.length,
-                        row: iterator.getCurrentTokenRow(),
-                        column: iterator.getCurrentTokenColumn(),
-                        stack: stack.length
-                    };
-                    stack.push(tag);
-                    if (matches(iterator, position)) {
-                        startTag = tag;
-                    }
-                } else {
-                    var last = stack.pop();
-                    if (startTag == last || (startTag && startTag.stack == stack.length) || matches(iterator, position)) {
-                        startTag = last;
-                        endTag = {
-                            name: token.value,
-                            row: iterator.getCurrentTokenRow(),
-                            column: iterator.getCurrentTokenColumn()
-                        };
-                        break;
-                    }
-                }
-                inClosingTag = false;
-            } else if (token.value === "</") {
-                inClosingTag = true;
-            } else if (token.value === "/>") {
-                stack.pop();
-            } else if (matches(iterator, position)) {
-                startTag = stack[stack.length - 1];
-            }
-            token = iterator.stepForward();
-        }
-        return {
-            start: startTag,
-            end: endTag
-        };
-    };
-    
-    Constr.prototype.selectTag = function(doc, tag) {
-        var range = new Range(tag.row, tag.column, tag.row, tag.column);
-        // expand end
-        var iterator = new TokenIterator(doc.getSession(), tag.row, tag.column);
-        var token = iterator.stepForward();
-        while(token) {
-            if (token.value === ">") {
-                range.end.row = iterator.getCurrentTokenRow();
-                range.end.column = iterator.getCurrentTokenColumn() + 1;
-                break;
-            }
-            token = iterator.stepForward();
-        }
-        // expand start
-        iterator = new TokenIterator(doc.getSession(), tag.row, tag.column);
-        token = iterator.getCurrentToken();
-        while(token) {
-            if (token.value === "<" || token.value === "</") {
-                range.start.row = iterator.getCurrentTokenRow();
-                range.start.column = iterator.getCurrentTokenColumn();
-                break;
-            }
-            token = iterator.stepBackward();
-        }
-        return range;
-    };
-    
-	return Constr;
+
+    return Constr;
 }());

@@ -26,18 +26,18 @@ eXide.find.IncrementalSearch = (function () {
                 case 40:
                     // Down
                     ev.preventDefault();
-                    $this.editor.findNext();
+                    editorShim.findNext($this.editor);
                     break;
                 case 38:
                     // Up
                     ev.preventDefault();
-                    $this.editor.findPrevious();
+                    editorShim.findPrevious($this.editor);
                     break;
                 case 71:
                     // Ctrl-G, Command-G or Alt-G
                     if (ev.metaKey || ev.ctrlKey) {
                         ev.preventDefault();
-                        $this.editor.findNext();
+                        editorShim.findNext($this.editor);
                         break;
                     }
                 default:
@@ -49,17 +49,16 @@ eXide.find.IncrementalSearch = (function () {
     };
     
     Constr.prototype.start = function () {
-        var sel = this.editor.getSession().getSelection();
-        var lead = sel.getSelectionLead();
+        var lead = editorShim.getSelectionLead(this.editor);
 		this.currentLine = lead.row;
         this.input.val("");
         this.input.show().focus();
     };
-    
+
     Constr.prototype.onChange = function () {
-        this.editor.gotoLine(this.currentLine);
+        editorShim.gotoLine(this.editor, this.currentLine + 1);
         var search = this.input.val();
-        this.editor.find(search, searchOptions, true);
+        editorShim.find(this.editor, search, searchOptions);
         this.input.focus();
     };
     
@@ -118,31 +117,31 @@ eXide.find.SearchReplace = (function () {
         if (search && search.length > 0) {
             if (this.lastSearch != null && this.lastSearch == search) {
                 if (direction == -1)
-                    this.editor.findPrevious();
+                    editorShim.findPrevious(this.editor);
                 else
-                    this.editor.findNext();
+                    editorShim.findNext(this.editor);
             } else {
-                this.editor.find(search, this.getOptions(), true);
+                editorShim.find(this.editor, search, this.getOptions());
                 this.needleSet = true;
             }
             this.editor.focus();
         }
     };
-    
+
     Constr.prototype.replace = function(all) {
         var search = this.container.find("input[name='search']").val();
         if (search && search.length > 0) {
             if (!this.needleSet) {
-                this.editor.find(search, this.getOptions(), true);
+                editorShim.find(this.editor, search, this.getOptions());
                 this.needleSet = true;
             }
             var replace = this.container.find("input[name='replace']").val();
             if (replace && replace.length > 0) {
                 if (all) {
-                    this.editor.replaceAll(replace);
+                    editorShim.replaceAll(this.editor, search, replace, this.getOptions());
                 } else {
-                    this.editor.replace(replace);
-                    this.editor.findNext();
+                    editorShim.replace(this.editor, replace);
+                    editorShim.findNext(this.editor);
                 }
             }
         }

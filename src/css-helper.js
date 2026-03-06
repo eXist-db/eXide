@@ -1,6 +1,6 @@
 /*
  *  eXide - web-based XQuery IDE
- *  
+ *
  *  Copyright (C) 2011 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -19,47 +19,52 @@
 eXide.namespace("eXide.edit.CssModeHelper");
 
 /**
- * XML specific helper methods.
+ * CSS specific helper methods.
  */
 eXide.edit.CssModeHelper = (function () {
-    
-    var TokenIterator = require("ace/token_iterator").TokenIterator;
-    
+
     Constr = function(editor) {
-    	this.parent = editor;
-		this.editor = this.parent.editor;
+        this.parent = editor;
+        this.editor = this.parent.editor;
         this.addCommand("locate", this.locate);
         this.addCommand("gotoSymbol", this.gotoSymbol);
         this.addCommand("format", this.format);
-	};
-	
-	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
-    
+    };
+
+    eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
+
     Constr.prototype.createOutline = function(doc, onComplete) {
-        var iterator = new TokenIterator(doc.getSession(), 0, 0);
-        var next = iterator.stepForward();
-        var lastVar = "";
-        while (next != null) {
-            if (next.type == "variable" || next.type == "keyword") {
-                if (lastVar.length > 0) {
-                    lastVar += " ";
+        // Use regex-based approach instead of TokenIterator
+        var lines = doc.getText().split("\n");
+        var selectorParts = [];
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            var braceIdx = line.indexOf("{");
+            if (braceIdx >= 0) {
+                // Everything before the brace on this line is part of the selector
+                var part = line.substring(0, braceIdx).trim();
+                if (part) selectorParts.push(part);
+                var selector = selectorParts.join(" ").trim();
+                if (selector) {
+                    doc.functions.push({
+                        type: eXide.edit.Document.TYPE_FUNCTION,
+                        name: selector,
+                        source: doc.getPath(),
+                        signature: selector,
+                        sort: selector,
+                        row: i,
+                        column: braceIdx
+                    });
                 }
-                lastVar += next.value;
-            } else if (next.type == "paren.rparen") {
-                lastVar = "";
-            } else if (next.type == "paren.lparen" && lastVar !== "") {
-                doc.functions.push({
-                	type: eXide.edit.Document.TYPE_FUNCTION,
-    				name: lastVar,
-                    source: doc.getPath(),
-    				signature: lastVar,
-                    sort: lastVar,
-                    row: iterator.getCurrentTokenRow(),
-                    column: iterator.getCurrentTokenColumn()
-    			});
-                lastVar = "";
+                selectorParts = [];
+            } else if (line.indexOf("}") >= 0) {
+                selectorParts = [];
+            } else {
+                var trimmed = line.trim();
+                if (trimmed && !trimmed.startsWith("/*") && !trimmed.startsWith("*")) {
+                    selectorParts.push(trimmed);
+                }
             }
-            next = iterator.stepForward();
         }
         if (onComplete)
             onComplete(doc);
@@ -70,7 +75,7 @@ eXide.edit.CssModeHelper = (function () {
         var popupItems = [];
         for (var i = 0; i < doc.functions.length; i++) {
             if (doc.functions[i].name !== "") {
-                item = { 
+                item = {
                     label: doc.functions[i].name,
                     name: doc.functions[i].name,
                     type: doc.functions[i].type,
@@ -85,11 +90,11 @@ eXide.edit.CssModeHelper = (function () {
             eXide.util.Popup.show(popupItems, function (selected) {
                 if (selected) {
                     self.parent.history.push(doc.getPath(), doc.getCurrentLine());
-                    self.editor.gotoLine(selected.row + 1);
+                    editorShim.gotoLine(self.editor, selected.row + 1);
                 }
             });
         }
     };
-    
+
     return Constr;
 }());

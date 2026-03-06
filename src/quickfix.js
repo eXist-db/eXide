@@ -23,8 +23,6 @@ eXide.namespace("eXide.edit.XQueryQuickFix");
  */
 eXide.edit.XQueryQuickFix = (function () {
     
-    var SnippetManager = require("ace/snippets").snippetManager;
-    
     var quickFixes = [
         {
             regex: /Call to undeclared function/,
@@ -131,10 +129,10 @@ eXide.edit.XQueryQuickFix = (function () {
                                 }
                                 helper.parent.validator.setEnabled(false);
                                 $.log("extract variable: context: %o", contextNode);
-                                editor.editor.gotoLine(contextNode.pos.sl + 1, contextNode.pos.sc);
-                                editor.editor.insert("\n");
-                                editor.editor.gotoLine(contextNode.pos.sl + 1, contextNode.pos.sc);
-                                SnippetManager.insertSnippet(editor.editor, template);
+                                editorShim.gotoLine(editor.editor, contextNode.pos.sl + 1, contextNode.pos.sc);
+                                editorShim.insert(editor.editor, "\n");
+                                editorShim.gotoLine(editor.editor, contextNode.pos.sl + 1, contextNode.pos.sc);
+                                editorShim.insertSnippet(editor.editor, template);
                                 editor.editor.focus();
                                 helper.parent.validator.setEnabled(true);
                             },
@@ -147,13 +145,11 @@ eXide.edit.XQueryQuickFix = (function () {
     ];
     
 
-    var Range = require("ace/range").Range;
-    
     function unusedNamespaceFix(helper, editor, doc, annotation) {
         var nsNode = eXide.edit.XQueryUtils.findNode(doc.ast, {line: annotation.row, col: annotation.column + 1});
         var nsDecl = nsNode.getParent;
         var separator = eXide.edit.XQueryUtils.findNext(nsDecl, "Separator");
-        
+
         var pos = {
             sl: annotation.pos.sl,
             sc: annotation.pos.sc,
@@ -161,14 +157,14 @@ eXide.edit.XQueryQuickFix = (function () {
             ec: separator ? separator.pos.ec : annotation.pos.ec
         };
         var range;
-        var lastLine = editor.editor.getSession().getLine(pos.el);
+        var lastLine = editorShim.getLine(editor.editor, pos.el);
         if (pos.ec == lastLine.length) {
-            range = new Range(pos.sl, pos.sc, pos.el + 1, 0);
+            range = editorShim.createRange(pos.sl, pos.sc, pos.el + 1, 0);
         } else {
-            range = new Range(pos.sl, pos.sc, pos.el, pos.ec);
+            range = editorShim.createRange(pos.sl, pos.sc, pos.el, pos.ec);
         }
-        
-        editor.editor.getSession().remove(range);
+
+        editorShim.removeRange(editor.editor, range);
     }
     
     function getResolutions(helper, editor, doc, annotation) {
@@ -199,8 +195,7 @@ eXide.namespace("eXide.edit.PrologAdder");
  */
 eXide.edit.PrologAdder = (function () {
     
-    var Range = require("ace/range").Range;
-    var SnippetManager = require("ace/snippets").snippetManager;
+    // Range and SnippetManager replaced by editorShim
     
     Constr = function(editor, doc) {
         this.editor = editor;
@@ -250,7 +245,7 @@ eXide.edit.PrologAdder = (function () {
             }
         }
         template += ") {\n\t${" + (arguments.length + 1) + ":()}\n};";
-        SnippetManager.insertSnippet(this.editor.editor, template);
+        editorShim.insertSnippet(this.editor.editor, template);
     };
     
     Constr.prototype.createFunction = function(params, code, insertRow) {
@@ -265,17 +260,18 @@ eXide.edit.PrologAdder = (function () {
         }
         fn += ") {\n\t" + code + "\n};";
         
-        this.editor.editor.insert(fn);
-        this.editor.editor.gotoLine(row, 17);
+        editorShim.insert(this.editor.editor, fn);
+        editorShim.gotoLine(this.editor.editor, row, 17);
     };
 
     Constr.prototype.prepareFunction = function(insertRow) {
         var row = insertRow || this.getInsertionPoint();
 
-        this.editor.editor.gotoLine(row + 1);
-        this.editor.editor.navigateLineEnd();
-        this.editor.editor.insert("\n\n");
-        this.editor.editor.gotoLine(row + 3, 0);
+        editorShim.gotoLine(this.editor.editor, row + 1);
+        var line = editorShim.getLine(this.editor.editor, row);
+        editorShim.moveCursorToPosition(this.editor.editor, { row: row, column: line.length });
+        editorShim.insert(this.editor.editor, "\n\n");
+        editorShim.gotoLine(this.editor.editor, row + 3, 0);
 
         return row + 3;
     };
@@ -294,10 +290,11 @@ eXide.edit.PrologAdder = (function () {
         }
         row = row < 0 ? 0 : row;
         
-        this.editor.editor.gotoLine(row + 1);
-        this.editor.editor.navigateLineEnd();
-        this.editor.editor.insert("\n\n");
-        this.editor.editor.gotoLine(row + 3, 0);
+        editorShim.gotoLine(this.editor.editor, row + 1);
+        var line = editorShim.getLine(this.editor.editor, row);
+        editorShim.moveCursorToPosition(this.editor.editor, { row: row, column: line.length });
+        editorShim.insert(this.editor.editor, "\n\n");
+        editorShim.gotoLine(this.editor.editor, row + 3, 0);
         
         var template;
         if (namespace) {
@@ -310,8 +307,8 @@ eXide.edit.PrologAdder = (function () {
         } else {
             template = "import module namespace " + prefix + "=\"${1}\";";
         }
-        SnippetManager.insertSnippet(this.editor.editor, template);
-        this.editor.editor.gotoLine(row + 3, 26 + prefix.length);
+        editorShim.insertSnippet(this.editor.editor, template);
+        editorShim.gotoLine(this.editor.editor, row + 3, 26 + prefix.length);
     };
     
     Constr.prototype.declareNamespace = function(prefix) {
@@ -327,13 +324,14 @@ eXide.edit.PrologAdder = (function () {
         }
         row = row < 0 ? 0 : row;
         
-        this.editor.editor.gotoLine(row + 1);
-        this.editor.editor.navigateLineEnd();
-        this.editor.editor.insert("\n\n");
-        this.editor.editor.gotoLine(row + 3, 0);
+        editorShim.gotoLine(this.editor.editor, row + 1);
+        var line = editorShim.getLine(this.editor.editor, row);
+        editorShim.moveCursorToPosition(this.editor.editor, { row: row, column: line.length });
+        editorShim.insert(this.editor.editor, "\n\n");
+        editorShim.gotoLine(this.editor.editor, row + 3, 0);
         
         var template = "declare namespace " + prefix + "=\"${1}\";";
-        SnippetManager.insertSnippet(this.editor.editor, template);
+        editorShim.insertSnippet(this.editor.editor, template);
     };
     
     Constr.prototype.declareVariable = function(name) {
@@ -357,13 +355,14 @@ eXide.edit.PrologAdder = (function () {
         
         $.log("Inserting at %d", row);
         
-        this.editor.editor.gotoLine(row + 1);
-        this.editor.editor.navigateLineEnd();
-        this.editor.editor.insert("\n\n");
-        this.editor.editor.gotoLine(row + 3, 0);
+        editorShim.gotoLine(this.editor.editor, row + 1);
+        var line = editorShim.getLine(this.editor.editor, row);
+        editorShim.moveCursorToPosition(this.editor.editor, { row: row, column: line.length });
+        editorShim.insert(this.editor.editor, "\n\n");
+        editorShim.gotoLine(this.editor.editor, row + 3, 0);
         
         var template = "declare variable \\$" + name + " := ${1:expression};";
-        SnippetManager.insertSnippet(this.editor.editor, template);
+        editorShim.insertSnippet(this.editor.editor, template);
     };
     
     return Constr;

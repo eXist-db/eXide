@@ -19,7 +19,7 @@
 eXide.namespace("eXide.edit.LessModeHelper");
 
 /**
- * XML specific helper methods.
+ * Less specific helper methods.
  */
 eXide.edit.LessModeHelper = (function () {
 
@@ -42,8 +42,6 @@ eXide.edit.LessModeHelper = (function () {
         });
     }
 
-    var TokenIterator = require("ace/token_iterator").TokenIterator;
-
     var Constr = function(editor) {
         this.parent = editor;
         this.editor = this.parent.editor;
@@ -58,13 +56,11 @@ eXide.edit.LessModeHelper = (function () {
         var code = doc.getText();
 
         if (/\/_.+\.less$/.test(path)) {
-          // TODO get main file from code
           return eXide.util.error("CSS not compiled for include : " + path);
         }
 
         var options = {
             filename: path
-            // TODO sourcemaps
         };
 
         var header = "/**\n" +
@@ -87,32 +83,36 @@ eXide.edit.LessModeHelper = (function () {
     Constr.prototype.saveCSS = saveCSS;
 
     Constr.prototype.createOutline = function(doc, onComplete) {
-        var iterator = new TokenIterator(doc.getSession(), 0, 0);
-        var next = iterator.stepForward();
-        while (next != null) {
-            if (next.type == "paren.lparen" && next.value == "{") {
-                var selector = [];
-                var row = iterator.getCurrentTokenRow();
-                var backIter = new TokenIterator(doc.getSession(), row, iterator.getCurrentTokenColumn());
-                var prev;
-                while ((prev = backIter.stepBackward()) != null) {
-                    if (backIter.getCurrentTokenRow() < row)
-                        break;
-                    selector.push(prev.value);
+        // Use regex to find selectors instead of TokenIterator
+        var lines = doc.getText().split("\n");
+        var selectorParts = [];
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            var braceIdx = line.indexOf("{");
+            if (braceIdx >= 0) {
+                var part = line.substring(0, braceIdx).trim();
+                if (part) selectorParts.push(part);
+                var selector = selectorParts.join(" ").trim();
+                if (selector) {
+                    doc.functions.push({
+                        type: eXide.edit.Document.TYPE_FUNCTION,
+                        name: selector,
+                        source: doc.getPath(),
+                        signature: selector,
+                        sort: selector,
+                        row: i,
+                        column: braceIdx
+                    });
                 }
-                var selectorStr = selector.reverse().join("");
-                doc.functions.push({
-                    type: eXide.edit.Document.TYPE_FUNCTION,
-                    name: selectorStr,
-                    source: doc.getPath(),
-                    signature: selectorStr,
-                    sort: selectorStr,
-                    row: iterator.getCurrentTokenRow(),
-                    column: iterator.getCurrentTokenColumn()
-                });
-                lastVar = "";
+                selectorParts = [];
+            } else if (line.indexOf("}") >= 0) {
+                selectorParts = [];
+            } else {
+                var trimmed = line.trim();
+                if (trimmed && !trimmed.startsWith("//") && !trimmed.startsWith("/*") && !trimmed.startsWith("*")) {
+                    selectorParts.push(trimmed);
+                }
             }
-            next = iterator.stepForward();
         }
         if (onComplete) {
             onComplete(doc);

@@ -238,13 +238,13 @@ eXide.app = (function(util) {
 				};
 				app.$doOpenDocument(resource, function() {
 				    if (line) {
-        			    editor.editor.gotoLine(line);
+        			    editorShim.gotoLine(editor.editor, line);
         			}
 				});
 			} else {
 				editor.switchTo(doc);
 				if (line) {
-    			    editor.editor.gotoLine(line);
+    			    editorShim.gotoLine(editor.editor, line);
     			}
 			}
 		},
@@ -545,7 +545,7 @@ eXide.app = (function(util) {
                     if (path) {
                         var doc = editor.getDocument(path);
                         if (doc) {
-                            code = doc.$session.getValue();
+                            code = doc.getText();
                         } else {
                             return;
                         }
@@ -629,39 +629,15 @@ eXide.app = (function(util) {
 					dataType: 'html',
 					data: { "output": serializationMode, "auto-expand-matches": autoExpandMatches, "indent": indentResults },
 					success: function (data) {
-                        var config = require('ace/config');
-                        config.loadModule('ace/mode/jsoniq', function ({ Mode: JSONiqLexer }) {
-                            config.loadModule('ace/mode/xquery', function ({ Mode: XQueryLexer }) {
-                                const el = $(data);
-                                const content = el.find('.content');
-                                let lines = content.text().split('\n');
-                                let lexer = serializationMode === 'json' ? new JSONiqLexer() : new XQueryLexer();
-                                let result = '', lastState;
-                                const getClass = type => type.split('.').map(type => `ace_${type}`).join(' ');
-                                const encodeHTMLEntities = text => text.replace(/[\u00A0-\u9999<>\&]/g, (i) => '&#' + i.charCodeAt(0) + ';');
-                                lines.forEach(function (line) {
-                                    let output = '';
-                                    const { state, tokens} = lexer.getTokenizer().getLineTokens(line, lastState);
-                                    tokens.forEach(function (token) {
-                                        output += `<span class='${getClass(token.type)}'>${encodeHTMLEntities(token.value)}</span>`;
-                                    });
-                                    result += output + '<br/>';
-                                    lastState = state;
-                                });
-                                el.find('> *:first-child').css('width', (Math.ceil(Math.log(endOffset + 1) / Math.LN10)) + 'ch');
-                                content.html(result);
-                                if (!$(".results-container .results").parent().hasClass("ace_gutter")) {
-                                    $(".results-container .results").parent().addClass("ace_gutter").css("position", "initial");
-                                }
-                                $('.results-container .results').append(el[0].outerHTML);
-                                $('.results-container .current').text('Showing results ' + startOffset + ' to ' + (currentOffset - 1) + ' of ' + hitCount);
-                                $(".results-container .pos:last a").click(function () {
-                                    app.findDocument($(this).data("path"));
-                                    return false;
-                                });
-                                app.retrieveNext();
-                            });
+                        const el = $(data);
+                        el.find('> *:first-child').css('width', (Math.ceil(Math.log(endOffset + 1) / Math.LN10)) + 'ch');
+                        $('.results-container .results').append(el[0].outerHTML);
+                        $('.results-container .current').text('Showing results ' + startOffset + ' to ' + (currentOffset - 1) + ' of ' + hitCount);
+                        $(".results-container .pos:last a").click(function () {
+                            app.findDocument($(this).data("path"));
+                            return false;
                         });
+                        app.retrieveNext();
 					}
 				});
 			} else {
@@ -861,6 +837,10 @@ eXide.app = (function(util) {
 						writable: (localStorage["eXide." + i + ".writable"] == "true"),
 						line: parseInt(localStorage["eXide." + i + ".last-line"])
 				};
+				// New documents always editable (writable not stored for __new__ docs)
+				if (doc.path && doc.path.match(/^__new__/)) {
+					doc.writable = true;
+				}
                 if (!doc.name) {
                     continue;
                 }
@@ -899,7 +879,7 @@ eXide.app = (function(util) {
             var doc = docs.pop();
             app.$doOpenDocument(doc, function() {
                 if (doc.line) {
-                    editor.editor.gotoLine(doc.line + 1);
+                    editorShim.gotoLine(editor.editor, doc.line + 1);
                 }
                 self.restoreDocs(docs, callback);
             });
@@ -1428,24 +1408,22 @@ eXide.app = (function(util) {
             menu.click("#menu-git-commit", app.gitCommit);
             
 			menu.click("#menu-edit-undo", function () {
-				editor.editor.undo();
+				CM6.undo(editor.editor);
 			});
 			menu.click("#menu-edit-redo", function () {
-				editor.editor.redo();
+				CM6.redo(editor.editor);
 			});
             menu.click("#menu-edit-find", function() {
-                var config = require("ace/config");
-                config.loadModule("ace/ext/searchbox", function(e) {e.Search(editor.editor)});
+                editorShim.openSearchPanel(editor.editor);
             });
             menu.click("#menu-edit-find-replace", function() {
-                var config = require("ace/config");
-                config.loadModule("ace/ext/searchbox", function(e) {e.Search(editor.editor, true)});
+                editorShim.openSearchPanel(editor.editor, true);
             });
             menu.click("#menu-edit-find-files", function() {
                 app.findFiles();
             });
             menu.click("#menu-edit-toggle-comment", function () {
-                editor.editor.toggleCommentLines();
+                editorShim.toggleCommentLines(editor.editor);
             });
 			menu.click("#menu-edit-preferences", function() {
                 preferences.show();
