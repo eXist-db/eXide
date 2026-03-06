@@ -30,9 +30,10 @@ eXide.edit.ModeHelper = (function () {
 	Constr = function(editor) {
 		this.parent = editor;
 		this.editor = this.parent.editor;
-		
+
 		this.commands = {};
         this.addCommand("locate", this.locate);
+        this.addCommand("format", this.format);
 	}
 	
 	Constr.prototype = {
@@ -100,6 +101,35 @@ eXide.edit.ModeHelper = (function () {
             	this.editor.focus();
             }
             return false;
+        },
+
+        format: function(doc) {
+            if (typeof prettierFormat === "undefined") {
+                eXide.util.message("format not supported in this mode.");
+                return;
+            }
+            var self = this;
+            var range = this.editor.getSelectionRange();
+            var code = doc.getSession().getTextRange(range);
+            var isSelection = code.length > 0;
+            if (!isSelection) {
+                code = doc.getText();
+            }
+            var mode = doc.getSyntax();
+            prettierFormat.format(code, mode).then(function (formatted) {
+                formatted = formatted.replace(/\n$/, "");
+                if (isSelection) {
+                    doc.getSession().replace(range, formatted);
+                } else {
+                    var pos = self.editor.getCursorPosition();
+                    doc.getSession().setValue(formatted);
+                    self.editor.moveCursorToPosition(pos);
+                    self.editor.clearSelection();
+                }
+            }).catch(function (e) {
+                console.log("Error formatting code: %s", e.message);
+                eXide.util.error("Code could not be formatted: " + e.message);
+            });
         },
         
         /**

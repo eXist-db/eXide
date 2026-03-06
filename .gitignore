@@ -4,6 +4,7 @@ build/*
 expath-pkg.xml
 
 resources/scripts/xqlint.min.js
+resources/scripts/prettier-bundle.js
 resources/scripts/ace
 resources/scripts/eXide.min.*
 resources/scripts/jquery/jquery.plugins.min.*

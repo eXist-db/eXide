@@ -1448,8 +1448,11 @@ eXide.app = (function(util) {
                 editor.editor.toggleCommentLines();
             });
 			menu.click("#menu-edit-preferences", function() {
-                preferences.show(); 		
+                preferences.show();
 			});
+            menu.click("#menu-edit-format", function() {
+                editor.exec("format");
+            });
             menu.click("#menu-navigate-definition", function () {
                 editor.exec("gotoDefinition");
             });

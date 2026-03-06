@@ -48,6 +48,7 @@ eXide.edit.LessModeHelper = (function () {
         this.parent = editor;
         this.editor = this.parent.editor;
         this.addCommand("locate", this.locate);
+        this.addCommand("format", this.format);
     };
 
     eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);

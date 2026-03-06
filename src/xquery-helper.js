@@ -28,10 +28,29 @@ eXide.edit.XQueryModeHelper = (function () {
     // REx parser + adapter loaded as globals from src/parser/ (concatenated before this file)
     var RExParser = XQueryParser;
     var rexAdapter = rexParserAdapter;
-    var SemanticHighlighter = require("lib/visitors/SemanticHighlighter").SemanticHighlighter;
-    var Translator = require("lib/Translator").Translator;
-    var CodeFormatter = require("lib/visitors/CodeFormatter").CodeFormatter;
-    var Compiler = require("lib/Compiler").Compiler;
+    function semanticHighlight(ast) {
+        var tokens = {};
+        function visit(node) {
+            if (node.name === "EQName" || node.name === "NCName") {
+                var row = node.pos.sl;
+                if (!tokens[row]) tokens[row] = [];
+                tokens[row].push({
+                    sl: node.pos.sl, sc: node.pos.sc,
+                    el: node.pos.el, ec: node.pos.ec,
+                    type: "support.function"
+                });
+                return;
+            }
+            if (node.children) {
+                for (var i = 0; i < node.children.length; i++) visit(node.children[i]);
+            }
+        }
+        visit(ast);
+        return tokens;
+    }
+    // staticAnalysis loaded as global from src/static-analysis.js (concatenated before this file)
+    // Code formatting handled by prettierFormat (src/prettier-format.js)
+
     var Range = require("ace/range").Range;
     var Anchor = require("ace/anchor").Anchor;
     var SnippetManager = require("ace/snippets").snippetManager;
@@ -55,7 +74,6 @@ eXide.edit.XQueryModeHelper = (function () {
 		// added to clean function name : 
         this.trimRe = /^[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+|[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+$/g;
         
-        this.addCommand("format", this.format);
         this.addCommand("expandSelection", this.expandSelection);
         this.addCommand("rename", this.rename);
         this.addCommand("extractFunction", this.extractFunction);
@@ -64,6 +82,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		this.addCommand("gotoDefinition", this.gotoDefinition);
         this.addCommand("gotoSymbol", this.gotoSymbol);
 		this.addCommand("locate", this.locate);
+        this.addCommand("format", this.format);
 		this.addCommand("closeTag", this.closeTag);
         this.addCommand("importModule", this.importModule);
         this.addCommand("quickFix", this.quickFix);
@@ -73,9 +92,6 @@ eXide.edit.XQueryModeHelper = (function () {
         
         var self = this;
         this.menu = $("#menu-xquery").hide();
-        menubar.click("#menu-xquery-format", function() {
-            self.format(editor.getActiveDocument());
-        });
         menubar.click("#menu-xquery-expand", function() {
             self.expandSelection(editor.getActiveDocument());
         });
@@ -219,17 +235,15 @@ eXide.edit.XQueryModeHelper = (function () {
             doc.lastValidation = new Date().getTime();
 
             try {
-                var translator = new Translator(result.ast);
-                doc.ast = translator.translate();
+                var analysisResult = staticAnalysis.analyze(result.ast);
+                doc.ast.markers = analysisResult.markers;
             } catch(te) {
-                $.log("Translator error (non-fatal): %s", te.message);
+                $.log("Static analysis error (non-fatal): %s", te.message);
             }
-
-            var highlighter = new SemanticHighlighter(result.ast, value);
 
             var mode = doc.getSession().getMode();
 
-            mode.$tokenizer.tokens = highlighter.getTokens();
+            mode.$tokenizer.tokens = semanticHighlight(result.ast);
             mode.$tokenizer.lines  = session.getDocument().getAllLines();
             session.bgTokenizer.lines = [];
             session.bgTokenizer.states = [];
@@ -728,35 +742,6 @@ eXide.edit.XQueryModeHelper = (function () {
 		}
 	}
 	
-    Constr.prototype.format = function(doc) {
-        var range = this.editor.getSelectionRange();
-        var value = doc.getSession().getTextRange(range);    
-        if (value.length == 0) {
-            eXide.util.error("Please select code to format.");
-            return;
-        }
-        var line = doc.getSession().doc.getLine(range.start.row);
-        var startIndent = line.match(/^\s*/)[0];
-        var result = rexAdapter.parseXQuery(value, RExParser);
-        if (result.error) {
-            console.log("Error parsing XQuery code: %s", result.error.message || result.error);
-            eXide.util.error("Code could not be parsed. Please select a valid code block.");
-            return;
-        }
-        try {
-            var codeFormatter = new CodeFormatter(result.ast, true);
-            var formatted = codeFormatter.format();
-            var lines = formatted.split(/\n/);
-            for (var i = 0; i < lines.length; i++) {
-                lines[i] = startIndent + lines[i];
-            }
-            doc.getSession().replace(range, lines.join("\n"));
-        } catch(e) {
-            console.log("Error formatting XQuery code: %s", e.message);
-            eXide.util.error("Code could not be formatted.");
-        }
-    };
-    
     Constr.prototype.extractVariable = function(doc) {
         this.xqlint(doc);
         // get text of selection
@@ -836,8 +821,9 @@ eXide.edit.XQueryModeHelper = (function () {
             return;
         }
         try {
-            var translator = new Translator(result.ast);
-            var ast = translator.translate();
+            var analysisResult = staticAnalysis.analyze(result.ast);
+            result.ast.markers = analysisResult.markers;
+            var ast = result.ast;
 
             var markers = ast.markers;
             var vars = {};

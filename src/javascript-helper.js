@@ -33,6 +33,7 @@ eXide.edit.JavascriptModeHelper = (function () {
         this.addCommand("gotoDefinition", this.gotoDefinition);
         this.addCommand("locate", this.locate);
         this.addCommand("gotoSymbol", this.gotoSymbol);
+        this.addCommand("format", this.format);
 	}
 	
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);

@@ -12,6 +12,7 @@
 		"clean": "node scripts/build.js clean",
 		"xqlint": "cd support/xqlint && node r.js -o build.js && cd ../..",
 		"test": "node --test test/parser-test.js test/visitor-test.js test/utils-test.js test/static-analysis-test.js",
+		"bundle-prettier": "node tools/bundle-prettier.js",
 		"cypress": "cypress run"
 	},
 	"repository": {
@@ -30,12 +31,15 @@
 	},
 	"homepage": "https://github.com/eXist-db/eXide#readme",
 	"devDependencies": {
+		"@prettier/plugin-xml": "^3.4.2",
 		"chalk": "^4.1.2",
 		"command-line-args": "^6.0.1",
 		"cypress": "^15.11.0",
 		"esbuild": "^0.27.3",
 		"glob-stream": "^7.0.0",
 		"micro-fs": "^1.0.3",
+		"prettier": "^3.8.1",
+		"prettier-plugin-xquery": "^1.5.0",
 		"request": "^2.88.2"
 	},
 	"dependencies": {

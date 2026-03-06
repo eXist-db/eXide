@@ -46,6 +46,7 @@ eXide.edit.XMLModeHelper = (function () {
         this.addCommand("suggest", this.suggest);
         this.addCommand("rename", this.rename);
         this.addCommand("expandSelection", this.selectElement);
+        this.addCommand("format", this.format);
 	}
 	
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);

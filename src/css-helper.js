@@ -30,6 +30,7 @@ eXide.edit.CssModeHelper = (function () {
 		this.editor = this.parent.editor;
         this.addCommand("locate", this.locate);
         this.addCommand("gotoSymbol", this.gotoSymbol);
+        this.addCommand("format", this.format);
 	};
 	
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
