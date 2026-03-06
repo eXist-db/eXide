@@ -64,7 +64,7 @@ eXide.XQueryDebuger = (function () {
                 $.log("response: %o", data);
                 $this.session = data.session;
                 var line = data.stack[0].lineno;
-                editorShim.gotoLine($this.editor, line);
+                editorUtils.gotoLine($this.editor, line);
                 if (data.context && data.context.properties) {
                     $.each(data.context.properties, function(i, property) {
                         var line = $this.getVariable(property);

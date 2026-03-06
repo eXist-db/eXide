@@ -90,7 +90,7 @@ eXide.edit.CssModeHelper = (function () {
             eXide.util.Popup.show(popupItems, function (selected) {
                 if (selected) {
                     self.parent.history.push(doc.getPath(), doc.getCurrentLine());
-                    editorShim.gotoLine(self.editor, selected.row + 1);
+                    editorUtils.gotoLine(self.editor, selected.row + 1);
                 }
             });
         }

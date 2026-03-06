@@ -28,44 +28,6 @@ eXide.edit.commands = (function () {
     var commandList = [];
 
     /**
-     * Convert Ace-style key bindings [win, mac] to CM6 key string.
-     * E.g. ["Ctrl-Return", "Command-Return"] → "Mod-Enter"
-     */
-    function convertKey(aceKey) {
-        if (!aceKey) return null;
-        // Handle pipe-separated alternatives (e.g. "Ctrl-Space|Option-Space")
-        // — use just the first alternative
-        if (aceKey.indexOf("|") >= 0) {
-            aceKey = aceKey.split("|")[0];
-        }
-        // CM6 uses Mod- for Ctrl on Win, Cmd on Mac
-        // On Mac bindings: Command→Mod, Ctrl stays as Ctrl (for Ctrl+Cmd combos)
-        // On Win bindings: Ctrl→Mod
-        var key;
-        if (isMac) {
-            key = aceKey
-                .replace(/Command-/g, "Mod-")
-                .replace(/Option-/g, "Alt-");
-        } else {
-            key = aceKey
-                .replace(/Ctrl-/g, "Mod-");
-        }
-        key = key
-            .replace(/Alt-/g, "Alt-")
-            .replace(/Shift-/g, "Shift-")
-            .replace(/Return$/, "Enter")
-            .replace(/Esc$/, "Escape")
-            .replace(/PageDown$/, "PageDown")
-            .replace(/PageUp$/, "PageUp")
-            .replace(/Backspace$/, "Backspace")
-            .replace(/Left$/, "ArrowLeft")
-            .replace(/Right$/, "ArrowRight")
-            .replace(/Up$/, "ArrowUp")
-            .replace(/Down$/, "ArrowDown");
-        return key;
-    }
-
-    /**
      * Convert CM6 key string to platform-native display string for menus.
      */
     function displayKey(cm6Key) {
@@ -86,11 +48,11 @@ eXide.edit.commands = (function () {
 
     function getKeyBinding(bindingsObj, name) {
         if (!bindingsObj || !bindingsObj[name]) return null;
-        var pair = bindingsObj[name];
+        var entry = bindingsObj[name];
         if (isMac) {
-            return convertKey(pair[1] || pair[0]);
+            return entry.mac || entry.key;
         }
-        return convertKey(pair[0]);
+        return entry.key;
     }
 
     function addCommand(name, key, exec) {
@@ -184,7 +146,8 @@ eXide.edit.commands = (function () {
                     addCommand("escape", getKeyBinding(kb, "escape"), function() {
                         var doc = parent.getActiveDocument();
                         doc.template = null;
-                        editorShim.clearSelection(parent.editor);
+                        var head = parent.editor.state.selection.main.head;
+                        parent.editor.dispatch({ selection: { anchor: head } });
                         return true;
                     });
                     addCommand("dbManager", getKeyBinding(kb, "dbManager"), function() {
@@ -192,7 +155,7 @@ eXide.edit.commands = (function () {
                         return true;
                     });
                     addCommand("toggleComment", getKeyBinding(kb, "toggleComment"), function(view) {
-                        editorShim.toggleCommentLines(view);
+                        CM6.toggleComment(view);
                         return true;
                     });
                     addCommand("synchronize", getKeyBinding(kb, "synchronize"), function() {

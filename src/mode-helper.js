@@ -79,7 +79,7 @@ eXide.edit.ModeHelper = (function () {
 
         locate: function(doc, type, row) {
             if (typeof row == "number") {
-                editorShim.gotoLine(this.editor, row + 1);
+                editorUtils.gotoLine(this.editor, row + 1);
                 this.editor.focus();
             }
             return false;
@@ -91,8 +91,8 @@ eXide.edit.ModeHelper = (function () {
                 return;
             }
             var self = this;
-            var range = editorShim.getSelectionRange(this.editor);
-            var code = editorShim.getTextRange(this.editor, range);
+            var sel = this.editor.state.selection.main;
+            var code = this.editor.state.sliceDoc(sel.from, sel.to);
             var isSelection = code.length > 0;
             if (!isSelection) {
                 code = doc.getText();
@@ -101,12 +101,15 @@ eXide.edit.ModeHelper = (function () {
             prettierFormat.format(code, mode).then(function (formatted) {
                 formatted = formatted.replace(/\n$/, "");
                 if (isSelection) {
-                    editorShim.replaceRange(self.editor, range, formatted);
+                    self.editor.dispatch({
+                        changes: { from: sel.from, to: sel.to, insert: formatted }
+                    });
                 } else {
-                    var pos = editorShim.getCursorPosition(self.editor);
-                    editorShim.setValue(self.editor, formatted);
-                    editorShim.moveCursorToPosition(self.editor, pos);
-                    editorShim.clearSelection(self.editor);
+                    var cursorOffset = self.editor.state.selection.main.head;
+                    self.editor.dispatch({
+                        changes: { from: 0, to: self.editor.state.doc.length, insert: formatted },
+                        selection: { anchor: Math.min(cursorOffset, formatted.length) }
+                    });
                 }
             }).catch(function (e) {
                 console.log("Error formatting code: %s", e.message);
@@ -116,29 +119,30 @@ eXide.edit.ModeHelper = (function () {
 
         autocomplete : function(doc, alwaysShow) {
             var self = this;
-            var range;
+            var removeFrom, removeTo;
             if (alwaysShow === undefined) {
                 alwaysShow = true;
             }
 
             function apply(selected) {
-                if (range) {
-                    editorShim.removeRange(self.editor, range);
+                if (removeFrom !== undefined) {
+                    self.editor.dispatch({ changes: { from: removeFrom, to: removeTo } });
                 }
-                editorShim.insertSnippet(self.editor, selected.template);
+                editorUtils.insertSnippet(self.editor, selected.template);
             }
 
             if (alwaysShow === undefined) {
                 alwaysShow = true;
             }
 
-            var lead = editorShim.getSelectionLead(this.editor);
-            var pos = editorShim.textToScreenCoordinates(this.editor, lead.row, lead.column);
+            var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
+            var pos = editorUtils.textToScreenCoordinates(this.editor, lead.row, lead.column);
             var token;
-            var isEmpty = editorShim.isSelectionEmpty(this.editor);
+            var isEmpty = this.editor.state.selection.main.empty;
             if (isEmpty) {
                 var row = lead.row;
-                var line = editorShim.getLine(this.editor, lead.row);
+                var lineNum = row + 1;
+                var line = (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) ? this.editor.state.doc.line(lineNum).text : "";
                 var start = lead.column - 1;
                 var end = lead.column;
                 while (start >= 0) {
@@ -158,7 +162,8 @@ eXide.edit.ModeHelper = (function () {
                 if (token === "" && !alwaysShow) {
                     return false;
                 } else {
-                    range = editorShim.createRange(row, start, row, end);
+                    removeFrom = editorUtils.rowColToOffset(this.editor.state, row, start);
+                    removeTo = editorUtils.rowColToOffset(this.editor.state, row, end);
                 }
             } else if (!alwaysShow) {
                 return false;

@@ -10,6 +10,18 @@ eXide.find.IncrementalSearch = (function () {
         regExp: false
     };
     
+    function setSearch(view, needle, options) {
+        if (!needle) return;
+        var query = new CM6.SearchQuery({
+            search: needle,
+            caseSensitive: options && options.caseSensitive,
+            regexp: options && options.regExp,
+            wholeWord: options && options.wholeWord
+        });
+        view.dispatch({ effects: CM6.setSearchQuery.of(query) });
+        CM6.findNext(view);
+    }
+
     Constr = function (input, editor) {
         var $this = this;
         $this.input = $(input);
@@ -26,18 +38,18 @@ eXide.find.IncrementalSearch = (function () {
                 case 40:
                     // Down
                     ev.preventDefault();
-                    editorShim.findNext($this.editor);
+                    CM6.findNext($this.editor);
                     break;
                 case 38:
                     // Up
                     ev.preventDefault();
-                    editorShim.findPrevious($this.editor);
+                    CM6.findPrevious($this.editor);
                     break;
                 case 71:
                     // Ctrl-G, Command-G or Alt-G
                     if (ev.metaKey || ev.ctrlKey) {
                         ev.preventDefault();
-                        editorShim.findNext($this.editor);
+                        CM6.findNext($this.editor);
                         break;
                     }
                 default:
@@ -49,16 +61,16 @@ eXide.find.IncrementalSearch = (function () {
     };
     
     Constr.prototype.start = function () {
-        var lead = editorShim.getSelectionLead(this.editor);
+        var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
 		this.currentLine = lead.row;
         this.input.val("");
         this.input.show().focus();
     };
 
     Constr.prototype.onChange = function () {
-        editorShim.gotoLine(this.editor, this.currentLine + 1);
+        editorUtils.gotoLine(this.editor, this.currentLine + 1);
         var search = this.input.val();
-        editorShim.find(this.editor, search, searchOptions);
+        setSearch(this.editor, search, searchOptions);
         this.input.focus();
     };
     
@@ -68,15 +80,20 @@ eXide.find.IncrementalSearch = (function () {
 eXide.namespace("eXide.find.SearchReplace");
 
 eXide.find.SearchReplace = (function () {
-    
-    var searchOptions = {
-        backwards: false,
-        wrap: true,
-        caseSensitive: false,
-        wholeWord: false,
-        regExp: false
-    };
-    
+
+    function setSearch(view, needle, options, replaceStr) {
+        if (!needle) return;
+        var query = new CM6.SearchQuery({
+            search: needle,
+            replace: replaceStr || "",
+            caseSensitive: options && options.caseSensitive,
+            regexp: options && options.regExp,
+            wholeWord: options && options.wholeWord
+        });
+        view.dispatch({ effects: CM6.setSearchQuery.of(query) });
+        CM6.findNext(view);
+    }
+
     Constr = function (editor) {
         var self = this;
         self.editor = editor;
@@ -117,11 +134,11 @@ eXide.find.SearchReplace = (function () {
         if (search && search.length > 0) {
             if (this.lastSearch != null && this.lastSearch == search) {
                 if (direction == -1)
-                    editorShim.findPrevious(this.editor);
+                    CM6.findPrevious(this.editor);
                 else
-                    editorShim.findNext(this.editor);
+                    CM6.findNext(this.editor);
             } else {
-                editorShim.find(this.editor, search, this.getOptions());
+                setSearch(this.editor, search, this.getOptions());
                 this.needleSet = true;
             }
             this.editor.focus();
@@ -131,17 +148,16 @@ eXide.find.SearchReplace = (function () {
     Constr.prototype.replace = function(all) {
         var search = this.container.find("input[name='search']").val();
         if (search && search.length > 0) {
-            if (!this.needleSet) {
-                editorShim.find(this.editor, search, this.getOptions());
-                this.needleSet = true;
-            }
-            var replace = this.container.find("input[name='replace']").val();
-            if (replace && replace.length > 0) {
+            var replace = this.container.find("input[name='replace']").val() || "";
+            // Always set the search query with the replace string
+            setSearch(this.editor, search, this.getOptions(), replace);
+            this.needleSet = true;
+            if (replace.length > 0) {
                 if (all) {
-                    editorShim.replaceAll(this.editor, search, replace, this.getOptions());
+                    CM6.replaceAll(this.editor);
                 } else {
-                    editorShim.replace(this.editor, replace);
-                    editorShim.findNext(this.editor);
+                    CM6.replaceNext(this.editor);
+                    CM6.findNext(this.editor);
                 }
             }
         }

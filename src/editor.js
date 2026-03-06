@@ -74,7 +74,9 @@ eXide.edit.Document = (function() {
 
     Constr.prototype.setText = function(text) {
         if (this._view) {
-            editorShim.setValue(this._view, text);
+            this._view.dispatch({
+                changes: { from: 0, to: this._view.state.doc.length, insert: text }
+            });
         } else {
             this._text = text;
         }
@@ -146,7 +148,7 @@ eXide.edit.Document = (function() {
 
     Constr.prototype.getCurrentLine = function() {
         if (this._view) {
-            return editorShim.getCursorPosition(this._view).row;
+            return editorUtils.offsetToRowCol(this._view.state, this._view.state.selection.main.head).row;
         }
         return 0;
     };
@@ -329,7 +331,7 @@ eXide.edit.Editor = (function () {
             var doc = $this.getDocument(path);
             if (doc) {
                 $this.switchTo(doc);
-                editorShim.gotoLine($this.editor, parseInt(line) + 1);
+                editorUtils.gotoLine($this.editor, parseInt(line) + 1);
             }
         });
 
@@ -374,9 +376,9 @@ eXide.edit.Editor = (function () {
                     var line = $(this).find('input[name="row"]').val();
                     var column = $(this).find('input[name="column"]').val();
                     if (column && column != "") {
-                        editorShim.gotoLine($this.editor, parseInt(line), parseInt(column) - 1, true);
+                        editorUtils.gotoLine($this.editor, parseInt(line), parseInt(column) - 1, true);
                     } else {
-                        editorShim.gotoLine($this.editor, parseInt(line), 0, true);
+                        editorUtils.gotoLine($this.editor, parseInt(line), 0, true);
                     }
                     $(this).dialog("close");
                     $this.editor.focus();
@@ -509,7 +511,7 @@ eXide.edit.Editor = (function () {
         doc.saved = false;
         this.$initDocument(doc);
         if (resource.line) {
-            editorShim.gotoLine(this.editor, resource.line);
+            editorUtils.gotoLine(this.editor, resource.line);
         }
     };
 
@@ -582,7 +584,7 @@ eXide.edit.Editor = (function () {
         if ($this.activeDoc) {
             $this.activeDoc._text = $this.editor.state.doc.toString();
             $this.activeDoc._cursorOffset = $this.editor.state.selection.main.head;
-            $this.activeDoc._annotations = editorShim.getAnnotations($this.editor);
+            $this.activeDoc._annotations = editorUtils.getAnnotations($this.editor);
             $this.activeDoc._view = null;
         }
 
@@ -640,7 +642,7 @@ eXide.edit.Editor = (function () {
                 // If stored as a line number (from openDocument), convert to offset
                 var offset;
                 if (doc._cursorOffset < this.editor.state.doc.lines) {
-                    offset = editorShim.rowColToOffset(this.editor.state, doc._cursorOffset, 0);
+                    offset = editorUtils.rowColToOffset(this.editor.state, doc._cursorOffset, 0);
                 } else {
                     offset = Math.min(doc._cursorOffset, this.editor.state.doc.length);
                 }
@@ -653,7 +655,7 @@ eXide.edit.Editor = (function () {
 
             // Restore annotations
             if (doc._annotations && doc._annotations.length > 0) {
-                editorShim.setAnnotations(this.editor, doc._annotations);
+                editorUtils.setAnnotations(this.editor, doc._annotations);
             }
         } finally {
             this._switching = false;
@@ -803,7 +805,9 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.reload = function(data) {
-        editorShim.setValue(this.editor, data);
+        this.editor.dispatch({
+            changes: { from: 0, to: this.editor.state.doc.length, insert: data }
+        });
         this.activeDoc._text = data;
         this.activeDoc.saved = true;
         this.updateTabStatus(this.activeDoc.path, this.activeDoc);
@@ -859,7 +863,7 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.clearErrors = function () {
-        editorShim.clearAnnotations(this.editor);
+        editorUtils.clearAnnotations(this.editor);
     };
 
     Constr.prototype.forEachDocument = function(callback) {
@@ -992,7 +996,7 @@ eXide.edit.Editor = (function () {
         if (this.activeDoc && this.activeDoc !== doc) {
             this.activeDoc._text = this.editor.state.doc.toString();
             this.activeDoc._cursorOffset = this.editor.state.selection.main.head;
-            this.activeDoc._annotations = editorShim.getAnnotations(this.editor);
+            this.activeDoc._annotations = editorUtils.getAnnotations(this.editor);
             this.activeDoc._view = null;
 
             var helper = this.activeDoc.getModeHelper();
@@ -1085,7 +1089,7 @@ eXide.edit.Editor = (function () {
         }
         if (gotoLine) {
             this.editor.focus();
-            editorShim.gotoLine(this.editor, line);
+            editorUtils.gotoLine(this.editor, line);
         }
 
         var annotation = [{
@@ -1094,7 +1098,7 @@ eXide.edit.Editor = (function () {
                 type: "error"
         }];
         this.updateStatus(msg);
-        editorShim.setAnnotations(this.editor, annotation);
+        editorUtils.setAnnotations(this.editor, annotation);
     };
 
     Constr.prototype.focus = function() {

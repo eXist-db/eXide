@@ -71,7 +71,12 @@ eXide.edit.XMLModeHelper = (function () {
                     if (line <= row) {
                         var tag = /element type "([^"]+)"/.exec(data.message["#text"]);
                         if (tag && tag.length > 0) {
-                            editorShim.insert($this.editor, tag[1] + ">");
+                            var pos = $this.editor.state.selection.main.head;
+                            var text = tag[1] + ">";
+                            $this.editor.dispatch({
+                                changes: { from: pos, insert: text },
+                                selection: { anchor: pos + text.length }
+                            });
                         }
                     }
                 }
@@ -117,7 +122,7 @@ eXide.edit.XMLModeHelper = (function () {
                 });
             }
             this.parent.updateStatus(messages[0]["#text"], doc.getPath() + "#" + messages[0].line);
-            editorShim.setAnnotations(this.editor, annotations);
+            editorUtils.setAnnotations(this.editor, annotations);
         } else {
             this.parent.clearErrors();
             this.parent.updateStatus("");
@@ -181,8 +186,7 @@ eXide.edit.XMLModeHelper = (function () {
      */
     Constr.prototype.findStartEndTags = function(doc) {
         var text = doc.getText();
-        var cursorPos = editorShim.getCursorPosition(this.editor);
-        var cursorOffset = editorShim.rowColToOffset(this.editor.state, cursorPos.row, cursorPos.column);
+        var cursorOffset = this.editor.state.selection.main.head;
 
         // Find all tags in the document
         var tagRe = /<\/?([a-zA-Z][\w:\-.]*)(?:\s[^>]*)?\/?>/g;
@@ -200,13 +204,10 @@ eXide.edit.XMLModeHelper = (function () {
             if (isSelfClose) continue;
 
             if (!isClose) {
-                var pos = editorShim.offsetToRowCol(this.editor.state, tagStart);
                 var nameStart = tagStart + 1; // after '<'
-                var namePos = editorShim.offsetToRowCol(this.editor.state, nameStart);
                 stack.push({
                     name: tagName,
-                    row: namePos.row,
-                    column: namePos.column,
+                    nameOffset: nameStart,
                     offset: tagStart
                 });
                 if (cursorOffset >= tagStart && cursorOffset <= tagEnd) {
@@ -215,13 +216,11 @@ eXide.edit.XMLModeHelper = (function () {
             } else {
                 var last = stack.pop();
                 var nameStart = tagStart + 2; // after '</'
-                var namePos = editorShim.offsetToRowCol(this.editor.state, nameStart);
                 if (startTag === last || (cursorOffset >= tagStart && cursorOffset <= tagEnd)) {
                     if (!startTag) startTag = last;
                     endTag = {
                         name: tagName,
-                        row: namePos.row,
-                        column: namePos.column,
+                        nameOffset: nameStart,
                         offset: tagStart
                     };
                     break;
@@ -229,8 +228,7 @@ eXide.edit.XMLModeHelper = (function () {
                 if (startTag && startTag === last) {
                     endTag = {
                         name: tagName,
-                        row: namePos.row,
-                        column: namePos.column,
+                        nameOffset: nameStart,
                         offset: tagStart
                     };
                     break;
@@ -244,31 +242,27 @@ eXide.edit.XMLModeHelper = (function () {
         var tags = this.findStartEndTags(doc, false);
         if (!tags.start || !tags.end) return;
 
-        // Find the full extent of the start and end tags
         var text = doc.getText();
         var startOffset = tags.start.offset;
         var endIdx = text.indexOf(">", tags.end.offset);
         if (endIdx < 0) return;
         var endOffset = endIdx + 1;
 
-        var startPos = editorShim.offsetToRowCol(this.editor.state, startOffset);
-        var endPos = editorShim.offsetToRowCol(this.editor.state, endOffset);
-        var range = editorShim.createRange(startPos.row, startPos.column, endPos.row, endPos.column);
-        editorShim.setSelectionRange(this.editor, range);
+        this.editor.dispatch({
+            selection: { anchor: startOffset, head: endOffset }
+        });
     };
 
     Constr.prototype.rename = function(doc) {
         var tags = this.findStartEndTags(doc, true);
         if (!tags.start) return;
 
-        // Select the start tag name
-        var range = editorShim.createRange(
-            tags.start.row, tags.start.column,
-            tags.start.row, tags.start.column + tags.start.name.length
-        );
-        editorShim.setSelectionRange(this.editor, range);
+        var from = tags.start.nameOffset;
+        var to = from + tags.start.name.length;
+        this.editor.dispatch({
+            selection: { anchor: from, head: to }
+        });
         this.editor.focus();
-        // Note: multi-cursor rename of end tag is not yet supported in CM6 shim
     };
 
     Constr.prototype.deleteTags = function(doc) {
@@ -280,29 +274,19 @@ eXide.edit.XMLModeHelper = (function () {
         var endStart = tags.end.offset;
         var endEnd = text.indexOf(">", endStart);
         if (endEnd >= 0) {
-            // Include the '</' before the tag name
-            var actualEnd = endEnd + 1;
-            var endRange = editorShim.createRange(
-                editorShim.offsetToRowCol(this.editor.state, endStart).row,
-                editorShim.offsetToRowCol(this.editor.state, endStart).column,
-                editorShim.offsetToRowCol(this.editor.state, actualEnd).row,
-                editorShim.offsetToRowCol(this.editor.state, actualEnd).column
-            );
-            editorShim.removeRange(this.editor, endRange);
+            this.editor.dispatch({
+                changes: { from: endStart, to: endEnd + 1 }
+            });
         }
 
-        // Remove start tag
+        // Remove start tag (re-read text since doc changed)
         var startStart = tags.start.offset;
-        var startEnd = doc.getText().indexOf(">", startStart);
+        var currentText = this.editor.state.doc.toString();
+        var startEnd = currentText.indexOf(">", startStart);
         if (startEnd >= 0) {
-            var actualStartEnd = startEnd + 1;
-            var startRange = editorShim.createRange(
-                editorShim.offsetToRowCol(this.editor.state, startStart).row,
-                editorShim.offsetToRowCol(this.editor.state, startStart).column,
-                editorShim.offsetToRowCol(this.editor.state, actualStartEnd).row,
-                editorShim.offsetToRowCol(this.editor.state, actualStartEnd).column
-            );
-            editorShim.removeRange(this.editor, startRange);
+            this.editor.dispatch({
+                changes: { from: startStart, to: startEnd + 1 }
+            });
         }
     };
 

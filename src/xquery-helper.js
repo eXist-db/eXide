@@ -51,13 +51,7 @@ eXide.edit.XQueryModeHelper = (function () {
     // staticAnalysis loaded as global from src/static-analysis.js (concatenated before this file)
     // Code formatting handled by prettierFormat (src/prettier-format.js)
 
-    // Ace compatibility: use editorShim for Range/Anchor, CM6 snippets for SnippetManager
-    var Range = {
-        // Compatibility constructor — returns a plain range object
-    };
-    function createRange(sr, sc, er, ec) {
-        return editorShim.createRange(sr, sc, er, ec);
-    }
+    // CM6 editor utilities (editorUtils global from src/editor-utils.js)
     
 	Constr = function(editor, menubar) {
 		this.parent = editor;
@@ -149,11 +143,15 @@ eXide.edit.XQueryModeHelper = (function () {
 					var err = parseErrMsg(data.error);
 					var tag = /constructor:\s([^\)]+)\)?$/.exec(err.msg);
 					if (tag && tag.length > 0) {
-						editorShim.insert($this.editor, tag[1] + ">");
+						var insertText = tag[1] + ">";
+						var insertPos = $this.editor.state.selection.main.head;
+						$this.editor.dispatch({ changes: { from: insertPos, insert: insertText }, selection: { anchor: insertPos + insertText.length } });
 					} else {
 					    tag = /tag:.*;\sexpected:\s(.*)$/.exec(err.msg);
                         if (tag && tag.length > 0) {
-						    editorShim.insert($this.editor, tag[1] + ">");
+						    var insertText2 = tag[1] + ">";
+						    var insertPos2 = $this.editor.state.selection.main.head;
+						    $this.editor.dispatch({ changes: { from: insertPos2, insert: insertText2 }, selection: { anchor: insertPos2 + insertText2.length } });
                         }
 					}
 				}
@@ -213,10 +211,10 @@ eXide.edit.XQueryModeHelper = (function () {
 			this.parent.updateStatus(err.msg, doc.getPath() + "#" + err.line);
             var annotations = this.clearAnnotations(doc, "error");
             annotations.push(annotation);
-			editorShim.setAnnotations(this.editor, annotations);
+			editorUtils.setAnnotations(this.editor, annotations);
             return false;
 		} else {
-			editorShim.setAnnotations(this.editor, this.clearAnnotations(doc, "error"));
+			editorUtils.setAnnotations(this.editor, this.clearAnnotations(doc, "error"));
 			this.parent.updateStatus("");
             return true;
 		}
@@ -244,8 +242,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 $.log("Static analysis error (non-fatal): %s", te.message);
             }
 
-            // CM6: semantic highlighting via decorations will be added in a future pass.
-            // For now, skip the bgTokenizer manipulation that was Ace-specific.
+            // TODO: add semantic highlighting via CM6 decorations
 
             var markers = doc.ast.markers;
             if (markers) {
@@ -261,7 +258,7 @@ eXide.edit.XQueryModeHelper = (function () {
                         pos: markers[i].pos
                     });
                 }
-                editorShim.setAnnotations(this.editor, annotations);
+                editorUtils.setAnnotations(this.editor, annotations);
             }
         } catch(e) {
             $.log("Error while processing ast: %s", e.message);
@@ -270,7 +267,7 @@ eXide.edit.XQueryModeHelper = (function () {
     
     Constr.prototype.clearAnnotations = function(doc, type) {
         var na = [];
-        var a = editorShim.getAnnotations(this.editor);
+        var a = editorUtils.getAnnotations(this.editor);
         for (var i = 0; i < a.length; i++) {
             if (a[i].type !== type) {
                 na.push(a[i]);
@@ -286,7 +283,7 @@ eXide.edit.XQueryModeHelper = (function () {
             alwaysShow = true;
         }
 
-        var lead = editorShim.getSelectionLead(this.editor);
+        var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
 
         var token = "";
         var mode = "templates";
@@ -294,7 +291,7 @@ eXide.edit.XQueryModeHelper = (function () {
         var range;
 
         // if text is selected we show templates only
-        if (editorShim.isSelectionEmpty(this.editor)) {
+        if (this.editor.state.selection.main.empty) {
             // try to determine the ast node where the cursor is located
             var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
             
@@ -304,7 +301,8 @@ eXide.edit.XQueryModeHelper = (function () {
                 // no ast node: scan preceding text
                 mode = "functions";
                 row = lead.row;
-                line = editorShim.getLine(this.editor, lead.row);
+                var lineNum = lead.row + 1;
+                line = (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) ? this.editor.state.doc.line(lineNum).text : "";
                 start = lead.column - 1;
                 end = lead.column;
                 while (start >= 0) {
@@ -394,7 +392,7 @@ eXide.edit.XQueryModeHelper = (function () {
                     }
                 }
             }
-            range = createRange(row, start, row, end);
+            range = { start: { row: row, column: start }, end: { row: row, column: end } };
         } else {
             mode = "templates";
             range = null;
@@ -405,7 +403,7 @@ eXide.edit.XQueryModeHelper = (function () {
         }
 		$.log("completing token: %s, mode: %s, range: %o", token, mode, range);
 
-		var pos = editorShim.textToScreenCoordinates(this.editor, lead.row, lead.column);
+		var pos = editorUtils.textToScreenCoordinates(this.editor, lead.row, lead.column);
         eXide.util.Popup.position(pos);
 
 
@@ -598,12 +596,15 @@ eXide.edit.XQueryModeHelper = (function () {
                     expansion = selected.template;   
     			}
                 if (wordrange) {
-                    editorShim.removeRange($this.editor, wordrange);
+                    var removeFrom = editorUtils.rowColToOffset($this.editor.state, wordrange.start.row, wordrange.start.column);
+                    var removeTo = editorUtils.rowColToOffset($this.editor.state, wordrange.end.row, wordrange.end.column);
+                    $this.editor.dispatch({ changes: { from: removeFrom, to: removeTo } });
                 }
                 if (selected.type === "variable") {
-                    editorShim.insert($this.editor, expansion);
+                    var pos = $this.editor.state.selection.main.head;
+                    $this.editor.dispatch({ changes: { from: pos, insert: expansion }, selection: { anchor: pos + expansion.length } });
                 } else {
-                    editorShim.insertSnippet($this.editor, expansion);
+                    editorUtils.insertSnippet($this.editor, expansion);
                 }
                 if (selected.completion) {
                     $this.autocomplete(doc);
@@ -634,7 +635,8 @@ eXide.edit.XQueryModeHelper = (function () {
         
         if (!name) {
     		var row = lead.row;
-    		var line = editorShim.getLine(this.editor, row);
+    		var lineNum = row + 1;
+    		var line = (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) ? this.editor.state.doc.line(lineNum).text : "";
     		var start = lead.column;
     		do {
     			start--;
@@ -661,9 +663,9 @@ eXide.edit.XQueryModeHelper = (function () {
 	
 	Constr.prototype.showFunctionDoc = function (doc) {
         this.xqlint(doc);
-		var lead = editorShim.getSelectionLead(this.editor);
+		var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
 
-		var pos = editorShim.textToScreenCoordinates(this.editor, lead.row, lead.column);
+		var pos = editorUtils.textToScreenCoordinates(this.editor, lead.row, lead.column);
         eXide.util.Popup.position(pos);
 		var func = this.getFunctionAtCursor(doc, lead);
 		this.functionLookup(doc, func, null, false);
@@ -671,14 +673,14 @@ eXide.edit.XQueryModeHelper = (function () {
 	
     Constr.prototype.quickFix = function (doc, row) {
         if (!row) {
-            row = editorShim.getCursorPosition(this.editor).row;
+            row = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head).row;
         }
         $.log("Requesting quick fix for %s at %d", doc.getName(), row);
-        var pos = editorShim.textToScreenCoordinates(this.editor, row, 0);
+        var pos = editorUtils.textToScreenCoordinates(this.editor, row, 0);
     	eXide.util.Popup.position(pos);
 
         var resolutions = [];
-        var an = editorShim.getAnnotations(this.editor);
+        var an = editorUtils.getAnnotations(this.editor);
         for (var i = 0; i < an.length; i++) {
             if (an[i].row === row) {
                 var qf = eXide.edit.XQueryQuickFix.getResolutions(this, this.editor, doc, an[i]);
@@ -707,7 +709,7 @@ eXide.edit.XQueryModeHelper = (function () {
     
 	Constr.prototype.gotoDefinition = function (doc) {
         this.xqlint(doc);
-		var lead = editorShim.getSelectionLead(this.editor);
+		var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
 		var funcName = this.getFunctionAtCursor(doc, lead);
 		if (funcName) {
 			this.parent.outline.gotoDefinition(doc, funcName);
@@ -732,8 +734,11 @@ eXide.edit.XQueryModeHelper = (function () {
     Constr.prototype.extractVariable = function(doc) {
         this.xqlint(doc);
         // get text of selection
-        var range = editorShim.getSelectionRange(this.editor);
-        var value = editorShim.getTextRange(this.editor, range);
+        var sel = this.editor.state.selection.main;
+        var range = { start: editorUtils.offsetToRowCol(this.editor.state, sel.from), end: editorUtils.offsetToRowCol(this.editor.state, sel.to) };
+        var rangeFrom = editorUtils.rowColToOffset(this.editor.state, range.start.row, range.start.column);
+        var rangeTo = editorUtils.rowColToOffset(this.editor.state, range.end.row, range.end.column);
+        var value = this.editor.state.sliceDoc(rangeFrom, rangeTo);
         if (value.length == 0) {
             eXide.util.error("Please select code to extract.");
             return;
@@ -759,12 +764,14 @@ eXide.edit.XQueryModeHelper = (function () {
         }
         $.log("extract variable: context: %o", contextNode);
 
-        editorShim.insert(this.editor, "$");
+        var dollarPos = this.editor.state.selection.main.head;
+        this.editor.dispatch({ changes: { from: dollarPos, insert: "$" }, selection: { anchor: dollarPos + 1 } });
 
-        editorShim.gotoLine(this.editor, contextNode.pos.sl + 1, contextNode.pos.sc);
-        editorShim.insert(this.editor, "\n");
-        editorShim.gotoLine(this.editor, contextNode.pos.sl + 1, contextNode.pos.sc);
-        editorShim.insertSnippet(this.editor, template);
+        editorUtils.gotoLine(this.editor, contextNode.pos.sl + 1, contextNode.pos.sc);
+        var nlPos = this.editor.state.selection.main.head;
+        this.editor.dispatch({ changes: { from: nlPos, insert: "\n" }, selection: { anchor: nlPos + 1 } });
+        editorUtils.gotoLine(this.editor, contextNode.pos.sl + 1, contextNode.pos.sc);
+        editorUtils.insertSnippet(this.editor, template);
         this.editor.focus();
 
         this.parent.validationEnabled = true;
@@ -773,8 +780,11 @@ eXide.edit.XQueryModeHelper = (function () {
     Constr.prototype.extractFunction = function(doc) {
         this.xqlint(doc);
         // get text of selection
-        var range = editorShim.getSelectionRange(this.editor);
-        var value = editorShim.getTextRange(this.editor, range);
+        var sel = this.editor.state.selection.main;
+        var range = { start: editorUtils.offsetToRowCol(this.editor.state, sel.from), end: editorUtils.offsetToRowCol(this.editor.state, sel.to) };
+        var rangeFrom = editorUtils.rowColToOffset(this.editor.state, range.start.row, range.start.column);
+        var rangeTo = editorUtils.rowColToOffset(this.editor.state, range.end.row, range.end.column);
+        var value = this.editor.state.sliceDoc(rangeFrom, rangeTo);
         if (value.length == 0) {
             eXide.util.error("Please select code to extract.");
             return;
@@ -820,7 +830,9 @@ eXide.edit.XQueryModeHelper = (function () {
         var insertRow = adder.getInsertionPoint(currentNode);
 
         // remove selected range and replace with parameter list
-        editorShim.removeRange(this.editor, range);
+        var removeFrom = editorUtils.rowColToOffset(this.editor.state, range.start.row, range.start.column);
+        var removeTo = editorUtils.rowColToOffset(this.editor.state, range.end.row, range.end.column);
+        this.editor.dispatch({ changes: { from: removeFrom, to: removeTo } });
         var params = "(";
         for (var i = 0; i < variables.length; i++) {
             if (i > 0)
@@ -828,9 +840,10 @@ eXide.edit.XQueryModeHelper = (function () {
             params += "$" + variables[i];
         }
         params += ")";
-        editorShim.insert(this.editor, params);
+        var insertPos = this.editor.state.selection.main.head;
+        this.editor.dispatch({ changes: { from: insertPos, insert: params }, selection: { anchor: insertPos + params.length } });
         // reset cursor
-        editorShim.gotoLine(this.editor, range.start.row + 1, range.start.column);
+        editorUtils.gotoLine(this.editor, range.start.row + 1, range.start.column);
 
         adder.createFunction(variables, value, insertRow);
 
@@ -845,7 +858,8 @@ eXide.edit.XQueryModeHelper = (function () {
         if (prefix != null) {
 			name = name.replace(/[^:]+:/, prefix + ":");
 		}
-        var lines = editorShim.getAllLines(this.editor);
+        var lines = [];
+        for (var i = 1; i <= this.editor.state.doc.lines; i++) { lines.push(this.editor.state.doc.line(i).text); }
         var len = lines.length;
         var lineNb;
         var returnLine = function(regexp) {
@@ -855,7 +869,7 @@ eXide.edit.XQueryModeHelper = (function () {
         };
         var focus = function(lineNb) {
             this.parent.history.push(doc.getPath(), doc.getCurrentLine());
-            editorShim.gotoLine(this.editor, lineNb + 1);
+            editorUtils.gotoLine(this.editor, lineNb + 1);
             return this.editor.focus();
         };
         
@@ -875,11 +889,12 @@ eXide.edit.XQueryModeHelper = (function () {
 		
 		$.log("Goto variable declaration %s", name);
 		var regexp = new RegExp("variable\\s+\\" + name);
-		var lines = editorShim.getAllLines(this.editor);
+		var lines = [];
+		for (var li = 1; li <= this.editor.state.doc.lines; li++) { lines.push(this.editor.state.doc.line(li).text); }
 		for (var i = 0; i < lines.length; i++) {
 			if (lines[i].match(regexp)) {
 				this.parent.history.push(doc.getPath(), doc.getCurrentLine());
-				editorShim.gotoLine(this.editor, i + 1);
+				editorUtils.gotoLine(this.editor, i + 1);
 				this.editor.focus();
 				return;
 			}
@@ -888,7 +903,8 @@ eXide.edit.XQueryModeHelper = (function () {
 	
 	Constr.prototype.getModuleNamespacePrefix = function () {
 		var moduleRe = /^\s*module\s+namespace\s+([^=\s]+)\s*=/;
-		var lines = editorShim.getAllLines(this.editor);
+		var lines = [];
+		for (var li = 1; li <= this.editor.state.doc.lines; li++) { lines.push(this.editor.state.doc.line(li).text); }
 		for (var i = 0; i < lines.length; i++) {
 			var matches = lines[i].match(moduleRe);
 			if (matches) {
@@ -915,7 +931,8 @@ eXide.edit.XQueryModeHelper = (function () {
     
     Constr.prototype.expandSelection = function(doc) {
         this.xqlint(doc);
-        var selRange = editorShim.getSelectionRange(this.editor);
+        var selMain = this.editor.state.selection.main;
+        var selRange = { start: editorUtils.offsetToRowCol(this.editor.state, selMain.from), end: editorUtils.offsetToRowCol(this.editor.state, selMain.to) };
 
         // try to determine the ast node where the cursor is located
         var astNode;
@@ -936,8 +953,9 @@ eXide.edit.XQueryModeHelper = (function () {
                 }
             }
 
-            var range = editorShim.createRange(parent.pos.sl, parent.pos.sc, parent.pos.el, parent.pos.ec);
-            editorShim.setSelectionRange(this.editor, range);
+            var selFrom = editorUtils.rowColToOffset(this.editor.state, parent.pos.sl, parent.pos.sc);
+            var selTo = editorUtils.rowColToOffset(this.editor.state, parent.pos.el, parent.pos.ec);
+            this.editor.dispatch({ selection: { anchor: selFrom, head: selTo } });
         }
     };
     
@@ -948,18 +966,19 @@ eXide.edit.XQueryModeHelper = (function () {
 
         function doRename(references) {
             // Select the first reference for manual rename
-            // Note: CM6 multi-cursor rename not yet supported via shim
+            // TODO: CM6 multi-cursor rename
             if (references.length > 0) {
                 var node = references[0];
-                var range = editorShim.createRange(node.pos.sl, node.pos.sc, node.pos.el, node.pos.ec);
-                editorShim.setSelectionRange(self.editor, range);
+                var renameFrom = editorUtils.rowColToOffset(self.editor.state, node.pos.sl, node.pos.sc);
+                var renameTo = editorUtils.rowColToOffset(self.editor.state, node.pos.el, node.pos.ec);
+                self.editor.dispatch({ selection: { anchor: renameFrom, head: renameTo } });
             }
             self.editor.focus();
         }
 
         this.xqlint(doc);
         var self = this;
-        var lead = editorShim.getSelectionLead(this.editor);
+        var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
         var ast = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
         if (ast) {
             if (ast.name == "QName" && ast.getParent.name == "DirElemConstructor") {

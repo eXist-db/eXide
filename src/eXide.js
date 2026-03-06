@@ -238,13 +238,13 @@ eXide.app = (function(util) {
 				};
 				app.$doOpenDocument(resource, function() {
 				    if (line) {
-        			    editorShim.gotoLine(editor.editor, line);
+        			    editorUtils.gotoLine(editor.editor, line);
         			}
 				});
 			} else {
 				editor.switchTo(doc);
 				if (line) {
-    			    editorShim.gotoLine(editor.editor, line);
+    			    editorUtils.gotoLine(editor.editor, line);
     			}
 			}
 		},
@@ -879,7 +879,7 @@ eXide.app = (function(util) {
             var doc = docs.pop();
             app.$doOpenDocument(doc, function() {
                 if (doc.line) {
-                    editorShim.gotoLine(editor.editor, doc.line + 1);
+                    editorUtils.gotoLine(editor.editor, doc.line + 1);
                 }
                 self.restoreDocs(docs, callback);
             });
@@ -1414,16 +1414,16 @@ eXide.app = (function(util) {
 				CM6.redo(editor.editor);
 			});
             menu.click("#menu-edit-find", function() {
-                editorShim.openSearchPanel(editor.editor);
+                CM6.openSearchPanel(editor.editor);
             });
             menu.click("#menu-edit-find-replace", function() {
-                editorShim.openSearchPanel(editor.editor, true);
+                CM6.openSearchPanel(editor.editor);
             });
             menu.click("#menu-edit-find-files", function() {
                 app.findFiles();
             });
             menu.click("#menu-edit-toggle-comment", function () {
-                editorShim.toggleCommentLines(editor.editor);
+                CM6.toggleComment(editor.editor);
             });
 			menu.click("#menu-edit-preferences", function() {
                 preferences.show();

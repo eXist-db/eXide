@@ -1,6 +1,6 @@
 /*
  *  eXide - web-based XQuery IDE
- *  
+ *
  *  Copyright (C) 2013 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -22,7 +22,7 @@ eXide.namespace("eXide.edit.XQueryQuickFix");
  * XQuery specific helper methods.
  */
 eXide.edit.XQueryQuickFix = (function () {
-    
+
     var quickFixes = [
         {
             regex: /Call to undeclared function/,
@@ -83,7 +83,7 @@ eXide.edit.XQueryQuickFix = (function () {
                             },
                             action: "Import module \"" + matches[1] + "\""
                         }];
-                    } else if (ast && (ast.name === "EQName" || ast.getParent.name === "ElementTest" 
+                    } else if (ast && (ast.name === "EQName" || ast.getParent.name === "ElementTest"
                         || ast.getParent.name === "OptionDecl")) {
                         return [{
                             resolve: function(helper, editor, doc, annotation) {
@@ -129,11 +129,13 @@ eXide.edit.XQueryQuickFix = (function () {
                                 }
                                 helper.parent.validator.setEnabled(false);
                                 $.log("extract variable: context: %o", contextNode);
-                                editorShim.gotoLine(editor.editor, contextNode.pos.sl + 1, contextNode.pos.sc);
-                                editorShim.insert(editor.editor, "\n");
-                                editorShim.gotoLine(editor.editor, contextNode.pos.sl + 1, contextNode.pos.sc);
-                                editorShim.insertSnippet(editor.editor, template);
-                                editor.editor.focus();
+                                var view = editor.editor;
+                                editorUtils.gotoLine(view, contextNode.pos.sl + 1, contextNode.pos.sc);
+                                var pos = view.state.selection.main.head;
+                                view.dispatch({ changes: { from: pos, insert: "\n" }, selection: { anchor: pos + 1 } });
+                                editorUtils.gotoLine(view, contextNode.pos.sl + 1, contextNode.pos.sc);
+                                editorUtils.insertSnippet(view, template);
+                                view.focus();
                                 helper.parent.validator.setEnabled(true);
                             },
                             action: "Create let statement"
@@ -143,7 +145,7 @@ eXide.edit.XQueryQuickFix = (function () {
             }
         }
     ];
-    
+
 
     function unusedNamespaceFix(helper, editor, doc, annotation) {
         var nsNode = eXide.edit.XQueryUtils.findNode(doc.ast, {line: annotation.row, col: annotation.column + 1});
@@ -156,17 +158,21 @@ eXide.edit.XQueryQuickFix = (function () {
             el: separator ? separator.pos.el : annotation.pos.el,
             ec: separator ? separator.pos.ec : annotation.pos.ec
         };
-        var range;
-        var lastLine = editorShim.getLine(editor.editor, pos.el);
+        var view = editor.editor;
+        var lineNum = pos.el + 1;
+        var lastLine = (lineNum >= 1 && lineNum <= view.state.doc.lines) ? view.state.doc.line(lineNum).text : "";
+        var from, to;
         if (pos.ec == lastLine.length) {
-            range = editorShim.createRange(pos.sl, pos.sc, pos.el + 1, 0);
+            from = editorUtils.rowColToOffset(view.state, pos.sl, pos.sc);
+            to = editorUtils.rowColToOffset(view.state, pos.el + 1, 0);
         } else {
-            range = editorShim.createRange(pos.sl, pos.sc, pos.el, pos.ec);
+            from = editorUtils.rowColToOffset(view.state, pos.sl, pos.sc);
+            to = editorUtils.rowColToOffset(view.state, pos.el, pos.ec);
         }
 
-        editorShim.removeRange(editor.editor, range);
+        view.dispatch({ changes: { from: from, to: to } });
     }
-    
+
     function getResolutions(helper, editor, doc, annotation) {
         var resolutions = [];
         for (var i = 0; i < quickFixes.length; i++) {
@@ -182,7 +188,7 @@ eXide.edit.XQueryQuickFix = (function () {
         }
         return resolutions;
     }
-    
+
     return {
         "getResolutions": getResolutions
     };
@@ -194,28 +200,47 @@ eXide.namespace("eXide.edit.PrologAdder");
  * XQuery specific helper methods.
  */
 eXide.edit.PrologAdder = (function () {
-    
-    // Range and SnippetManager replaced by editorShim
-    
+
+    /**
+     * Navigate to end of a row, insert two newlines, then position cursor
+     * on the new blank line. Used by prepareFunction, importModule,
+     * declareNamespace, and declareVariable.
+     *
+     * @param {EditorView} view - CM6 editor view
+     * @param {number} row - 0-indexed row number
+     * @returns {number} the 1-indexed line number of the new insertion point
+     */
+    function insertBlankLinesAfterRow(view, row) {
+        editorUtils.gotoLine(view, row + 1);
+        var lineNum = row + 1;
+        var line = (lineNum >= 1 && lineNum <= view.state.doc.lines) ? view.state.doc.line(lineNum).text : "";
+        var offset = editorUtils.rowColToOffset(view.state, row, line.length);
+        view.dispatch({ selection: { anchor: offset } });
+        var pos = view.state.selection.main.head;
+        view.dispatch({ changes: { from: pos, insert: "\n\n" }, selection: { anchor: pos + 2 } });
+        editorUtils.gotoLine(view, row + 3, 0);
+        return row + 3;
+    }
+
     Constr = function(editor, doc) {
         this.editor = editor;
         this.doc = doc;
         this.prolog = null;
         this.program = null;
-        
+
         this.visit(doc.ast);
     };
-    
+
     eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
-    
+
     Constr.prototype.Prolog = function(prolog) {
         this.prolog = prolog;
     };
-    
+
     Constr.prototype.VersionDecl = function(decl) {
         this.decl = decl;
     };
-    
+
     Constr.prototype.getInsertionPoint = function(func) {
         var row = 0;
         if (func) {
@@ -245,11 +270,12 @@ eXide.edit.PrologAdder = (function () {
             }
         }
         template += ") {\n\t${" + (arguments.length + 1) + ":()}\n};";
-        editorShim.insertSnippet(this.editor.editor, template);
+        editorUtils.insertSnippet(this.editor.editor, template);
     };
-    
+
     Constr.prototype.createFunction = function(params, code, insertRow) {
         var row = this.prepareFunction(insertRow);
+        var view = this.editor.editor;
 
         var fn = "declare function (";
         for (var i = 0; i < params.length; i++) {
@@ -259,23 +285,17 @@ eXide.edit.PrologAdder = (function () {
             fn += "$" + params[i];
         }
         fn += ") {\n\t" + code + "\n};";
-        
-        editorShim.insert(this.editor.editor, fn);
-        editorShim.gotoLine(this.editor.editor, row, 17);
+
+        var pos = view.state.selection.main.head;
+        view.dispatch({ changes: { from: pos, insert: fn }, selection: { anchor: pos + fn.length } });
+        editorUtils.gotoLine(view, row, 17);
     };
 
     Constr.prototype.prepareFunction = function(insertRow) {
         var row = insertRow || this.getInsertionPoint();
-
-        editorShim.gotoLine(this.editor.editor, row + 1);
-        var line = editorShim.getLine(this.editor.editor, row);
-        editorShim.moveCursorToPosition(this.editor.editor, { row: row, column: line.length });
-        editorShim.insert(this.editor.editor, "\n\n");
-        editorShim.gotoLine(this.editor.editor, row + 3, 0);
-
-        return row + 3;
+        return insertBlankLinesAfterRow(this.editor.editor, row);
     };
-    
+
     Constr.prototype.importModule = function(name, namespace, location) {
         var prefix = name.indexOf(":") > -1 ? name.substring(0, name.indexOf(":")) : name;
         var row = 0;
@@ -289,13 +309,9 @@ eXide.edit.PrologAdder = (function () {
             }
         }
         row = row < 0 ? 0 : row;
-        
-        editorShim.gotoLine(this.editor.editor, row + 1);
-        var line = editorShim.getLine(this.editor.editor, row);
-        editorShim.moveCursorToPosition(this.editor.editor, { row: row, column: line.length });
-        editorShim.insert(this.editor.editor, "\n\n");
-        editorShim.gotoLine(this.editor.editor, row + 3, 0);
-        
+
+        insertBlankLinesAfterRow(this.editor.editor, row);
+
         var template;
         if (namespace) {
             template = "import module namespace " + prefix + "=\"" + namespace + "\"";
@@ -307,10 +323,10 @@ eXide.edit.PrologAdder = (function () {
         } else {
             template = "import module namespace " + prefix + "=\"${1}\";";
         }
-        editorShim.insertSnippet(this.editor.editor, template);
-        editorShim.gotoLine(this.editor.editor, row + 3, 26 + prefix.length);
+        editorUtils.insertSnippet(this.editor.editor, template);
+        editorUtils.gotoLine(this.editor.editor, row + 3, 26 + prefix.length);
     };
-    
+
     Constr.prototype.declareNamespace = function(prefix) {
         var row = 0;
         if (this.decl) {
@@ -323,17 +339,13 @@ eXide.edit.PrologAdder = (function () {
             }
         }
         row = row < 0 ? 0 : row;
-        
-        editorShim.gotoLine(this.editor.editor, row + 1);
-        var line = editorShim.getLine(this.editor.editor, row);
-        editorShim.moveCursorToPosition(this.editor.editor, { row: row, column: line.length });
-        editorShim.insert(this.editor.editor, "\n\n");
-        editorShim.gotoLine(this.editor.editor, row + 3, 0);
-        
+
+        insertBlankLinesAfterRow(this.editor.editor, row);
+
         var template = "declare namespace " + prefix + "=\"${1}\";";
-        editorShim.insertSnippet(this.editor.editor, template);
+        editorUtils.insertSnippet(this.editor.editor, template);
     };
-    
+
     Constr.prototype.declareVariable = function(name) {
         $.log("prolog: %o", this.prolog);
         var row = -1;
@@ -352,18 +364,14 @@ eXide.edit.PrologAdder = (function () {
                 row = 0;
             }
         }
-        
+
         $.log("Inserting at %d", row);
-        
-        editorShim.gotoLine(this.editor.editor, row + 1);
-        var line = editorShim.getLine(this.editor.editor, row);
-        editorShim.moveCursorToPosition(this.editor.editor, { row: row, column: line.length });
-        editorShim.insert(this.editor.editor, "\n\n");
-        editorShim.gotoLine(this.editor.editor, row + 3, 0);
-        
+
+        insertBlankLinesAfterRow(this.editor.editor, row);
+
         var template = "declare variable \\$" + name + " := ${1:expression};";
-        editorShim.insertSnippet(this.editor.editor, template);
+        editorUtils.insertSnippet(this.editor.editor, template);
     };
-    
+
     return Constr;
 }());

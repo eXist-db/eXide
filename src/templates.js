@@ -35,7 +35,7 @@ eXide.edit.Template = (function () {
     		this.startLine = range.start.row;
             this.startColumn = range.start.column;
         } else {
-            var cursor = editorShim.getCursorPosition(this.editor);
+            var cursor = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
             this.startLine = cursor.row;
             this.startColumn = cursor.column;
         }
@@ -55,13 +55,19 @@ eXide.edit.Template = (function () {
 		 */
 		insert: function() {
             if (this.range) {
-			    editorShim.removeRange(this.editor, this.range);
+                var from = editorUtils.rowColToOffset(this.editor.state, this.range.start.row, this.range.start.column);
+                var to = editorUtils.rowColToOffset(this.editor.state, this.range.end.row, this.range.end.column);
+                this.editor.dispatch({ changes: { from: from, to: to } });
             }
-			editorShim.insert(this.editor, this.code);
-			var lead = editorShim.getSelectionLead(this.editor);
+            var pos = this.editor.state.selection.main.head;
+            this.editor.dispatch({
+                changes: { from: pos, insert: this.code },
+                selection: { anchor: pos + this.code.length }
+            });
+			var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
 			if (this.code.substring(0, 1) != "$" && lead.column > 0) {
-				var pos = editorShim.getCursorPosition(this.editor);
-				editorShim.moveCursorToPosition(this.editor, { row: pos.row, column: pos.column - 1 });
+				var head = this.editor.state.selection.main.head;
+				this.editor.dispatch({ selection: { anchor: head - 1 } });
 			}
 			if (this.type != "variable")
 				this.nextParam();
@@ -73,7 +79,7 @@ eXide.edit.Template = (function () {
 		 * false to stop template mode.
 		 */
 		nextParam: function() {
-			var lead = editorShim.getSelectionLead(this.editor);
+			var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
 
 			$.log("lead.row = %i startLine = %i", lead.row, this.startLine);
 			// return immediately if the cursor is outside the template
@@ -83,16 +89,18 @@ eXide.edit.Template = (function () {
 			var loop = false;
 			var found = false;
 			while (this.currentLine <= this.endLine) {
-				var line = editorShim.getLine(this.editor, this.currentLine);
+				var lineNum = this.currentLine + 1;
+				var line = (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) ? this.editor.state.doc.line(lineNum).text : "";
 				$.log("Checking line %s", line);
 				var match = this.regex.exec(line);
 				if (match) {
 					$.log("Matched %s", match[0]);
-					var range = editorShim.createRange(this.currentLine, match.index, this.currentLine, match.index + match[0].length);
+					var from = editorUtils.rowColToOffset(this.editor.state, this.currentLine, match.index);
+					var to = editorUtils.rowColToOffset(this.editor.state, this.currentLine, match.index + match[0].length);
                     if (match[0].length === 1) {
-                        editorShim.removeRange(this.editor, range);
+                        this.editor.dispatch({ changes: { from: from, to: to } });
                     } else {
-                        editorShim.setSelectionRange(this.editor, range);
+                        this.editor.dispatch({ selection: { anchor: from, head: to } });
                     }
 					this.lineOffset = match.index;
 					found = true;

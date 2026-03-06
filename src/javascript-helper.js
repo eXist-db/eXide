@@ -78,7 +78,7 @@ eXide.edit.JavascriptModeHelper = (function () {
             eXide.util.Popup.show(popupItems, function (selected) {
                 if (selected) {
                     self.parent.history.push(doc.getPath(), doc.getCurrentLine());
-                    editorShim.gotoLine(self.editor, selected.row + 1);
+                    editorUtils.gotoLine(self.editor, selected.row + 1);
                 }
                 self.editor.focus();
             });
@@ -86,7 +86,7 @@ eXide.edit.JavascriptModeHelper = (function () {
     };
 
     Constr.prototype.gotoDefinition = function (doc) {
-        var lead = editorShim.getSelectionLead(this.editor);
+        var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
         var funcName = this.getFunctionAtCursor(lead);
         if (funcName) {
             this.locate(doc, null, funcName);
@@ -95,19 +95,20 @@ eXide.edit.JavascriptModeHelper = (function () {
 
     Constr.prototype.locate = function(doc, type, name) {
         if (typeof name == "number") {
-            editorShim.gotoLine(this.editor, name + 1);
+            editorUtils.gotoLine(this.editor, name + 1);
         } else {
             var func = this.parent.outline.findDefinition(doc, name);
             if (func && func.row) {
                 this.parent.history.push(doc.getPath(), doc.getCurrentLine());
-                editorShim.gotoLine(this.editor, func.row + 1);
+                editorUtils.gotoLine(this.editor, func.row + 1);
             }
         }
     };
 
     Constr.prototype.getFunctionAtCursor = function (lead) {
         var row = lead.row;
-        var line = editorShim.getLine(this.editor, row);
+        var lineNum = row + 1;
+        var line = (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) ? this.editor.state.doc.line(lineNum).text : "";
         var start = lead.column;
         do {
             start--;
