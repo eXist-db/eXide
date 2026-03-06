@@ -11,6 +11,7 @@
 		"build:dev": "node scripts/build.js prepare && npm run xqlint && node scripts/build.js --dev",
 		"clean": "node scripts/build.js clean",
 		"xqlint": "cd support/xqlint && node r.js -o build.js && cd ../..",
+		"test": "node --test test/parser-test.js test/visitor-test.js test/utils-test.js test/static-analysis-test.js",
 		"cypress": "cypress run"
 	},
 	"repository": {

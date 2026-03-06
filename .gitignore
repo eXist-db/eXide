@@ -1,4 +1,5 @@
 .DS_Store
+.env
 build/*
 expath-pkg.xml
 
@@ -17,6 +18,8 @@ node_modules/
 
 cypress/videos/*.mp4
 cypress/screenshots/**/*.png
+
+CLAUDE.md
 
 .*
 !.gitignore

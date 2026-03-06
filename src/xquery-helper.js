@@ -25,9 +25,10 @@ eXide.edit.XQueryModeHelper = (function () {
 	
 	var RE_FUNC_NAME = /^[\$\w:\-_\.]+/;
 	
+    // REx parser + adapter loaded as globals from src/parser/ (concatenated before this file)
+    var RExParser = XQueryParser;
+    var rexAdapter = rexParserAdapter;
     var SemanticHighlighter = require("lib/visitors/SemanticHighlighter").SemanticHighlighter;
-    var XQueryParser = require("lib/XQueryParser").XQueryParser;
-    var JSONParseTreeHandler = require("lib/JSONParseTreeHandler").JSONParseTreeHandler;
     var Translator = require("lib/Translator").Translator;
     var CodeFormatter = require("lib/visitors/CodeFormatter").CodeFormatter;
     var Compiler = require("lib/Compiler").Compiler;
@@ -207,52 +208,54 @@ eXide.edit.XQueryModeHelper = (function () {
         }
         $.log("Running xqlint...");
         var session = doc.getSession();
-        var value = doc.getText();    
-        var h = new JSONParseTreeHandler(value);
-        var parser = new XQueryParser(value, h);
-        try {
-            parser.parse_XQuery();
-        } catch(e) {
-            $.log("Error while parsing XQuery: %s", parser.getErrorMessage(e));
-            if(e instanceof parser.ParseException) {
-                h.closeParseTree();
-            }
+        var value = doc.getText();
+        var result = rexAdapter.parseXQuery(value, RExParser);
+        if (result.error) {
+            $.log("Error while parsing XQuery: %s", result.error.message || result.error);
         }
         try {
-            var ast = h.getParseTree();
-            var translator = new Translator(ast);
-            doc.ast = translator.translate();
+            doc.ast = result.ast;
+            doc.ast.markers = [];
             doc.lastValidation = new Date().getTime();
 
-            var highlighter = new SemanticHighlighter(ast, value);
-      
+            try {
+                var translator = new Translator(result.ast);
+                doc.ast = translator.translate();
+            } catch(te) {
+                $.log("Translator error (non-fatal): %s", te.message);
+            }
+
+            var highlighter = new SemanticHighlighter(result.ast, value);
+
             var mode = doc.getSession().getMode();
-    
+
             mode.$tokenizer.tokens = highlighter.getTokens();
             mode.$tokenizer.lines  = session.getDocument().getAllLines();
             session.bgTokenizer.lines = [];
             session.bgTokenizer.states = [];
-            
+
             var rows = Object.keys(mode.$tokenizer.tokens);
             for(var i=0; i < rows.length; i++) {
                 var row = parseInt(rows[i]);
                 session.bgTokenizer.fireUpdateEvent(row, row);
             }
-            
+
             var markers = doc.ast.markers;
-            var annotations = this.clearAnnotations(doc, "warning");
-            for (var i = 0; i < markers.length; i++) {
-                if (markers[i].type !== "error") {
-                    annotations.push({
-                        row: markers[i].pos.sl,
-                        column: markers[i].pos.sc,
-                        text: markers[i].message,
-                        type: markers[i].type,
-                        pos: markers[i].pos
-                    });
+            if (markers) {
+                var annotations = this.clearAnnotations(doc, "warning");
+                for (var i = 0; i < markers.length; i++) {
+                    if (markers[i].type !== "error") {
+                        annotations.push({
+                            row: markers[i].pos.sl,
+                            column: markers[i].pos.sc,
+                            text: markers[i].message,
+                            type: markers[i].type,
+                            pos: markers[i].pos
+                        });
+                    }
                 }
+                session.setAnnotations(annotations);
             }
-            session.setAnnotations(annotations);
         } catch(e) {
             $.log("Error while processing ast: %s", e.message);
         }
@@ -734,13 +737,14 @@ eXide.edit.XQueryModeHelper = (function () {
         }
         var line = doc.getSession().doc.getLine(range.start.row);
         var startIndent = line.match(/^\s*/)[0];
-        var h = new JSONParseTreeHandler(value);
-        var parser = new XQueryParser(value, h);
+        var result = rexAdapter.parseXQuery(value, RExParser);
+        if (result.error) {
+            console.log("Error parsing XQuery code: %s", result.error.message || result.error);
+            eXide.util.error("Code could not be parsed. Please select a valid code block.");
+            return;
+        }
         try {
-            parser.parse_XQuery();
-            var ast = h.getParseTree();
-            
-            var codeFormatter = new CodeFormatter(ast, true);
+            var codeFormatter = new CodeFormatter(result.ast, true);
             var formatted = codeFormatter.format();
             var lines = formatted.split(/\n/);
             for (var i = 0; i < lines.length; i++) {
@@ -748,8 +752,8 @@ eXide.edit.XQueryModeHelper = (function () {
             }
             doc.getSession().replace(range, lines.join("\n"));
         } catch(e) {
-            console.log("Error parsing XQuery code: %s", parser.getErrorMessage(e));
-            eXide.util.error("Code could not be parsed. Please select a valid code block.");
+            console.log("Error formatting XQuery code: %s", e.message);
+            eXide.util.error("Code could not be formatted.");
         }
     };
     
@@ -826,14 +830,15 @@ eXide.edit.XQueryModeHelper = (function () {
 
         // parse selection code to get list of variables which need to be parameters
         var variables = [];
-        var h = new JSONParseTreeHandler(value);
-        var parser = new XQueryParser(value, h);
+        var result = rexAdapter.parseXQuery(value, RExParser);
+        if (result.error) {
+            eXide.util.error("Not a valid code block: " + (result.error.message || result.error));
+            return;
+        }
         try {
-            parser.parse_XQuery();
-            var ast = h.getParseTree();
-            var translator = new Translator(ast);
-            ast = translator.translate();
-            
+            var translator = new Translator(result.ast);
+            var ast = translator.translate();
+
             var markers = ast.markers;
             var vars = {};
             for (var i = 0; i < markers.length; i++) {
@@ -848,7 +853,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 variables.push(v);
             }
         } catch(e) {
-            eXide.util.error("Not a valid code block: " + parser.getErrorMessage(e));
+            eXide.util.error("Not a valid code block: " + e.message);
             return;
         }
 

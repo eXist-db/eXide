@@ -146,7 +146,7 @@ eXide.edit.XQueryQuickFix = (function () {
         }
     ];
     
-    var Compiler = require("lib/Compiler").Compiler;
+
     var Range = require("ace/range").Range;
     
     function unusedNamespaceFix(helper, editor, doc, annotation) {
