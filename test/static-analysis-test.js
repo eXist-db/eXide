@@ -63,6 +63,14 @@ describe("Static analysis: namespace checks", function () {
         assert.equal(m.prefix, "bogus");
     });
 
+    it("errors on undeclared prefix in FLWOR expression (XPST0081)", function () {
+        var result = analyze("let $x := foo:bar()\nreturn $x");
+        var m = findMarker(result.markers, "XPST0081");
+        assert.ok(m, "expected XPST0081 error for undeclared prefix foo");
+        assert.equal(m.type, "error");
+        assert.equal(m.prefix, "foo");
+    });
+
     it("does not error on built-in prefixes (fn, xs, local, err)", function () {
         var result = analyze("fn:count(xs:integer(1))");
         var m = findMarker(result.markers, "XPST0081");
