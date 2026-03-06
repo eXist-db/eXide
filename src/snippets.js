@@ -51,18 +51,17 @@ eXide.util.Snippets = (function () {
             return;
         }
         snippetsForMode[mode] = [];
-        $.ajax({
-            url: "templates/" + mode + ".snippets",
-            dataType: "text",
-            success: function(data) {
-                snippetsForMode[mode] = parseSnippetFile(data);
-            }
-        });
+        fetch("templates/" + mode + ".snippets")
+        .then(function(response) { return response.text(); })
+        .then(function(data) {
+            snippetsForMode[mode] = parseSnippetFile(data);
+        })
+        .catch(function() {});
     }
 
     function reload(mode, data) {
         var snippets = parseSnippetFile(data);
-        $.log("Replacing snippets %o for mode %s", snippets, mode);
+        console.log("Replacing snippets %o for mode %s", snippets, mode);
         snippetsForMode[mode] = snippets;
     }
     

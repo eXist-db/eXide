@@ -19,11 +19,11 @@
 eXide.namespace("eXide.edit.Projects");
 
 eXide.edit.Projects = (function(oop) {
-    
+
     Constr = function() {
         this.projects = {};
     };
-    
+
     Constr.prototype.findProject = function (collection, callback) {
         var project = this.getProjectFor(collection);
         if (project && project !== null) {
@@ -32,10 +32,13 @@ eXide.edit.Projects = (function(oop) {
             this.getProject(collection, callback);
         }
     };
-    
+
     Constr.prototype.getProject = function (collection, callback) {
         var $this = this;
-        $.getJSON("modules/deployment.xq", { info: collection }, function (data) {
+        var url = "modules/deployment.xq?info=" + encodeURIComponent(collection);
+        fetch(url).then(function(response) {
+            return response.json();
+        }).then(function(data) {
             if (!data) {
                 if (typeof callback == "function") {
                     callback(null);
@@ -51,6 +54,10 @@ eXide.edit.Projects = (function(oop) {
                 if (typeof callback == "function") {
                     callback(project);
                 }
+            }
+        }).catch(function() {
+            if (typeof callback == "function") {
+                callback(null);
             }
         });
     };
@@ -78,9 +85,11 @@ eXide.edit.Projects = (function(oop) {
                 this.projects = {};
         }
         // refresh state to see if app package config has chaged in the db (e.g added Git)
-        $.each(this.projects, function(project) {
-            if(this.root) {
-               $this.getProject(this.root);
+        var projects = this.projects;
+        Object.keys(projects).forEach(function(key) {
+            var project = projects[key];
+            if (project.root) {
+               $this.getProject(project.root);
             }
         });
         
@@ -100,136 +109,139 @@ eXide.edit.PackageEditor = (function () {
 		var $this = this;
         this.projects = projects;
         this.currentProject = null;
-		
-		this.runDialog = $("#dialog-run-app");
-		this.runDialog.dialog({
+
+		var runDialogEl = document.getElementById("dialog-run-app");
+		this.runDialog = eXide.util.DialogManager.create(runDialogEl, {
 		    appendTo: "#layout-container",
 			modal: false,
-			autoOpen: false,
 			width: 300,
 			height: 240,
 			buttons: {
-			    "Done": function () { $(this).dialog("close"); }
+			    "Done": function () { this.close(); }
 			}
 		});
-		this.runDialog.find("input[name='live-reload']").click(function(ev) {
-		    $this.currentProject.liveReload = $(this).is(":checked");
-		    $("#menu-deploy-live span").attr("class", $this.currentProject.liveReload ? "fa fa-check-square-o" : "fa fa-square-o");
+		runDialogEl.querySelector("input[name='live-reload']").addEventListener("click", function(ev) {
+		    $this.currentProject.liveReload = this.checked;
+		    document.querySelector("#menu-deploy-live span").setAttribute("class", $this.currentProject.liveReload ? "fa fa-check-square-o" : "fa fa-square-o");
 		});
-		
-		this.syncDialog = $("#synchronize-dialog");
-		this.syncDialog.dialog({
+
+		var syncDialogEl = document.getElementById("synchronize-dialog");
+		this.syncDialog = eXide.util.DialogManager.create(syncDialogEl, {
             appendTo: "#layout-container",
 			title: "Synchronize to Directory",
 			modal: false,
-			autoOpen: false,
 			width: 500,
 			height: 440,
 			buttons: {
                 "Apply": function() {
-                    var dir = $this.syncDialog.find("input[name=\"dir\"]").val();
+                    var dir = syncDialogEl.querySelector("input[name=\"dir\"]").value;
                     if (dir && dir.length > 0) {
                         $this.currentProject.dir = dir;
                     }
-                    $this.currentProject.autoSync = $this.syncDialog.find("input[name=\"auto\"]").is(':checked');
-                    $(this).dialog("close");
+                    $this.currentProject.autoSync = syncDialogEl.querySelector("input[name=\"auto\"]").checked;
+                    this.close();
                 },
                 "Synchronize": function () {
-					var dir = $this.syncDialog.find("input[name=\"dir\"]").val();
+					var dir = syncDialogEl.querySelector("input[name=\"dir\"]").value;
 					if (!dir || dir.length == 0) {
-						$("#synchronize-report").text("No output directory specified!");
+						document.getElementById("synchronize-report").textContent = "No output directory specified!";
 						return;
 					}
                     $this.currentProject.dir = dir;
-                    
-                    var params = {
-                        start: $this.syncDialog.find("input[name=\"start\"]").val(),
+
+                    var params = new URLSearchParams({
+                        start: syncDialogEl.querySelector("input[name=\"start\"]").value,
                         dir: dir,
-                        auto: $this.syncDialog.find("input[name=\"auto\"]").val(),
-                        collection: $this.syncDialog.find("input[name=\"collection\"]").val(),
-                        indent: $("#indent-on-download-package").is(":checked"),
-                        "expand-xincludes": $("#expand-xincludes-on-download-package").is(":checked"),
-                        "omit-xml-declarationaration": $("#omit-xml-declaration-on-download-package").is(":checked")
-                    };
-					$("#synchronize-report").text("Synchronization in progress ...");
-					$("#synchronize-report").load("modules/synchronize.xq", params);
+                        auto: syncDialogEl.querySelector("input[name=\"auto\"]").value,
+                        collection: syncDialogEl.querySelector("input[name=\"collection\"]").value,
+                        indent: document.getElementById("indent-on-download-package").checked,
+                        "expand-xincludes": document.getElementById("expand-xincludes-on-download-package").checked,
+                        "omit-xml-declarationaration": document.getElementById("omit-xml-declaration-on-download-package").checked
+                    });
+                    var reportEl = document.getElementById("synchronize-report");
+					reportEl.textContent = "Synchronization in progress ...";
+					fetch("modules/synchronize.xq?" + params.toString()).then(function(response) {
+					    return response.text();
+					}).then(function(text) {
+					    reportEl.innerHTML = text;
+					});
 				},
-				"Close": function () { $(this).dialog("close"); }
+				"Close": function () { this.close(); }
 			}
 		});
-        
-        this.gitCheckoutDialog = $("#dialog-git-checkout");
-		this.gitCheckoutDialog.dialog({
+		this.syncDialogEl = syncDialogEl;
+
+        var gitCheckoutEl = document.getElementById("dialog-git-checkout");
+		this.gitCheckoutDialog = eXide.util.DialogManager.create(gitCheckoutEl, {
             appendTo: "#layout-container",
 			title: "Git Checkout",
 			modal: false,
-			autoOpen: false,
 			width: 500,
-			height: 240, 
+			height: 240,
 			buttons: {
                 "Switch Branch": function() {
-                    var branch = $("[name='git-checkout']", $this.gitCheckoutDialog.find("form")).val();
+                    var branch = gitCheckoutEl.querySelector("form [name='git-checkout']").value;
                     eXide.app.git.command($this.currentProject, 'checkout', branch, function(data){
-                         $("#toolbar-current-branch").text(branch);
-                         $("#menu-git-active").text(branch);
+                         document.getElementById("toolbar-current-branch").textContent = branch;
+                         document.getElementById("menu-git-active").textContent = branch;
                     });
-                    $(this).dialog("close");
+                    this.close();
                 },
-                "Cancel": function () { $(this).dialog("close"); }
+                "Cancel": function () { this.close(); }
 			}
-		}); 
-        
-        this.gitCommitDialog = $("#dialog-git-commit");
-		this.gitCommitDialog.dialog({
+		});
+
+        var gitCommitEl = document.getElementById("dialog-git-commit");
+		this.gitCommitDialog = eXide.util.DialogManager.create(gitCommitEl, {
             appendTo: "#layout-container",
 			title: "Synchonize and Commit",
 			modal: false,
-			autoOpen: false,
 			width: 500,
 			height: 360,
 			buttons: {
                 "Sync and Commit": function() {
-                    var form = $this.gitCommitDialog.find("form"),
-                        title = $("[name='git-commit-title']", form).val(),
-                        desc = $("[name='git-commit-desc']", form).val(),
+                    var form = gitCommitEl.querySelector("form"),
+                        title = form.querySelector("[name='git-commit-title']").value,
+                        desc = form.querySelector("[name='git-commit-desc']").value,
                         option =  title + '\n\n' + desc ,
-                        start = $("[name='start']", form).val(),
-                        statusAnchor = "#git-commit-status";
-                        
+                        start = form.querySelector("[name='start']").value,
+                        statusEl = document.getElementById("git-commit-status");
+
                     if (!title || title.length == 0) {
-						$(statusAnchor).text("title for commit message is required");
+						statusEl.textContent = "title for commit message is required";
 						return;
 					}
-                    
-                    var params = {
-                        collection: $this.currentProject.root, 
+
+                    var params = new URLSearchParams({
+                        collection: $this.currentProject.root,
                         start: start,
-                        indent: $("#indent-on-download-package").is(":checked"),
-                        "expand-xincludes": $("#expand-xincludes-on-download-package").is(":checked"),
-                        "omit-xml-declaration": $("#omit-xml-declaration-on-download-package").is(":checked")
-                    };
-                    $(statusAnchor).text("Synchronization in progress ...");
-					$(statusAnchor).load(
-                        "modules/synchronize.xq", 
-                        params,
-                        function(responseText, status){if(status == 'success') {eXide.app.git.command($this.currentProject, 'commit', option);}}
-                        );
-                    
-                    $(this).dialog("close");
+                        indent: document.getElementById("indent-on-download-package").checked,
+                        "expand-xincludes": document.getElementById("expand-xincludes-on-download-package").checked,
+                        "omit-xml-declaration": document.getElementById("omit-xml-declaration-on-download-package").checked
+                    });
+                    statusEl.textContent = "Synchronization in progress ...";
+					fetch("modules/synchronize.xq?" + params.toString()).then(function(response) {
+					    return response.text();
+					}).then(function(text) {
+					    statusEl.innerHTML = text;
+					    eXide.app.git.command($this.currentProject, 'commit', option);
+					});
+
+                    this.close();
                 },
-                "Cancel": function () { $(this).dialog("close"); }
+                "Cancel": function () { this.close(); }
 			}
 		});
-        
+
 	};
 	
     // Extend eXide.events.Sender for event support
     eXide.util.oop.inherit(Constr, eXide.events.Sender);
 
     Constr.prototype.download = function (collection) {
-        var indentOnDownloadPackage = $("#indent-on-download-package").is(":checked");
-        var expandXIncludesOnDownloadPackage = $("#expand-xincludes-on-download-package").is(":checked");
-        var omitXMLDeclatarionOnDownloadPackage = $("#omit-xml-declaration-on-download-package").is(":checked");
+        var indentOnDownloadPackage = document.getElementById("indent-on-download-package").checked;
+        var expandXIncludesOnDownloadPackage = document.getElementById("expand-xincludes-on-download-package").checked;
+        var omitXMLDeclatarionOnDownloadPackage = document.getElementById("omit-xml-declaration-on-download-package").checked;
         window.location.href = "modules/deployment.xq?download=true&collection=" + encodeURIComponent(collection) + "&indent=" + indentOnDownloadPackage + "&expand-xincludes=" + expandXIncludesOnDownloadPackage + "&omit-xml-decl=" + omitXMLDeclatarionOnDownloadPackage;
     };
     
@@ -249,39 +261,38 @@ eXide.edit.PackageEditor = (function () {
 						"to use this feature.");
 				return;
 			}
-            $("#synchronize-report").empty();
+            document.getElementById("synchronize-report").innerHTML = "";
             $this.currentProject = project;
-            $this.syncDialog.find(".project-name").text(project.abbrev);
-			$this.syncDialog.find("input[name=\"start\"]").val(project.deployed);
+            var el = $this.syncDialogEl;
+            var projectNameEl = el.querySelector(".project-name");
+            if (projectNameEl) projectNameEl.textContent = project.abbrev;
+			el.querySelector("input[name=\"start\"]").value = project.deployed;
             if (project.dir) {
-                $this.syncDialog.find("input[name=\"dir\"]").val(project.dir);
+                el.querySelector("input[name=\"dir\"]").value = project.dir;
             } else {
-                $this.syncDialog.find("input[name=\"dir\"]").val("");
+                el.querySelector("input[name=\"dir\"]").value = "";
             }
-            $this.syncDialog.find("input[name=\"collection\"]").val(project.root);
-            $this.syncDialog.find("input[name=\"auto\"]").attr("checked", project.autoSync);
-			$this.syncDialog.dialog("open");
+            el.querySelector("input[name=\"collection\"]").value = project.root;
+            el.querySelector("input[name=\"auto\"]").checked = project.autoSync;
+			$this.syncDialog.open();
         });
 	};
 	
      Constr.prototype.autoSync = function (collection) {
          var project = this.projects.getProjectFor(collection);
          if (project && project.autoSync) {
-             var params = {
+             var params = new URLSearchParams({
                  collection: project.root,
                  start: project.deployed,
                  dir: project.dir,
-                 indent: $("#indent-on-download-package").is(":checked"),
-                 "expand-xincludes": $("#expand-xincludes-on-download-package").is(":checked"),
-                 "omit-xml-declaration": $("#omit-xml-declaration-on-download-package").is(":checked")
-             };
-             $.ajax({
-                url: "modules/synchronize.xq",
-                type: "GET",
-                data: params,
-                success: function(data) {
-                    eXide.util.message("Synchronized directory");
-                }
+                 indent: document.getElementById("indent-on-download-package").checked,
+                 "expand-xincludes": document.getElementById("expand-xincludes-on-download-package").checked,
+                 "omit-xml-declaration": document.getElementById("omit-xml-declaration-on-download-package").checked
+             });
+             fetch("modules/synchronize.xq?" + params.toString()).then(function(response) {
+                 if (response.ok) {
+                     eXide.util.message("Synchronized directory");
+                 }
              });
          }
      };
@@ -294,24 +305,27 @@ eXide.edit.PackageEditor = (function () {
                     "should belong to an application package.");
                 return;
             }
-            
-            $this.runDialog.find("input[name='live-reload']").prop("checked", project.liveReload);
-            
+
+            var runEl = $this.runDialog.content;
+            runEl.querySelector("input[name='live-reload']").checked = project.liveReload;
+
             $this.currentProject = project;
             var url = project.url.replace(/\/{2,}/, "/");
             var link = eXide.configuration.context + url + "/";
 
-			var a = $this.runDialog.find("a");
-			a.attr("href", link).attr("target", project.abbrev).text(link);
-			
+			var a = runEl.querySelector("a");
+			a.setAttribute("href", link);
+			a.setAttribute("target", project.abbrev);
+			a.textContent = link;
+
 			if (firstLoad) {
-			    $this.runDialog.find(".first-load").show();
-			    $this.runDialog.find(".second-load").hide();
+			    runEl.querySelector(".first-load").style.display = "";
+			    runEl.querySelector(".second-load").style.display = "none";
 			} else {
-			    $this.runDialog.find(".first-load").show();
-			    $this.runDialog.find(".second-load").hide();
+			    runEl.querySelector(".first-load").style.display = "";
+			    runEl.querySelector(".second-load").style.display = "none";
 			}
-            $this.runDialog.dialog("open");
+            $this.runDialog.open();
         });
 	};
     
@@ -340,20 +354,20 @@ eXide.edit.PackageEditor = (function () {
 				return;
 			}
             $this.currentProject = project;
-            
+
             var options = d3.select("#git-checkout-select").selectAll("option")
                 .data(project.gitBranch)
                 .attr('value', function(d){return d})
                 .text(String);
-                
+
                 options.enter()
                     .append('option')
                     .attr('value', function(d){return d})
                     .text(String);
-                
+
                 options.exit().remove();
-                
-            $this.gitCheckoutDialog.dialog("open");
+
+            $this.gitCheckoutDialog.open();
         })
 	}
     /**
@@ -373,7 +387,7 @@ eXide.edit.PackageEditor = (function () {
 				return;
 			}
             $this.currentProject = project;
-            $this.gitCommitDialog.dialog("open");
+            $this.gitCommitDialog.open();
          })
 	}
 

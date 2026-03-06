@@ -24,21 +24,20 @@ eXide.namespace("eXide.edit.LessModeHelper");
 eXide.edit.LessModeHelper = (function () {
 
     function saveCSS (path, css) {
-        $.ajax({
-            url: "store/" + path,
-            type: "PUT",
-            data: css,
-            dataType: "json",
-            contentType: "text/css",
-            success: function (data) {
-                if (data.status == "error") {
-                    return eXide.util.error(data.message);
-                }
-                eXide.util.message(path + " stored.");
-            },
-            error: function (xhr, status) {
-                eXide.util.error(xhr.responseText);
+        fetch("store/" + path, {
+            method: "PUT",
+            headers: { "Content-Type": "text/css" },
+            body: css
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (data.status == "error") {
+                return eXide.util.error(data.message);
             }
+            eXide.util.message(path + " stored.");
+        })
+        .catch(function(err) {
+            eXide.util.error(String(err));
         });
     }
 

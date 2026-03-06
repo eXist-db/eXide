@@ -1,4 +1,5 @@
 import '../src/util.js';
+import '../src/dialog-utils.js';
 import '../src/history.js';
 import '../src/popup.js';
 import '../src/events.js';

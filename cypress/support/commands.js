@@ -43,7 +43,7 @@ Cypress.Commands.add("dismissDialog", () => {
     // Wait for any startup dialogs to appear, then dismiss
     cy.wait(500)
     cy.get('body').then(($body) => {
-        const btn = $body.find('div.ui-dialog:visible div.ui-dialog-buttonset button')
+        const btn = $body.find('dialog.eXide-dialog[open] .eXide-dialog-buttons button')
         if (btn.length) {
             btn.trigger('click')
         }

@@ -28,7 +28,8 @@ eXide.edit.XMLModeHelper = (function () {
         this.parent = editor;
         this.editor = this.parent.editor;
 
-        this.menu = $("#menu-xml").hide();
+        this.menu = document.getElementById("menu-xml");
+        this.menu.style.display = "none";
         menubar.click("#menu-xml-rename", function() {
             self.rename(editor.getActiveDocument());
         });
@@ -49,64 +50,61 @@ eXide.edit.XMLModeHelper = (function () {
     eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
 
     Constr.prototype.activate = function(doc) {
-        this.menu.show();
+        this.menu.style.display = "";
     };
 
     Constr.prototype.deactivate = function(doc) {
-        this.menu.hide();
+        this.menu.style.display = "none";
     };
 
     Constr.prototype.closeTag = function (doc, text, row) {
         var basePath = "xmldb:exist://" + doc.getBasePath();
         var $this = this;
-        $.ajax({
-            type: "PUT",
-            url: "check/",
-            data: text,
-            contentType: "application/octet-stream",
-            dataType: "json",
-            success: function (data) {
-                if (data.status && data.status == "invalid") {
-                    var line = parseInt(data.message.line) - 1;
-                    if (line <= row) {
-                        var tag = /element type "([^"]+)"/.exec(data.message["#text"]);
-                        if (tag && tag.length > 0) {
-                            var pos = $this.editor.state.selection.main.head;
-                            var text = tag[1] + ">";
-                            $this.editor.dispatch({
-                                changes: { from: pos, insert: text },
-                                selection: { anchor: pos + text.length }
-                            });
-                        }
+        fetch("check/", {
+            method: "PUT",
+            headers: { "Content-Type": "application/octet-stream" },
+            body: text
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (data.status && data.status == "invalid") {
+                var line = parseInt(data.message.line) - 1;
+                if (line <= row) {
+                    var tag = /element type "([^"]+)"/.exec(data.message["#text"]);
+                    if (tag && tag.length > 0) {
+                        var pos = $this.editor.state.selection.main.head;
+                        var text = tag[1] + ">";
+                        $this.editor.dispatch({
+                            changes: { from: pos, insert: text },
+                            selection: { anchor: pos + text.length }
+                        });
                     }
                 }
-            },
-            error: function (xhr, status) {
             }
-        });
+        })
+        .catch(function() {});
     }
 
     Constr.prototype.validate = function(doc, code, onComplete) {
         var $this = this;
-        $.ajax({
-            type: "PUT",
-            url: "modules/validate-xml.xq",
-            data: code,
-            contentType: "application/octet-stream",
-            dataType: "json",
-            success: function (data) {
-                $this.compileError(data, doc);
-                onComplete.call(this, true);
-            },
-            error: function (xhr, status) {
-                onComplete.call(this, true);
-                $.log("Compile error: %s - %s", status, xhr.responseText);
-            }
+        fetch("modules/validate-xml.xq", {
+            method: "PUT",
+            headers: { "Content-Type": "application/octet-stream" },
+            body: code
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            $this.compileError(data, doc);
+            onComplete.call(null, true);
+        })
+        .catch(function(err) {
+            onComplete.call(null, true);
+            console.log("Compile error: %s", err);
         });
     }
 
     Constr.prototype.compileError = function(data, doc) {
-        $.log("Validation returned %o", data);
+        console.log("Validation returned %o", data);
         if (data.status && data.status == "invalid") {
             var messages;
             if (data.message instanceof Array)
@@ -130,24 +128,21 @@ eXide.edit.XMLModeHelper = (function () {
     };
 
     Constr.prototype.suggest = function(doc, text, row, column) {
-        $.log("Getting suggestions for %s", text);
-        $.ajax({
-            type: "POST",
-            url: "modules/validate-xml.xq",
-            data: {
-                xml: text,
-                row: row,
-                column: column
-            },
-            dataType: "json",
-            success: function (data) {
-                $this.compileError(data, doc);
-                onComplete.call(this, true);
-            },
-            error: function (xhr, status) {
-                onComplete.call(this, true);
-                $.log("Compile error: %s - %s", status, xhr.responseText);
-            }
+        console.log("Getting suggestions for %s", text);
+        var params = new URLSearchParams({ xml: text, row: row, column: column });
+        fetch("modules/validate-xml.xq", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: params.toString()
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            $this.compileError(data, doc);
+            onComplete.call(null, true);
+        })
+        .catch(function(err) {
+            onComplete.call(null, true);
+            console.log("Compile error: %s", err);
         });
     }
 
@@ -157,24 +152,25 @@ eXide.edit.XMLModeHelper = (function () {
             eXide.util.Dialog.input("Apply Configuration?", "You have saved a collection configuration file. Would you like to " +
                 "apply it to collection " + collection.replace(/^\/db\/system\/config/, "") + " now?", function() {
                     eXide.util.message("Apply configuration and reindex...");
-                    $.ajax({
-                        type: "POST",
-                        url: "modules/apply-config.xq",
-                        data: {
-                            collection: doc.getBasePath(),
-                            config: doc.getName()
-                        },
-                        dataType: "json",
-                        success: function(data) {
-                            if (data.error) {
-                                eXide.util.error("Failed to apply configuration: " + data.error);
-                            } else {
-                                eXide.util.success("Configuration applied.");
-                            }
-                        },
-                        error: function(xhr, status) {
-                            eXide.util.error("Failed to apply configuration: " + xhr.responseText);
+                    var params = new URLSearchParams({
+                        collection: doc.getBasePath(),
+                        config: doc.getName()
+                    });
+                    fetch("modules/apply-config.xq", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                        body: params.toString()
+                    })
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.error) {
+                            eXide.util.error("Failed to apply configuration: " + data.error);
+                        } else {
+                            eXide.util.success("Configuration applied.");
                         }
+                    })
+                    .catch(function(err) {
+                        eXide.util.error("Failed to apply configuration: " + err);
                     });
             });
         }

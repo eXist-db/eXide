@@ -21,6 +21,26 @@
 var Grid = agGrid.Grid;
 var InfiniteRowModelModule = agGrid.InfiniteRowModelModule;
 
+function buildQueryString(params) {
+	var parts = [];
+	Object.keys(params).forEach(function(key) {
+		var val = params[key];
+		if (Array.isArray(val)) {
+			val.forEach(function(v) {
+				parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(v));
+			});
+		} else {
+			parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(val));
+		}
+	});
+	return parts.join("&");
+}
+
+function fetchJSON(url, params) {
+	var qs = buildQueryString(params);
+	return fetch(url + "?" + qs).then(function(r) { return r.json(); });
+}
+
 eXide.namespace("eXide.browse.ResourceBrowser");
 
 class DataSource {
@@ -46,14 +66,13 @@ class DataSource {
 		if (options.filterModel.name) {
 			params.filter = options.filterModel.name.filter;
 		}
-		$.getJSON("modules/collections.xq", params, (json) => {
+		fetchJSON("modules/collections.xq", params).then((json) => {
 			if (json && json.items) {
 				options.successCallback(json.items, json.total);
 				if (this.data.length === 0) {
 					this.gridOptions.api.deselectAll();
 					this.gridOptions.api.setFocusedCell(0, 'name');
 				}
-				// this.gridOptions.api.sizeColumnsToFit();
 				this.data.length = json.total;
 				for (var i = 0; i < json.items.length; i++) {
 					this.data[params.start + i] = json.items[i];
@@ -130,9 +149,9 @@ eXide.browse.ResourceBrowser = (function () {
 	];
 
 	Constr = function(container, parentContainer) {
-		var $this = this;
-		this.container = $(container);
-        this.breadcrumbs = $(".eXide-browse-breadcrumbs", parentContainer);
+		var self = this;
+		this.container = typeof container === "string" ? document.querySelector(container) : container;
+        this.breadcrumbs = parentContainer.querySelector(".eXide-browse-breadcrumbs");
 		this.loading = false;
 		this.search = "";
         this.clipboard = [];
@@ -163,7 +182,6 @@ eXide.browse.ResourceBrowser = (function () {
 		};
 		this.gridOptions.onRowDoubleClicked = (params) => {
 			if (params.data.isCollection) {
-				// navigate to new collection
 				var coll;
 				if (params.data.name == "..")
 					coll = this.dataSource.collection.replace(/\/[^\/]+$/, "");
@@ -188,7 +206,7 @@ eXide.browse.ResourceBrowser = (function () {
 				}
 			}
 			const doc = (rows.length === 1 && !rows[0].isCollection) ? rows[0] : null;
-			$this.$triggerEvent("activate", [ doc, enableWrite]);
+			self.$triggerEvent("activate", [ doc, enableWrite]);
 		};
 		this.gridOptions.onCellKeyDown = (e) => {
 			if (this.inEditor)
@@ -211,18 +229,15 @@ eXide.browse.ResourceBrowser = (function () {
 						this.cut();
 						break;
 					default:
-						// nothing to do
 						break;
 				}
 			} else if (!e.event.shiftKey && !e.event.altKey && !e.event.ctrlKey) {
 				let cell;
 				switch (e.event.which) {
-					// enter
 					case 13:
 						e.event.stopPropagation();
 						e.event.preventDefault();
 						if (e.data.isCollection) {
-							// navigate to new collection
 							var coll;
 							if (e.data.name === "..")
 								coll = this.dataSource.collection.replace(/\/[^\/]+$/, "")
@@ -238,7 +253,6 @@ eXide.browse.ResourceBrowser = (function () {
 							});
 						}
 						break;
-					// backspace
 					case 8:
 						e.event.stopPropagation();
 						e.event.preventDefault();
@@ -247,39 +261,31 @@ eXide.browse.ResourceBrowser = (function () {
 							if (this.dataSource.collection != "/db") {
 								const parent = this.dataSource.collection.substring(0, p);
 								const cell = this.gridOptions.api.getFocusedCell();
-								// navigate to parent collection
 								this.$triggerEvent("activateCollection", [ parent, this.dataSource.data[cell.rowIndex].writable ]);
 								this.update(parent, false);
 							}
 						}
 						break;
-					// page down
 					case 34:
-					// page up
 					case 33:
 						break;
-					// home
 					case 36:
 						e.event.stopPropagation();
 						e.event.preventDefault();
-						$this.goto(0);
+						self.goto(0);
 						break;
-					// end
 					case 35:
 						e.event.stopPropagation();
 						e.event.preventDefault();
-						$this.goto($this.data.length - 1);
+						self.goto(self.data.length - 1);
 						break;
-					// delete
 					case 46:
 						cell = e.api.getFocusedCell();
 						this.deleteResource(this.dataSource.data[cell.rowIndex]);
 						break;
-					// escape
 					case 27:
-						$this.search = "";
+						self.search = "";
 						break;
-					// down/up
 					case 38:
 					case 40:
 						break;
@@ -310,11 +316,11 @@ eXide.browse.ResourceBrowser = (function () {
 				return;
 			}
 			params.column.colDef.editable = false;
-			$.getJSON("modules/collections.xq", {
+			fetchJSON("modules/collections.xq", {
 				target: encodeURI(params.newValue),
 				rename: encodeURI(params.oldValue),
 				root: this.dataSource.collection
-			}, (data) => {
+			}).then((data) => {
 				if (data.status == "fail") {
 					eXide.util.Dialog.warning("Rename Error", data.message);
 				}
@@ -325,35 +331,40 @@ eXide.browse.ResourceBrowser = (function () {
 			setTimeout(() => { this.inEditor = false }, 200);
 		};
 
-        $("#resource-properties-dialog").dialog({
+        var propsContentEl = document.getElementById("resource-properties-content");
+        var propsDialogEl = document.getElementById("resource-properties-dialog");
+        this.propertiesDialog = eXide.util.DialogManager.create(propsDialogEl, {
             title: "Resource/collection properties",
-			modal: true,
-	        autoOpen: false,
-	        height: 380,
-	        width: 460,
+            modal: true,
+            height: 380,
+            width: 460,
             buttons: {
-                "Cancel": function () { $(this).dialog("close"); },
+                "Cancel": function () { this.close(); },
                 "Apply": function() {
-                    var dialog = this;
-					const selected = $this.gridOptions.api.getSelectedRows();
+                    var dlg = this;
+                    var selected = self.gridOptions.api.getSelectedRows();
                     if (selected.length == 0) {
-                		return;
-            		}
-            		var resources = [];
-            		for (var i = 0; i < selected.length; i++) {
-            			resources.push(selected[i].key);
-            		}
-                    var params = $("form", dialog).serialize();
-                    params = params + "&" + $.param({ "modify[]": resources});
-                    $.getJSON("modules/collections.xq", params,
-                        function(data) {
-                            $(dialog).dialog("close");
-                            $this.reload();
-                        }
-                    );
+                        return;
+                    }
+                    var resources = [];
+                    for (var i = 0; i < selected.length; i++) {
+                        resources.push(selected[i].key);
+                    }
+                    var form = propsDialogEl.querySelector("form");
+                    var formData = new FormData(form);
+                    var params = new URLSearchParams(formData);
+                    resources.forEach(function(r) {
+                        params.append("modify[]", r);
+                    });
+                    fetch("modules/collections.xq?" + params.toString())
+                        .then(function(r) { return r.json(); })
+                        .then(function(data) {
+                            dlg.close();
+                            self.reload();
+                        });
                 }
             }
-		});
+        });
 	};
 
     // Extend eXide.events.Sender for event support
@@ -365,26 +376,30 @@ eXide.browse.ResourceBrowser = (function () {
     };
 
     Constr.prototype.updateBreadcrumbs = function() {
-        this.breadcrumbs.empty();
+        this.breadcrumbs.innerHTML = "";
         var self = this;
         var parts = this.dataSource.collection.split("/");
 		parts = parts.map(part => decodeURI(part));
-        var span = $("<span>/</span>");
+        var span = document.createElement("span");
+        span.appendChild(document.createTextNode("/"));
         var path = "/";
         for (var i = 0; i < parts.length; i++) {
             var part = parts[i];
             if (part && part.length > 0) {
                 path += part + "/";
-                var a = $('<a href="#">').append(part);
-                a.data("collection", path);
-                span.append(a).append("/");
-                a.click(function(ev) {
+                var a = document.createElement("a");
+                a.href = "#";
+                a.textContent = part;
+                a.dataset.collection = path;
+                a.addEventListener("click", function(ev) {
                     ev.preventDefault();
-                    self.update($(this).data("collection"), false);
+                    self.update(this.dataset.collection, false);
                 });
+                span.appendChild(a);
+                span.appendChild(document.createTextNode("/"));
             }
         }
-        this.breadcrumbs.html(span);
+        this.breadcrumbs.appendChild(span);
     };
 
 	Constr.prototype.setMode = function(value) {
@@ -404,10 +419,11 @@ eXide.browse.ResourceBrowser = (function () {
 	Constr.prototype.update = function(collection, reload) {
         if (!reload && collection === this.dataSource.collection)
             return;
-		$.log("Opening resources for %s", collection);
-		// this.grid.gotoCell(0, 0);
+		console.log("Opening resources for %s", collection);
         this.setCollection(collection);
-    	$('input[name="collection"]').val(collection);
+        document.querySelectorAll('input[name="collection"]').forEach(function(el) {
+            el.value = collection;
+        });
         this.search = "";
 	};
 
@@ -420,7 +436,7 @@ eXide.browse.ResourceBrowser = (function () {
 		const selected = this.gridOptions.api.getSelectedRows();
 		if (selected.length == 0) {
 			return null;
-		}  
+		}
         return selected;
     };
 
@@ -439,48 +455,46 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
     Constr.prototype.createCollection = function () {
-    	var $this = this;
+    	var self = this;
 		if (!eXide.app.$checkLogin())
 			return;
 		eXide.util.Dialog.input("Create Collection",
 			"<label for=\"collection\">Name: </label>" +
 			"<input type=\"text\" name=\"collection\" id=\"eXide-browse-collection-name\"/>",
 			function () {
-			    $("#eXide-browse-spinner").show();
-				$.getJSON("modules/collections.xq", {
-						create: $("#eXide-browse-collection-name").val(),
-						collection: $this.dataSource.collection
-					},
-					function (data) {
-					    $("#eXide-browse-spinner").hide();
+			    var spinner = document.getElementById("eXide-browse-spinner");
+			    spinner.style.display = "";
+				fetchJSON("modules/collections.xq", {
+						create: document.getElementById("eXide-browse-collection-name").value,
+						collection: self.dataSource.collection
+					}).then(function (data) {
+					    spinner.style.display = "none";
 						if (data.status == "fail") {
 							eXide.util.Dialog.warning("Create Collection Error", data.message);
 						} else {
-							$this.reload();
+							self.reload();
 						}
-					}
-				);
+					});
 			}
 		);
 	};
 
 	Constr.prototype.deleteCollection = function () {
-		var $this = this;
-		eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete collection " + $this.selected + "?",
+		var self = this;
+		eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete collection " + self.selected + "?",
 			function () {
-			    $("#eXide-browse-spinner").show();
-				$.getJSON("modules/collections.xq", {
-    					remove: $this.dataSource.collection
-    				},
-    				function (data) {
-    				    $("#eXide-browse-spinner").hide();
+			    var spinner = document.getElementById("eXide-browse-spinner");
+			    spinner.style.display = "";
+				fetchJSON("modules/collections.xq", {
+    					remove: self.dataSource.collection
+    				}).then(function (data) {
+    				    spinner.style.display = "none";
     					if (data.status == "fail") {
     						eXide.util.Dialog.warning("Delete Collection Error", data.message);
     					} else {
-    						$this.reload();
+    						self.reload();
     					}
-    				}
-    			);
+    				});
 		});
 	};
 
@@ -494,22 +508,21 @@ eXide.browse.ResourceBrowser = (function () {
 			resources.push(selected[i].key);
 		}
 		console.log('resources to delete: %o', selected);
-		var $this = this;
+		var self = this;
 		eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete the selected resources?",
 				function () {
-				    $("#eXide-browse-spinner").show();
-					$.getJSON("modules/collections.xq", {
+				    var spinner = document.getElementById("eXide-browse-spinner");
+				    spinner.style.display = "";
+					fetchJSON("modules/collections.xq", {
 							remove: resources,
-							root: $this.dataSource.collection
-						},
-						function (data) {
-						    $("#eXide-browse-spinner").hide();
-							$this.reload();
+							root: self.dataSource.collection
+						}).then(function (data) {
+						    spinner.style.display = "none";
+							self.reload();
 							if (data.status == "fail") {
 								eXide.util.Dialog.warning("Delete Resource Error", data.message);
 							}
-						}
-				    );
+						});
 		});
 	};
 
@@ -525,8 +538,21 @@ eXide.browse.ResourceBrowser = (function () {
             }
 		}
         if (resources.length > 0) {
-            $("#resource-properties-content").load("modules/collections.xq", { "properties": resources });
-            $("#resource-properties-dialog").dialog("open");
+            var contentEl = document.getElementById("resource-properties-content");
+            var params = new URLSearchParams();
+            resources.forEach(function(r) {
+                params.append("properties", r);
+            });
+            fetch("modules/collections.xq", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: params.toString()
+            })
+            .then(function(r) { return r.text(); })
+            .then(function(html) {
+                contentEl.innerHTML = html;
+            });
+            this.propertiesDialog.open();
         }
     };
 
@@ -550,24 +576,22 @@ eXide.browse.ResourceBrowser = (function () {
 
 			this.clipboard.push(path);
 		}
-        $.log("Clipboard: %o", this.clipboard);
+        console.log("Clipboard: %o", this.clipboard);
     };
 
     Constr.prototype.paste = function() {
-        var $this = this;
-        $.log("Pasting resources %o to %s in mode %s", this.clipboard, this.dataSource.collection, this.clipboardMode);
+        var self = this;
+        console.log("Pasting resources %o to %s in mode %s", this.clipboard, this.dataSource.collection, this.clipboardMode);
         var params = { root: this.dataSource.collection };
         params[this.clipboardMode] = this.clipboard;
-		$.getJSON("modules/collections.xq", params,
-			function (data) {
-				$.log(data.status);
+		fetchJSON("modules/collections.xq", params).then(function (data) {
+				console.log(data.status);
 				if (data.status == "fail") {
 					eXide.util.Dialog.warning("Delete Resource Error", data.message);
 				} else {
-					$this.reload();
+					self.reload();
 				}
-			}
-	    );
+			});
     };
 
     Constr.prototype.goto = function(row) {
@@ -575,7 +599,8 @@ eXide.browse.ResourceBrowser = (function () {
     };
 
     Constr.prototype.focus = function() {
-        this.container.find(".grid-canvas").focus();
+        var canvas = this.container.querySelector(".grid-canvas");
+        if (canvas) canvas.focus();
     };
 
 	Constr.prototype.reload = function() {
@@ -603,104 +628,190 @@ eXide.browse.Upload = (function () {
 	        || "directory" in tmpInput);
 	}
 
-	function initUpload(container, button, dropzone) {
-	    var progressAll = $("#progress-all", container);
-	    $(button).fileupload({
-			sequentialUploads: true,
-            autoUpload: false,
-            dataType: 'json',
-            dropZone: dropzone
-        }).on('fileuploadadd', function (e, data) {
-            $("#file_upload thead").show();
-            $("#eXide-browse-spinner").show();
-            data.context = $('#files');
-            for (var i = 0; i < data.files.length; i++) {
-                var count = data.context.find("tr").length;
-                var file = data.files[i];
-                if (file.name != ".") {
-                    var node = null;
-                    var path = file.name;
-                    if (file.webkitRelativePath) {
-                        path = file.webkitRelativePath;
-                    } else if (file.relativePath) {
-                        path = file.relativePath + path;
-                    }
-                    file.path = path;
-                    if (count == 200) {
-                        $('<tr><td colspan="3">Only 200 files are shown. More follow...</td></tr>').appendTo(data.context);
-                    } else if (count < 200) {
-                        node = $('<tr data-name="' + path + '"/>');
-                        node.append($('<td/>').text(file.name));
-                        node.append($('<td/>').text(file.size));
-                        node.append($('<td class="file_upload_progress"><div class="ui-progressbar-value" style="width: 0%;"></div></td>'));
-                        node.appendTo(data.context);
-                    }
+	function uploadFiles(fileInput, collectionInput, deployInput, filesTable, thead, progressAll, spinner) {
+	    fileInput.addEventListener("change", function() {
+	        var files = Array.from(fileInput.files);
+	        if (files.length === 0) return;
 
-                    data.formData = {
-                        path: path,
-                        collection: $("input[name=\"collection\"]", container).val(),
-                        deploy: $("input[name='deploy']", container).is(":checked")
-                    };
+	        thead.style.display = "";
+	        spinner.style.display = "";
 
-                    var future = data.submit();
-                    future.done(function() {
-                        if (node) {
-                            node.remove();
-                        }
-                    });
-                }
-            }
-        }).on("fileuploadprogress", function (e, data) {
-            $.each(data.files, function(index, file) {
-                var progress = parseInt(data.loaded / data.total * 100, 10);
-                var tr = $("tr[data-name='" + file.path + "']", container);
-                tr.find(".ui-progressbar-value").css("width", progress + "%");
-            });
+	        var totalSize = 0;
+	        var loadedSize = 0;
+	        files.forEach(function(f) { totalSize += f.size; });
 
-        }).on("fileuploadprogressall", function (e, data) {
-            var progress = parseInt(data.loaded / data.total * 100, 10);
-            progressAll.css("width", progress + "%").text(progress + "%");
-            if (progress >= 100) {
-                $("#files").empty();
-                $("#eXide-browse-spinner").hide();
-            }
-        }).on('fileuploaddone', function (e, data) {
-            progressAll.empty().css("width", "0%");
+	        var rows = filesTable.querySelectorAll("tr");
+	        var count = rows.length;
 
-        }).on('fileuploadfail', function (e, data) {
-            console.log("error: ", data);
-        });
+	        var promises = [];
+	        files.forEach(function(file) {
+	            if (file.name === ".") return;
+
+	            var path = file.name;
+	            if (file.webkitRelativePath) {
+	                path = file.webkitRelativePath;
+	            }
+
+	            var node = null;
+	            if (count === 200) {
+	                var tr = document.createElement("tr");
+	                var td = document.createElement("td");
+	                td.colSpan = 3;
+	                td.textContent = "Only 200 files are shown. More follow...";
+	                tr.appendChild(td);
+	                filesTable.appendChild(tr);
+	                count++;
+	            } else if (count < 200) {
+	                node = document.createElement("tr");
+	                node.dataset.name = path;
+	                var tdName = document.createElement("td");
+	                tdName.textContent = file.name;
+	                var tdSize = document.createElement("td");
+	                tdSize.textContent = file.size;
+	                var tdProg = document.createElement("td");
+	                tdProg.className = "file_upload_progress";
+	                var progBar = document.createElement("div");
+	                progBar.className = "ui-progressbar-value";
+	                progBar.style.width = "0%";
+	                tdProg.appendChild(progBar);
+	                node.appendChild(tdName);
+	                node.appendChild(tdSize);
+	                node.appendChild(tdProg);
+	                filesTable.appendChild(node);
+	                count++;
+	            }
+
+	            var formData = new FormData();
+	            formData.append("file[]", file);
+	            formData.append("path", path);
+	            formData.append("collection", collectionInput.value);
+	            if (deployInput.checked) {
+	                formData.append("deploy", "on");
+	            }
+
+	            var p = new Promise(function(resolve, reject) {
+	                var xhr = new XMLHttpRequest();
+	                xhr.open("POST", "modules/upload.xq");
+	                xhr.upload.addEventListener("progress", function(evt) {
+	                    if (evt.lengthComputable) {
+	                        var pct = Math.round(evt.loaded / evt.total * 100);
+	                        var row = filesTable.querySelector('tr[data-name="' + CSS.escape(path) + '"]');
+	                        if (row) {
+	                            var bar = row.querySelector(".ui-progressbar-value");
+	                            if (bar) bar.style.width = pct + "%";
+	                        }
+	                    }
+	                });
+	                xhr.onload = function() {
+	                    loadedSize += file.size;
+	                    var overallPct = Math.round(loadedSize / totalSize * 100);
+	                    progressAll.style.width = overallPct + "%";
+	                    progressAll.textContent = overallPct + "%";
+	                    if (node) node.remove();
+	                    if (overallPct >= 100) {
+	                        filesTable.innerHTML = "";
+	                        spinner.style.display = "none";
+	                    }
+	                    resolve();
+	                };
+	                xhr.onerror = function() {
+	                    console.log("Upload error for file: ", file.name);
+	                    reject();
+	                };
+	                xhr.send(formData);
+	            });
+	            promises.push(p);
+	        });
+
+	        Promise.all(promises).then(function() {
+	            progressAll.textContent = "";
+	            progressAll.style.width = "0%";
+	        });
+
+	        fileInput.value = "";
+	    });
+	}
+
+	function initDragDrop(dropzone, fileInput) {
+	    if (!dropzone) return;
+	    dropzone.addEventListener("dragover", function(e) {
+	        e.preventDefault();
+	        e.stopPropagation();
+	        dropzone.classList.add("drag-over");
+	    });
+	    dropzone.addEventListener("dragleave", function(e) {
+	        e.preventDefault();
+	        e.stopPropagation();
+	        dropzone.classList.remove("drag-over");
+	    });
+	    dropzone.addEventListener("drop", function(e) {
+	        e.preventDefault();
+	        e.stopPropagation();
+	        dropzone.classList.remove("drag-over");
+	        fileInput.files = e.dataTransfer.files;
+	        fileInput.dispatchEvent(new Event("change"));
+	    });
 	}
 
 	Constr = function (container) {
-		this.container = container;
+		this.container = typeof container === "string" ? document.querySelector(container) : container;
 
 		this.events = {
 			"done": []
 		};
-		$("#progress-all").empty().css("width", "0%");
-		initUpload(container, "#file_upload", $(".file_upload_drop"));
-		if (isDirUploadSupported()) {
-		    initUpload(container, "#dir_upload", null);
-		} else {
-		    $("#dir_upload").parent().hide();
+
+		var progressAll = document.getElementById("progress-all");
+		if (progressAll) {
+		    progressAll.textContent = "";
+		    progressAll.style.width = "0%";
 		}
 
-		var $this = this;
-		$("#eXide-browse-upload-done").button({ "icons": { primary: "fa fa-times" }}).click(function() {
-			$('#files').empty();
-			$this.$triggerEvent("done", []);
-		});
+		var filesTable = document.getElementById("files");
+		var thead = this.container.querySelector("#file_upload thead");
+		var spinner = document.getElementById("eXide-browse-spinner");
+		var collectionInput = this.container.querySelector('input[name="collection"]');
+		var deployInput = this.container.querySelector('input[name="deploy"]');
+
+		var fileUploadInput = document.getElementById("file_upload");
+		if (fileUploadInput) {
+		    uploadFiles(fileUploadInput, collectionInput, deployInput, filesTable, thead || document.createElement("thead"), progressAll || document.createElement("div"), spinner);
+		    var dropzone = this.container.querySelector(".file_upload_drop");
+		    initDragDrop(dropzone, fileUploadInput);
+		}
+
+		if (isDirUploadSupported()) {
+		    var dirUploadInput = document.getElementById("dir_upload");
+		    if (dirUploadInput) {
+		        uploadFiles(dirUploadInput, collectionInput, deployInput, filesTable, thead || document.createElement("thead"), progressAll || document.createElement("div"), spinner);
+		    }
+		} else {
+		    var dirUpload = document.getElementById("dir_upload");
+		    if (dirUpload && dirUpload.parentNode) {
+		        dirUpload.parentNode.style.display = "none";
+		    }
+		}
+
+		var self = this;
+		var doneBtn = document.getElementById("eXide-browse-upload-done");
+		if (doneBtn) {
+		    doneBtn.addEventListener("click", function() {
+		        filesTable.innerHTML = "";
+		        self.$triggerEvent("done", []);
+		    });
+		}
 	}
 
     // Extend eXide.events.Sender for event support
     eXide.util.oop.inherit(Constr, eXide.events.Sender);
 
 	Constr.prototype.update = function(collection) {
-        $.log("Upload collection: %s", collection);
-        $("#files").empty();
-        $("#file_upload thead").hide();
-		$("input[name=\"collection\"]", this.container).val(collection);
+        console.log("Upload collection: %s", collection);
+        var filesTable = document.getElementById("files");
+        if (filesTable) filesTable.innerHTML = "";
+        var thead = this.container.querySelector("#file_upload thead");
+        if (thead) thead.style.display = "none";
+		var collectionInput = this.container.querySelector('input[name="collection"]');
+		if (collectionInput) collectionInput.value = collection;
 	};
 
 	return Constr;
@@ -710,8 +821,7 @@ eXide.namespace("eXide.browse.Browser");
 
 /**
  * Main interface for the open and save dialogs. Uses
- * a ResourceBrowser within a jquery.layout
- * panel.
+ * a ResourceBrowser within a panel.
  */
 eXide.browse.Browser = (function () {
 
@@ -722,65 +832,63 @@ eXide.browse.Browser = (function () {
 		button.tabindex = index;
 		var img = document.createElement("span");
 		img.className = "fa fa-lg fa-" + imgPath;
-// 		var img = document.createElement("img");
-// 		img.src = "resources/images/" + imgPath;
 		button.appendChild(img);
-		toolbar.append(button);
+		toolbar.appendChild(button);
         return button;
     }
 
 	Constr = function (container) {
-		var $this = this;
+		var self = this;
         this.mode = "open";
 
-		var toolbar = $(".eXide-browse-toolbar", container);
+		var toolbar = container.querySelector(".eXide-browse-toolbar");
 
 		var button = createButton(toolbar, "Reload", "reload", 1, "refresh");
-		$(button).click(function (ev) {
-            $this.resources.reload(true);
+		button.addEventListener("click", function (ev) {
+            self.resources.reload(true);
 		});
 
 		this.btnRenameResource = createButton(toolbar, 'Rename Selected', 'rename', 2, 'edit');
-		$(this.btnRenameResource).click((ev) => {
+		this.btnRenameResource.addEventListener("click", (ev) => {
 			this.resources.startEditing();
 		});
 
         this.btnCreateCollection = createButton(toolbar, "Create Collection", "create", 3, "folder-o");
-		$(this.btnCreateCollection).click(function (ev) {
+		this.btnCreateCollection.addEventListener("click", function (ev) {
 			ev.preventDefault();
-			$this.resources.createCollection();
+			self.resources.createCollection();
 		});
 
 		this.btnUpload = createButton(toolbar, "Upload Files", "upload", 4, "cloud-upload");
-		$(this.btnUpload).click(function (ev) {
+		this.btnUpload.addEventListener("click", function (ev) {
 			ev.preventDefault();
-			$(".eXide-browse-resources", container).hide();
-			$(".eXide-browse-upload", container).show();
-			$this.$triggerEvent("upload-open", [true]);
+			container.querySelector(".eXide-browse-resources").style.display = "none";
+			container.querySelector(".eXide-browse-upload").style.display = "";
+			self.$triggerEvent("upload-open", [true]);
 		});
 
 		this.btnDeleteResource = createButton(toolbar, "Delete", "delete-resource", 5, "trash-o");
-		$(this.btnDeleteResource).click(function (ev) {
+		this.btnDeleteResource.addEventListener("click", function (ev) {
 			ev.preventDefault();
-			$this.deleteSelected();
+			self.deleteSelected();
 		});
 
         this.btnProperties = createButton(toolbar, "Properties", "properties", 10, "info");
-        $(this.btnProperties).click(function(ev) {
+        this.btnProperties.addEventListener("click", function(ev) {
             ev.preventDefault();
-            $this.resources.properties();
+            self.resources.properties();
         });
 
 		button = createButton(toolbar, "Open Selected", "open", 6, "folder-open-o");
-		$(button).click(function (ev) {
+		button.addEventListener("click", function (ev) {
 			ev.preventDefault();
 			eXide.app.openSelectedDocument(null, false);
 		});
 
 		button = createButton(toolbar, "Download Selected", "download", 11, "download");
-		$(button).click(function (ev) {
+		button.addEventListener("click", function (ev) {
 			ev.preventDefault();
-			const selected = $this.resources.getSelected();
+			const selected = self.resources.getSelected();
 			eXide.app.downloadSelectedResources(selected, false);
 		});
 
@@ -788,44 +896,42 @@ eXide.browse.Browser = (function () {
         this.btnCut = createButton(toolbar, "Cut", "cut", 8, "cut");
         this.btnPaste = createButton(toolbar, "Paste", "paste", 9, "paste");
 
-		this.selection = $(".eXide-browse-form input", container);
+		this.selection = container.querySelector(".eXide-browse-form input");
 		this.container = container;
 		this.resources = new eXide.browse.ResourceBrowser(container, container);
-		this.upload = new eXide.browse.Upload($(".eXide-browse-upload", container).hide());
+		var uploadEl = container.querySelector(".eXide-browse-upload");
+		if (uploadEl) uploadEl.style.display = "none";
+		this.upload = new eXide.browse.Upload(uploadEl);
 
 		this.resources.addEventListener("activate", this, this.onActivateResource);
 		this.resources.addEventListener("activateCollection", this, this.onActivateCollection);
 
 		this.upload.addEventListener("done", this, function () {
-			$(".eXide-browse-resources", container).show();
-			$(".eXide-browse-upload", container).hide();
-			$this.$triggerEvent("upload-open", [false]);
+			container.querySelector(".eXide-browse-resources").style.display = "";
+			container.querySelector(".eXide-browse-upload").style.display = "none";
+			self.$triggerEvent("upload-open", [false]);
 			this.reload();
 		});
 
-        $(this.btnCopy).click(function (ev) {
+        this.btnCopy.addEventListener("click", function (ev) {
     		ev.preventDefault();
-			$this.resources.copy();
+			self.resources.copy();
 		});
-        $(this.btnCut).click(function (ev) {
+        this.btnCut.addEventListener("click", function (ev) {
         	ev.preventDefault();
-			$this.resources.cut();
+			self.resources.cut();
 		});
-        $(this.btnPaste).click(function (ev) {
+        this.btnPaste.addEventListener("click", function (ev) {
         	ev.preventDefault();
-			$this.resources.paste();
+			self.resources.paste();
 		});
-		$("#eXide-browse-spinner").hide();
+		var spinner = document.getElementById("eXide-browse-spinner");
+		if (spinner) spinner.style.display = "none";
 	};
 
 	// Extend eXide.events.Sender for event support
     eXide.util.oop.inherit(Constr, eXide.events.Sender);
 
-	/**
-	 * jquery.layout needs to be initialized when the containing div
-	 * becomes visible. This does not happen until the dialog is shown
-	 * the first time.
-	 */
 	Constr.prototype.init = function() {
 		this.resources.resize();
 		this.resources.reload();
@@ -833,9 +939,12 @@ eXide.browse.Browser = (function () {
 
 	Constr.prototype.reload = function(buttons, mode) {
 		if (buttons) {
-			$(".eXide-browse-toolbar button", this.container).hide();
+			this.container.querySelectorAll(".eXide-browse-toolbar button").forEach(function(btn) {
+				btn.style.display = "none";
+			});
 			for (var i = 0; i < buttons.length; i++) {
-				$("#eXide-browse-toolbar-" + buttons[i]).show();
+				var btn = document.getElementById("eXide-browse-toolbar-" + buttons[i]);
+				if (btn) btn.style.display = "";
 			}
 		}
         if (mode) {
@@ -843,14 +952,16 @@ eXide.browse.Browser = (function () {
         }
         this.resources.setMode(mode);
         this.resources.reload();
+		var browseForm = this.container.querySelector(".eXide-browse-form");
 		if (this.mode === "save") {
-			$(".eXide-browse-form", this.container).show().focus();
+			browseForm.style.display = "";
+			browseForm.focus();
 		} else {
-			$(".eXide-browse-form", this.container).hide();
+			browseForm.style.display = "none";
 		}
 
 		this.resize();
-		$(this.selection).val("");
+		this.selection.value = "";
 	};
 
 	Constr.prototype.resize = function() {
@@ -861,7 +972,7 @@ eXide.browse.Browser = (function () {
     };
 
 	Constr.prototype.getSelection = function () {
-		var name = $(this.selection).val();
+		var name = this.selection.value;
 		if (name == null || name == '')
 			return null;
 		return {
@@ -877,42 +988,44 @@ eXide.browse.Browser = (function () {
 
 	Constr.prototype.onActivateResource = function (doc, writable) {
 		if (doc) {
-			$(this.selection).val(doc.name);
+			this.selection.value = doc.name;
 		} else {
-			$(this.selection).val("");
+			this.selection.value = "";
 		}
 		if (this.mode != "open" && writable) {
-			$(this.btnRenameResource).css("display", "");
-			$(this.btnDeleteResource).css("display", "");
-            $(this.btnProperties).css("display", "");
+			this.btnRenameResource.style.display = "";
+			this.btnDeleteResource.style.display = "";
+            this.btnProperties.style.display = "";
 		} else {
-			$(this.btnDeleteResource).css("display", "none");
-            $(this.btnProperties).css("display", "none");
+			this.btnDeleteResource.style.display = "none";
+            this.btnProperties.style.display = "none";
 		}
 	};
 
 	Constr.prototype.onActivateCollection = function (key, writable) {
-        $.log("Activate collection: %s %s", key, this.mode);
+        console.log("Activate collection: %s %s", key, this.mode);
         switch (this.mode) {
             case "open":
             case "save":
-                $(".eXide-browse-toolbar button", this.container).hide();
-                $(this.btnCreateCollection).css("display", "");
+                this.container.querySelectorAll(".eXide-browse-toolbar button").forEach(function(btn) {
+                    btn.style.display = "none";
+                });
+                this.btnCreateCollection.style.display = "";
                 break;
             default:
                 if (writable) {
-					$(this.btnRenameResource).css('display', '');
-    				$(this.btnCreateCollection).css("display", "");
-    				$(this.btnUpload).css("display", "");
-                    $(this.btnCut).css("display", "");
-                    $(this.btnPaste).css("display", "");
-				    $(this.btnDeleteResource).css("display", "");
+					this.btnRenameResource.style.display = "";
+    				this.btnCreateCollection.style.display = "";
+    				this.btnUpload.style.display = "";
+                    this.btnCut.style.display = "";
+                    this.btnPaste.style.display = "";
+				    this.btnDeleteResource.style.display = "";
                 } else {
-                    $(this.btnCreateCollection).css("display", "none");
-        			$(this.btnUpload).css("display", "none");
-                    $(this.btnCut).css("display", "none");
-                    $(this.btnPaste).css("display", "none");
-				    $(this.btnDeleteResource).css("display", "none");
+                    this.btnCreateCollection.style.display = "none";
+        			this.btnUpload.style.display = "none";
+                    this.btnCut.style.display = "none";
+                    this.btnPaste.style.display = "none";
+				    this.btnDeleteResource.style.display = "none";
                 }
         }
 		this.upload.update(key, writable);

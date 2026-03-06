@@ -66,11 +66,13 @@ eXide.edit.commands = (function () {
     return {
 
         init: function (parent) {
-            $.ajax({
-                url: "keybindings.js",
-                dataType: 'json',
-                async: false,
-                success: function(kb) {
+            // Synchronous load — keybindings must be configured before editor is interactive
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "keybindings.js", false);
+            xhr.send();
+            if (xhr.status === 200) {
+                var kb = JSON.parse(xhr.responseText);
+                (function() {
                     addCommand("gotoLine", getKeyBinding(kb, "gotoLine"), function() {
                         parent.gotoLine();
                         return true;
@@ -242,13 +244,16 @@ eXide.edit.commands = (function () {
                             CM6.Prec.highest(CM6.keymap.of(keymapEntries))
                         )
                     });
-                }
-            });
+                })();
+            }
         },
 
         help: function (container, editor) {
-            $(container).find("table").each(function () {
-                this.innerHTML = "";
+            var el = typeof container === "string" ? document.querySelector(container) : container;
+            var tables = el.querySelectorAll("table");
+            for (var t = 0; t < tables.length; t++) {
+                var tbl = tables[t];
+                tbl.innerHTML = "";
                 for (var i = 0; i < commandList.length; i++) {
                     var cmd = commandList[i];
                     var tr = document.createElement("tr");
@@ -260,9 +265,9 @@ eXide.edit.commands = (function () {
                         td.appendChild(document.createTextNode(displayKey(cmd.key)));
                     }
                     tr.appendChild(td);
-                    this.appendChild(tr);
+                    tbl.appendChild(tr);
                 }
-            });
+            }
         },
 
         getShortcut: function(key) {

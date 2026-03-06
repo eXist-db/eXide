@@ -292,7 +292,7 @@ eXide.edit.Editor = (function () {
 
         $this.history = new eXide.edit.History();
 
-        $this.tabs = $("#tabs");
+        $this.tabs = document.getElementById("tabs");
 
         // Create CM6 EditorView
         this.editor = new EditorView({
@@ -324,7 +324,7 @@ eXide.edit.Editor = (function () {
 
         // Set up the status bar
         this.status = document.getElementById("error-status");
-        $(this.status).click(function (ev) {
+        this.status.addEventListener("click", function (ev) {
             ev.preventDefault();
             var path = this.pathname;
             var line = this.hash.substring(1);
@@ -335,19 +335,20 @@ eXide.edit.Editor = (function () {
             }
         });
 
-        var tabsDiv = $("#tabs-container");
-        tabsDiv.css({overflow: 'hidden'});
+        var tabsDiv = document.getElementById("tabs-container");
+        tabsDiv.style.overflow = "hidden";
 
         //When user move mouse over menu
-        tabsDiv.mousemove(function(e) {
-            var tabsUl = tabsDiv.find("ul");
-            var tabsWidth = tabsDiv.width();
-            var lastLi = tabsUl.find('li');
+        tabsDiv.addEventListener("mousemove", function(e) {
+            var tabsUl = tabsDiv.querySelector("ul");
+            var tabsWidth = tabsDiv.offsetWidth;
+            var lastLi = tabsUl.querySelectorAll("li");
 
             if (lastLi.length > 1) {
-                var ulWidth = lastLi[lastLi.length - 2].offsetLeft + lastLi.outerWidth();
-                var left = (e.pageX - tabsDiv.offset().left) * (ulWidth-tabsWidth) / tabsWidth;
-                tabsDiv.scrollLeft(left);
+                var ulWidth = lastLi[lastLi.length - 2].offsetLeft + lastLi[0].offsetWidth;
+                var rect = tabsDiv.getBoundingClientRect();
+                var left = (e.pageX - (rect.left + window.pageXOffset)) * (ulWidth-tabsWidth) / tabsWidth;
+                tabsDiv.scrollLeft = left;
             }
         });
 
@@ -366,59 +367,67 @@ eXide.edit.Editor = (function () {
             "tmsnippet": new eXide.edit.SnippetModeHelper($this)
         };
 
-        $("#dialog-goto-line").dialog({
+        var gotoLineEl = document.getElementById("dialog-goto-line");
+        this._gotoLineDlg = eXide.util.DialogManager.create(gotoLineEl, {
             modal: false,
-            autoOpen: false,
-            height: 200,
             width: 300,
+            height: 200,
+            title: "Go to Line",
             buttons: {
                 "Goto": function() {
-                    var line = $(this).find('input[name="row"]').val();
-                    var column = $(this).find('input[name="column"]').val();
+                    var line = gotoLineEl.querySelector('input[name="row"]').value;
+                    var column = gotoLineEl.querySelector('input[name="column"]').value;
                     if (column && column != "") {
                         editorUtils.gotoLine($this.editor, parseInt(line), parseInt(column) - 1, true);
                     } else {
                         editorUtils.gotoLine($this.editor, parseInt(line), 0, true);
                     }
-                    $(this).dialog("close");
+                    $this._gotoLineDlg.close();
                     $this.editor.focus();
                 },
-                "Cancel": function () { $(this).dialog("close"); $this.editor.focus(); }
-            },
-            open: function() {
-                $(this).find("input[name='row']").val("");
-                $(this).find("input[name='column']").val("");
-                $(this).find("input:first").focus();
-
-                var dialog = $(this);
-                dialog.find("input").keyup(function (e) {
-                    if (e.keyCode == 13) {
-                        dialog.parent().find(".ui-dialog-buttonpane button:first").trigger("click");
-                    }
-                });
+                "Cancel": function () { $this._gotoLineDlg.close(); $this.editor.focus(); }
             }
+        });
+        // Handle Enter key in goto-line dialog inputs
+        gotoLineEl.querySelectorAll("input").forEach(function(input) {
+            input.addEventListener("keyup", function(e) {
+                if (e.keyCode == 13) {
+                    var gotoBtn = $this._gotoLineDlg.dialog.querySelector(".eXide-dialog-buttons button");
+                    if (gotoBtn) gotoBtn.click();
+                }
+            });
         });
 
         // drop handler for appending tab to the end
-        $(".drop-placeholder .tab", $this.tabs).droppable({
-            hoverClass: "dragover",
-            greedy: true,
-            drop: function(ev, ui) {
+        var dropPlaceholderTab = $this.tabs.querySelector(".drop-placeholder .tab");
+        if (dropPlaceholderTab) {
+            dropPlaceholderTab.addEventListener("dragover", function(ev) {
+                ev.preventDefault();
+                this.classList.add("dragover");
+            });
+            dropPlaceholderTab.addEventListener("dragleave", function(ev) {
+                this.classList.remove("dragover");
+            });
+            dropPlaceholderTab.addEventListener("drop", function(ev) {
                 ev.stopImmediatePropagation();
                 ev.stopPropagation();
                 ev.preventDefault();
-                var target = $(this);
-                var tabs = $(".tab", $this.tabs);
-                var source = ui.draggable;
-                var sourceIdx = tabs.index(source);
+                this.classList.remove("dragover");
+                var sourceIdx = parseInt(ev.dataTransfer.getData("text/plain"), 10);
+                if (isNaN(sourceIdx)) return;
+                var allTabs = $this.tabs.querySelectorAll(".tab");
+                var sourceTab = allTabs[sourceIdx];
+                if (!sourceTab) return;
                 var doc = $this.documents[sourceIdx];
-                var li = source.parent().detach();
-                li.insertBefore(target.parent());
+                var li = sourceTab.parentNode;
+                li.parentNode.removeChild(li);
+                var placeholder = $this.tabs.querySelector(".drop-placeholder");
+                placeholder.parentNode.insertBefore(li, placeholder);
                 $this.documents.splice(sourceIdx, 1);
                 $this.documents.push(doc);
                 $this.rebuildBuffersMenu();
-            }
-        });
+            });
+        }
 
          //Set up outline status bar
         var outlineData = [{label: "outline", cls: "outline"},{label:'directory', cls:"directory"}]
@@ -521,26 +530,31 @@ eXide.edit.Editor = (function () {
             return;
         }
         var self = this;
-        $.ajax({
-            url: "modules/get-template.xq",
-            type: "POST",
-            data: { template: template },
-            dataType: "text",
-            success: function (data) {
-                var newDocId = 0;
-                for (var i = 0; i < self.documents.length; i++) {
-                    var doc = self.documents[i];
-                    if (doc.path.match(/^__new__(\d+)/)) {
-                        newDocId = parseInt(RegExp.$1);
-                    }
+        var formData = new URLSearchParams();
+        formData.append("template", template);
+        fetch("modules/get-template.xq", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: formData.toString()
+        })
+        .then(function(response) { return response.text(); })
+        .then(function(data) {
+            var newDocId = 0;
+            for (var i = 0; i < self.documents.length; i++) {
+                var doc = self.documents[i];
+                if (doc.path.match(/^__new__(\d+)/)) {
+                    newDocId = parseInt(RegExp.$1);
                 }
-                newDocId++;
-                var newDocument = new eXide.edit.Document("new-document " + newDocId,
-                        "__new__" + newDocId, data);
-                newDocument.setSyntax(mode);
-                newDocument.template = template;
-                self.$initDocument(newDocument, true);
             }
+            newDocId++;
+            var newDocument = new eXide.edit.Document("new-document " + newDocId,
+                    "__new__" + newDocId, data);
+            newDocument.setSyntax(mode);
+            newDocument.template = template;
+            self.$initDocument(newDocument, true);
+        })
+        .catch(function(error) {
+            eXide.util.error("Failed to load template: " + error.message);
         });
     };
 
@@ -565,7 +579,7 @@ eXide.edit.Editor = (function () {
         if (resource.line) {
             doc._cursorOffset = resource.line; // store as line number, will be resolved in switchTo
         }
-        $.log("opening %s, mime: %s, syntax: %s, line: %i", resource.name, doc.mime, doc.syntax, resource.line);
+        console.log("opening %s, mime: %s, syntax: %s, line: %i", resource.name, doc.mime, doc.syntax, resource.line);
         this.updateStatus("");
         if (this.activeDoc) {
             var helper = this.activeDoc.getModeHelper();
@@ -728,7 +742,8 @@ eXide.edit.Editor = (function () {
     Constr.prototype.closeDocument = function(docToClose) {
         var doc = docToClose || this.activeDoc;
         this.$triggerEvent("close", [doc]);
-        $("#tabs a[title=\"" + doc.path + "\"]").parent().remove();
+        var tabLink = document.querySelector("#tabs a[title=\"" + doc.path + "\"]");
+        if (tabLink) tabLink.parentNode.remove();
         this.menubar.remove("buffers", doc.path);
         for (var i = 0; i < this.documents.length; i++) {
             if (this.documents[i].path == doc.path) {
@@ -742,7 +757,8 @@ eXide.edit.Editor = (function () {
             this.newDocument(null, "xquery");
         else {
             this.activeDoc = this.documents[this.documents.length - 1];
-            $("#tabs a[title=\"" + this.activeDoc.path + "\"]").addClass("active");
+            var activeTabLink = document.querySelector("#tabs a[title=\"" + this.activeDoc.path + "\"]");
+            if (activeTabLink) activeTabLink.classList.add("active");
             this.$switchView(this.activeDoc);
             this.directory.toggleEdit(doc.getPath(), false)
             this.$triggerEvent("activate", [this.activeDoc]);
@@ -760,46 +776,54 @@ eXide.edit.Editor = (function () {
 
         eXide.util.message("Storing resource " + $this.activeDoc.name + "...");
 
-        $.ajax({
-            url: "store" + $this.activeDoc.path,
-            type: "PUT",
-            data: $this.activeDoc.getText(),
-            dataType: "json",
-            contentType: $this.activeDoc.mime ? $this.activeDoc.mime : "application/octet-stream",
-            success: function (data) {
-                if (data.status == "error") {
-                    $this.activeDoc.path = oldPath;
-                    $this.activeDoc.name = oldName;
-                    if (errorHandler) {
-                        errorHandler.apply($this.activeDoc, [data.message]);
-                    } else {
-                        eXide.util.error(data.message);
-                    }
-                } else {
-                    $this.activeDoc.saved = true;
-                    $this.activeDoc.externalLink = data.externalLink;
-                    $this.updateTabStatus(oldPath, $this.activeDoc);
-                    if (successHandler) {
-                        successHandler.apply($this.activeDoc);
-                    } else {
-                        eXide.util.success($this.activeDoc.name + " stored.");
-                    }
-
-                    var mode = $this.activeDoc.getModeHelper();
-                    if (mode) {
-                        mode.documentSaved($this.activeDoc);
-                    }
-                    $this.$triggerEvent("saved", [$this.activeDoc]);
-                }
+        fetch("store" + $this.activeDoc.path, {
+            method: "PUT",
+            headers: {
+                "Content-Type": $this.activeDoc.mime ? $this.activeDoc.mime : "application/octet-stream"
             },
-            error: function (xhr, status) {
+            body: $this.activeDoc.getText()
+        })
+        .then(function(response) {
+            if (!response.ok) {
+                return response.text().then(function(text) {
+                    throw new Error(text);
+                });
+            }
+            return response.json();
+        })
+        .then(function(data) {
+            if (data.status == "error") {
                 $this.activeDoc.path = oldPath;
                 $this.activeDoc.name = oldName;
                 if (errorHandler) {
-                    errorHandler.apply($this.activeDoc, xhr.responseText);
+                    errorHandler.apply($this.activeDoc, [data.message]);
                 } else {
-                    eXide.util.error(xhr.responseText);
+                    eXide.util.error(data.message);
                 }
+            } else {
+                $this.activeDoc.saved = true;
+                $this.activeDoc.externalLink = data.externalLink;
+                $this.updateTabStatus(oldPath, $this.activeDoc);
+                if (successHandler) {
+                    successHandler.apply($this.activeDoc);
+                } else {
+                    eXide.util.success($this.activeDoc.name + " stored.");
+                }
+
+                var mode = $this.activeDoc.getModeHelper();
+                if (mode) {
+                    mode.documentSaved($this.activeDoc);
+                }
+                $this.$triggerEvent("saved", [$this.activeDoc]);
+            }
+        })
+        .catch(function(error) {
+            $this.activeDoc.path = oldPath;
+            $this.activeDoc.name = oldName;
+            if (errorHandler) {
+                errorHandler.apply($this.activeDoc, [error.message]);
+            } else {
+                eXide.util.error(error.message);
             }
         });
     };
@@ -832,7 +856,7 @@ eXide.edit.Editor = (function () {
     Constr.prototype.historyBack = function() {
         var item = this.history.pop();
         if (item) {
-            $.log("history event: going to %s at line %d", item.path, item.line);
+            console.log("history event: going to %s at line %d", item.path, item.line);
             eXide.app.findDocument(item.path, item.line + 1);
         }
     };
@@ -846,15 +870,16 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.getHeight = function () {
-        return $("#fullscreen").height();
+        return document.getElementById("fullscreen").offsetHeight;
     };
 
     Constr.prototype.getWidth = function () {
-        return $(this.container).width();
+        return this.container.offsetWidth;
     };
 
     Constr.prototype.getOffset = function() {
-        return $(this.container).offset();
+        var rect = this.container.getBoundingClientRect();
+        return { left: rect.left + window.pageXOffset, top: rect.top + window.pageYOffset };
     };
 
     Constr.prototype.resize = function () {
@@ -874,9 +899,11 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.gotoLine = function() {
-        $("#dialog-goto-line").dialog("open");
-        $("#dialog-goto-line input[type='text']").val("");
-        $('#dialog-goto-line input[name="row"]').focus();
+        var gotoLineEl = this._gotoLineDlg.content;
+        gotoLineEl.querySelectorAll("input[type='text']").forEach(function(inp) { inp.value = ""; });
+        this._gotoLineDlg.open();
+        var rowInput = gotoLineEl.querySelector('input[name="row"]');
+        if (rowInput) rowInput.focus();
     };
 
     Constr.prototype.addTab = function(doc) {
@@ -889,7 +916,7 @@ eXide.edit.Editor = (function () {
         if (!doc.saved)
             label += "*";
 
-        $("li a", $this.tabs).removeClass("active");
+        $this.tabs.querySelectorAll("li a").forEach(function(a) { a.classList.remove("active"); });
 
         var li = document.createElement("li");
         var tab = document.createElement("a");
@@ -897,46 +924,64 @@ eXide.edit.Editor = (function () {
         tab.className = "tab active";
         tab.id = tabId;
         tab.title = doc.path;
+        tab.draggable = true;
         li.appendChild(tab);
 
-        $(tab).click(function (ev) {
+        tab.addEventListener("click", function (ev) {
             ev.preventDefault();
             $this.switchTo(doc);
-        }).draggable({
-            axis: "x",
-            revert: true,
-            opacity: 0.8,
-            zIndex: 100,
-            start: function() {
-                $(".drop-placeholder .tab", $this.tabs).show();
-            },
-            stop: function() {
-                $(".drop-placeholder .tab", $this.tabs).hide();
-            }
-        }).droppable({
-            hoverClass: "dragover",
-            greedy: true,
-            drop: function(ev, ui) {
-                ev.stopImmediatePropagation();
-                ev.stopPropagation();
-                ev.preventDefault();
-                var target = $(this);
-                var tabs = $(".tab", $this.tabs);
-                var source = ui.draggable;
-                var sourceIdx = tabs.index(source);
-                var targetIdx = tabs.index(target);
-                if (sourceIdx != targetIdx) {
-                    var li = source.parent().detach();
-                    li.insertBefore(target.parent());
-                    $this.documents.splice(targetIdx, 0, $this.documents[sourceIdx]);
-                    sourceIdx = sourceIdx > targetIdx ? sourceIdx + 1 : sourceIdx;
-                    $this.documents.splice(sourceIdx, 1);
-                    $this.rebuildBuffersMenu();
-                }
-            }
         });
 
-        $(li).insertBefore($(".drop-placeholder", $this.tabs));
+        // Native HTML5 drag start
+        tab.addEventListener("dragstart", function(ev) {
+            var allTabs = Array.prototype.slice.call($this.tabs.querySelectorAll(".tab"));
+            var idx = allTabs.indexOf(this);
+            ev.dataTransfer.setData("text/plain", String(idx));
+            ev.dataTransfer.effectAllowed = "move";
+            this.style.opacity = "0.8";
+            var dropPlaceholder = $this.tabs.querySelector(".drop-placeholder .tab");
+            if (dropPlaceholder) dropPlaceholder.style.display = "";
+        });
+        tab.addEventListener("dragend", function(ev) {
+            this.style.opacity = "";
+            var dropPlaceholder = $this.tabs.querySelector(".drop-placeholder .tab");
+            if (dropPlaceholder) dropPlaceholder.style.display = "none";
+        });
+
+        // Native HTML5 drop target (for reordering between tabs)
+        tab.addEventListener("dragover", function(ev) {
+            ev.preventDefault();
+            this.classList.add("dragover");
+        });
+        tab.addEventListener("dragleave", function(ev) {
+            this.classList.remove("dragover");
+        });
+        tab.addEventListener("drop", function(ev) {
+            ev.stopImmediatePropagation();
+            ev.stopPropagation();
+            ev.preventDefault();
+            this.classList.remove("dragover");
+            var allTabs = Array.prototype.slice.call($this.tabs.querySelectorAll(".tab"));
+            var sourceIdx = parseInt(ev.dataTransfer.getData("text/plain"), 10);
+            var targetIdx = allTabs.indexOf(this);
+            if (isNaN(sourceIdx) || sourceIdx === targetIdx) return;
+            var sourceTab = allTabs[sourceIdx];
+            if (!sourceTab) return;
+            var sourceLi = sourceTab.parentNode;
+            sourceLi.parentNode.removeChild(sourceLi);
+            this.parentNode.parentNode.insertBefore(sourceLi, this.parentNode);
+            $this.documents.splice(targetIdx, 0, $this.documents[sourceIdx]);
+            var adjustedSourceIdx = sourceIdx > targetIdx ? sourceIdx + 1 : sourceIdx;
+            $this.documents.splice(adjustedSourceIdx, 1);
+            $this.rebuildBuffersMenu();
+        });
+
+        var placeholder = $this.tabs.querySelector(".drop-placeholder");
+        if (placeholder) {
+            placeholder.parentNode.insertBefore(li, placeholder);
+        } else {
+            $this.tabs.querySelector("ul").appendChild(li);
+        }
 
         $this.menubar.add("buffers", label, tab.title, $this.documents.length + 1, function() {
             $this.switchTo(doc);
@@ -947,7 +992,7 @@ eXide.edit.Editor = (function () {
         if (!$this.initializing) {
             $this.$triggerEvent("activate", [doc]);
         }
-        $this.scrollToTab($(tab));
+        $this.scrollToTab(tab);
     };
 
     Constr.prototype.rebuildBuffersMenu = function() {
@@ -1008,13 +1053,12 @@ eXide.edit.Editor = (function () {
         this.$switchView(doc);
         this.activeDoc = doc;
         var $this = this;
-        $("a", $this.tabs).each(function () {
-            var current = $(this);
-            if (this.title == doc.path) {
-                current.addClass("active");
-                $this.scrollToTab(current);
+        $this.tabs.querySelectorAll("a").forEach(function (el) {
+            if (el.title == doc.path) {
+                el.classList.add("active");
+                $this.scrollToTab(el);
             } else {
-                current.removeClass("active");
+                el.classList.remove("active");
             }
         });
         this.updateStatus("");
@@ -1036,27 +1080,34 @@ eXide.edit.Editor = (function () {
             label = doc.name + "*";
         else
             label = doc.name;
-        $("a[title=\"" + oldPath + "\"]", this.tabs).attr("title", doc.path).text(label);
+        var tabLink = this.tabs.querySelector("a[title=\"" + oldPath + "\"]");
+        if (tabLink) {
+            tabLink.setAttribute("title", doc.path);
+            tabLink.textContent = label;
+        }
     };
 
     Constr.prototype.scrollToTab = function (current) {
-        var offset = current.offset().left;
-        var offsetRight = offset + current.outerWidth();
-        var width = $("#tabs-container").innerWidth();
-        var scrollLeft = $("#tabs-container").scrollLeft();
-        if (offsetRight > width) {
-            $("#tabs-container").scrollLeft(offsetRight - width);
+        var rect = current.getBoundingClientRect();
+        var tabsContainer = document.getElementById("tabs-container");
+        var containerRect = tabsContainer.getBoundingClientRect();
+        var offset = rect.left - containerRect.left + tabsContainer.scrollLeft;
+        var offsetRight = offset + current.offsetWidth;
+        var width = tabsContainer.clientWidth;
+        var scrollLeft = tabsContainer.scrollLeft;
+        if (offsetRight > width + scrollLeft) {
+            tabsContainer.scrollLeft = offsetRight - width;
         } else if (offset < scrollLeft) {
             if (offset < width)
-                $("#tabs-container").scrollLeft(0);
+                tabsContainer.scrollLeft = 0;
             else
-                $("#tabs-container").scrollLeft(offset);
+                tabsContainer.scrollLeft = offset;
         }
-        $.log("Scrolling to %d %d", offset, $("#tabs-container").scrollLeft());
+        console.log("Scrolling to %d %d", offset, tabsContainer.scrollLeft);
     };
 
     Constr.prototype.setTheme = function(theme) {
-        $.log("Changing theme to %s", theme);
+        console.log("Changing theme to %s", theme);
         var isDark = (theme === "dark");
         this.editor.dispatch({
             effects: this._themeCompartment.reconfigure(isDark ? CM6.oneDark : [])
@@ -1068,7 +1119,7 @@ eXide.edit.Editor = (function () {
      * Update the status bar.
      */
     Constr.prototype.updateStatus = function(msg, href) {
-        $(this.status).text(msg);
+        this.status.textContent = msg;
         if (href) {
             this.status.href = href;
         }
@@ -1101,7 +1152,7 @@ eXide.edit.Editor = (function () {
     Constr.prototype.saveState = function() {
         var $this = this;
         var i = 0;
-        $.each(this.documents, function (index, doc) {
+        this.documents.forEach(function (doc, index) {
             if (doc.path.match('^__new__.*')) {
                 var data = doc.getText();
                 if (data && data.length > 0) {

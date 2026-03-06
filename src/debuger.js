@@ -35,7 +35,7 @@ eXide.XQueryDebuger = (function () {
 
     Constr.prototype.init = function() {
         this.count++;
-        $.log("init " + this.existURL + this.doc.getPath() + " times " + this.count);
+        console.log("init " + this.existURL + this.doc.getPath() + " times " + this.count);
         this.runCommand({action: "init"})
     };
 
@@ -55,49 +55,54 @@ eXide.XQueryDebuger = (function () {
 		var $this = this;
         params.session = this.session;
         params.resource = this.existURL + this.doc.getPath();
-		$.ajax({
-			type: "POST",
-			url: "modules/debuger.xq",
-			data: params,
-			dataType: "json",
-			success: function (data) {
-                $.log("response: %o", data);
-                $this.session = data.session;
-                var line = data.stack[0].lineno;
-                editorUtils.gotoLine($this.editor, line);
-                if (data.context && data.context.properties) {
-                    $.each(data.context.properties, function(i, property) {
-                        var line = $this.getVariable(property);
-                        $(line).appendTo($('div#debuger.content tbody#variables'));
-                    });
-                }
-                eXide.util.message("Good response. Session: " + $this.session);
-			},
-			error: function (xhr, status) {
-                eXide.util.error(xhr.responseText, "Server Error in session " + status);
-			}
-		});
+        var formData = new URLSearchParams(params);
+        fetch("modules/debuger.xq", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: formData.toString()
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            console.log("response: %o", data);
+            $this.session = data.session;
+            var line = data.stack[0].lineno;
+            editorUtils.gotoLine($this.editor, line);
+            if (data.context && data.context.properties) {
+                var tbody = document.querySelector("div#debuger.content tbody#variables");
+                data.context.properties.forEach(function(property) {
+                    var tr = $this.getVariable(property);
+                    if (tbody) tbody.appendChild(tr);
+                });
+            }
+            eXide.util.message("Good response. Session: " + $this.session);
+        })
+        .catch(function(err) {
+            eXide.util.error(String(err), "Server Error");
+        });
 	}
 
     Constr.prototype.getVariable = function(property) {
-        var tmpl = $('<tr>' +
-            '<td class="name"></td>' +
-            '<td class="type"></td>' +
-            '<td class="value"></td>' +
-        '</tr>');
-        tmpl.children(".name").append(property.name);
-        tmpl.children(".type").append(property.type);
-        if (property.type === "node"){
-            tmpl.children(".value").append($('<div id="valueHighLight">' + property.value + '</div>'));
-            //TODOneed to be prettify
-        } else
-            tmpl.children(".value").append(property.value);
-        return tmpl;
-    }
-
-    function getStack(data){
-        var $data = data.children("response[command=stack_get]");
-
+        var tr = document.createElement("tr");
+        var tdName = document.createElement("td");
+        tdName.className = "name";
+        tdName.textContent = property.name;
+        tr.appendChild(tdName);
+        var tdType = document.createElement("td");
+        tdType.className = "type";
+        tdType.textContent = property.type;
+        tr.appendChild(tdType);
+        var tdValue = document.createElement("td");
+        tdValue.className = "value";
+        if (property.type === "node") {
+            var div = document.createElement("div");
+            div.id = "valueHighLight";
+            div.innerHTML = property.value;
+            tdValue.appendChild(div);
+        } else {
+            tdValue.textContent = property.value;
+        }
+        tr.appendChild(tdValue);
+        return tr;
     }
 	
 	return Constr;

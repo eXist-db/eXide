@@ -53,8 +53,6 @@ require.cache["ace/range"] = {
     exports: { Range: function () {} }
 };
 
-// Shim jQuery $.inArray (used by findAncestor)
-global.$ = { inArray: function (val, arr) { return arr.indexOf(val); } };
 
 // Load source files in dependency order
 const srcDir = path.join(__dirname, "..", "src");

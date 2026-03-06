@@ -128,7 +128,7 @@ eXide.edit.XQueryQuickFix = (function () {
                                     template = "let \\$" + ast.value + " := ${1:()}" + "\nreturn";
                                 }
                                 helper.parent.validator.setEnabled(false);
-                                $.log("extract variable: context: %o", contextNode);
+                                console.log("extract variable: context: %o", contextNode);
                                 var view = editor.editor;
                                 editorUtils.gotoLine(view, contextNode.pos.sl + 1, contextNode.pos.sc);
                                 var pos = view.state.selection.main.head;
@@ -347,7 +347,7 @@ eXide.edit.PrologAdder = (function () {
     };
 
     Constr.prototype.declareVariable = function(name) {
-        $.log("prolog: %o", this.prolog);
+        console.log("prolog: %o", this.prolog);
         var row = -1;
         for (var i = 0; i < this.prolog.children.length; i++) {
             if (this.prolog.children[i].name === "AnnotatedDecl") {
@@ -365,7 +365,7 @@ eXide.edit.PrologAdder = (function () {
             }
         }
 
-        $.log("Inserting at %d", row);
+        console.log("Inserting at %d", row);
 
         insertBlankLinesAfterRow(this.editor.editor, row);
 

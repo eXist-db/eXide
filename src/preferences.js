@@ -49,25 +49,26 @@ eXide.util.Preferences = (function () {
     
     Constr = function(editor) {
         this.editor = editor;
-        this.preferences = $.extend({}, defaultPreferences);
+        this.preferences = Object.assign({}, defaultPreferences);
         var $this = this;
-        
-        var container = $("#preferences-dialog");
-        $("select, input", container).change(function() {
-            $this.updatePreferences();
+
+        var container = document.getElementById("preferences-dialog");
+        container.querySelectorAll("select, input").forEach(function(el) {
+            el.addEventListener("change", function() {
+                $this.updatePreferences();
+            });
         });
-        
-        $("#preferences-dialog").dialog({
+
+        this._dialog = eXide.util.DialogManager.create(container, {
             appendTo: "#layout-container",
     		title: "Preferences",
 			modal: false,
-			autoOpen: false,
 			height: 400,
 			width: 600,
 			buttons: {
-				"Close": function () { $(this).dialog("close"); editor.focus(); },
+				"Close": function () { this.close(); editor.focus(); },
                 "Reset Defaults": function () {
-                    $this.preferences = $.extend({}, defaultPreferences);
+                    $this.preferences = Object.assign({}, defaultPreferences);
                     $this.updateForm();
                 }
 			}
@@ -76,27 +77,27 @@ eXide.util.Preferences = (function () {
     
     Constr.prototype.show = function() {
         this.updateForm();
-		$("#preferences-dialog").dialog("open");
+		this._dialog.open();
     };
     
     Constr.prototype.updateForm = function() {
-        var form = $("#preferences-dialog form");
-        $("select[name=\"theme\"]", form).val(this.preferences.theme);
-		$("select[name=\"font-size\"]", form).val(this.preferences.fontSize);
-        $("select[name=\"font\"]", form).val(this.preferences.font);
-		$("input[name=\"indent-on-open\"]", form).attr("checked", this.preferences.indentOnOpen);
-		$("input[name=\"indent-on-download\"]", form).attr("checked", this.preferences.indentOnDownload);
-		$("input[name=\"indent-on-download-package\"]", form).attr("checked", this.preferences.indentOnDownloadPackage);
-		$("input[name=\"expand-xincludes-on-open\"]", form).attr("checked", this.preferences.expandXIncludesOnOpen);
-		$("input[name=\"expand-xincludes-on-download\"]", form).attr("checked", this.preferences.expandXIncludesOnDownload);
-		$("input[name=\"expand-xincludes-on-download-package\"]", form).attr("checked", this.preferences.expandXIncludesOnDownloadPackage);
-		$("input[name=\"omit-xml-decl-on-open\"]", form).attr("checked", this.preferences.omitXMLDeclarationOnOpen);
-		$("input[name=\"omit-xml-decl-on-download\"]", form).attr("checked", this.preferences.omitXMLDeclarationOnDownload);
-		$("input[name=\"omit-xml-decl-on-download-package\"]", form).attr("checked", this.preferences.omitXMLDeclarationOnDownloadPackage);
-		$("input[name=\"show-invisibles\"]", form).attr("checked", this.preferences.showInvisibles);
-        $("input[name=\"auto-pair\"]", form).attr("checked", this.preferences.autoPair);
-		$("input[name=\"print-margin\"]", form).attr("checked", this.preferences.showPrintMargin);
-		$("input[name=\"emmet\"]", form).attr("checked", this.preferences.emmet);
+        var form = document.querySelector("#preferences-dialog form");
+        form.querySelector('select[name="theme"]').value = this.preferences.theme;
+		form.querySelector('select[name="font-size"]').value = this.preferences.fontSize;
+        form.querySelector('select[name="font"]').value = this.preferences.font;
+		form.querySelector('input[name="indent-on-open"]').checked = this.preferences.indentOnOpen;
+		form.querySelector('input[name="indent-on-download"]').checked = this.preferences.indentOnDownload;
+		form.querySelector('input[name="indent-on-download-package"]').checked = this.preferences.indentOnDownloadPackage;
+		form.querySelector('input[name="expand-xincludes-on-open"]').checked = this.preferences.expandXIncludesOnOpen;
+		form.querySelector('input[name="expand-xincludes-on-download"]').checked = this.preferences.expandXIncludesOnDownload;
+		form.querySelector('input[name="expand-xincludes-on-download-package"]').checked = this.preferences.expandXIncludesOnDownloadPackage;
+		form.querySelector('input[name="omit-xml-decl-on-open"]').checked = this.preferences.omitXMLDeclarationOnOpen;
+		form.querySelector('input[name="omit-xml-decl-on-download"]').checked = this.preferences.omitXMLDeclarationOnDownload;
+		form.querySelector('input[name="omit-xml-decl-on-download-package"]').checked = this.preferences.omitXMLDeclarationOnDownloadPackage;
+		form.querySelector('input[name="show-invisibles"]').checked = this.preferences.showInvisibles;
+        form.querySelector('input[name="auto-pair"]').checked = this.preferences.autoPair;
+		form.querySelector('input[name="print-margin"]').checked = this.preferences.showPrintMargin;
+		form.querySelector('input[name="emmet"]').checked = this.preferences.emmet;
 
         var indent = this.preferences.indent;
         var indentSize = this.preferences.indentSize;
@@ -105,8 +106,8 @@ eXide.util.Preferences = (function () {
         } else if (indent === -1) {
             indent = "Spaces";
         }
-        $("select[name=\"indent\"]", form).val(indent);
-        $("select[name=\"indent-size\"]", form).val(indentSize);
+        form.querySelector('select[name="indent"]').value = indent;
+        form.querySelector('select[name="indent-size"]').value = indentSize;
 
         var wrap = this.preferences.softWrap;
         if (wrap === 0) {
@@ -114,30 +115,30 @@ eXide.util.Preferences = (function () {
         } else if (wrap === -1) {
             wrap = "free";
         }
-        $("input[name=\"soft-wrap\"]", form).val(wrap);
+        form.querySelector('select[name="soft-wrap"]').value = wrap;
     };
     
     Constr.prototype.updatePreferences = function() {
-        var form = $("#preferences-dialog form");
-        this.preferences.theme = $("select[name=\"theme\"]", form).val();
-		this.preferences.fontSize = parseInt($("select[name=\"font-size\"]", form).val());
-        this.preferences.font = $("select[name=\"font\"]", form).val();
-		this.preferences.showInvisibles = $("input[name=\"show-invisibles\"]", form).is(":checked");
-        this.preferences.autoPair = $("input[name=\"auto-pair\"]", form).is(":checked");
-		this.preferences.showPrintMargin = $("input[name=\"print-margin\"]", form).is(":checked");
-		this.preferences.emmet = $("input[name=\"emmet\"]", form).is(":checked");
-        this.preferences.indentOnOpen = $("input[name=\"indent-on-open\"]", form).is(":checked");
-        this.preferences.indentOnDownload = $("input[name=\"indent-on-download\"]", form).is(":checked");
-        this.preferences.indentOnDownloadPackage = $("input[name=\"indent-on-download-package\"]", form).is(":checked");
-        this.preferences.expandXIncludesOnOpen = $("input[name=\"expand-xincludes-on-open\"]", form).is(":checked");
-        this.preferences.expandXIncludesOnDownload = $("input[name=\"expand-xincludes-on-download\"]", form).is(":checked");
-        this.preferences.expandXIncludesOnDownloadPackage = $("input[name=\"expand-xincludes-on-download-package\"]", form).is(":checked");
-        this.preferences.omitXMLDeclarationOnOpen = $("input[name=\"omit-xml-decl-on-open\"]", form).is(":checked");
-        this.preferences.omitXMLDeclarationOnDownload = $("input[name=\"omit-xml-decl-on-download\"]", form).is(":checked");
-        this.preferences.omitXMLDeclarationOnDownloadPackage = $("input[name=\"omit-xml-decl-on-download-package\"]", form).is(":checked");
+        var form = document.querySelector("#preferences-dialog form");
+        this.preferences.theme = form.querySelector('select[name="theme"]').value;
+		this.preferences.fontSize = parseInt(form.querySelector('select[name="font-size"]').value);
+        this.preferences.font = form.querySelector('select[name="font"]').value;
+		this.preferences.showInvisibles = form.querySelector('input[name="show-invisibles"]').checked;
+        this.preferences.autoPair = form.querySelector('input[name="auto-pair"]').checked;
+		this.preferences.showPrintMargin = form.querySelector('input[name="print-margin"]').checked;
+		this.preferences.emmet = form.querySelector('input[name="emmet"]').checked;
+        this.preferences.indentOnOpen = form.querySelector('input[name="indent-on-open"]').checked;
+        this.preferences.indentOnDownload = form.querySelector('input[name="indent-on-download"]').checked;
+        this.preferences.indentOnDownloadPackage = form.querySelector('input[name="indent-on-download-package"]').checked;
+        this.preferences.expandXIncludesOnOpen = form.querySelector('input[name="expand-xincludes-on-open"]').checked;
+        this.preferences.expandXIncludesOnDownload = form.querySelector('input[name="expand-xincludes-on-download"]').checked;
+        this.preferences.expandXIncludesOnDownloadPackage = form.querySelector('input[name="expand-xincludes-on-download-package"]').checked;
+        this.preferences.omitXMLDeclarationOnOpen = form.querySelector('input[name="omit-xml-decl-on-open"]').checked;
+        this.preferences.omitXMLDeclarationOnDownload = form.querySelector('input[name="omit-xml-decl-on-download"]').checked;
+        this.preferences.omitXMLDeclarationOnDownloadPackage = form.querySelector('input[name="omit-xml-decl-on-download-package"]').checked;
 
-        var indent = $("select[name=\"indent\"]", form).val();
-        var indentSize = parseInt($("select[name=\"indent-size\"]", form).val(), 10);
+        var indent = form.querySelector('select[name="indent"]').value;
+        var indentSize = parseInt(form.querySelector('select[name="indent-size"]').value, 10);
         if (indent === "Spaces") {
             indent = -1;
         } else if (indent === "Tabs") {
@@ -146,7 +147,7 @@ eXide.util.Preferences = (function () {
         this.preferences.indent = parseInt(indent, 10);
         this.preferences.indentSize = parseInt(indentSize, 10);
 
-        var wrap = $("select[name=\"soft-wrap\"]", form).val();
+        var wrap = form.querySelector('select[name="soft-wrap"]').value;
         if (wrap === "free") {
             wrap = -1;
         } else if (wrap === "off") {
@@ -185,13 +186,15 @@ eXide.util.Preferences = (function () {
 
         if (this.preferences.font) {
             var font = this.preferences.font + ", monospace";
-            $("#editor").css("font-family", font);
-            $("#outline").css("font-family", font);
-            $("#results-body").css("font-family", font);
+            document.getElementById("editor").style.fontFamily = font;
+            document.getElementById("outline").style.fontFamily = font;
+            document.getElementById("results-body").style.fontFamily = font;
         }
 
         // Font size via CSS on the CM6 container
-        $(".cm-editor").css("font-size", this.preferences.fontSize + "px");
+        document.querySelectorAll(".cm-editor").forEach(function(el) {
+            el.style.fontSize = this.preferences.fontSize + "px";
+        }.bind(this));
 		this.editor.resize();
 	};
 	

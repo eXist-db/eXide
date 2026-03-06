@@ -3,17 +3,11 @@
     <head>
         <title>eXide</title>
         <meta charset="utf-8"/>
-        <link rel="stylesheet" type="text/css" href="resources/css/black-tie/jquery-ui-1.10.3.custom.min.css"/>
-        <link rel="stylesheet" type="text/css" href="resources/css/jquery.pnotify.default.css"/>
-        <link rel="stylesheet" href="resources/css/font-awesome/css/font-awesome.min.css"/>
+<link rel="stylesheet" href="resources/css/font-awesome/css/font-awesome.min.css"/>
         <link rel="stylesheet" href="resources/css/ag-grid-community/ag-grid.css"/>
         <link rel="stylesheet" href="resources/css/ag-grid-community/ag-theme-alpine.css"/>
         <link rel="stylesheet" type="text/css" href="resources/css/eXide.css"/>
         <script type="text/javascript" src="resources/scripts/modernizr.custom.js"/>
-        <script type="text/javascript" src="resources/scripts/jquery/jquery-1.9.1.min.js"/>
-        <script type="text/javascript" src="resources/scripts/jquery/jquery-ui-1.10.3.custom.min.js"/>
-        <script type="text/javascript" src="resources/scripts/jquery/jquery.pnotify.min.js"/>
-        <script type="text/javascript" src="resources/scripts/jquery/jquery.plugins.min.js"/>
         <script type="text/javascript" src="resources/scripts/d3.v3.min.js"/>
         <script type="text/javascript" src="resources/scripts/less.min.js"/>
         <script type="text/javascript" src="resources/scripts/ag-grid-bundle.js"/>
@@ -476,16 +470,16 @@
                                     <div class="file_upload_body">
                                         <div class="fileinput-button">
                                             <input id="file_upload" type="file" name="file[]" multiple="multiple"/>
-                                            <button class="ui-button ui-widget ui-state-default ui-button-text-icon-primary">
-                                                <span class="ui-button-icon-primary ui-icon fa fa-cloud-upload"/>
-                                                <span class="ui-button-text">Upload Files</span>
+                                            <button class="eXide-btn">
+                                                <span class="fa fa-cloud-upload"/>
+                                                Upload Files
                                             </button>
                                         </div>
                                         <div class="fileinput-button">
                                             <input id="dir_upload" type="file" name="file[]" multiple="multiple" directory="" webkitdirectory=""/>
-                                            <button class="ui-button ui-widget ui-state-default ui-button-text-icon-primary">
-                                                <span class="ui-button-icon-primary ui-icon fa fa-folder-open-o"/>
-                                                <span class="ui-button-text">Upload Directory</span>
+                                            <button class="eXide-btn">
+                                                <span class="fa fa-folder-open-o"/>
+                                                Upload Directory
                                             </button>
                                         </div>
                                     </div>
@@ -588,7 +582,7 @@
                 </div>
                 <div id="dialog-store" style="display: none;">
                     <p>
-                        <span class="ui-icon ui-icon-circle-check" style="float:left; margin:0 7px 50px 0;"/>
+                        <span class="fa fa-check-circle" style="float:left; margin:0 7px 50px 0;"/>
                         Storing resource <span id="dialog-store-resource"/>
                     </p>
                     <p id="dialog-error"/>

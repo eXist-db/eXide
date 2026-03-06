@@ -121,7 +121,7 @@ eXide.edit.XQueryUtils = (function () {
         findAncestor: function(node, type) {
             if (type instanceof Array) {
                 while (node !== null) {
-                    if ($.inArray(node.name, type) > -1) {
+                    if (type.indexOf(node.name) > -1) {
                         return node;
                     }
                     node = node.getParent;

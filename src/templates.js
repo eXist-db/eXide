@@ -40,7 +40,7 @@ eXide.edit.Template = (function () {
             this.startColumn = cursor.column;
         }
 		this.endLine = this.startLine + lines - 1;
-		$.log("startLine = %i, endLine = %i", this.startLine, this.endLine);
+		console.log("startLine = %i, endLine = %i", this.startLine, this.endLine);
 		this.currentLine = this.startLine;
 		this.lineOffset = this.startColumn;
 		this.regex = /(?:\$[\w\-:_]+|␣)/g;
@@ -81,7 +81,7 @@ eXide.edit.Template = (function () {
 		nextParam: function() {
 			var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
 
-			$.log("lead.row = %i startLine = %i", lead.row, this.startLine);
+			console.log("lead.row = %i startLine = %i", lead.row, this.startLine);
 			// return immediately if the cursor is outside the template
 			if (lead.row < this.startLine || lead.row > this.endLine)
 				return false;
@@ -91,10 +91,10 @@ eXide.edit.Template = (function () {
 			while (this.currentLine <= this.endLine) {
 				var lineNum = this.currentLine + 1;
 				var line = (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) ? this.editor.state.doc.line(lineNum).text : "";
-				$.log("Checking line %s", line);
+				console.log("Checking line %s", line);
 				var match = this.regex.exec(line);
 				if (match) {
-					$.log("Matched %s", match[0]);
+					console.log("Matched %s", match[0]);
 					var from = editorUtils.rowColToOffset(this.editor.state, this.currentLine, match.index);
 					var to = editorUtils.rowColToOffset(this.editor.state, this.currentLine, match.index + match[0].length);
                     if (match[0].length === 1) {
@@ -110,7 +110,7 @@ eXide.edit.Template = (function () {
 					this.currentLine++;
 				}
 				if (this.currentLine > this.endLine && !loop) {
-					$.log("loop %i", this.startColumn);
+					console.log("loop %i", this.startColumn);
 					this.currentLine = this.startLine;
 					if (this.startColumn > 0) {
 						this.lineOffset = this.startColumn;

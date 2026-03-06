@@ -1,7 +1,7 @@
 eXide.namespace("eXide.find.IncrementalSearch");
 
 eXide.find.IncrementalSearch = (function () {
-    
+
     var searchOptions = {
         backwards: false,
         wrap: true,
@@ -9,7 +9,7 @@ eXide.find.IncrementalSearch = (function () {
         wholeWord: false,
         regExp: false
     };
-    
+
     function setSearch(view, needle, options) {
         if (!needle) return;
         var query = new CM6.SearchQuery({
@@ -24,29 +24,25 @@ eXide.find.IncrementalSearch = (function () {
 
     Constr = function (input, editor) {
         var $this = this;
-        $this.input = $(input);
-        $this.input.hide();
-        $this.input.keyup(function (ev) {
+        $this.inputEl = typeof input === "string" ? document.querySelector(input) : input;
+        $this.inputEl.style.display = "none";
+        $this.inputEl.addEventListener("keyup", function (ev) {
             switch (ev.which) {
                 case 27:
                 case 13:
-                    // ESC or Return pressed
                     ev.preventDefault();
-                    $this.input.hide();
+                    $this.inputEl.style.display = "none";
                     $this.editor.focus();
                     break;
                 case 40:
-                    // Down
                     ev.preventDefault();
                     CM6.findNext($this.editor);
                     break;
                 case 38:
-                    // Up
                     ev.preventDefault();
                     CM6.findPrevious($this.editor);
                     break;
                 case 71:
-                    // Ctrl-G, Command-G or Alt-G
                     if (ev.metaKey || ev.ctrlKey) {
                         ev.preventDefault();
                         CM6.findNext($this.editor);
@@ -59,21 +55,22 @@ eXide.find.IncrementalSearch = (function () {
         });
         $this.editor = editor;
     };
-    
+
     Constr.prototype.start = function () {
         var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
-		this.currentLine = lead.row;
-        this.input.val("");
-        this.input.show().focus();
+        this.currentLine = lead.row;
+        this.inputEl.value = "";
+        this.inputEl.style.display = "";
+        this.inputEl.focus();
     };
 
     Constr.prototype.onChange = function () {
         editorUtils.gotoLine(this.editor, this.currentLine + 1);
-        var search = this.input.val();
+        var search = this.inputEl.value;
         setSearch(this.editor, search, searchOptions);
-        this.input.focus();
+        this.inputEl.focus();
     };
-    
+
     return Constr;
 }());
 
@@ -99,38 +96,30 @@ eXide.find.SearchReplace = (function () {
         self.editor = editor;
         self.needleSet = false;
         self.lastSearch = null;
-        self.container = $("#find-replace-dialog");
-        self.container.dialog({
+        self.containerEl = document.getElementById("find-replace-dialog");
+        self.dlg = eXide.util.DialogManager.create(self.containerEl, {
             modal: false,
-    		autoOpen: false,
-    		height: 300,
-    		width: 600,
+            title: "Find / Replace",
+            height: 300,
+            width: 600,
             buttons: {
-                "Close": function () { $(this).dialog("close"); self.editor.focus(); },
-                "Replace": function() {
-                    self.replace(false);
-                },
-                "Replace All": function() {
-                    self.replace(true);
-                },
-                "Find Next": function () { 
-                    self.find(1);
-                },
-                "Find Previous": function() {
-                    self.find(-1);
-                }
+                "Find Previous": function() { self.find(-1); },
+                "Find Next": function() { self.find(1); },
+                "Replace": function() { self.replace(false); },
+                "Replace All": function() { self.replace(true); },
+                "Close": function() { this.close(); self.editor.focus(); }
             }
         });
     };
-    
+
     Constr.prototype.open = function() {
-        this.container.dialog("open");
-        this.container.find("input[name='search']").focus();
+        this.dlg.open();
+        this.containerEl.querySelector("input[name='search']").focus();
     };
-    
+
     Constr.prototype.find = function(direction) {
-        var search = this.container.find("input[name='search']").val();
-        $.log("Searching for %s", search);
+        var search = this.containerEl.querySelector("input[name='search']").value;
+        console.log("Searching for %s", search);
         if (search && search.length > 0) {
             if (this.lastSearch != null && this.lastSearch == search) {
                 if (direction == -1)
@@ -146,10 +135,9 @@ eXide.find.SearchReplace = (function () {
     };
 
     Constr.prototype.replace = function(all) {
-        var search = this.container.find("input[name='search']").val();
+        var search = this.containerEl.querySelector("input[name='search']").value;
         if (search && search.length > 0) {
-            var replace = this.container.find("input[name='replace']").val() || "";
-            // Always set the search query with the replace string
+            var replace = this.containerEl.querySelector("input[name='replace']").value || "";
             setSearch(this.editor, search, this.getOptions(), replace);
             this.needleSet = true;
             if (replace.length > 0) {
@@ -162,56 +150,59 @@ eXide.find.SearchReplace = (function () {
             }
         }
     };
-    
+
     Constr.prototype.getOptions = function() {
-        var caseSensitive = this.container.find("input[name='case']").is(":checked");
-        var regex = this.container.find("input[name = 'regex']").is(":checked");
+        var caseSensitive = this.containerEl.querySelector("input[name='case']").checked;
+        var regex = this.containerEl.querySelector("input[name='regex']").checked;
         return {
             wrap: true,
             caseSensitive: caseSensitive,
             regExp: regex
         };
     };
-    
+
     return Constr;
 }());
 
 eXide.namespace("eXide.find.Files");
 
 eXide.find.Files = (function() {
-    var dialog;
-    
-    $(document).ready(function() {
-        dialog =  $("#find-dialog");
-        dialog.dialog({
+    var dlg = null;
+    var dialogEl = null;
+
+    function ensureDialog() {
+        if (dlg) return;
+        dialogEl = document.getElementById("find-dialog");
+        dlg = eXide.util.DialogManager.create(dialogEl, {
             title: "Search binary files",
             modal: false,
-            autoOpen: false,
             height: 400,
-    		width: 600
+            width: 600
         });
-    });
-    
+    }
+
     return {
         open: function(doc, project, callback) {
+            ensureDialog();
+            var projectInput = dialogEl.querySelector("input.project");
             if (project) {
-                dialog.find("input.project").get().disabled = false;
-                dialog.find("input.project").val(project.root);
-                dialog.find(".project-path").text(project.abbrev);
+                projectInput.disabled = false;
+                projectInput.value = project.root;
+                dialogEl.querySelector(".project-path").textContent = project.abbrev;
             } else {
-                dialog.find("input.project").get().disabled = true;
+                projectInput.disabled = true;
             }
-            dialog.find("input[name='collection']").val(doc.getBasePath());
-            var buttons = {
-                "Close": function () { $(this).dialog("close"); self.editor.focus(); },
+            dialogEl.querySelector("input[name='collection']").value = doc.getBasePath();
+            dlg.setButtons({
                 "Search": function() {
-                    var params = dialog.find("form").serialize();
+                    var form = dialogEl.querySelector("form");
+                    var params = new URLSearchParams(new FormData(form)).toString();
                     callback(params);
-                    $(this).dialog("close");
-                }
-            };
-            dialog.dialog("option", "buttons", buttons);
-            dialog.dialog("open");
+                    dlg.close();
+                },
+                "Close": function() { dlg.close(); }
+            });
+            dlg.open();
         }
-    }
+    };
 }());

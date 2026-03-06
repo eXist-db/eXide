@@ -32,7 +32,7 @@ eXide.edit.Outline = (function () {
         this.__activated = false;
         
         var self = this;
-        $("#outline-filter").keyup(function() {
+        document.getElementById("outline-filter").addEventListener("keyup", function() {
             self.filter(this.value);
         });
 	};
@@ -67,12 +67,13 @@ eXide.edit.Outline = (function () {
 		        type = "variable";
 		        
 		    }
-			$.each(doc.functions, function (i, func) {
+			for (var i = 0; i < doc.functions.length; i++) {
+				var func = doc.functions[i];
 				if (name == func.name && type == func.type) {
 					eXide.app.locate(func.type, func.source == '' ? null : func.source, name);
-					return false;
+					break;
 				}
-			});
+			}
 		},
 		
         findDefinition: function(doc, name) {
@@ -99,19 +100,17 @@ eXide.edit.Outline = (function () {
 		},
 		
 		clearOutline: function() {
-			$("#outline").empty();
+			var el = document.getElementById("outline");
+			if (el) el.innerHTML = "";
 		},
-		
+
         filter: function(str) {
             var regex = new RegExp(str, "i");
-            $("#outline li a").each(function() {
-                var item = $(this);
-                if (!regex.test(item.text())) {
-                    item.hide();
-                } else {
-                    item.show();
-                }
-            });
+            var links = document.querySelectorAll("#outline li a");
+            for (var i = 0; i < links.length; i++) {
+                var link = links[i];
+                link.style.display = regex.test(link.textContent) ? "" : "none";
+            }
         },
         
         $outlineUpdate: function (doc) {

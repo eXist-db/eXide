@@ -89,7 +89,8 @@ eXide.edit.XQueryModeHelper = (function () {
         this.addCommand("stepInto", this.stepInto);
         
         var self = this;
-        this.menu = $("#menu-xquery").hide();
+        this.menu = document.getElementById("menu-xquery");
+        this.menu.style.display = "none";
         menubar.click("#menu-xquery-expand", function() {
             self.expandSelection(editor.getActiveDocument());
         });
@@ -114,12 +115,12 @@ eXide.edit.XQueryModeHelper = (function () {
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
 	
     Constr.prototype.activate = function() {
-        this.menu.show();
+        this.menu.style.display = "";
         this.parent.updateStatus("");
     };
-    
+
     Constr.prototype.deactivate = function() {
-        this.menu.hide();
+        this.menu.style.display = "none";
     };
     
     Constr.prototype.afterValidate = function(context, callback) {
@@ -129,36 +130,31 @@ eXide.edit.XQueryModeHelper = (function () {
 	Constr.prototype.closeTag = function (doc, text, row) {
 		var basePath = "xmldb:exist://" + doc.getBasePath();
 		var $this = this;
-		$.ajax({
-			type: "PUT",
-			url: "modules/compile.xq",
-			data: text,
-			contentType: "application/octet-stream",
-			headers: {
-			    "X-BasePath": basePath
-			},
-			dataType: "json",
-			success: function (data) {
-				if (data.result == "fail") {
-					var err = parseErrMsg(data.error);
-					var tag = /constructor:\s([^\)]+)\)?$/.exec(err.msg);
+		fetch("modules/compile.xq", {
+			method: "PUT",
+			headers: { "Content-Type": "application/octet-stream", "X-BasePath": basePath },
+			body: text
+		})
+		.then(function(response) { return response.json(); })
+		.then(function(data) {
+			if (data.result == "fail") {
+				var err = parseErrMsg(data.error);
+				var tag = /constructor:\s([^\)]+)\)?$/.exec(err.msg);
+				if (tag && tag.length > 0) {
+					var insertText = tag[1] + ">";
+					var insertPos = $this.editor.state.selection.main.head;
+					$this.editor.dispatch({ changes: { from: insertPos, insert: insertText }, selection: { anchor: insertPos + insertText.length } });
+				} else {
+					tag = /tag:.*;\sexpected:\s(.*)$/.exec(err.msg);
 					if (tag && tag.length > 0) {
-						var insertText = tag[1] + ">";
-						var insertPos = $this.editor.state.selection.main.head;
-						$this.editor.dispatch({ changes: { from: insertPos, insert: insertText }, selection: { anchor: insertPos + insertText.length } });
-					} else {
-					    tag = /tag:.*;\sexpected:\s(.*)$/.exec(err.msg);
-                        if (tag && tag.length > 0) {
-						    var insertText2 = tag[1] + ">";
-						    var insertPos2 = $this.editor.state.selection.main.head;
-						    $this.editor.dispatch({ changes: { from: insertPos2, insert: insertText2 }, selection: { anchor: insertPos2 + insertText2.length } });
-                        }
+						var insertText2 = tag[1] + ">";
+						var insertPos2 = $this.editor.state.selection.main.head;
+						$this.editor.dispatch({ changes: { from: insertPos2, insert: insertText2 }, selection: { anchor: insertPos2 + insertText2.length } });
 					}
 				}
-			},
-			error: function (xhr, status) {
 			}
-		});
+		})
+		.catch(function() {});
 	}
 		
 	Constr.prototype.validate = function(doc, code, onComplete) {
@@ -172,27 +168,23 @@ eXide.edit.XQueryModeHelper = (function () {
         }
         this.validationListeners.length = 0;
         
-		$.ajax({
-			type: "PUT",
-			url: "modules/compile.xq",
-			data: code,
-			dataType: "json",
-			headers: {
-			    "X-BasePath": basePath
-			},
-			contentType: "application/octet-stream",
-			success: function (data) {
-				var valid = $this.compileError(data, doc);
-                if (onComplete) {
-				    onComplete.call(this, valid);
-                }
-			},
-			error: function (xhr, status) {
-                if (onComplete) {
-				    onComplete.call(this, false);
-                }
-				$.log("Compile error: %s - %s", status, xhr.responseText);
+		fetch("modules/compile.xq", {
+			method: "PUT",
+			headers: { "Content-Type": "application/octet-stream", "X-BasePath": basePath },
+			body: code
+		})
+		.then(function(response) { return response.json(); })
+		.then(function(data) {
+			var valid = $this.compileError(data, doc);
+			if (onComplete) {
+				onComplete.call(null, valid);
 			}
+		})
+		.catch(function(err) {
+			if (onComplete) {
+				onComplete.call(null, false);
+			}
+			console.log("Compile error: %s", err);
 		});
 	}
 	
@@ -224,11 +216,11 @@ eXide.edit.XQueryModeHelper = (function () {
         if (doc.ast && doc.lastValidation >= doc.getLastChanged()) {
             return;
         }
-        $.log("Running xqlint...");
+        console.log("Running xqlint...");
         var value = doc.getText();
         var result = rexAdapter.parseXQuery(value, RExParser);
         if (result.error) {
-            $.log("Error while parsing XQuery: %s", result.error.message || result.error);
+            console.log("Error while parsing XQuery: %s", result.error.message || result.error);
         }
         try {
             doc.ast = result.ast;
@@ -239,7 +231,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 var analysisResult = staticAnalysis.analyze(result.ast);
                 doc.ast.markers = analysisResult.markers;
             } catch(te) {
-                $.log("Static analysis error (non-fatal): %s", te.message);
+                console.log("Static analysis error (non-fatal): %s", te.message);
             }
 
             // TODO: add semantic highlighting via CM6 decorations
@@ -261,7 +253,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 editorUtils.setAnnotations(this.editor, annotations);
             }
         } catch(e) {
-            $.log("Error while processing ast: %s", e.message);
+            console.log("Error while processing ast: %s", e.message);
         }
     };
     
@@ -295,7 +287,7 @@ eXide.edit.XQueryModeHelper = (function () {
             // try to determine the ast node where the cursor is located
             var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
             
-            $.log("Autocomplete AST node: %o; doc: %o", astNode, doc.ast);
+            console.log("Autocomplete AST node: %o; doc: %o", astNode, doc.ast);
             
             if (!astNode) {
                 // no ast node: scan preceding text
@@ -401,7 +393,7 @@ eXide.edit.XQueryModeHelper = (function () {
             // do not show template list if showTemplates == false
             return false;
         }
-		$.log("completing token: %s, mode: %s, range: %o", token, mode, range);
+		console.log("completing token: %s, mode: %s, range: %o", token, mode, range);
 
 		var pos = editorUtils.textToScreenCoordinates(this.editor, lead.row, lead.column);
         eXide.util.Popup.position(pos);
@@ -425,7 +417,7 @@ eXide.edit.XQueryModeHelper = (function () {
         if (prefix.substring(0, 1) == "$") {
             prefix = prefix.substring(1);
         }
-        $.log("Lookup variable %s", prefix);
+        console.log("Lookup variable %s", prefix);
         var visitor = new eXide.edit.InScopeVariables(doc.ast, astNode);
         // Create popup menu
 		// add function defs
@@ -459,52 +451,45 @@ eXide.edit.XQueryModeHelper = (function () {
 	Constr.prototype.functionLookup = function(doc, prefix, wordrange, complete) {
 		var $this = this;
 		// Call docs.xql to retrieve declared functions and variables
-		$.ajax({
-			url: "modules/docs.xq",
-			dataType: "text",
-			type: "POST",
-			data: { prefix: prefix},
-			
-			success: function (data) {
-				data = $.parseJSON(data);
-				
-				var funcs = [];
-				
-				var regexStr = "^" + prefix;
-				var regex = new RegExp(regexStr);
-				
-				// add local functions to the set
-				var localFuncs = doc.functions;
-				$.each(localFuncs, function (i, func) {
-					if (func.name.match(regex)) {
-						funcs.push(func);
-					}
-				});
-				
-				if (data)
-					funcs = funcs.concat(data);
-				
-				// Create popup menu
-				// add function defs
-				var popupItems = [];
-				for (var i = 0; i < funcs.length; i++) {
-					var item = { 
-						label: funcs[i].signature ? funcs[i].signature : funcs[i].name,
-						type: funcs[i].type
-					};
-					if (funcs[i].help) {
-						item.tooltip = funcs[i].help;
-					}
-					popupItems.push(item);
+		var params = new URLSearchParams({ prefix: prefix });
+		fetch("modules/docs.xq", {
+			method: "POST",
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			body: params.toString()
+		})
+		.then(function(response) { return response.json(); })
+		.then(function(data) {
+			var funcs = [];
+			var regexStr = "^" + prefix;
+			var regex = new RegExp(regexStr);
+
+			var localFuncs = doc.functions;
+			localFuncs.forEach(function (func) {
+				if (func.name.match(regex)) {
+					funcs.push(func);
 				}
-				
-				$this.getTemplates(doc, prefix, popupItems);
-				
-				$this.$showPopup(doc, wordrange, popupItems, complete);
-			},
-			error: function(xhr, msg) {
-				eXide.util.error(msg);
+			});
+
+			if (data)
+				funcs = funcs.concat(data);
+
+			var popupItems = [];
+			for (var i = 0; i < funcs.length; i++) {
+				var item = {
+					label: funcs[i].signature ? funcs[i].signature : funcs[i].name,
+					type: funcs[i].type
+				};
+				if (funcs[i].help) {
+					item.tooltip = funcs[i].help;
+				}
+				popupItems.push(item);
 			}
+
+			$this.getTemplates(doc, prefix, popupItems);
+			$this.$showPopup(doc, wordrange, popupItems, complete);
+		})
+		.catch(function(err) {
+			eXide.util.error(String(err));
 		});
 	};
 	
@@ -516,13 +501,15 @@ eXide.edit.XQueryModeHelper = (function () {
     
     Constr.prototype.moduleLookup = function(doc, prefix, wordrange, complete) {
         var self = this;
-        $.getJSON("modules/find.xq", { prefix: prefix }, function (data) {
+        fetch("modules/find.xq?" + new URLSearchParams({ prefix: prefix }))
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
             if (data) {
                 var popupItems = [];
                 for (var i = 0; i < data.length; i++) {
                     var template;
                     if (data[i].at) {
-                        template = "import module namespace " + data[i].prefix + "=\"" + data[i].uri + 
+                        template = "import module namespace " + data[i].prefix + "=\"" + data[i].uri +
                             "\" at \"" + data[i].at + "\";";
                     } else {
                         template = "import module namespace " + data[i].prefix + "=\"" + data[i].uri + "\";";
@@ -541,7 +528,9 @@ eXide.edit.XQueryModeHelper = (function () {
     
     Constr.prototype.namespaceLookup = function(doc, prefix, wordrange, complete) {
         var self = this;
-        $.getJSON("templates/namespaces.json", function(data) {
+        fetch("templates/namespaces.json")
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
             if (data) {
                 var popupItems = [];
                 for (var key in data) {
@@ -610,7 +599,7 @@ eXide.edit.XQueryModeHelper = (function () {
                     $this.autocomplete(doc);
                 }
             }
-            $.log("template applied");
+            console.log("template applied");
         }
         if (popupItems.length > 1 || !complete) {
             eXide.util.Popup.show(popupItems, function(selected) {
@@ -675,7 +664,7 @@ eXide.edit.XQueryModeHelper = (function () {
         if (!row) {
             row = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head).row;
         }
-        $.log("Requesting quick fix for %s at %d", doc.getName(), row);
+        console.log("Requesting quick fix for %s at %d", doc.getName(), row);
         var pos = editorUtils.textToScreenCoordinates(this.editor, row, 0);
     	eXide.util.Popup.position(pos);
 
@@ -684,7 +673,7 @@ eXide.edit.XQueryModeHelper = (function () {
         for (var i = 0; i < an.length; i++) {
             if (an[i].row === row) {
                 var qf = eXide.edit.XQueryQuickFix.getResolutions(this, this.editor, doc, an[i]);
-                $.each(qf, function(j, fix) {
+                qf.forEach(function(fix) {
                     resolutions.push({
                         label: fix.action,
                         resolve: fix.resolve,
@@ -703,7 +692,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 }
             });
         } else {
-            $.log("No quick fix resolution found");
+            console.log("No quick fix resolution found");
         }
     };
     
@@ -762,7 +751,7 @@ eXide.edit.XQueryModeHelper = (function () {
             }
             template = "let $${1} := " + value.replace("$", "\\$") + "\nreturn";
         }
-        $.log("extract variable: context: %o", contextNode);
+        console.log("extract variable: context: %o", contextNode);
 
         var dollarPos = this.editor.state.selection.main.head;
         this.editor.dispatch({ changes: { from: dollarPos, insert: "$" }, selection: { anchor: dollarPos + 1 } });
@@ -853,7 +842,7 @@ eXide.edit.XQueryModeHelper = (function () {
     };
     
 	Constr.prototype.gotoFunction = function (doc, name) {
-		$.log("Goto function %s", name);
+		console.log("Goto function %s", name);
         var prefix = this.getModuleNamespacePrefix();
         if (prefix != null) {
 			name = name.replace(/[^:]+:/, prefix + ":");
@@ -887,7 +876,7 @@ eXide.edit.XQueryModeHelper = (function () {
 			name = name.replace(/[^:]+:/, "$" + prefix + ":");
 		}
 		
-		$.log("Goto variable declaration %s", name);
+		console.log("Goto variable declaration %s", name);
 		var regexp = new RegExp("variable\\s+\\" + name);
 		var lines = [];
 		for (var li = 1; li <= this.editor.state.doc.lines; li++) { lines.push(this.editor.state.doc.line(li).text); }
@@ -915,7 +904,7 @@ eXide.edit.XQueryModeHelper = (function () {
 	}
 	
     Constr.prototype.importModule = function (doc, prefix, uri, location) {
-        $.log("location = %s path = %s", location, doc.path);
+        console.log("location = %s path = %s", location, doc.path);
         var code;
         if (location) {
             var base = doc.getBasePath();
@@ -997,7 +986,7 @@ eXide.edit.XQueryModeHelper = (function () {
             } else if (ast.name == "EQName" && (ast.getParent.name == "FunctionDecl" || ast.getParent.name == "FunctionCall")) {
                 var funName = ast.value;
                 var arity = parseInt(ast.getParent.arity);
-                $.log("searching calls to function: %s#%d", funName, arity);
+                console.log("searching calls to function: %s#%d", funName, arity);
                 var calls = new eXide.edit.FunctionCalls(funName, arity, doc.ast);
                 var refs = calls.getReferences();
                 if (calls.declaration) {
@@ -1020,20 +1009,24 @@ eXide.edit.XQueryModeHelper = (function () {
         this.xqlint(doc);
         var info = new eXide.edit.ModuleInfo(doc.ast);
         if (info.isModule() && info.hasTests()) {
-            $.ajax({
-                type: "POST",
-                url: "modules/run-test.xq",
-                data: { source: doc.getPath() },
-                dataType: "html",
-                success: function (html) {
-					self.parent.updateStatus("");
-					self.parent.clearErrors();
-					eXide.app.showResultsPanel();
-                    $('.results-container .results').empty().append(html);
-				},
-				error: function (xhr, status) {
-					eXide.util.error(xhr.responseText, "Server Error");
-				}
+            var params = new URLSearchParams({ source: doc.getPath() });
+            fetch("modules/run-test.xq", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: params.toString()
+            })
+            .then(function(response) { return response.text(); })
+            .then(function(html) {
+                self.parent.updateStatus("");
+                self.parent.clearErrors();
+                eXide.app.showResultsPanel();
+                var results = document.querySelector(".results-container .results");
+                if (results) {
+                    results.innerHTML = html;
+                }
+            })
+            .catch(function(err) {
+                eXide.util.error(String(err), "Server Error");
             })
         }
     };
@@ -1155,48 +1148,48 @@ eXide.edit.XQueryModeHelper = (function () {
 		var basePath = "xmldb:exist://" + doc.getBasePath();
 		params.push("base=" + encodeURIComponent(basePath));
 
-		$.ajax({
-			url: "outline",
-			dataType: "json",
-			type: "POST",
-			data: params.join("&"),
-			success: function (data) {
-				if (data != null) {
-					var modules = data.modules;
-					for (var i = 0; i < modules.length; i++) {
-						var funcs = modules[i].functions;
-						if (funcs) {
-							for (var j = 0; j < funcs.length; j++) {
-								functions.push({
-									type: eXide.edit.Document.TYPE_FUNCTION,
-									name: funcs[j].name,
-									signature: funcs[j].signature,
-                                    visibility: funcs[j].visibility,
-									source: modules[i].source,
-                                    sort : funcs[j].signature
-								});
-							}
-						}
-						var vars = modules[i].variables;
-						if (vars) {
-							for (var j = 0; j < vars.length; j++) {
-                                var  sort = vars[j].split(":");
-                                sort.splice(1,0,":$");
-								functions.push({
-									type: eXide.edit.Document.TYPE_VARIABLE,
-									name: vars[j],
-									source: modules[i].source,
-                                    sort : sort.join("")
-								});
-							}
+		fetch("outline", {
+			method: "POST",
+			headers: { "Content-Type": "application/x-www-form-urlencoded" },
+			body: params.join("&")
+		})
+		.then(function(response) { return response.json(); })
+		.then(function(data) {
+			if (data != null) {
+				var modules = data.modules;
+				for (var i = 0; i < modules.length; i++) {
+					var funcs = modules[i].functions;
+					if (funcs) {
+						for (var j = 0; j < funcs.length; j++) {
+							functions.push({
+								type: eXide.edit.Document.TYPE_FUNCTION,
+								name: funcs[j].name,
+								signature: funcs[j].signature,
+								visibility: funcs[j].visibility,
+								source: modules[i].source,
+								sort: funcs[j].signature
+							});
 						}
 					}
-					doc.functions = doc.functions.concat(functions);
-					$this.$sortFunctions(doc);
+					var vars = modules[i].variables;
+					if (vars) {
+						for (var j = 0; j < vars.length; j++) {
+							var sort = vars[j].split(":");
+							sort.splice(1, 0, ":$");
+							functions.push({
+								type: eXide.edit.Document.TYPE_VARIABLE,
+								name: vars[j],
+								source: modules[i].source,
+								sort: sort.join("")
+							});
+						}
+					}
 				}
-                if (onComplete)
-                    onComplete(doc);
+				doc.functions = doc.functions.concat(functions);
+				$this.$sortFunctions(doc);
 			}
+			if (onComplete)
+				onComplete(doc);
 		});
 		return functions;
 	}

@@ -142,7 +142,8 @@ eXide.edit.Directory = (function () {
 		},
 		
 		clearDirectory: function() {
-			$("#directory").empty();
+			var el = document.getElementById("directory");
+			if (el) el.innerHTML = "";
 		},
 		reload : function (key) {
 			var sel = d3.select("[data-key='"+ key +"']")

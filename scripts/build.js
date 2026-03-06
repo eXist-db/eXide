@@ -119,8 +119,7 @@ async function clean() {
     console.log(chalk.blue('Cleaning files ...'));
     await mfs.delete([
         'resources/scripts/eXide.min.*',
-        'resources/scripts/jquery/jquery.plugins.min.js',
-        'resources/scripts/prettier-bundle.js',
+'resources/scripts/prettier-bundle.js',
         'resources/css/ag-grid-community/**',
         'index.html',
         'expath-pkg.xml'
@@ -144,19 +143,6 @@ async function bundle() {
 			process.exit(1);
 		});
 
-    console.log(chalk.blue("Bundling jQuery plugins ..."));
-	await esbuild
-		.build({
-			entryPoints: ["./scripts/libs.bundle.js"],
-			outfile: "./resources/scripts/jquery/jquery.plugins.min.js",
-			bundle: true,
-			minify: !args.dev,
-			logLevel: "info",
-		})
-		.catch((err) => {
-			console.error(err);
-			process.exit(1);
-		});
 }
 
 function replace(path, outPath, data) {

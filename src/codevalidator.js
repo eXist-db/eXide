@@ -15,6 +15,13 @@ eXide.edit.CodeValidator = (function () {
         return true;
     }
 
+    function createDeferred() {
+        var resolve;
+        var promise = new Promise(function(r) { resolve = r; });
+        promise.resolve = resolve;
+        return promise;
+    }
+
     Constr = function(editor) {
         this.editor = editor;
         this.inProgress = false;
@@ -40,7 +47,7 @@ eXide.edit.CodeValidator = (function () {
             clearTimeout(this.validateTimeout);
         }
 
-        this.deferred = $.Deferred();
+        this.deferred = createDeferred();
         this.validateTimeout = setTimeout(function() {
             self.triggerNow.apply(self, [doc]);
         }, VALIDATE_TIMEOUT);
@@ -56,10 +63,10 @@ eXide.edit.CodeValidator = (function () {
         if (this.inProgress) {
             return this.deferred;
         }
-        
+
         var self = this;
         if (!this.deferred) {
-            this.deferred = $.Deferred();
+            this.deferred = createDeferred();
         }
 
         this.inProgress = true;

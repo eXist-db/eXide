@@ -1,6 +1,6 @@
 /*
  *  eXide - web-based XQuery IDE
- *  
+ *
  *  Copyright (C) 2013 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -26,7 +26,7 @@ eXide.namespace("eXide.util.Popup");
  * calls onSelect with a null argument.
  */
 eXide.util.Popup = (function () {
-    
+
     var data = [];
     var container;
     var inner;
@@ -37,67 +37,68 @@ eXide.util.Popup = (function () {
     var onSelect = function() { };
     var filter = "";
     var keyDown = false;
-    
+
     function init(div, editor) {
-        container = $(div);
+        container = typeof div === "string" ? document.querySelector(div) : div;
         parent = editor;
-        
-        var titlebar = $("<div class='title'><a href='#'>[X]</a><span>Type to filter</span></div>").appendTo(container);
-        inner = $("<div class='items'><table></table></div>").appendTo(container);
-        table = inner.find("table");
-        tooltips = $("<div class='tooltips hide'></div>").appendTo(container);
-        
-		titlebar.find("a").click(function (ev) {
-			ev.preventDefault();
-			hide();
-		});
-		
+
+        var titlebar = document.createElement("div");
+        titlebar.className = "title";
+        titlebar.innerHTML = "<a href='#'>[X]</a><span>Type to filter</span>";
+        container.appendChild(titlebar);
+
+        inner = document.createElement("div");
+        inner.className = "items";
+        inner.innerHTML = "<table></table>";
+        container.appendChild(inner);
+        table = inner.querySelector("table");
+
+        tooltips = document.createElement("div");
+        tooltips.className = "tooltips hide";
+        container.appendChild(tooltips);
+
+        titlebar.querySelector("a").addEventListener("click", function(ev) {
+            ev.preventDefault();
+            hide();
+        });
+
         initKeyboardHandlers();
     }
-    
+
     function initKeyboardHandlers() {
-        $(container).on("keydown", function (ev) {
-            keydown = true;
-        	if (ev.which == 40) {
+        container.addEventListener("keydown", function (ev) {
+            keyDown = true;
+            if (ev.which == 40) {
                 ev.preventDefault();
-                var pos = table.find("tr").index(selection);
-    			var next = selection.nextAll(":visible").first();
-    			if (next.length > 0) {
-    				activate(next);
-    			}
-    		} else if (ev.which == 38) {
+                var next = nextVisible(selection);
+                if (next) {
+                    activate(next);
+                }
+            } else if (ev.which == 38) {
                 ev.preventDefault();
-    			var prev = selection.prevAll(":visible").first();
-    			if (prev.length > 0) {
-    				activate(prev);
-    			}
-    		} else if (ev.which == 13) {
+                var prev = prevVisible(selection);
+                if (prev) {
+                    activate(prev);
+                }
+            } else if (ev.which == 13) {
                 ev.preventDefault();
-    			var pos = table.find("tr").index(selection);
-    			
-    			// close container and unbind event
-    			hide();
-    			
-    			// pass content to callback function
-    			onSelect.call(null, data[pos]);
-    			
-    		} else if (ev.which == 27) {
+                var pos = rowIndex(selection);
+                hide();
+                onSelect.call(null, data[pos]);
+            } else if (ev.which == 27) {
                 ev.preventDefault();
-    			// ESC key pressed: close container
-    			hide();
-    			
-    			// apply callback with null argument 
-    			onSelect.call(null, null);
-    		} else if (ev.which == 8) {
+                hide();
+                onSelect.call(null, null);
+            } else if (ev.which == 8) {
                 ev.preventDefault();
-    		    if (filter.length > 0) {
-    		        filter = filter.substring(0, filter.length - 1);   
+                if (filter.length > 0) {
+                    filter = filter.substring(0, filter.length - 1);
                     filterEntries();
-    		    }
-    		}
-    	});
-        $(container).on("keypress", function (ev) {
-            if (!keydown) {
+                }
+            }
+        });
+        container.addEventListener("keypress", function (ev) {
+            if (!keyDown) {
                 return;
             }
             var key = ev.which == 0 ? ev.keyCode : ev.which;
@@ -115,124 +116,153 @@ eXide.util.Popup = (function () {
             }
         });
     }
-    
-    function filterEntries() {
-        $(container).find(".title span").text(filter);
-        if (filter.length == 0) {
-            table.find("tr").css("display", "");
-        } else {
-            table.find("tr").removeClass("selection").css("display", "none");
-            var regex = new RegExp(filter, "i");
-            table.find("tr").each(function(pos) {
-                var label = $(this).find("td:first .label").text();
-                if (regex.test(label)) {
-                    $(this).css("display", "");
-                }
-            });
+
+    function rowIndex(row) {
+        var rows = table.querySelectorAll("tr");
+        for (var i = 0; i < rows.length; i++) {
+            if (rows[i] === row) return i;
         }
-        activate(table.find("tr:visible").first());
+        return -1;
     }
-    
-    function activate(node) {
-        if (node.length == 0) {
-            return;
+
+    function nextVisible(row) {
+        var el = row.nextElementSibling;
+        while (el) {
+            if (el.style.display !== "none") return el;
+            el = el.nextElementSibling;
         }
-        selection.removeClass("selection");
-		node.addClass("selection");
-		selection = node;
-        var domNode = node[0];
-        var domTable = inner[0];
-		if (domNode.offsetTop < domTable.scrollTop)
-            domTable.scrollTop = domNode.offsetTop - 3;
-        else if (domNode.offsetTop + domNode.offsetHeight > domTable.scrollTop + domTable.clientHeight)
-            domTable.scrollTop = domNode.offsetTop + domNode.offsetHeight - domTable.clientHeight + 3;
-        
-        var description = selection.find(".tooltip");
-        if (description.length > 0) {
+        return null;
+    }
+
+    function prevVisible(row) {
+        var el = row.previousElementSibling;
+        while (el) {
+            if (el.style.display !== "none") return el;
+            el = el.previousElementSibling;
+        }
+        return null;
+    }
+
+    function filterEntries() {
+        container.querySelector(".title span").textContent = filter;
+        var rows = table.querySelectorAll("tr");
+        if (filter.length == 0) {
+            for (var i = 0; i < rows.length; i++) {
+                rows[i].style.display = "";
+            }
+        } else {
+            var regex = new RegExp(filter, "i");
+            for (var i = 0; i < rows.length; i++) {
+                rows[i].classList.remove("selection");
+                rows[i].style.display = "none";
+                var label = rows[i].querySelector("td:first-child .label");
+                if (label && regex.test(label.textContent)) {
+                    rows[i].style.display = "";
+                }
+            }
+        }
+        var first = table.querySelector("tr:not([style*='display: none'])");
+        if (first) activate(first);
+    }
+
+    function activate(node) {
+        if (!node) return;
+        if (selection) selection.classList.remove("selection");
+        node.classList.add("selection");
+        selection = node;
+        if (node.offsetTop < inner.scrollTop)
+            inner.scrollTop = node.offsetTop - 3;
+        else if (node.offsetTop + node.offsetHeight > inner.scrollTop + inner.clientHeight)
+            inner.scrollTop = node.offsetTop + node.offsetHeight - inner.clientHeight + 3;
+
+        var description = selection.querySelector(".tooltip");
+        if (description) {
             toggleTooltip(true, function() {
-                tooltips.empty().html(description[0].innerHTML);
+                tooltips.innerHTML = description.innerHTML;
             });
         } else {
             toggleTooltip(false);
         }
     }
-    
+
     function compareLabels (a, b) {
-		return (a.label == b.label) ? 0 : (a.label > b.label) ? 1 : -1;
-	}
-    
+        return (a.label == b.label) ? 0 : (a.label > b.label) ? 1 : -1;
+    }
+
     function toggleTooltip(show, content) {
-        var visible = tooltips.width() > 0;
-        tooltips.empty();
+        var visible = tooltips.offsetWidth > 0 && !tooltips.classList.contains("hide");
+        tooltips.innerHTML = "";
         if (show) {
             if (!visible) {
-                tooltips.removeClass("hide").animate({ width: 320 }, 300, function() {
-                    tooltips.html(content);
-                });
+                tooltips.classList.remove("hide");
+                tooltips.style.width = "320px";
+                if (content) content();
             } else {
-                tooltips.html(content);
+                if (content) content();
             }
         } else {
             if (visible) {
-                tooltips.animate({ width: 0 }, 300, function() {
-                    tooltips.addClass("hide");
-                });
+                tooltips.style.width = "0";
+                tooltips.classList.add("hide");
             }
         }
     }
-    
+
     function hide() {
-        // close container and unbind event
-		container.css("display", "none");
-		tooltips.css("width", "0").empty().addClass("hide");
-        keydown = false;
+        container.style.display = "none";
+        tooltips.style.width = "0";
+        tooltips.innerHTML = "";
+        tooltips.classList.add("hide");
+        keyDown = false;
         filter = "";
-        $(container).find(".title span").text(filter);
+        container.querySelector(".title span").textContent = filter;
         parent.focus();
     }
-    
+
     function position(pos) {
         var lineHeight = 15;
-        container.css({visibility: "hidden", display: "block"});
-        container.css({ left: pos.pageX, top: pos.pageY + lineHeight });
+        container.style.visibility = "hidden";
+        container.style.display = "block";
+        container.style.left = pos.pageX + "px";
+        container.style.top = (pos.pageY + lineHeight) + "px";
         var winW = window.innerWidth || Math.max(document.body.offsetWidth, document.documentElement.offsetWidth);
         var winH = window.innerHeight || Math.max(document.body.offsetHeight, document.documentElement.offsetHeight);
-        var box = container[0].getBoundingClientRect();
+        var box = container.getBoundingClientRect();
         var overlapX = box.right - winW, overlapY = box.bottom - winH;
         if (overlapX > 0) {
           if (box.right - box.left > winW) {
-            container[0].style.width = (winW - 5) + "px";
+            container.style.width = (winW - 5) + "px";
             overlapX -= (box.right - box.left) - winW;
           }
-          container.css("left", (left = pos.pageX - overlapX) + "px");
+          container.style.left = (pos.pageX - overlapX) + "px";
         }
         if (overlapY > 0) {
           var height = box.bottom - lineHeight - box.top;
           if (box.top - height > 0) {
             overlapY = (height + lineHeight);
-            below = false;
           } else if (height > winH) {
-            container.height((winH - 5) + "px");
+            container.style.height = (winH - 5) + "px";
             overlapY -= height - winH;
           }
-          container.css("top", (top = pos.pageY - overlapY) + "px");
+          container.style.top = (pos.pageY - overlapY) + "px";
         }
-        container.css({visibility: "visible", display: "none"});
+        container.style.visibility = "visible";
+        container.style.display = "none";
     }
-    
+
     function show(items, callback) {
         onSelect = callback;
         data = items;
         filter = "";
-        table.empty();
+        table.innerHTML = "";
         data.sort(compareLabels);
-        
+
         for (var i = 0; i < data.length; i++) {
-			var tr = document.createElement("tr");
-			if (i == 0) {
-				tr.className = "selection";
-                selection = $(tr);
-			}
+            var tr = document.createElement("tr");
+            if (i == 0) {
+                tr.className = "selection";
+                selection = tr;
+            }
             var td;
             if (data[i].label instanceof Array) {
                 for (var j = 0; j < data[i].label.length; j++) {
@@ -247,42 +277,37 @@ eXide.util.Popup = (function () {
                 td = document.createElement("td");
                 var span = document.createElement("span");
                 span.className = "label";
-			    span.appendChild(document.createTextNode(data[i].label));
+                span.appendChild(document.createTextNode(data[i].label));
                 td.appendChild(span);
                 tr.appendChild(td);
             }
-			if (data[i].tooltip) {
-				var help = document.createElement("span");
-				help.className = "tooltip";
+            if (data[i].tooltip) {
+                var help = document.createElement("span");
+                help.className = "tooltip";
                 help.innerHTML = data[i].tooltip;
-				
-				td.appendChild(help);
-			}
-            table.append(tr);
-			
-			$(tr).click(function () {
-				selection.removeClass("selection");
-				$(this).addClass("selection");
-                activate($(this));
-			});
-			$(tr).dblclick(function () {
-				var pos = table.find("tr").index(selection);
-				
-				// close container and unbind event
-				container.css("display", "none");
-				if (tooltips)
-					tooltips.css("display", "none");
-				
-				// pass content to callback function
-				onSelect.call(null, data[pos]);
-			});
-		}
-        
+                td.appendChild(help);
+            }
+            table.appendChild(tr);
+
+            tr.addEventListener("click", function () {
+                if (selection) selection.classList.remove("selection");
+                this.classList.add("selection");
+                activate(this);
+            });
+            tr.addEventListener("dblclick", function () {
+                var pos = rowIndex(selection);
+                container.style.display = "none";
+                if (tooltips) tooltips.style.display = "none";
+                onSelect.call(null, data[pos]);
+            });
+        }
+
         activate(selection);
-        
-        container.fadeIn().focus();
+
+        container.style.display = "block";
+        container.focus();
     }
-    
+
     return {
         "init": init,
         "show": show,

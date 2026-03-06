@@ -46,17 +46,50 @@ eXide.namespace("eXide.util");
  */
 eXide.util = (function () {
 
-	var stack_bottomright = {"dir1": "up", "dir2": "left", "firstpos1": 15, "firstpos2": 15};
-	
-    var selection = null;
-    
-    $(document).ready(function() {
-    	$.pnotify.defaults.history = false;
-        $.pnotify.defaults.styling = "jqueryui";
-    });
-    
+	var toastContainer = null;
+
+	function getToastContainer() {
+		if (!toastContainer) {
+			toastContainer = document.createElement("div");
+			toastContainer.className = "eXide-toast-container";
+			document.body.appendChild(toastContainer);
+		}
+		return toastContainer;
+	}
+
+	function showToast(message, type, title) {
+		var container = getToastContainer();
+		var el = document.createElement("div");
+		el.className = "eXide-toast eXide-toast-" + (type || "info");
+		if (title) {
+			var titleEl = document.createElement("strong");
+			titleEl.textContent = title;
+			el.appendChild(titleEl);
+			el.appendChild(document.createElement("br"));
+		}
+		el.appendChild(document.createTextNode(message));
+		var closer = document.createElement("span");
+		closer.className = "eXide-toast-close";
+		closer.textContent = "\u00d7";
+		closer.addEventListener("click", function() { removeToast(el); });
+		el.appendChild(closer);
+		container.insertBefore(el, container.firstChild);
+		// trigger reflow then animate in
+		el.offsetHeight;
+		el.classList.add("eXide-toast-show");
+		setTimeout(function() { removeToast(el); }, 5000);
+	}
+
+	function removeToast(el) {
+		if (!el.parentNode) return;
+		el.classList.remove("eXide-toast-show");
+		el.addEventListener("transitionend", function() {
+			if (el.parentNode) el.parentNode.removeChild(el);
+		});
+	}
+
 	return {
-		
+
 		/**
 		 * Check if browser supports HTML5 local storage
 		 */
@@ -67,7 +100,7 @@ eXide.util = (function () {
 				return false;
 			}
 		},
-		
+
 		supportsFullScreen: function() {
 			return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
 		},
@@ -88,7 +121,7 @@ eXide.util = (function () {
                 return path;
             path = path.replace(/^xmldb:exist:\/\//, "");
             var newComponents = [],
-                components = path.split("/"), 
+                components = path.split("/"),
                 length = components.length;
             for (var i = 0 ; i < length; i++) {
                 if (components[i] == ".." ) {
@@ -100,12 +133,12 @@ eXide.util = (function () {
             }
             return newComponents.join('/');
 		},
-		
+
 		/**
 		 * Parse a function signature and transform it into function call.
 		 * Removes type declarations.
 		 */
-		parseSignature: function (signature) { 
+		parseSignature: function (signature) {
 			var p = signature.indexOf("(");
 			if (p > -1) {
 				var parsed = signature.substring(0, p + 1);
@@ -123,51 +156,20 @@ eXide.util = (function () {
 			}
 			return signature;
 		},
-		
-		/**
-		 * Display a message using pnotify.
-		 */
+
 		message: function(message) {
-			$.pnotify({
-				text: message,
-				shadow: true,
-				hide: true,
-				closer: true,
-				opacity: .65,
-				addclass: "stack-bottomright custom",
-				stack: stack_bottomright
-			});
+			showToast(message, "info");
 		},
-		
-        success: function(message) {
-    		$.pnotify({
-				text: message,
-				shadow: true,
-                type: "success",
-				hide: true,
-				closer: true,
-				opacity: .65,
-				addclass: "stack-bottomright custom",
-				stack: stack_bottomright
-			});
+
+		success: function(message) {
+			showToast(message, "success");
 		},
-        
+
 		error: function(message, title) {
-			var opts = {
-				text: message,
-				type: 'error',
-				shadow: true,
-				hide: true,
-				addclass: "stack-bottomright custom",
-				stack: stack_bottomright
-			};
-			if (title) {
-				opts.title = title;
-			}
-			$.pnotify(opts);
+			showToast(message, "error", title);
 		}
 	};
-	
+
 }());
 
 eXide.namespace("eXide.util.Dialog");
@@ -180,85 +182,78 @@ eXide.namespace("eXide.util.Dialog");
  * @param mimeType
  */
 eXide.util.Dialog = (function () {
-	
-	var messageDialog;
-	var warnIcon = "resources/images/error.png";
-	var infoIcon = "resources/images/information.png";
-	
+
+	var msgDlg = null;
+	var inputDlg = null;
 	var callback = null;
-	
-	$(document).ready(function() {
-		$(document.body).append(
-				"<div id=\"eXide-dialog-message\">" +
-				"	<span id=\"eXide-dialog-message-icon\" class=\"fa fa-4x fa-info-circle\"></span>" +
-				"	<div id=\"eXide-dialog-message-body\"></div>" +
-				"</div>"
-		);
-		messageDialog = $("#eXide-dialog-message");
-		
-		messageDialog.dialog({
+
+	function ensureMessageDialog() {
+		if (msgDlg) return;
+		var el = document.createElement("div");
+		el.id = "eXide-dialog-message";
+		el.innerHTML = '<span id="eXide-dialog-message-icon" class="fa fa-4x fa-info-circle"></span>' +
+			'<div id="eXide-dialog-message-body"></div>';
+		document.body.appendChild(el);
+		msgDlg = eXide.util.DialogManager.create(el, {
+			modal: true,
 			appendTo: "#layout-container",
-			modal: true,
-			autoOpen: false,
-			buttons: {
-				"OK": function () { $(this).dialog("close"); }
-			}
+			buttons: { "OK": function() { this.close(); } }
 		});
-		
-		$(document.body).append(
-				"<div id=\"eXide-dialog-input\">" +
-				"	<span id=\"eXide-dialog-message-icon\" class=\"fa fa-4x fa-info-circle\"></span>" +
-				"	<div id=\"eXide-dialog-input-body\"></div>" +
-				"</div>"
-		);
-		inputDialog = $("#eXide-dialog-input");
-		
-		inputDialog.dialog({
+	}
+
+	function ensureInputDialog() {
+		if (inputDlg) return;
+		var el = document.createElement("div");
+		el.id = "eXide-dialog-input";
+		el.innerHTML = '<span class="fa fa-4x fa-info-circle"></span>' +
+			'<div id="eXide-dialog-input-body"></div>';
+		document.body.appendChild(el);
+		inputDlg = eXide.util.DialogManager.create(el, {
 			modal: true,
-			autoOpen: false,
 			buttons: {
-				"OK": function () { 
-					$(this).dialog("close");
+				"OK": function() {
+					this.close();
 					if (callback != null) {
-						callback.apply($("eXide-dialog-input-body"), []);
+						callback.call(null);
 					}
 				},
-				"Cancel": function () {
-					$(this).dialog("close"); 
-				}
+				"Cancel": function() { this.close(); }
 			}
 		});
-	});
-	
-	return {
-		
-		message: function (title, msg) {
-		    if (msg == null) {
-			msg = "";
-		    }
-			messageDialog.dialog("option", "title", title);
-			$("#eXide-dialog-message-body").html(msg);
-			$("#eXide-dialog-message-icon").attr("src", infoIcon);
-			messageDialog.dialog("open");
-		},
-		
-		warning: function (title, msg) {
-		    if (msg == null) {
-		    	msg = "";
-		    }
-			messageDialog.dialog("option", "title", title);
-			$("#eXide-dialog-message-body").html(msg);
-			$("#eXide-dialog-message-icon").attr("src", warnIcon);
-			messageDialog.dialog("open");
-		},
-		
-		input: function (title, msg, okCallback) {
-			callback = okCallback;
-			inputDialog.dialog("option", "title", title);
-			$("#eXide-dialog-input-body").html(msg);
-			inputDialog.dialog("open");
-		}
 	}
+
+	return {
+
+		message: function (title, msg) {
+			ensureMessageDialog();
+			msgDlg.setTitle(title);
+			document.getElementById("eXide-dialog-message-body").innerHTML = msg || "";
+			var icon = document.getElementById("eXide-dialog-message-icon");
+			if (icon) {
+				icon.className = "fa fa-4x fa-info-circle";
+			}
+			msgDlg.open();
+		},
+
+		warning: function (title, msg) {
+			ensureMessageDialog();
+			msgDlg.setTitle(title);
+			document.getElementById("eXide-dialog-message-body").innerHTML = msg || "";
+			var icon = document.getElementById("eXide-dialog-message-icon");
+			if (icon) {
+				icon.className = "fa fa-4x fa-exclamation-triangle";
+			}
+			msgDlg.open();
+		},
+
+		input: function (title, msg, okCallback) {
+			ensureInputDialog();
+			callback = okCallback;
+			inputDlg.setTitle(title);
+			document.getElementById("eXide-dialog-input-body").innerHTML = msg || "";
+			inputDlg.open();
+		}
+	};
 }());
 
 eXide.namespace("eXide.util.mimeTypes");
@@ -346,20 +341,3 @@ eXide.util.oop.extend = (function() {
   }
 }());
 
-/* Debug and logging functions */
-(function($) {
-    $.log = function() {
-//    	if (typeof console == "undefined" || typeof console.log == "undefined") {
-//    		console.log( Array.prototype.slice.call(arguments) );
-        if(window.console && window.console.log) {
-//            console.log.apply(window.console,arguments)
-            
-            var log = Function.prototype.bind.call(console.log, console);
-            log.apply(console, arguments);
-        }
-    };
-    $.fn.log = function() {
-        $.log(this);
-        return this;
-    }
-})(jQuery);
