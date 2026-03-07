@@ -1,3 +1,5 @@
+import '../src/cm6/xquery-language.js';
+import '../src/editor-utils.js';
 import '../src/util.js';
 import '../src/dialog-utils.js';
 import '../src/history.js';

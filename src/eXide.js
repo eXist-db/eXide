@@ -154,7 +154,7 @@ eXide.app = (function(util) {
 	var app = {
 
 		init: function(afterInitCallback) {
-		    if (!Modernizr.flexbox) {
+		    if (!("flex" in document.documentElement.style)) {
 		        document.getElementById("startup-error").style.display = "";
 		        return;
             }
@@ -291,7 +291,7 @@ eXide.app = (function(util) {
             if (!allowDnd) {
                 return;
             }
-            if (Modernizr.filereader) {
+            if (typeof FileReader !== "undefined") {
                 var reader = new FileReader();
                 for (var i = 0; i < files.length; i++) {
                     var mime = eXide.util.mimeTypes.getLangFromMime(files[i].type) || "xquery";
