@@ -135,6 +135,7 @@ body {
 .panel-east {
     position: relative;
     width: 170px;
+    box-sizing: border-box;
 }
 
 .panel-east .resize-handle, .panel-east .minimized {
@@ -143,17 +144,24 @@ body {
     bottom: 0;
     width: 10px;
 }
+.panel-east > :not(.resize-handle):not(.minimized) {
+    margin-left: 10px;
+}
 
 .panel-south {
     position: relative;
     height: 200px;
+    flex-shrink: 0;
 }
 
 .panel-south .resize-handle, .panel-south .minimized {
-    top: 0;
+    top: -5px;
     left: 0;
     right: 0;
     height: 10px;
+    border-top: 2px solid #ccc;
+    box-sizing: border-box;
+    z-index: 10;
 }
 
 .exist-match {
@@ -169,19 +177,9 @@ body {
 }
 
 #body {
-    /*position: absolute;*/
-    /*top: 0;*/
-    /*left: 0;*/
-    /*bottom: 0;*/
-    /*right: 0;*/
 }
 
 #layout-container {
-    /*position: absolute;*/
-    /*top: 0;*/
-    /*left: 0;*/
-    /*bottom: 0;*/
-    /*right: 0;*/
 }
 
 #splash {
@@ -275,18 +273,28 @@ a:link, a:visited {
     border-left: 1px solid #bbb;
 }
 
+#toggle-dark-mode {
+    display: inline-block;
+    margin: 0 0 0 10px;
+    vertical-align: middle;
+    cursor: pointer;
+    color: #666;
+    font-size: 16px;
+}
+#toggle-dark-mode:hover {
+    color: #333;
+}
+
 #toggle-fullscreen {
     display: inline-block;
     margin: 0 0 0 10px;
-}
-
-#toggle-fullscreen:hover {
-    background: transparent;
-}
-
-#toggle-fullscreen img {
-    height: 16px;
     vertical-align: middle;
+    cursor: pointer;
+    color: #666;
+    font-size: 16px;
+}
+#toggle-fullscreen:hover {
+    color: #333;
 }
 
 #login-error {
@@ -464,6 +472,36 @@ Sub level menu list items (undo style from Top level List Items)
 #toolbar {
     padding: 6px 4px;
     margin: 0 0 0 200px;
+}
+
+.toolbar-buttons {
+    display: inline-flex;
+    gap: 4px;
+}
+.toolbar-buttons button {
+    background: transparent;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    color: #555;
+    font-family: inherit;
+    font-size: 12px;
+    padding: 4px 12px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.toolbar-buttons button:hover {
+    background: #e8e8e8;
+    color: #333;
+    border-color: #aaa;
+}
+.toolbar-buttons button:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+.toolbar-buttons button:disabled:hover {
+    background: transparent;
+    color: #555;
+    border-color: #ccc;
 }
 
 #status-bar {
@@ -674,6 +712,8 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 .eXide-browse-main {
+    overflow-y: auto;
+    min-height: 0;
 }
 
 #eXide-browse-spinner {
@@ -686,15 +726,36 @@ Sub level menu list items (undo style from Top level List Items)
     background: url("../images/bubble.gif") top right no-repeat;
 }
 
-.eXide-browse-toolbar button {
-    width: 32px;
-    height: 24px;
-    text-align: center;
+.eXide-browse-toolbar {
+    display: flex;
+    gap: 2px;
+    padding: 4px 0;
 }
-
-.eXide-browse-toolbar button span {
-    margin-left: auto;
-    margin-right: auto;
+.eXide-browse-toolbar button {
+    width: 36px;
+    height: 32px;
+    text-align: center;
+    background: transparent;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    color: #555;
+    font-size: 15px;
+    cursor: pointer;
+    padding: 0;
+}
+.eXide-browse-toolbar button:hover {
+    background: #e8e8e8;
+    color: #333;
+    border-color: #aaa;
+}
+.eXide-browse-toolbar button:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+.eXide-browse-toolbar button:disabled:hover {
+    background: transparent;
+    color: #555;
+    border-color: #ccc;
 }
 
 .eXide-browse-toolbar, .eXide-browse-breadcrumbs {}
@@ -779,6 +840,19 @@ Sub level menu list items (undo style from Top level List Items)
 .browse-table .col-group { width: 90px; }
 .browse-table .col-lastmod { width: 130px; }
 
+.col-resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    cursor: col-resize;
+    background: transparent;
+}
+.col-resize-handle:hover {
+    background: #aaa;
+}
+
 .browse-table tbody tr {
     cursor: default;
 }
@@ -798,10 +872,15 @@ Sub level menu list items (undo style from Top level List Items)
 
 .browse-table .collection {
     color: #0044FF;
-    background-image: url(../images/folder.png);
-    background-repeat: no-repeat;
-    background-position: left center;
     padding-left: 22px;
+    position: relative;
+}
+.browse-table .collection::before {
+    content: "\f07b";
+    font-family: FontAwesome;
+    position: absolute;
+    left: 4px;
+    color: #d4a843;
 }
 
 .browse-inline-edit {
@@ -855,18 +934,45 @@ Sub level menu list items (undo style from Top level List Items)
     background-color: #F0F0F0;
 }
 
-#resource-properties-content label {
+#resource-properties-content .control-group label {
     width: 60px;
     float: left;
 }
 
+#resource-properties-content table label {
+    float: none;
+    width: auto;
+    display: inline;
+    text-align: left;
+}
+
+#resource-properties-content table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+#resource-properties-content table th,
+#resource-properties-content table td {
+    padding: 4px 8px;
+    text-align: left;
+}
+
+#resource-properties-content table td input[type="checkbox"] {
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
 #resource-properties-content fieldset {
     margin-top: 1em;
+    border: 1px solid #ccc;
+    padding: 8px 12px;
+    border-radius: 4px;
 }
 
 #resource-properties-content legend {
     font-size: 100%;
     font-weight: bold;
+    padding: 0 4px;
 }
 
 .results-container {
@@ -918,7 +1024,7 @@ Sub level menu list items (undo style from Top level List Items)
 .navbar {
     position: relative;
     background-color: #F0F0F0;
-    padding: 2px 4px;
+    padding: 6px 4px;
     white-space: nowrap;
     overflow: hidden;
 }
@@ -932,14 +1038,15 @@ Sub level menu list items (undo style from Top level List Items)
     overflow: hidden;
 }
 
-.navbar img.layout-switcher {
+.navbar .layout-switcher {
     float: right;
-    margin-top: 2px;
-    cursor: pointer;
+}
+.navbar .layout-switcher i {
+    transition: transform 0.2s ease;
 }
 
 #serialization-mode {
-    margin-left: 2em;
+    margin-left: 0;
     vertical-align: middle;
 }
 
@@ -961,24 +1068,28 @@ Sub level menu list items (undo style from Top level List Items)
 
 .navbar .toggle-btn {
     display: inline-block;
-    padding: 2px 6px;
+    padding: 4px 6px;
     margin: 0 1px;
-    color: #aaa;
+    color: #666;
     text-decoration: none;
-    border-radius: 3px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
     vertical-align: middle;
     transition: color 0.15s, background-color 0.15s;
     cursor: pointer;
+    background: transparent;
 }
 
 .navbar .toggle-btn:hover {
-    color: #555;
-    background-color: rgba(0, 0, 0, 0.06);
+    color: #333;
+    background-color: #e8e8e8;
+    border-color: #aaa;
 }
 
 .navbar .toggle-btn.active {
     color: #336;
     background-color: #e2f2ff;
+    border-color: #b0d0f0;
 }
 
 .navbar .toggle-btn.first-page,
@@ -988,7 +1099,7 @@ Sub level menu list items (undo style from Top level List Items)
 .navbar .toggle-btn.result-prev,
 .navbar .toggle-btn.result-next,
 .navbar .toggle-btn#copy-all-clipboard {
-    color: #333;
+    color: #555;
 }
 
 .navbar .toggle-btn .nav-double {
@@ -1329,12 +1440,45 @@ fieldset legend {
     margin-bottom: 8px;
 }
 
-#preferences-dialog h3 {
-    padding-left: 2em;
+#preferences-dialog fieldset {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 0 12px 8px;
+    margin-bottom: 12px;
 }
 
 #preferences-dialog p {
     padding-left: 1em;
+    font-size: 90%;
+    color: #666;
+}
+
+#preferences-dialog .pref-grid {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+}
+
+#preferences-dialog .pref-grid th,
+#preferences-dialog .pref-grid td {
+    padding: 6px 8px;
+    text-align: center;
+}
+
+#preferences-dialog .pref-grid th {
+    font-weight: 600;
+    font-size: 90%;
+    color: #666;
+    border-bottom: 1px solid #ddd;
+}
+
+#preferences-dialog .pref-grid td:first-child {
+    text-align: right;
+    padding-right: 16px;
+}
+
+#preferences-dialog .pref-grid tbody tr:not(:last-child) td {
+    border-bottom: 1px solid #eee;
 }
 
 #dialog-deploy legend {
@@ -1804,6 +1948,7 @@ div#valueHighLight {
     border-radius: 4px;
     padding: 0;
     box-shadow: 0 4px 16px rgba(0,0,0,.2);
+    max-width: 90vw;
     max-height: 80vh;
     overflow: hidden;
 }
@@ -1816,6 +1961,9 @@ div.eXide-dialog {
     transform: translate(-50%, -50%);
     background: white;
     flex-direction: column;
+    resize: both;
+    min-width: 300px;
+    min-height: 200px;
 }
 .eXide-dialog::backdrop {
     background: rgba(0,0,0,.35);
@@ -1859,6 +2007,7 @@ div.eXide-dialog {
     border-radius: 3px;
     background: #f0f0f0;
     cursor: pointer;
+    font-family: inherit;
     font-size: 13px;
 }
 .eXide-dialog-buttons button:hover {
@@ -1872,10 +2021,391 @@ div.eXide-dialog {
     background: #f0f0f0;
     cursor: pointer;
     font-size: 13px;
+    font-family: inherit;
 }
 .eXide-btn:hover {
     background: #e0e0e0;
 }
 .eXide-btn .fa {
     margin-right: 4px;
+}
+
+/* ── Dark mode ── */
+body.dark {
+    background: #1e1e1e;
+}
+body.dark .layout-horizontal {
+    color: #ccc;
+}
+body.dark #status-bar {
+    background: #2d2d2d;
+    border-left-color: #444;
+}
+body.dark #error-status {
+    background: #2d2d2d;
+    color: #f55;
+}
+body.dark #ext-status-bar {
+    background: #2d2d2d;
+    border-color: #555;
+}
+body.dark #editor {
+    margin: 0;
+    border-left: 1px solid #333;
+}
+body.dark .results-container {
+    background: #1e1e1e;
+    margin: 0;
+    border-left: 1px solid #333;
+}
+body.dark #results-body {
+    background: #1e1e1e;
+}
+body.dark #results-iframe {
+    background: #1e1e1e;
+}
+body.dark .navbar {
+    background-color: #2d2d2d;
+}
+body.dark .navbar .toggle-btn {
+    color: #aaa;
+    border-color: #555;
+}
+body.dark .navbar .toggle-btn:hover {
+    color: #ddd;
+    background-color: rgba(255,255,255,0.08);
+    border-color: #777;
+}
+body.dark .navbar .toggle-btn.active {
+    color: #7af;
+    background-color: rgba(100,160,255,0.15);
+    border-color: rgba(100,160,255,0.3);
+}
+body.dark .navbar .toggle-btn.first-page,
+body.dark .navbar .toggle-btn.previous,
+body.dark .navbar .toggle-btn.next,
+body.dark .navbar .toggle-btn.last-page,
+body.dark .navbar .toggle-btn.result-prev,
+body.dark .navbar .toggle-btn.result-next,
+body.dark .navbar .toggle-btn#copy-all-clipboard {
+    color: #ccc;
+}
+body.dark .navbar .toggle-btn.copied {
+    color: #6d6;
+    background-color: rgba(100,200,100,0.15);
+    border-color: rgba(100,200,100,0.3);
+}
+body.dark .outline-status {
+    background: #2d2d2d;
+}
+body.dark #outline-container h3 {
+    background-color: #3a3a3a;
+    color: #aaa;
+}
+body.dark #outline a:link, body.dark #outline a:visited {
+    color: #ccc;
+}
+body.dark #outline-filter {
+    background: #333;
+    color: #ccc;
+    border-color: #555;
+}
+body.dark #search-box {
+    background: #333;
+}
+body.dark .panel-west .resize-handle:hover, body.dark .panel-east .resize-handle:hover {
+    background: linear-gradient(to left, #555, #3a3a3a);
+}
+body.dark .panel-south .resize-handle, body.dark .panel-south .minimized {
+    border-top-color: #555;
+}
+body.dark .panel-south .resize-handle:hover, body.dark .panel-south .minimized {
+    background: linear-gradient(to top, #555, #3a3a3a);
+}
+body.dark .minimized {
+    background: linear-gradient(to left, #555, #3a3a3a);
+}
+body.dark .resize-handle span, body.dark .minimized span {
+    filter: invert(0.7);
+}
+body.dark .layout-horizontal a:link, body.dark .layout-horizontal a:visited {
+    color: #8af;
+}
+body.dark .layout-horizontal label {
+    color: #bbb;
+}
+body.dark .layout-horizontal select {
+    background-color: #333;
+    color: #ccc;
+    border-color: #555;
+}
+body.dark .layout-horizontal select:disabled {
+    background-color: #444;
+    color: #888;
+}
+body.dark #splash {
+    background: #1e1e1e;
+}
+body.dark .eXide-dialog {
+    background: #2d2d2d;
+    border-color: #555;
+    color: #ccc;
+}
+body.dark div.eXide-dialog {
+    background: #2d2d2d;
+}
+body.dark .eXide-dialog::backdrop {
+    background: rgba(0,0,0,.55);
+}
+body.dark .eXide-dialog-titlebar {
+    background: #383838;
+    border-bottom-color: #555;
+    color: #ddd;
+}
+body.dark .eXide-dialog-close {
+    color: #aaa;
+}
+body.dark .eXide-dialog-close:hover {
+    color: #eee;
+}
+body.dark .eXide-dialog-buttons {
+    background: #333;
+    border-top-color: #555;
+}
+body.dark .eXide-dialog-buttons button {
+    background: #444;
+    border-color: #666;
+    color: #ccc;
+}
+body.dark .eXide-dialog-buttons button:hover {
+    background: #555;
+}
+body.dark .eXide-btn {
+    background: #444;
+    border-color: #666;
+    color: #ccc;
+}
+body.dark .eXide-btn:hover {
+    background: #555;
+}
+body.dark .eXide-toast {
+    background: #333;
+    color: #ccc;
+}
+body.dark .eXide-toast-close { color: #888; }
+body.dark .eXide-toast-close:hover { color: #ccc; }
+body.dark .eXide-dialog select,
+body.dark .eXide-dialog input[type="checkbox"] {
+    accent-color: #666;
+}
+body.dark .eXide-dialog select {
+    background: #333;
+    color: #ccc;
+    border-color: #555;
+}
+body.dark .eXide-dialog fieldset {
+    border-color: #555;
+}
+body.dark .eXide-dialog legend {
+    color: #ddd;
+}
+body.dark .eXide-dialog label {
+    color: #ccc;
+}
+body.dark #preferences-dialog p {
+    color: #888;
+}
+body.dark #preferences-dialog .pref-grid th {
+    color: #999;
+    border-bottom-color: #555;
+}
+body.dark #preferences-dialog .pref-grid tbody tr:not(:last-child) td {
+    border-bottom-color: #444;
+}
+body.dark #module-list .selected {
+    background-color: #444;
+}
+body.dark .eXide-browse-header {
+    background-image: none;
+}
+body.dark .eXide-browse-toolbar button {
+    background: transparent;
+    color: #aaa;
+    border-color: #555;
+}
+body.dark .eXide-browse-toolbar button:hover {
+    background: rgba(255,255,255,0.08);
+    color: #ddd;
+    border-color: #777;
+}
+body.dark .eXide-browse-toolbar button:disabled {
+    opacity: 0.35;
+}
+body.dark .eXide-browse-toolbar button:disabled:hover {
+    background: transparent;
+    color: #aaa;
+    border-color: #555;
+}
+body.dark .eXide-browse-breadcrumbs {
+    color: #ccc;
+}
+body.dark .eXide-browse-breadcrumbs a:link, body.dark .eXide-browse-breadcrumbs a:visited {
+    color: #8af;
+}
+body.dark .eXide-browse-breadcrumbs a:hover {
+    color: #bdf;
+}
+body.dark .browse-table .collection {
+    color: #8af;
+}
+body.dark .browse-table {
+    color: #ccc;
+}
+body.dark .browse-table td {
+    color: #ccc;
+    border-bottom-color: #444;
+}
+body.dark .browse-table thead th {
+    background: #383838;
+    border-bottom-color: #555;
+    color: #aaa;
+}
+body.dark .browse-table tbody tr:hover {
+    background-color: rgba(255,255,255,0.05);
+}
+body.dark .browse-table tbody tr.selected {
+    background-color: rgba(100,160,255,0.2);
+    color: #fff;
+}
+body.dark .browse-table tbody tr.focused {
+    outline-color: #7af;
+}
+body.dark .browse-filter {
+    background: #333;
+    color: #ccc;
+    border-color: #555;
+}
+body.dark #resource-properties-content fieldset {
+    border-color: #555;
+}
+body.dark #resource-properties-content legend {
+    color: #ccc;
+}
+body.dark #resource-properties-content table th {
+    color: #aaa;
+}
+body.dark #resource-properties-content table td {
+    color: #ccc;
+}
+body.dark #resource-properties-content label {
+    color: #ccc;
+}
+body.dark #resource-properties-content select,
+body.dark #resource-properties-content input[type="text"] {
+    background: #333;
+    color: #ccc;
+    border-color: #555;
+}
+body.dark input[type="text"], body.dark input[type="password"] {
+    background: #333;
+    color: #ccc;
+    border-color: #555;
+}
+body.dark .results .tok-content { color: #ccc; }
+body.dark .results .tok-punctuation { color: #aaa; }
+body.dark .results .tok-keyword { color: #c792ea; }
+body.dark .results .tok-string { color: #c3e88d; }
+body.dark .results .tok-attributeValue { color: #c3e88d; }
+body.dark .results .tok-number { color: #f78c6c; }
+body.dark .results .tok-comment { color: #676e95; }
+body.dark .results .tok-tag { color: #89ddff; }
+body.dark .results .tok-attributeName { color: #ffcb6b; }
+body.dark .results .tok-angleBracket { color: #89ddff; }
+body.dark .results .tok-typeName { color: #82aaff; }
+body.dark .results .tok-variableName { color: #82aaff; }
+body.dark .results .tok-operator { color: #89ddff; }
+body.dark .results .tok-propertyName { color: #f07178; }
+body.dark .results .tok-atom { color: #f78c6c; }
+body.dark .results .tok-definition { color: #82aaff; }
+body.dark .results .tok-meta { color: #aaa; }
+body.dark .results .tok-bracket { color: #aaa; }
+body.dark .results .tok-builtin { color: #82aaff; }
+body.dark .results .tok-link { color: #82aaff; }
+body.dark .results .tok-invalid { color: #ff5370; }
+body.dark .results .tok-processingInstruction { color: #aaa; }
+body.dark .tree li::before, body.dark .tree li::after {
+    border-color: #555;
+}
+body.dark .current {
+    color: #aaa;
+}
+body.dark .even {
+    background-color: #262626;
+}
+body.dark .even, body.dark .uneven {
+    border-bottom-color: rgba(255,255,255,0.06);
+}
+body.dark .pos {
+    background-color: #2a2a2a;
+    border-right-color: #444;
+}
+body.dark .pos .badge {
+    color: #8af;
+    background-color: rgba(100,160,255,0.15);
+}
+body.dark .pos a.badge:hover {
+    background-color: rgba(100,160,255,0.25);
+}
+body.dark .copy-result {
+    color: #aaa;
+}
+body.dark .copy-result:hover {
+    color: #eee;
+    background-color: rgba(255,255,255,0.1);
+}
+body.dark .copy-result.copied {
+    color: #6d6;
+    background-color: rgba(100,200,100,0.15);
+}
+body.dark #outline-body, body.dark #directory-body {
+    background: #1e1e1e;
+}
+body.dark #outline {
+    color: #ccc;
+}
+body.dark .tree {
+    color: #ccc;
+}
+body.dark #autocomplete-box {
+    background: #2d2d2d;
+    border-color: #555;
+    color: #ccc;
+}
+body.dark #autocomplete-box .selection {
+    background-color: #444;
+}
+body.dark #autocomplete-box .tooltips {
+    border-left-color: #555;
+}
+body.dark #autocomplete-box .title {
+    color: #888;
+}
+body.dark input[type="search"] {
+    background: #333;
+    color: #ccc;
+    border-color: #555;
+}
+body.dark input[type="number"],
+body.dark input:not([type]) {
+    background: #333;
+    color: #ccc;
+    border-color: #555;
+}
+body.dark .item {
+    color: #ccc;
+}
+body.dark #number-of-results {
+    background: #333;
+    color: #ccc;
+    border-color: #555;
 }
