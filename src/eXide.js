@@ -182,6 +182,7 @@ eXide.app = (function(util) {
             app.getLogin(function() {
                 app.initStatus("Restoring state");
                 app.restoreState(function(restored) {
+                    app.updateLayoutTop();
                     editor.init();
                     if (afterInitCallback) {
                         afterInitCallback(restored);
@@ -208,7 +209,10 @@ eXide.app = (function(util) {
                 }
             });
 
-			window.addEventListener("resize", app.resize);
+			window.addEventListener("resize", function() {
+			    app.updateLayoutTop();
+			    app.resize();
+			});
 
 			window.addEventListener("unload", function () {
 				app.saveState();
@@ -231,8 +235,25 @@ eXide.app = (function(util) {
             return menu;
         },
 
+		updateLayoutTop: function() {
+		    var toolbarBtns = document.querySelector(".toolbar-buttons");
+		    var layoutH = document.querySelector(".layout-horizontal");
+		    if (toolbarBtns && layoutH) {
+		        var fullscreen = document.getElementById("fullscreen");
+		        var top = toolbarBtns.getBoundingClientRect().bottom -
+		                  fullscreen.getBoundingClientRect().top + 2;
+		        layoutH.style.top = top + "px";
+		    }
+		},
+
 		resize: function(resizeIframe) {
 			var panel = document.getElementById("editor");
+            // Align east panel top with editor content (below tabs)
+            var tabsContainer = document.getElementById("tabs-container");
+            var eastPanel = document.querySelector(".panel-east");
+            if (tabsContainer && eastPanel) {
+                eastPanel.style.marginTop = tabsContainer.offsetHeight + "px";
+            }
             if (resizeIframe) {
                 var resultsContainer = document.querySelector(".panel-" + resultPanel);
                 var resultsBody = document.getElementById("results-body");
@@ -432,7 +453,7 @@ eXide.app = (function(util) {
 				        document.getElementById("dialog-confirm-close"), {
 				            appendTo: "#layout-container",
 				            modal: true,
-				            height: 140,
+				            width: 420,
 				            buttons: {
 				                "Close": function() {
 				                    dialogs["dialog-confirm-close"].close();
@@ -945,6 +966,7 @@ eXide.app = (function(util) {
 			if (!util.supportsHtml5Storage)
 				return false;
 			var sameVersion = preferences.read();
+			app.updateDarkModeIcon(preferences.get("theme"));
 			if (!sameVersion) {
 			    util.Dialog.message("Version Note", "It seems another version of eXide has been " +
 			        "used from this browser before. If you experience any display issues, please clear your browser's cache " +
@@ -1120,10 +1142,15 @@ eXide.app = (function(util) {
         },
 
         setTheme: function(theme) {
-            var els = document.querySelectorAll("#outline-body,#directory-body,#results-body");
-            els.forEach(function(el) {
-                el.className = theme.cssClass;
-            });
+            document.body.classList.toggle("dark", theme.isDark);
+        },
+
+        updateDarkModeIcon: function(theme) {
+            var icon = document.querySelector("#toggle-dark-mode i");
+            if (!icon) return;
+            if (theme === "system") icon.className = "fa fa-desktop";
+            else if (theme === "dark") icon.className = "fa fa-sun-o";
+            else icon.className = "fa fa-moon-o";
         },
 
         updateStatus: function(doc) {
@@ -1177,13 +1204,8 @@ eXide.app = (function(util) {
             layout.hide(resultPanel);
 
             resultPanel = target;
-            var switchers = document.querySelectorAll(".layout-switcher");
-            switchers.forEach(function(el) {
-                if (resultPanel === "south") {
-                    el.setAttribute("src", "resources/images/layouts_split.png");
-                } else {
-                    el.setAttribute("src", "resources/images/layouts_split_vertical.png");
-                }
+            document.querySelectorAll(".layout-switcher i").forEach(function(icon) {
+                icon.style.transform = (resultPanel === "south") ? "" : "rotate(90deg)";
             });
             app.showResultsPanel();
         },
@@ -1359,7 +1381,8 @@ eXide.app = (function(util) {
 			    document.getElementById("login-dialog"), {
                     appendTo: "#layout-container",
     				title: "Login",
-    				modal: true
+    				modal: true,
+    				width: 360
 			    }
 			);
 			dialogs["login-dialog"]._onClose = null;
@@ -1710,8 +1733,24 @@ eXide.app = (function(util) {
                 ev.preventDefault();
                 util.requestFullScreen(document.getElementById("fullscreen"));
             });
+            document.getElementById("toggle-dark-mode").addEventListener("click", function(ev) {
+                ev.preventDefault();
+                var current = preferences.get("theme");
+                var newTheme;
+                if (current === "light") newTheme = "dark";
+                else if (current === "dark") newTheme = "system";
+                else newTheme = "light";
+                preferences.preferences.theme = newTheme;
+                preferences.applyPreferences();
+                preferences.updateForm();
+                preferences.save();
+                app.updateDarkModeIcon(newTheme);
+            });
             document.querySelectorAll(".results-container .layout-switcher").forEach(function(el) {
-                el.addEventListener("click", app.switchResultsPanel);
+                el.addEventListener("click", function(ev) {
+                    ev.preventDefault();
+                    app.switchResultsPanel();
+                });
             });
 
             document.querySelectorAll('.navbar .toggle-btn[id$="-btn"]').forEach(function(btn) {

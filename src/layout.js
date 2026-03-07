@@ -39,9 +39,24 @@ eXide.app.FlexboxSplitter = (function () {
 
         var pos;
 
+        function togglePanel() {
+            var isMinimized = splitter.classList.contains("minimized");
+            if (isMinimized) {
+                var size = self.prevSize > self.min ? self.prevSize : self.min;
+                self.setSize(size);
+            } else {
+                self.prevSize = self.isHorizontal ? self.el.offsetWidth : self.el.offsetHeight;
+                self.setSize(10);
+            }
+            layout.resize();
+        }
+
         function onMouseUp() {
             container.removeEventListener("mousemove", onMouseMove);
             document.removeEventListener("mouseup", onMouseUp);
+            if (!hasMoved) {
+                togglePanel();
+            }
             self.$triggerEvent("afterResize");
         }
 
@@ -52,38 +67,6 @@ eXide.app.FlexboxSplitter = (function () {
             self.$triggerEvent("beforeResize");
             container.addEventListener("mousemove", onMouseMove);
             document.addEventListener("mouseup", onMouseUp);
-        });
-
-        toggle.addEventListener("click", function(e) {
-            // toggle panel
-            var size = self.isHorizontal ? self.el.offsetWidth : self.el.offsetHeight;
-            if (size == 10) {
-                if (self.isHorizontal) {
-                    self.el.style.width = self.prevSize + "px";
-                    self.el.style.minWidth = self.prevSize + "px";
-                } else {
-                    self.el.style.height = self.prevSize + "px";
-                }
-                splitter.classList.remove("minimized");
-                splitter.classList.add("resize-handle");
-                Array.prototype.forEach.call(self.el.children, function(child) {
-                    if (!child.classList.contains("minimized")) child.style.display = "";
-                });
-            } else {
-                self.prevSize = size;
-                if (self.isHorizontal) {
-                    self.el.style.width = "10px";
-                    self.el.style.minWidth = "10px";
-                } else {
-                    self.el.style.height = "10px";
-                }
-                splitter.classList.add("minimized");
-                splitter.classList.remove("resize-handle");
-                Array.prototype.forEach.call(self.el.children, function(child) {
-                    if (!child.classList.contains("minimized")) child.style.display = "none";
-                });
-            }
-            layout.resize();
         });
     };
 
@@ -109,9 +92,6 @@ eXide.app.FlexboxSplitter = (function () {
             this.hide();
             return;
         }
-        if (size > this.min && size < this.min) {
-            size = this.min;
-        }
         if (this.isHorizontal) {
             this.el.style.width = size + "px";
             this.el.style.minWidth = size + "px";
@@ -119,28 +99,27 @@ eXide.app.FlexboxSplitter = (function () {
             this.el.style.height = size + "px";
         }
 
-        if (size === 10) {
-            var splitter = this.el.querySelector(".resize-handle");
+        // Find the splitter element (may have either class)
+        var splitter = this.el.querySelector(".resize-handle") ||
+                       this.el.querySelector(".minimized");
+
+        if (size <= 10) {
             if (splitter) {
                 splitter.classList.add("minimized");
+                splitter.classList.remove("resize-handle");
             }
             Array.prototype.forEach.call(this.el.children, function(child) {
                 if (!child.classList.contains("minimized")) child.style.display = "none";
             });
-            var minimized = this.el.querySelector(".minimized");
-            if (minimized) {
-                minimized.classList.remove("resize-handle");
-            }
         } else {
             this.prevSize = size;
-            Array.prototype.forEach.call(this.el.children, function(child) {
-                if (!child.classList.contains("minimized")) child.style.display = "";
-            });
-            var minimized = this.el.querySelector(".minimized");
-            if (minimized) {
-                minimized.classList.add("resize-handle");
-                minimized.classList.remove("minimized");
+            if (splitter) {
+                splitter.classList.add("resize-handle");
+                splitter.classList.remove("minimized");
             }
+            Array.prototype.forEach.call(this.el.children, function(child) {
+                child.style.display = "";
+            });
         }
         if (isHidden(this.el)) {
             this.el.style.display = "";
@@ -155,9 +134,11 @@ eXide.app.FlexboxSplitter = (function () {
     Constr.prototype.show = function(resize) {
         if (isHidden(this.el)) {
             this.el.style.display = "";
-            this.setSize(this.prevSize);
-        } else if (resize && this.getSize() == 10) {
-            this.setSize(this.prevSize);
+            var size = this.prevSize > this.min ? this.prevSize : this.min;
+            this.setSize(size);
+        } else if (resize && this.el.querySelector(".minimized")) {
+            var size = this.prevSize > this.min ? this.prevSize : this.min;
+            this.setSize(size);
         }
     };
 
