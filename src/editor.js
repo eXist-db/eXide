@@ -182,6 +182,8 @@ eXide.edit.Editor = (function () {
     var themeCompartment = new Compartment();
     // Read-only compartment
     var readOnlyCompartment = new Compartment();
+    // Auto-pair brackets/quotes compartment
+    var autoPairCompartment = new Compartment();
 
     function parseErrMsg(error) {
         var msg;
@@ -240,8 +242,10 @@ eXide.edit.Editor = (function () {
             CM6.history(),
             CM6.foldGutter(),
             CM6.bracketMatching(),
+            autoPairCompartment.of([CM6.closeBrackets(), keymap.of(CM6.closeBracketsKeymap)]),
             CM6.indentOnInput(),
             CM6.syntaxHighlighting(CM6.defaultHighlightStyle, { fallback: true }),
+            CM6.syntaxHighlighting(CM6.oneDarkHighlightStyle),
             CM6.lintGutter(),
             CM6.search({ top: true }),
             keymap.of([
@@ -307,6 +311,7 @@ eXide.edit.Editor = (function () {
         this._languageCompartment = languageCompartment;
         this._themeCompartment = themeCompartment;
         this._readOnlyCompartment = readOnlyCompartment;
+        this._autoPairCompartment = autoPairCompartment;
         this._baseExtensions = buildExtensions;
 
         // register keybindings
@@ -1109,8 +1114,9 @@ eXide.edit.Editor = (function () {
     Constr.prototype.setTheme = function(theme) {
         console.log("Changing theme to %s", theme);
         var isDark = (theme === "dark");
+        var themeExt = isDark ? CM6.oneDarkTheme : [];
         this.editor.dispatch({
-            effects: this._themeCompartment.reconfigure(isDark ? CM6.oneDark : [])
+            effects: this._themeCompartment.reconfigure(themeExt)
         });
         this.$triggerEvent("setTheme", [{ isDark: isDark }]);
     };
