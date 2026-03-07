@@ -151,10 +151,11 @@ eXide.edit.Directory = (function () {
 			build.call(sel)
 		},
 		toggleEdit : function(key, state) {
-			
+
 			var sel = d3.select("[data-key='"+ key +"']")
 			if(sel.empty()) {return}
 			var d = sel.datum()
+			if (!d) {return}
 			d.isResourceOpen = state || !d.isResourceOpen
 			sel.select("i.fa").attr("class", setClass)
 		}

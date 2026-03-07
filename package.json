@@ -7,13 +7,12 @@
 		"doc": "docs"
 	},
 	"scripts": {
-		"build": "npm run bundle-ag-grid && npm run bundle-cm6 && npm run bundle-prettier && node scripts/build.js prepare && node scripts/build.js",
-		"build:dev": "npm run bundle-ag-grid && npm run bundle-cm6 && npm run bundle-prettier && node scripts/build.js prepare && node scripts/build.js --dev",
+		"build": "npm run bundle-cm6 && npm run bundle-prettier && node scripts/build.js prepare && node scripts/build.js",
+		"build:dev": "npm run bundle-cm6 && npm run bundle-prettier && node scripts/build.js prepare && node scripts/build.js --dev",
 		"clean": "node scripts/build.js clean",
 		"test": "node --test test/parser-test.js test/visitor-test.js test/utils-test.js test/static-analysis-test.js",
 		"bundle-prettier": "node tools/bundle-prettier.js",
 		"bundle-cm6": "node tools/bundle-cm6.js",
-		"bundle-ag-grid": "node tools/bundle-ag-grid.js",
 		"cypress": "cypress run"
 	},
 	"repository": {
@@ -41,8 +40,6 @@
 		"request": "^2.88.2"
 	},
 	"dependencies": {
-		"@ag-grid-community/core": "^26.2.1",
-		"@ag-grid-community/infinite-row-model": "^27.0.0",
 		"@codemirror/autocomplete": "^6.20.1",
 		"@codemirror/commands": "^6.10.2",
 		"@codemirror/lang-css": "^6.3.1",

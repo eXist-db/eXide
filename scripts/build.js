@@ -120,7 +120,6 @@ async function clean() {
     await mfs.delete([
         'resources/scripts/eXide.min.*',
 'resources/scripts/prettier-bundle.js',
-        'resources/css/ag-grid-community/**',
         'index.html',
         'expath-pkg.xml'
     ], { allowEmpty: true, silent: false });
@@ -162,9 +161,6 @@ function replace(path, outPath, data) {
         return;
     }
 
-    await mfs.copy('./node_modules/@ag-grid-community/core/LICENSE.txt', './resources/css/ag-grid-community');
-    await mfs.copy('./node_modules/@ag-grid-community/core/dist/styles/*.css', './resources/css/ag-grid-community');
-    
     replace('expath-pkg.xml.tmpl', 'expath-pkg.xml', { version });
     replace("index.html.tmpl", "index.html", { version });
 

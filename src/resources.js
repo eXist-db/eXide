@@ -17,10 +17,6 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-// ag-grid exposed as globalThis.agGrid by resources/scripts/ag-grid-bundle.js
-var Grid = agGrid.Grid;
-var InfiniteRowModelModule = agGrid.InfiniteRowModelModule;
-
 function buildQueryString(params) {
 	var parts = [];
 	Object.keys(params).forEach(function(key) {
@@ -43,110 +39,14 @@ function fetchJSON(url, params) {
 
 eXide.namespace("eXide.browse.ResourceBrowser");
 
-class DataSource {
-
-	constructor(gridOptions) {
-		this.gridOptions = gridOptions;
-		this.data = [];
-		this._collection = "/db";
-	}
-
-	set collection(collection) {
-		this._collection = collection;
-		this.data.length = 0;
-		this.gridOptions.api.purgeInfiniteCache();
-	}
-
-	get collection() {
-		return this._collection;
-	}
-
-	getRows(options) {
-		var params = { root: this._collection, view: "r", start: options.startRow, end: options.endRow };
-		if (options.filterModel.name) {
-			params.filter = options.filterModel.name.filter;
-		}
-		fetchJSON("modules/collections.xq", params).then((json) => {
-			if (json && json.items) {
-				options.successCallback(json.items, json.total);
-				if (this.data.length === 0) {
-					this.gridOptions.api.deselectAll();
-					this.gridOptions.api.setFocusedCell(0, 'name');
-				}
-				this.data.length = json.total;
-				for (var i = 0; i < json.items.length; i++) {
-					this.data[params.start + i] = json.items[i];
-				}
-			}
-
-		});
-	}
-
-	destroy() {
-		this.data = [];
-	}
-}
-
 /**
- * Manages a table view of resources within a collection
+ * Manages a table view of resources within a collection.
+ * Replaces AG Grid with a vanilla HTML table and scroll-based lazy loading.
  */
 eXide.browse.ResourceBrowser = (function () {
 
     var useragent = { isMac: /Mac/.test(navigator.platform) };
-
-	var columns = [
-		{
-			colId: "name",
-			headerName: "Name",
-			field: "name",
-			flex: 1,
-			floatingFilter: true,
-			filter: "agTextColumnFilter",
-			filterParams: {
-				filterOptions: ["contains"],
-				defaultOption: "contains",
-			},
-			cellClass: (params) => {
-				return params.data && params.data.isCollection ? "collection" : "";
-			},
-			resizable: true,
-			editable: false,
-			suppressClickEdit: true
-		},
-		{
-			colId: "permissions",
-			headerName: "Permissions",
-			field: "permissions",
-			minWidth: 90,
-			maxWidth: 110,
-			suppressNavigable: true,
-			resizable: true,
-		},
-		{
-			colId: "owner",
-			headerName: "Owner",
-			field: "owner",
-			width: 90,
-			suppressNavigable: true,
-			resizable: true,
-		},
-		{
-			colId: "group",
-			headerName: "Group",
-			field: "group",
-			width: 90,
-			suppressNavigable: true,
-			resizable: true,
-		},
-		{
-			colId: "lastMod",
-			headerName: "Last Modified",
-			field: "last-modified",
-			minWidth: 110,
-			suppressNavigable: true,
-			resizable: true,
-		},
-	];
+	var BATCH_SIZE = 50;
 
 	Constr = function(container, parentContainer) {
 		var self = this;
@@ -164,172 +64,59 @@ eXide.browse.ResourceBrowser = (function () {
         this.mode = "save";
         this.inEditor = false;
 
-		this.gridOptions = {
-			columnDefs: columns,
-			rowSelection: "multiple",
-			rowModelType: "infinite",
-			isRowSelectable: (rowNode) => rowNode.data && rowNode.data.permissions
-		};
-		this.grid = new Grid(document.querySelector(".eXide-browse-resources"), this.gridOptions, { modules: [InfiniteRowModelModule] });
-		this.dataSource = new DataSource(this.gridOptions);
-		this.gridOptions.api.setDatasource(this.dataSource);
-		this.gridOptions.onCellFocused = (params) => {
-			if (this.mode === 'open' || this.mode === 'save') {
-				const row = params.api.getDisplayedRowAtIndex(params.rowIndex);
-				params.api.deselectAll();
-				row.setSelected(true);
-			}
-		};
-		this.gridOptions.onRowDoubleClicked = (params) => {
-			if (params.data.isCollection) {
-				var coll;
-				if (params.data.name == "..")
-					coll = this.dataSource.collection.replace(/\/[^\/]+$/, "");
-				else coll = params.data.key;
-				this.$triggerEvent("activateCollection", [coll, params.data.writable]);
-				this.update(coll, false);
-			} else {
-				eXide.app.openSelectedDocument({
-					name: params.data.name,
-					path: params.data.key,
-					writable: params.data.writable
-				});
-			}
-		};
-		this.gridOptions.onSelectionChanged = (params) => {
-			const rows = params.api.getSelectedRows();
-			let enableWrite = true;
-			for (let i = 0; i < rows.length; i++) {
-				if (!rows[i].writable) {
-					enableWrite = false;
-					break;
-				}
-			}
-			const doc = (rows.length === 1 && !rows[0].isCollection) ? rows[0] : null;
-			self.$triggerEvent("activate", [ doc, enableWrite]);
-		};
-		this.gridOptions.onCellKeyDown = (e) => {
-			if (this.inEditor)
-				return;
-			if ((e.event.metaKey && useragent.isMac) || (e.event.ctrlKey && !useragent.isMac)) {
-				switch (e.which) {
-					case 67: // cmd-c
-						e.event.stopPropagation();
-						e.event.preventDefault();
-						this.copy();
-						break;
-					case 86: // cmd-v
-						e.event.stopPropagation();
-						e.event.preventDefault();
-						this.paste();
-						break;
-					case 88: // cmd-x
-						e.event.stopPropagation();
-						e.event.preventDefault();
-						this.cut();
-						break;
-					default:
-						break;
-				}
-			} else if (!e.event.shiftKey && !e.event.altKey && !e.event.ctrlKey) {
-				let cell;
-				switch (e.event.which) {
-					case 13:
-						e.event.stopPropagation();
-						e.event.preventDefault();
-						if (e.data.isCollection) {
-							var coll;
-							if (e.data.name === "..")
-								coll = this.dataSource.collection.replace(/\/[^\/]+$/, "")
-							else
-								coll = e.data.key;
-							this.$triggerEvent("activateCollection", [ coll, e.data.writable ]);
-							this.update(coll, false);
-						} else {
-							eXide.app.openSelectedDocument({
-								name: e.data.name,
-								path: e.data.key,
-								writable: e.data.writable,
-							});
-						}
-						break;
-					case 8:
-						e.event.stopPropagation();
-						e.event.preventDefault();
-						const p = this.dataSource.collection.lastIndexOf("/");
-						if (p > 0) {
-							if (this.dataSource.collection != "/db") {
-								const parent = this.dataSource.collection.substring(0, p);
-								const cell = this.gridOptions.api.getFocusedCell();
-								this.$triggerEvent("activateCollection", [ parent, this.dataSource.data[cell.rowIndex].writable ]);
-								this.update(parent, false);
-							}
-						}
-						break;
-					case 34:
-					case 33:
-						break;
-					case 36:
-						e.event.stopPropagation();
-						e.event.preventDefault();
-						self.goto(0);
-						break;
-					case 35:
-						e.event.stopPropagation();
-						e.event.preventDefault();
-						self.goto(self.data.length - 1);
-						break;
-					case 46:
-						cell = e.api.getFocusedCell();
-						this.deleteResource(this.dataSource.data[cell.rowIndex]);
-						break;
-					case 27:
-						self.search = "";
-						break;
-					case 38:
-					case 40:
-						break;
-					default:
-						e.event.stopPropagation();
-						e.event.preventDefault();
-						this.search += e.event.key;
-						if (this.searchTimeout) {
-							clearTimeout(this.searchTimeout);
-							this.searchTimeout = undefined;
-						}
-						var regex = new RegExp("^" + this.search, "i");
-						for (let i = e.rowIndex; i < this.dataSource.data.length; i++) {
-							if (this.dataSource.data[i] && regex.test(this.dataSource.data[i].name)) {
-								e.api.setFocusedCell(i, 'name');
-								break;
-							}
-						}
-						this.searchTimeout = setTimeout(() => {
-							this.search = "";
-						}, 2000);
-						break;
-				}
-			}
-		};
-		this.gridOptions.onCellValueChanged = (params) => {
-			if (!params.oldValue) {
-				return;
-			}
-			params.column.colDef.editable = false;
-			fetchJSON("modules/collections.xq", {
-				target: encodeURI(params.newValue),
-				rename: encodeURI(params.oldValue),
-				root: this.dataSource.collection
-			}).then((data) => {
-				if (data.status == "fail") {
-					eXide.util.Dialog.warning("Rename Error", data.message);
-				}
-				this.reload();
-			});
-		};
-		this.gridOptions.onCellEditingStopped = (e) => {
-			setTimeout(() => { this.inEditor = false }, 200);
-		};
+		this.data = [];
+		this.totalRows = 0;
+		this._collection = "/db";
+		this._filter = "";
+		this._focusedRow = -1;
+		this._selectedIndices = new Set();
+		this._rowSelection = "multiple";
+
+		var wrapper = document.querySelector(".eXide-browse-resources");
+		wrapper.innerHTML = "";
+
+		// Filter input
+		this.filterInput = document.createElement("input");
+		this.filterInput.type = "text";
+		this.filterInput.className = "browse-filter";
+		this.filterInput.placeholder = "Filter by name…";
+		this.filterInput.addEventListener("input", function() {
+			self._filter = self.filterInput.value;
+			self._resetAndLoad();
+		});
+		wrapper.appendChild(this.filterInput);
+
+		// Scrollable table container
+		this.scrollContainer = document.createElement("div");
+		this.scrollContainer.className = "browse-table-scroll";
+		this.scrollContainer.tabIndex = 0;
+		wrapper.appendChild(this.scrollContainer);
+
+		this.table = document.createElement("table");
+		this.table.className = "browse-table";
+
+		var thead = document.createElement("thead");
+		thead.innerHTML = "<tr>" +
+			"<th class=\"col-name\">Name</th>" +
+			"<th class=\"col-permissions\">Permissions</th>" +
+			"<th class=\"col-owner\">Owner</th>" +
+			"<th class=\"col-group\">Group</th>" +
+			"<th class=\"col-lastmod\">Last Modified</th>" +
+			"</tr>";
+		this.table.appendChild(thead);
+
+		this.tbody = document.createElement("tbody");
+		this.table.appendChild(this.tbody);
+		this.scrollContainer.appendChild(this.table);
+
+		// Sentinel element for infinite scroll
+		this.sentinel = document.createElement("div");
+		this.sentinel.className = "browse-sentinel";
+		this.scrollContainer.appendChild(this.sentinel);
+
+		this._setupIntersectionObserver();
+		this._setupKeyboardNav();
+		this._setupClickHandlers();
 
         var propsContentEl = document.getElementById("resource-properties-content");
         var propsDialogEl = document.getElementById("resource-properties-dialog");
@@ -342,7 +129,7 @@ eXide.browse.ResourceBrowser = (function () {
                 "Cancel": function () { this.close(); },
                 "Apply": function() {
                     var dlg = this;
-                    var selected = self.gridOptions.api.getSelectedRows();
+                    var selected = self.getSelectedRows();
                     if (selected.length == 0) {
                         return;
                     }
@@ -370,15 +157,323 @@ eXide.browse.ResourceBrowser = (function () {
     // Extend eXide.events.Sender for event support
     eXide.util.oop.inherit(Constr, eXide.events.Sender);
 
+	Constr.prototype._setupIntersectionObserver = function() {
+		var self = this;
+		this._observer = new IntersectionObserver(function(entries) {
+			if (entries[0].isIntersecting && !self.loading && self.data.length < self.totalRows) {
+				self._loadBatch(self.data.length);
+			}
+		}, { root: this.scrollContainer, threshold: 0.1 });
+		this._observer.observe(this.sentinel);
+	};
+
+	Constr.prototype._setupClickHandlers = function() {
+		var self = this;
+		this.tbody.addEventListener("click", function(e) {
+			var tr = e.target.closest("tr");
+			if (!tr || !tr.dataset.index) return;
+			var idx = parseInt(tr.dataset.index, 10);
+			if (self._rowSelection === "multiple" && (e.ctrlKey || e.metaKey)) {
+				if (self._selectedIndices.has(idx)) {
+					self._selectedIndices.delete(idx);
+				} else {
+					self._selectedIndices.add(idx);
+				}
+			} else if (self._rowSelection === "multiple" && e.shiftKey && self._focusedRow >= 0) {
+				var start = Math.min(self._focusedRow, idx);
+				var end = Math.max(self._focusedRow, idx);
+				self._selectedIndices.clear();
+				for (var i = start; i <= end; i++) {
+					self._selectedIndices.add(i);
+				}
+			} else {
+				self._selectedIndices.clear();
+				self._selectedIndices.add(idx);
+			}
+			self._focusedRow = idx;
+			self._updateSelectionDisplay();
+			self._fireSelectionChanged();
+			self.scrollContainer.focus();
+		});
+
+		this.tbody.addEventListener("dblclick", function(e) {
+			var tr = e.target.closest("tr");
+			if (!tr || !tr.dataset.index) return;
+			var idx = parseInt(tr.dataset.index, 10);
+			var item = self.data[idx];
+			if (!item) return;
+			if (item.isCollection) {
+				var coll;
+				if (item.name == "..")
+					coll = self._collection.replace(/\/[^\/]+$/, "");
+				else coll = item.key;
+				self.$triggerEvent("activateCollection", [coll, item.writable]);
+				self.update(coll, false);
+			} else {
+				eXide.app.openSelectedDocument({
+					name: item.name,
+					path: item.key,
+					writable: item.writable
+				});
+			}
+		});
+	};
+
+	Constr.prototype._setupKeyboardNav = function() {
+		var self = this;
+		this.scrollContainer.addEventListener("keydown", function(e) {
+			if (self.inEditor) return;
+
+			if ((e.metaKey && useragent.isMac) || (e.ctrlKey && !useragent.isMac)) {
+				switch (e.which) {
+					case 67: // cmd-c
+						e.stopPropagation(); e.preventDefault();
+						self.copy();
+						return;
+					case 86: // cmd-v
+						e.stopPropagation(); e.preventDefault();
+						self.paste();
+						return;
+					case 88: // cmd-x
+						e.stopPropagation(); e.preventDefault();
+						self.cut();
+						return;
+				}
+			}
+
+			if (e.shiftKey || e.altKey || e.ctrlKey) return;
+
+			switch (e.which) {
+				case 38: // up arrow
+					e.stopPropagation(); e.preventDefault();
+					if (self._focusedRow > 0) {
+						self._focusedRow--;
+						self._selectedIndices.clear();
+						self._selectedIndices.add(self._focusedRow);
+						self._updateSelectionDisplay();
+						self._scrollRowIntoView(self._focusedRow);
+						self._fireSelectionChanged();
+					}
+					break;
+				case 40: // down arrow
+					e.stopPropagation(); e.preventDefault();
+					if (self._focusedRow < self.data.length - 1) {
+						self._focusedRow++;
+						self._selectedIndices.clear();
+						self._selectedIndices.add(self._focusedRow);
+						self._updateSelectionDisplay();
+						self._scrollRowIntoView(self._focusedRow);
+						self._fireSelectionChanged();
+					}
+					break;
+				case 13: // enter
+					e.stopPropagation(); e.preventDefault();
+					var item = self.data[self._focusedRow];
+					if (!item) break;
+					if (item.isCollection) {
+						var coll;
+						if (item.name === "..")
+							coll = self._collection.replace(/\/[^\/]+$/, "");
+						else
+							coll = item.key;
+						self.$triggerEvent("activateCollection", [coll, item.writable]);
+						self.update(coll, false);
+					} else {
+						eXide.app.openSelectedDocument({
+							name: item.name,
+							path: item.key,
+							writable: item.writable,
+						});
+					}
+					break;
+				case 8: // backspace
+					e.stopPropagation(); e.preventDefault();
+					var p = self._collection.lastIndexOf("/");
+					if (p > 0 && self._collection != "/db") {
+						var parent = self._collection.substring(0, p);
+						self.$triggerEvent("activateCollection", [parent, true]);
+						self.update(parent, false);
+					}
+					break;
+				case 36: // home
+					e.stopPropagation(); e.preventDefault();
+					self.goto(0);
+					break;
+				case 35: // end
+					e.stopPropagation(); e.preventDefault();
+					self.goto(self.data.length - 1);
+					break;
+				case 46: // delete
+					if (self._focusedRow >= 0) {
+						self.deleteResource(self.data[self._focusedRow]);
+					}
+					break;
+				case 27: // escape
+					self.search = "";
+					break;
+				case 33: // page up
+				case 34: // page down
+					break;
+				default:
+					e.stopPropagation(); e.preventDefault();
+					self.search += e.key;
+					if (self.searchTimeout) {
+						clearTimeout(self.searchTimeout);
+						self.searchTimeout = undefined;
+					}
+					var regex = new RegExp("^" + self.search, "i");
+					for (var i = self._focusedRow; i < self.data.length; i++) {
+						if (self.data[i] && regex.test(self.data[i].name)) {
+							self._focusedRow = i;
+							self._selectedIndices.clear();
+							self._selectedIndices.add(i);
+							self._updateSelectionDisplay();
+							self._scrollRowIntoView(i);
+							self._fireSelectionChanged();
+							break;
+						}
+					}
+					self.searchTimeout = setTimeout(function() {
+						self.search = "";
+					}, 2000);
+					break;
+			}
+		});
+	};
+
+	Constr.prototype._resetAndLoad = function() {
+		this.data = [];
+		this.totalRows = 0;
+		this._focusedRow = -1;
+		this._selectedIndices.clear();
+		this.tbody.innerHTML = "";
+		this._loadBatch(0);
+	};
+
+	Constr.prototype._loadBatch = function(startRow) {
+		var self = this;
+		if (this.loading) return;
+		this.loading = true;
+
+		var params = { root: this._collection, view: "r", start: startRow, end: startRow + BATCH_SIZE };
+		if (this._filter) {
+			params.filter = this._filter;
+		}
+		fetchJSON("modules/collections.xq", params).then(function(json) {
+			self.loading = false;
+			if (!json || !json.items) return;
+
+			self.totalRows = json.total;
+			for (var i = 0; i < json.items.length; i++) {
+				var rowIdx = startRow + i;
+				self.data[rowIdx] = json.items[i];
+				self._renderRow(json.items[i], rowIdx);
+			}
+
+			if (startRow === 0 && json.items.length > 0) {
+				self._focusedRow = 0;
+				self._selectedIndices.clear();
+				self._selectedIndices.add(0);
+				self._updateSelectionDisplay();
+				self._fireSelectionChanged();
+			}
+		});
+	};
+
+	Constr.prototype._renderRow = function(item, index) {
+		var tr = document.createElement("tr");
+		tr.dataset.index = index;
+		tr.dataset.key = item.key || "";
+
+		var tdName = document.createElement("td");
+		tdName.className = "col-name";
+		if (item.isCollection) tdName.classList.add("collection");
+		tdName.textContent = item.name;
+
+		var tdPerm = document.createElement("td");
+		tdPerm.className = "col-permissions";
+		tdPerm.textContent = item.permissions || "";
+
+		var tdOwner = document.createElement("td");
+		tdOwner.className = "col-owner";
+		tdOwner.textContent = item.owner || "";
+
+		var tdGroup = document.createElement("td");
+		tdGroup.className = "col-group";
+		tdGroup.textContent = item.group || "";
+
+		var tdMod = document.createElement("td");
+		tdMod.className = "col-lastmod";
+		tdMod.textContent = item["last-modified"] || "";
+
+		tr.appendChild(tdName);
+		tr.appendChild(tdPerm);
+		tr.appendChild(tdOwner);
+		tr.appendChild(tdGroup);
+		tr.appendChild(tdMod);
+		this.tbody.appendChild(tr);
+	};
+
+	Constr.prototype._updateSelectionDisplay = function() {
+		var rows = this.tbody.querySelectorAll("tr");
+		for (var i = 0; i < rows.length; i++) {
+			var idx = parseInt(rows[i].dataset.index, 10);
+			if (this._selectedIndices.has(idx)) {
+				rows[i].classList.add("selected");
+				rows[i].setAttribute("aria-selected", "true");
+			} else {
+				rows[i].classList.remove("selected");
+				rows[i].removeAttribute("aria-selected");
+			}
+			if (idx === this._focusedRow) {
+				rows[i].classList.add("focused");
+			} else {
+				rows[i].classList.remove("focused");
+			}
+		}
+	};
+
+	Constr.prototype._scrollRowIntoView = function(index) {
+		var row = this.tbody.querySelector("tr[data-index=\"" + index + "\"]");
+		if (row) {
+			row.scrollIntoView({ block: "nearest" });
+		}
+	};
+
+	Constr.prototype._fireSelectionChanged = function() {
+		var rows = this.getSelectedRows();
+		var enableWrite = true;
+		for (var i = 0; i < rows.length; i++) {
+			if (!rows[i].writable) {
+				enableWrite = false;
+				break;
+			}
+		}
+		var doc = (rows.length === 1 && !rows[0].isCollection) ? rows[0] : null;
+		this.$triggerEvent("activate", [doc, enableWrite]);
+	};
+
+	Constr.prototype.getSelectedRows = function() {
+		var result = [];
+		var self = this;
+		this._selectedIndices.forEach(function(idx) {
+			if (self.data[idx]) result.push(self.data[idx]);
+		});
+		return result;
+	};
+
     Constr.prototype.setCollection = function(collection) {
-        this.dataSource.collection = collection;
+        this._collection = collection;
+		this._filter = "";
+		this.filterInput.value = "";
+        this._resetAndLoad();
         this.updateBreadcrumbs();
     };
 
     Constr.prototype.updateBreadcrumbs = function() {
         this.breadcrumbs.innerHTML = "";
         var self = this;
-        var parts = this.dataSource.collection.split("/");
+        var parts = this._collection.split("/");
 		parts = parts.map(part => decodeURI(part));
         var span = document.createElement("span");
         span.appendChild(document.createTextNode("/"));
@@ -404,11 +499,7 @@ eXide.browse.ResourceBrowser = (function () {
 
 	Constr.prototype.setMode = function(value) {
         this.mode = value;
-		if (value === 'manage') {
-			this.gridOptions.rowSelection = 'multiple';
-		} else {
-			this.gridOptions.rowSelection = "single";
-		}
+		this._rowSelection = (value === "manage") ? "multiple" : "single";
 	};
 
 	Constr.prototype.resize = function () {
@@ -417,7 +508,7 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
 	Constr.prototype.update = function(collection, reload) {
-        if (!reload && collection === this.dataSource.collection)
+        if (!reload && collection === this._collection)
             return;
 		console.log("Opening resources for %s", collection);
         this.setCollection(collection);
@@ -428,29 +519,64 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
 	Constr.prototype.hasSelection = function () {
-		const selected = this.gridOptions.api.getSelectedRows();
-		return selected && selected.length > 0;
+		return this._selectedIndices.size > 0;
 	};
 
     Constr.prototype.getSelected = function() {
-		const selected = this.gridOptions.api.getSelectedRows();
-		if (selected.length == 0) {
-			return null;
-		}
-        return selected;
+		var rows = this.getSelectedRows();
+		return rows.length > 0 ? rows : null;
     };
 
 	Constr.prototype.startEditing = function() {
-		const cell = this.gridOptions.api.getFocusedCell();
-		if (cell.column.colId !== 'name') {
-			return;
-		}
-		this.oldValue = this.dataSource.data[cell.rowIndex].key;
-		cell.column.colDef.editable = true;
+		if (this._focusedRow < 0) return;
+		var item = this.data[this._focusedRow];
+		if (!item) return;
+
+		var self = this;
 		this.inEditor = true;
-		this.gridOptions.api.startEditingCell({
-			rowIndex: cell.rowIndex,
-			colKey: cell.column.colId
+		var row = this.tbody.querySelector("tr[data-index=\"" + this._focusedRow + "\"]");
+		if (!row) return;
+		var cell = row.querySelector(".col-name");
+		if (!cell) return;
+
+		var oldValue = item.name;
+		var finished = false;
+		var input = document.createElement("input");
+		input.type = "text";
+		input.className = "browse-inline-edit";
+		input.value = oldValue;
+		cell.textContent = "";
+		cell.appendChild(input);
+		input.focus();
+		input.select();
+
+		function finish(commit) {
+			if (finished) return;
+			finished = true;
+			var newValue = input.value;
+			cell.textContent = commit && newValue ? newValue : oldValue;
+			setTimeout(function() { self.inEditor = false; }, 200);
+			if (commit && newValue && newValue !== oldValue) {
+				fetchJSON("modules/collections.xq", {
+					target: encodeURI(newValue),
+					rename: encodeURI(oldValue),
+					root: self._collection
+				}).then(function(data) {
+					if (data.status == "fail") {
+						eXide.util.Dialog.warning("Rename Error", data.message);
+					}
+					self.reload();
+				});
+			}
+			self.scrollContainer.focus();
+		}
+
+		input.addEventListener("keydown", function(e) {
+			if (e.which === 13) { e.preventDefault(); finish(true); }
+			if (e.which === 27) { e.preventDefault(); finish(false); }
+		});
+		input.addEventListener("blur", function() {
+			finish(true);
 		});
 	};
 
@@ -466,7 +592,7 @@ eXide.browse.ResourceBrowser = (function () {
 			    spinner.style.display = "";
 				fetchJSON("modules/collections.xq", {
 						create: document.getElementById("eXide-browse-collection-name").value,
-						collection: self.dataSource.collection
+						collection: self._collection
 					}).then(function (data) {
 					    spinner.style.display = "none";
 						if (data.status == "fail") {
@@ -486,7 +612,7 @@ eXide.browse.ResourceBrowser = (function () {
 			    var spinner = document.getElementById("eXide-browse-spinner");
 			    spinner.style.display = "";
 				fetchJSON("modules/collections.xq", {
-    					remove: self.dataSource.collection
+    					remove: self._collection
     				}).then(function (data) {
     				    spinner.style.display = "none";
     					if (data.status == "fail") {
@@ -499,7 +625,7 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
 	Constr.prototype.deleteResource = function(row) {
-		const selected = row ? [row] : this.gridOptions.api.getSelectedRows();
+		var selected = row ? [row] : this.getSelectedRows();
 		if (selected.length == 0) {
 			return;
 		}
@@ -515,7 +641,7 @@ eXide.browse.ResourceBrowser = (function () {
 				    spinner.style.display = "";
 					fetchJSON("modules/collections.xq", {
 							remove: resources,
-							root: self.dataSource.collection
+							root: self._collection
 						}).then(function (data) {
 						    spinner.style.display = "none";
 							self.reload();
@@ -527,7 +653,7 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
     Constr.prototype.properties = function() {
-		const selected = this.gridOptions.api.getSelectedRows();
+		var selected = this.getSelectedRows();
     	if (selected.length == 0) {
 			return;
 		}
@@ -565,24 +691,23 @@ eXide.browse.ResourceBrowser = (function () {
       this.clipboardMode = "copy";
       this.copy0();
     };
+
     Constr.prototype.copy0 = function() {
-		const selected = this.gridOptions.api.getSelectedRows();
+		var selected = this.getSelectedRows();
 		if (selected.length == 0) {
 			return;
 		}
         this.clipboard = [];
 		for (var i = 0; i < selected.length; i++) {
-            var path = selected[i].key;
-
-			this.clipboard.push(path);
+            this.clipboard.push(selected[i].key);
 		}
         console.log("Clipboard: %o", this.clipboard);
     };
 
     Constr.prototype.paste = function() {
         var self = this;
-        console.log("Pasting resources %o to %s in mode %s", this.clipboard, this.dataSource.collection, this.clipboardMode);
-        var params = { root: this.dataSource.collection };
+        console.log("Pasting resources %o to %s in mode %s", this.clipboard, this._collection, this.clipboardMode);
+        var params = { root: this._collection };
         params[this.clipboardMode] = this.clipboard;
 		fetchJSON("modules/collections.xq", params).then(function (data) {
 				console.log(data.status);
@@ -595,18 +720,22 @@ eXide.browse.ResourceBrowser = (function () {
     };
 
     Constr.prototype.goto = function(row) {
-		this.gridOptions.api.setFocusedCell(row);
+		if (row < 0 || row >= this.data.length) return;
+		this._focusedRow = row;
+		this._selectedIndices.clear();
+		this._selectedIndices.add(row);
+		this._updateSelectionDisplay();
+		this._scrollRowIntoView(row);
+		this._fireSelectionChanged();
     };
 
     Constr.prototype.focus = function() {
-        var canvas = this.container.querySelector(".grid-canvas");
-        if (canvas) canvas.focus();
+        this.scrollContainer.focus();
     };
 
 	Constr.prototype.reload = function() {
-		this.update(this.dataSource.collection, true);
-		//TODO : modify this to add an event mechanism instead
-		eXide.app.syncDirectory(this.dataSource.collection);
+		this.update(this._collection, true);
+		eXide.app.syncDirectory(this._collection);
 	};
 
 	return Constr;
@@ -977,7 +1106,7 @@ eXide.browse.Browser = (function () {
 			return null;
 		return {
 			name: name,
-			path: this.resources.dataSource.collection + "/" + name,
+			path: this.resources._collection + "/" + name,
 			writable: true
 		};
 	};

@@ -25,8 +25,8 @@ context('DB Manager', () => {
 
     it('should select the clicked document', () => {
       cy.get('div.eXide-browse-main').within(() => {
-        cy.get('div[role=row][row-id=0]').find('div').first().click()
-        cy.get('div[role=row][row-id=0]').should('have.attr', 'aria-selected', 'true')
+        cy.get('.browse-table tbody tr').first().click()
+        cy.get('.browse-table tbody tr').first().should('have.attr', 'aria-selected', 'true')
       })
     })
     describe('collection creation', () => {
@@ -37,18 +37,18 @@ context('DB Manager', () => {
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
 
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', collectionName).should('exist')
+          cy.contains('.browse-table tbody td.col-name', collectionName).should('exist')
         })
       })
 
       it('should delete the created collection', () => {
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', collectionName).click()
+          cy.contains('.browse-table tbody td.col-name', collectionName).click()
         })
         cy.get('#eXide-browse-toolbar-delete-resource').click()
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', collectionName).should('not.exist')
+          cy.contains('.browse-table tbody td.col-name', collectionName).should('not.exist')
         })
       })
     })
@@ -61,14 +61,14 @@ context('DB Manager', () => {
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
 
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeRenamed').should('exist')
+          cy.contains('.browse-table tbody td.col-name', 'toBeRenamed').should('exist')
         })
       })
 
       it('should rename selected', () => {
         //click on file by name
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeRenamed').click()
+          cy.contains('.browse-table tbody td.col-name', 'toBeRenamed').click()
         })
         //click on toolbar action
         cy.get('#eXide-browse-toolbar-rename').click()
@@ -77,18 +77,18 @@ context('DB Manager', () => {
 
         //check for modification
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'AéB').should('exist')
+          cy.contains('.browse-table tbody td.col-name', 'AéB').should('exist')
         })
       })
 
       it('should delete the created collection', () => {
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'AéB').click()
+          cy.contains('.browse-table tbody td.col-name', 'AéB').click()
         })
         cy.get('#eXide-browse-toolbar-delete-resource').click()
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'AéB').should('not.exist')
+          cy.contains('.browse-table tbody td.col-name', 'AéB').should('not.exist')
         })
       })
     })
@@ -101,13 +101,13 @@ context('DB Manager', () => {
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
 
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'AéB').should('exist')
+          cy.contains('.browse-table tbody td.col-name', 'AéB').should('exist')
         })
       })
 
       it('should check for properties', () => {
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'AéB').click()
+          cy.contains('.browse-table tbody td.col-name', 'AéB').click()
         })
 
         cy.get('#eXide-browse-toolbar-properties').click()
@@ -117,12 +117,12 @@ context('DB Manager', () => {
 
       it('should delete the created collection', () => {
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'AéB').click()
+          cy.contains('.browse-table tbody td.col-name', 'AéB').click()
         })
         cy.get('#eXide-browse-toolbar-delete-resource').click()
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'AéB').should('not.exist')
+          cy.contains('.browse-table tbody td.col-name', 'AéB').should('not.exist')
         })
       })
     })
@@ -135,7 +135,7 @@ context('DB Manager', () => {
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
 
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeCopiedAéB').should('exist')
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').should('exist')
         })
       })
 
@@ -146,14 +146,14 @@ context('DB Manager', () => {
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
 
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeCopiedInAéB').should('exist')
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB').should('exist')
         })
       })
 
       it('should copy the collection', () => {
         //click on file by name
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeCopiedAéB').click()
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').click()
         })
         cy.wait(500)
         //click on toolbar action
@@ -161,7 +161,7 @@ context('DB Manager', () => {
 
         //navigate into collection
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeCopiedInAéB').dblclick()
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB').dblclick()
         })
 
         //paste the collection
@@ -169,14 +169,14 @@ context('DB Manager', () => {
 
         //check for modification
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeCopiedAéB').should('exist')
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').should('exist')
         })
       })
 
       it('should delete the created collection', () => {
         cy.get('div.eXide-browse-main').within(() => {
           cy.wait(500)
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeCopiedInAéB').click()
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB').click()
         })
         cy.wait(500)
         cy.get('#eXide-browse-toolbar-delete-resource').click()
@@ -185,17 +185,17 @@ context('DB Manager', () => {
 
         cy.get('div.eXide-browse-main').within(() => {
           cy.wait(500)
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeCopiedAéB').click()
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').click()
         })
         cy.wait(500)
 
         cy.get('#eXide-browse-toolbar-delete-resource').click()
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeCopiedInAéB').should('not.exist')
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB').should('not.exist')
         })
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeCopiedAéB').should('not.exist')
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').should('not.exist')
         })
       })
     })
@@ -208,7 +208,7 @@ context('DB Manager', () => {
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
 
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeCopiedAéB').should('exist')
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').should('exist')
         })
       })
 
@@ -219,21 +219,21 @@ context('DB Manager', () => {
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
 
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeCopiedInAéB').should('exist')
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB').should('exist')
         })
       })
 
       it('should cut the collection', () => {
         //click on file by name
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeCopiedAéB').click()
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').click()
         })
         //click on toolbar action
         cy.get('#eXide-browse-toolbar-cut').click()
 
         //navigate into collection
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeCopiedInAéB').dblclick()
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB').dblclick()
         })
 
         //paste the collection
@@ -241,23 +241,23 @@ context('DB Manager', () => {
 
         //check for modification
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeCopiedAéB').should('exist')
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').should('exist')
         })
       })
 
       it('should delete the created collection', () => {
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeCopiedInAéB').click()
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB').click()
         })
         cy.get('#eXide-browse-toolbar-delete-resource').click()
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
 
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeCopiedInAéB').should('not.exist')
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB').should('not.exist')
         })
         // check the collection is removed by cutting it
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'toBeCopiedAéB').should('not.exist')
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').should('not.exist')
         })
       })
     })
@@ -285,8 +285,8 @@ context('DB Manager', () => {
         cy.get('#fullscreen > div.editor-header > div > ul > li:nth-child(1) > a').click()
         cy.get('#fullscreen > div.editor-header > div > ul > li:nth-child(1) > ul').find('#menu-file-manager').click()
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'AéB').dblclick()
-          cy.contains('div[role=gridcell][col-id=name]', 'AéB.xml').dblclick()
+          cy.contains('.browse-table tbody td.col-name', 'AéB').dblclick()
+          cy.contains('.browse-table tbody td.col-name', 'AéB.xml').dblclick()
         })
 
         cy.contains('/db/AéB/AéB.xml').should('exist')
@@ -301,13 +301,13 @@ context('DB Manager', () => {
         cy.get('#fullscreen > div.editor-header > div > ul > li:nth-child(1) > a').click()
         cy.get('#fullscreen > div.editor-header > div > ul > li:nth-child(1) > ul').find('#menu-file-manager').click()
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'AéB').click()
+          cy.contains('.browse-table tbody td.col-name', 'AéB').click()
         })
         cy.get('#eXide-browse-toolbar-delete-resource').click()
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
 
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('div[role=gridcell][col-id=name]', 'AéB').should('not.exist')
+          cy.contains('.browse-table tbody td.col-name', 'AéB').should('not.exist')
         })
       })
     })
