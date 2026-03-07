@@ -273,7 +273,7 @@ eXide.util.mimeTypes = (function () {
         'xquery': ['application/xquery'],
         'css': ['text/css'],
         'html': ['text/html'],
-        'javascript': ['application/javascript'],
+        'javascript': ['application/javascript', 'application/x-javascript', 'text/javascript'],
         'text': ['text/text'],
         'less': ['application/less'],
         'tmsnippet': ['application/tmsnippet'],
