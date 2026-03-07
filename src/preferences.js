@@ -61,6 +61,13 @@ eXide.util.Preferences = (function () {
             });
         });
 
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function() {
+            if ($this.preferences.theme === "system") {
+                $this.applyPreferences();
+                $this.save();
+            }
+        });
+
         this._dialog = eXide.util.DialogManager.create(container, {
             appendTo: "#layout-container",
     		title: "Preferences",
@@ -175,13 +182,20 @@ eXide.util.Preferences = (function () {
     };
 
     function migrateTheme(theme) {
-        if (theme === "light" || theme === "dark") return theme;
+        if (theme === "light" || theme === "dark" || theme === "system") return theme;
         return ACE_DARK_THEMES[theme] ? "dark" : "light";
+    }
+
+    function resolveTheme(theme) {
+        if (theme === "system") {
+            return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+        }
+        return theme;
     }
 
     Constr.prototype.applyPreferences = function () {
         this.preferences.theme = migrateTheme(this.preferences.theme);
-		this.editor.setTheme(this.preferences.theme);
+		this.editor.setTheme(resolveTheme(this.preferences.theme));
 
         // Store preferences on editor for use during document switching
         this.editor._preferences = this.preferences;
@@ -190,11 +204,29 @@ eXide.util.Preferences = (function () {
         // CM6 handles word wrap via EditorView.lineWrapping extension (configured in editor.js)
         // Indent/tab settings are applied when building extensions
 
-        if (this.preferences.font) {
+        if (this.preferences.font && this.preferences.font !== "Default") {
             var font = this.preferences.font + ", monospace";
-            document.getElementById("editor").style.fontFamily = font;
+            document.querySelectorAll("#editor .cm-editor, #editor .cm-content").forEach(function(el) {
+                el.style.fontFamily = font;
+            });
             document.getElementById("outline").style.fontFamily = font;
             document.getElementById("results-body").style.fontFamily = font;
+        } else {
+            document.querySelectorAll("#editor .cm-editor, #editor .cm-content").forEach(function(el) {
+                el.style.fontFamily = "";
+            });
+            document.getElementById("outline").style.fontFamily = "";
+            document.getElementById("results-body").style.fontFamily = "";
+        }
+
+        // Auto-pair brackets/quotes
+        if (this.editor._autoPairCompartment && this.editor.editor) {
+            var ap = this.preferences.autoPair;
+            this.editor.editor.dispatch({
+                effects: this.editor._autoPairCompartment.reconfigure(
+                    ap ? [CM6.closeBrackets(), CM6.keymap.of(CM6.closeBracketsKeymap)] : []
+                )
+            });
         }
 
         // Font size via CSS on the CM6 container
