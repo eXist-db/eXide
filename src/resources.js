@@ -105,6 +105,31 @@ eXide.browse.ResourceBrowser = (function () {
 			"</tr>";
 		this.table.appendChild(thead);
 
+		// Column resize handles
+		thead.querySelectorAll("th").forEach(function(th) {
+			var handle = document.createElement("div");
+			handle.className = "col-resize-handle";
+			th.appendChild(handle);
+			th.style.position = "relative";
+			var startX, startWidth;
+			handle.addEventListener("mousedown", function(e) {
+				e.preventDefault();
+				e.stopPropagation();
+				startX = e.clientX;
+				startWidth = th.offsetWidth;
+				function onMove(e) {
+					var newWidth = Math.max(40, startWidth + e.clientX - startX);
+					th.style.width = newWidth + "px";
+				}
+				function onUp() {
+					document.removeEventListener("mousemove", onMove);
+					document.removeEventListener("mouseup", onUp);
+				}
+				document.addEventListener("mousemove", onMove);
+				document.addEventListener("mouseup", onUp);
+			});
+		});
+
 		this.tbody = document.createElement("tbody");
 		this.table.appendChild(this.tbody);
 		this.scrollContainer.appendChild(this.table);
@@ -667,7 +692,7 @@ eXide.browse.ResourceBrowser = (function () {
             var contentEl = document.getElementById("resource-properties-content");
             var params = new URLSearchParams();
             resources.forEach(function(r) {
-                params.append("properties", r);
+                params.append("properties[]", r);
             });
             fetch("modules/collections.xq", {
                 method: "POST",
