@@ -53,6 +53,36 @@ eXide.util.DialogManager = (function() {
         titleBar.appendChild(closeBtn);
         dialog.appendChild(titleBar);
 
+        // Drag support via title bar
+        if (options.draggable !== false) {
+            titleBar.style.cursor = "move";
+            var dragState = null;
+            titleBar.addEventListener("mousedown", function(e) {
+                if (e.target === closeBtn) return;
+                e.preventDefault();
+                // Remove centering transform on first drag
+                if (dialog.style.transform) {
+                    var rect = dialog.getBoundingClientRect();
+                    dialog.style.transform = "none";
+                    dialog.style.left = rect.left + "px";
+                    dialog.style.top = rect.top + "px";
+                }
+                dragState = { startX: e.clientX, startY: e.clientY, origLeft: dialog.offsetLeft, origTop: dialog.offsetTop };
+                function onMove(e) {
+                    if (!dragState) return;
+                    dialog.style.left = (dragState.origLeft + e.clientX - dragState.startX) + "px";
+                    dialog.style.top = (dragState.origTop + e.clientY - dragState.startY) + "px";
+                }
+                function onUp() {
+                    dragState = null;
+                    document.removeEventListener("mousemove", onMove);
+                    document.removeEventListener("mouseup", onUp);
+                }
+                document.addEventListener("mousemove", onMove);
+                document.addEventListener("mouseup", onUp);
+            });
+        }
+
         // Content wrapper
         var content = document.createElement("div");
         content.className = "eXide-dialog-content";

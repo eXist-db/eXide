@@ -196,6 +196,7 @@ eXide.util.Dialog = (function () {
 		document.body.appendChild(el);
 		msgDlg = eXide.util.DialogManager.create(el, {
 			modal: true,
+			width: 420,
 			appendTo: "#layout-container",
 			buttons: { "OK": function() { this.close(); } }
 		});
@@ -210,6 +211,7 @@ eXide.util.Dialog = (function () {
 		document.body.appendChild(el);
 		inputDlg = eXide.util.DialogManager.create(el, {
 			modal: true,
+			width: 420,
 			buttons: {
 				"OK": function() {
 					this.close();
