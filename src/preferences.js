@@ -44,7 +44,9 @@ eXide.util.Preferences = (function () {
         omitXMLDeclarationOnDownload: true,
         omitXMLDeclarationOnDownloadPackage: true,
         softWrap: -1,
-        emmet: false
+        emmet: false,
+        prettierPrintWidth: 80,
+        prettierSingleQuote: false
 	};
     
     Constr = function(editor) {
@@ -98,6 +100,8 @@ eXide.util.Preferences = (function () {
         form.querySelector('input[name="auto-pair"]').checked = this.preferences.autoPair;
 		form.querySelector('input[name="print-margin"]').checked = this.preferences.showPrintMargin;
 		form.querySelector('input[name="emmet"]').checked = this.preferences.emmet;
+		form.querySelector('select[name="prettier-print-width"]').value = this.preferences.prettierPrintWidth;
+		form.querySelector('input[name="prettier-single-quote"]').checked = this.preferences.prettierSingleQuote;
 
         var indent = this.preferences.indent;
         var indentSize = this.preferences.indentSize;
@@ -127,6 +131,8 @@ eXide.util.Preferences = (function () {
         this.preferences.autoPair = form.querySelector('input[name="auto-pair"]').checked;
 		this.preferences.showPrintMargin = form.querySelector('input[name="print-margin"]').checked;
 		this.preferences.emmet = form.querySelector('input[name="emmet"]').checked;
+		this.preferences.prettierPrintWidth = parseInt(form.querySelector('select[name="prettier-print-width"]').value, 10);
+		this.preferences.prettierSingleQuote = form.querySelector('input[name="prettier-single-quote"]').checked;
         this.preferences.indentOnOpen = form.querySelector('input[name="indent-on-open"]').checked;
         this.preferences.indentOnDownload = form.querySelector('input[name="indent-on-download"]').checked;
         this.preferences.indentOnDownloadPackage = form.querySelector('input[name="indent-on-download-package"]').checked;

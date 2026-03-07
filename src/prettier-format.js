@@ -49,10 +49,13 @@ var prettierFormat = (function () {
             if (!config) {
                 return Promise.reject(new Error("No formatter available for mode: " + mode));
             }
+            var prefs = (typeof eXide !== "undefined" && eXide.app && eXide.app.editor && eXide.app.editor._preferences) || {};
             var options = {
                 parser: config.parser,
                 plugins: prettierBundle.plugins,
-                tabWidth: 4
+                tabWidth: prefs.indentSize || 4,
+                printWidth: prefs.prettierPrintWidth || 80,
+                singleQuote: prefs.prettierSingleQuote || false
             };
             Object.keys(config).forEach(function (key) {
                 if (key !== "parser") {
