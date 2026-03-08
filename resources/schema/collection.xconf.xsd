@@ -1,27 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-
-    eXist-db Open Source Native XML Database
-    Copyright (C) 2001 The eXist-db Authors
-
-    info@exist-db.org
-    http://www.exist-db.org
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-
--->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
            xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning" vc:minVersion="1.1"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -120,7 +97,7 @@
         <xs:attributeGroup ref="cc:caseOpt"/>
         <xs:attributeGroup ref="cc:nestedOpt"/>
         <xs:attributeGroup ref="cc:whitespaceOpt"/>
-        <xs:attributeGroup ref="cc:typeReq"/>
+        <xs:attributeGroup ref="cc:typeOpt"/>
     </xs:complexType>
     
     <xs:element name="lucene" type="cc:luceneType"/>
@@ -206,6 +183,7 @@
         <xs:attributeGroup ref="cc:typeOpt"/>
         <xs:attributeGroup ref="cc:analyzerOpt"/>
         <xs:attributeGroup ref="cc:storeOpt"/>
+        <xs:attributeGroup ref="cc:binaryOpt"/>
     </xs:complexType>
 
     <xs:complexType name="matchAttrBoostType">
@@ -309,7 +287,25 @@
         <xs:attribute name="at" type="xs:anyURI" use="required" form="unqualified"/>
     </xs:attributeGroup>
     <xs:attributeGroup name="attributeReq">
-        <xs:attribute name="attribute" type="xs:QName" use="required"/>
+        <xs:attribute name="attribute" type="xs:NCName" use="required"/>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="binaryOpt">
+        <xs:attribute name="binary" use="optional">
+            <xs:simpleType>
+                <xs:restriction base="xs:token">
+                    <xs:enumeration value="yes">
+                        <xs:annotation>
+                            <xs:documentation>Index as a binary field</xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="no">
+                        <xs:annotation>
+                            <xs:documentation>Do not index as a binary field</xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
     </xs:attributeGroup>
     <xs:attributeGroup name="boostOpt">
         <xs:attribute name="boost" type="xs:double" use="optional" form="unqualified"/>

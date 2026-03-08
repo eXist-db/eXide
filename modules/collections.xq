@@ -21,8 +21,10 @@ xquery version "3.1";
 import module namespace config="http://exist-db.org/xquery/apps/config" at "config.xqm";
 
 declare namespace json="http://www.json.org";
+declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
 
-declare option exist:serialize "method=json media-type=text/javascript";
+declare option output:method "json";
+declare option output:media-type "application/json";
 
 (: Handle difference between 4.x.x and 5.x.x releases of eXist :)
 declare variable $local:copy-collection :=
