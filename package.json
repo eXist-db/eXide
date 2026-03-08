@@ -13,6 +13,7 @@
 		"test": "node --test test/parser-test.js test/visitor-test.js test/utils-test.js test/static-analysis-test.js",
 		"bundle-prettier": "node tools/bundle-prettier.js",
 		"bundle-cm6": "node tools/bundle-cm6.js",
+		"generate-parser": "node tools/generate-parser.js",
 		"cypress": "cypress run"
 	},
 	"repository": {

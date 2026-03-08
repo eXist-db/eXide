@@ -216,6 +216,33 @@ describe("XQuery Full Text 1.0 expressions", function () {
     });
 });
 
+describe("eXist-db legacy update expressions (XQUFEL)", function () {
+    it("update insert expression", function () {
+        const { ast } = parse('update insert <a/> into /root');
+        assert.ok(findNode(ast, "ExistUpdateExpr"));
+    });
+
+    it("update replace expression", function () {
+        const { ast } = parse('update replace /root/a with <b/>');
+        assert.ok(findNode(ast, "ExistUpdateExpr"));
+    });
+
+    it("update value expression", function () {
+        const { ast } = parse('update value /root/a with "new"');
+        assert.ok(findNode(ast, "ExistUpdateExpr"));
+    });
+
+    it("update delete expression", function () {
+        const { ast } = parse('update delete /root/a');
+        assert.ok(findNode(ast, "ExistUpdateExpr"));
+    });
+
+    it("update rename expression", function () {
+        const { ast } = parse('update rename /root/a as "b"');
+        assert.ok(findNode(ast, "ExistUpdateExpr"));
+    });
+});
+
 describe("Position accuracy", function () {
     it("single-line positions are correct", function () {
         const { ast } = parse("1 + 2");
