@@ -11,7 +11,9 @@ const entryContents = `
 import {EditorState, Compartment, StateField, StateEffect, Prec, Facet} from "@codemirror/state";
 import {EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
         drawSelection, dropCursor, rectangularSelection, crosshairCursor,
-        highlightSpecialChars, Decoration, ViewPlugin, WidgetType, gutter, GutterMarker,
+        highlightSpecialChars, highlightWhitespace, highlightTrailingWhitespace,
+        scrollPastEnd,
+        Decoration, ViewPlugin, WidgetType, gutter, GutterMarker,
         showTooltip, tooltips} from "@codemirror/view";
 import {syntaxHighlighting, HighlightStyle, indentOnInput, foldGutter, foldKeymap,
         bracketMatching, defaultHighlightStyle, indentUnit, StreamLanguage,
@@ -58,6 +60,9 @@ globalThis.CM6 = {
     rectangularSelection,
     crosshairCursor,
     highlightSpecialChars,
+    highlightWhitespace,
+    highlightTrailingWhitespace,
+    scrollPastEnd,
     Decoration,
     ViewPlugin,
     WidgetType,

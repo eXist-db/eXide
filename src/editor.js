@@ -184,6 +184,12 @@ eXide.edit.Editor = (function () {
     var readOnlyCompartment = new Compartment();
     // Auto-pair brackets/quotes compartment
     var autoPairCompartment = new Compartment();
+    // Line wrapping compartment
+    var lineWrappingCompartment = new Compartment();
+    // Show invisibles (whitespace) compartment
+    var showInvisiblesCompartment = new Compartment();
+    // Rectangular selection compartment
+    var rectangularSelectionCompartment = new Compartment();
 
     function parseErrMsg(error) {
         var msg;
@@ -259,6 +265,10 @@ eXide.edit.Editor = (function () {
             languageCompartment.of([]),
             themeCompartment.of([]),
             readOnlyCompartment.of(EditorState.readOnly.of(false)),
+            lineWrappingCompartment.of([]),
+            showInvisiblesCompartment.of([]),
+            rectangularSelectionCompartment.of([CM6.rectangularSelection(), CM6.crosshairCursor()]),
+            CM6.scrollPastEnd(),
             EditorView.updateListener.of(function(update) {
                 if (update.docChanged && $this.activeDoc && !$this._switching) {
                     if ($this.activeDoc.saved) {
@@ -321,6 +331,9 @@ eXide.edit.Editor = (function () {
         this._themeCompartment = themeCompartment;
         this._readOnlyCompartment = readOnlyCompartment;
         this._autoPairCompartment = autoPairCompartment;
+        this._lineWrappingCompartment = lineWrappingCompartment;
+        this._showInvisiblesCompartment = showInvisiblesCompartment;
+        this._rectangularSelectionCompartment = rectangularSelectionCompartment;
         this._baseExtensions = buildExtensions;
 
         // register keybindings

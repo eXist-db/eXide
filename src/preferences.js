@@ -237,14 +237,37 @@ eXide.util.Preferences = (function () {
             document.getElementById("results-body").style.fontFamily = "";
         }
 
-        // Auto-pair brackets/quotes
-        if (this.editor._autoPairCompartment && this.editor.editor) {
-            var ap = this.preferences.autoPair;
-            this.editor.editor.dispatch({
-                effects: this.editor._autoPairCompartment.reconfigure(
+        // Reconfigure CM6 compartments
+        if (this.editor.editor) {
+            var effects = [];
+
+            // Auto-pair brackets/quotes
+            if (this.editor._autoPairCompartment) {
+                var ap = this.preferences.autoPair;
+                effects.push(this.editor._autoPairCompartment.reconfigure(
                     ap ? [CM6.closeBrackets(), CM6.keymap.of(CM6.closeBracketsKeymap)] : []
-                )
-            });
+                ));
+            }
+
+            // Line wrapping
+            if (this.editor._lineWrappingCompartment) {
+                var wrap = this.preferences.softWrap;
+                effects.push(this.editor._lineWrappingCompartment.reconfigure(
+                    wrap !== 0 ? [CM6.EditorView.lineWrapping] : []
+                ));
+            }
+
+            // Show invisibles (whitespace characters)
+            if (this.editor._showInvisiblesCompartment) {
+                var inv = this.preferences.showInvisibles;
+                effects.push(this.editor._showInvisiblesCompartment.reconfigure(
+                    inv ? [CM6.highlightWhitespace(), CM6.highlightTrailingWhitespace()] : []
+                ));
+            }
+
+            if (effects.length > 0) {
+                this.editor.editor.dispatch({ effects: effects });
+            }
         }
 
         // Font size via CSS on the CM6 container
