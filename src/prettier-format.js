@@ -24,14 +24,14 @@
 var prettierFormat = (function () {
 
     var MODE_CONFIG = {
-        "xquery":   { parser: "xquery" },
-        "xml":      { parser: "xml", xmlWhitespaceSensitivity: "ignore" },
-        "html":     { parser: "html" },
-        "css":      { parser: "css" },
-        "less":     { parser: "less" },
+        "xquery":     { parser: "xquery" },
+        "xml":        { parser: "xml", hasXmlOptions: true },
+        "html":       { parser: "html", hasXmlOptions: true },
+        "css":        { parser: "css" },
+        "less":       { parser: "less" },
         "javascript": { parser: "babel" },
-        "json":     { parser: "json" },
-        "markdown": { parser: "markdown" }
+        "json":       { parser: "json" },
+        "markdown":   { parser: "markdown" }
     };
 
     return {
@@ -50,18 +50,23 @@ var prettierFormat = (function () {
                 return Promise.reject(new Error("No formatter available for mode: " + mode));
             }
             var prefs = (typeof eXide !== "undefined" && eXide.app && eXide.app.editor && eXide.app.editor._preferences) || {};
+            var useTabs = prefs.indent === 0;
             var options = {
                 parser: config.parser,
                 plugins: prettierBundle.plugins,
                 tabWidth: prefs.indentSize || 4,
+                useTabs: useTabs,
                 printWidth: prefs.prettierPrintWidth || 80,
                 singleQuote: prefs.prettierSingleQuote || false
             };
-            Object.keys(config).forEach(function (key) {
-                if (key !== "parser") {
-                    options[key] = config[key];
-                }
-            });
+            if (config.hasXmlOptions) {
+                options.xmlWhitespaceSensitivity = prefs.prettierXmlWhitespaceSensitivity || "ignore";
+                options.xmlSelfClosingSpace = prefs.prettierXmlSelfClosingSpace !== false;
+                options.xmlSortAttributesByKey = prefs.prettierXmlSortAttributesByKey || false;
+                options.xmlQuoteAttributes = prefs.prettierXmlQuoteAttributes || "preserve";
+                options.singleAttributePerLine = prefs.prettierSingleAttributePerLine || false;
+                options.bracketSameLine = prefs.prettierBracketSameLine !== false;
+            }
             return prettierBundle.prettier.format(code, options);
         }
     };

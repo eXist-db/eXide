@@ -666,8 +666,43 @@
                                     <input type="checkbox" name="prettier-single-quote" id="pref-prettier-single-quote"/>
                                 </li>
                             </ol>
-                            <p>Tab width uses the editor's indent size setting above.
+                            <p>Tab width and tab/space mode use the editor settings above.
                                 Format code with Edit &gt; Reformat (or the keyboard shortcut).</p>
+                            <legend>XML / HTML Options</legend>
+                            <ol>
+                                <li>
+                                    <label for="pref-prettier-xml-ws">Whitespace sensitivity:</label>
+                                    <select name="prettier-xml-ws" id="pref-prettier-xml-ws">
+                                        <option value="ignore">Ignore</option>
+                                        <option value="strict">Strict</option>
+                                        <option value="preserve">Preserve</option>
+                                    </select>
+                                </li>
+                                <li>
+                                    <label for="pref-prettier-xml-self-closing-space">Space before self-closing />:</label>
+                                    <input type="checkbox" name="prettier-xml-self-closing-space" id="pref-prettier-xml-self-closing-space"/>
+                                </li>
+                                <li>
+                                    <label for="pref-prettier-xml-sort-attrs">Sort attributes by key:</label>
+                                    <input type="checkbox" name="prettier-xml-sort-attrs" id="pref-prettier-xml-sort-attrs"/>
+                                </li>
+                                <li>
+                                    <label for="pref-prettier-xml-quote-attrs">Quote attributes:</label>
+                                    <select name="prettier-xml-quote-attrs" id="pref-prettier-xml-quote-attrs">
+                                        <option value="preserve">Preserve</option>
+                                        <option value="double">Double quotes</option>
+                                        <option value="single">Single quotes</option>
+                                    </select>
+                                </li>
+                                <li>
+                                    <label for="pref-prettier-single-attr-per-line">Single attribute per line:</label>
+                                    <input type="checkbox" name="prettier-single-attr-per-line" id="pref-prettier-single-attr-per-line"/>
+                                </li>
+                                <li>
+                                    <label for="pref-prettier-bracket-same-line">Closing bracket on same line:</label>
+                                    <input type="checkbox" name="prettier-bracket-same-line" id="pref-prettier-bracket-same-line"/>
+                                </li>
+                            </ol>
                         </fieldset>
                         <fieldset>
                             <legend>Serialization</legend>

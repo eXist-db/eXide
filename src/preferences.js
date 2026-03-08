@@ -46,7 +46,13 @@ eXide.util.Preferences = (function () {
         softWrap: -1,
         emmet: false,
         prettierPrintWidth: 80,
-        prettierSingleQuote: false
+        prettierSingleQuote: false,
+        prettierXmlWhitespaceSensitivity: "ignore",
+        prettierXmlSelfClosingSpace: true,
+        prettierXmlSortAttributesByKey: false,
+        prettierXmlQuoteAttributes: "preserve",
+        prettierSingleAttributePerLine: false,
+        prettierBracketSameLine: true
 	};
     
     Constr = function(editor) {
@@ -109,6 +115,12 @@ eXide.util.Preferences = (function () {
 		form.querySelector('input[name="emmet"]').checked = this.preferences.emmet;
 		form.querySelector('select[name="prettier-print-width"]').value = this.preferences.prettierPrintWidth;
 		form.querySelector('input[name="prettier-single-quote"]').checked = this.preferences.prettierSingleQuote;
+		form.querySelector('select[name="prettier-xml-ws"]').value = this.preferences.prettierXmlWhitespaceSensitivity;
+		form.querySelector('input[name="prettier-xml-self-closing-space"]').checked = this.preferences.prettierXmlSelfClosingSpace;
+		form.querySelector('input[name="prettier-xml-sort-attrs"]').checked = this.preferences.prettierXmlSortAttributesByKey;
+		form.querySelector('select[name="prettier-xml-quote-attrs"]').value = this.preferences.prettierXmlQuoteAttributes;
+		form.querySelector('input[name="prettier-single-attr-per-line"]').checked = this.preferences.prettierSingleAttributePerLine;
+		form.querySelector('input[name="prettier-bracket-same-line"]').checked = this.preferences.prettierBracketSameLine;
 
         var indent = this.preferences.indent;
         var indentSize = this.preferences.indentSize;
@@ -140,6 +152,12 @@ eXide.util.Preferences = (function () {
 		this.preferences.emmet = form.querySelector('input[name="emmet"]').checked;
 		this.preferences.prettierPrintWidth = parseInt(form.querySelector('select[name="prettier-print-width"]').value, 10);
 		this.preferences.prettierSingleQuote = form.querySelector('input[name="prettier-single-quote"]').checked;
+		this.preferences.prettierXmlWhitespaceSensitivity = form.querySelector('select[name="prettier-xml-ws"]').value;
+		this.preferences.prettierXmlSelfClosingSpace = form.querySelector('input[name="prettier-xml-self-closing-space"]').checked;
+		this.preferences.prettierXmlSortAttributesByKey = form.querySelector('input[name="prettier-xml-sort-attrs"]').checked;
+		this.preferences.prettierXmlQuoteAttributes = form.querySelector('select[name="prettier-xml-quote-attrs"]').value;
+		this.preferences.prettierSingleAttributePerLine = form.querySelector('input[name="prettier-single-attr-per-line"]').checked;
+		this.preferences.prettierBracketSameLine = form.querySelector('input[name="prettier-bracket-same-line"]').checked;
         this.preferences.indentOnOpen = form.querySelector('input[name="indent-on-open"]').checked;
         this.preferences.indentOnDownload = form.querySelector('input[name="indent-on-download"]').checked;
         this.preferences.indentOnDownloadPackage = form.querySelector('input[name="indent-on-download-package"]').checked;
