@@ -233,6 +233,7 @@ eXide.edit.Editor = (function () {
      */
     function buildExtensions($this) {
         return [
+            CM6.lintGutter(),
             CM6.lineNumbers(),
             CM6.highlightActiveLine(),
             CM6.highlightActiveLineGutter(),
@@ -246,7 +247,6 @@ eXide.edit.Editor = (function () {
             CM6.indentOnInput(),
             CM6.syntaxHighlighting(CM6.defaultHighlightStyle, { fallback: true }),
             CM6.syntaxHighlighting(CM6.oneDarkHighlightStyle),
-            CM6.lintGutter(),
             CM6.search({ top: true }),
             keymap.of([
                 ...CM6.defaultKeymap,
@@ -269,6 +269,15 @@ eXide.edit.Editor = (function () {
                     $this.validator.triggerDelayed($this.activeDoc);
                     $this.$triggerEvent("change", [$this.activeDoc]);
                     $this.history.push($this.activeDoc.getPath(), $this.activeDoc.getCurrentLine());
+                }
+                if (update.selectionSet || update.docChanged) {
+                    var head = update.state.selection.main.head;
+                    var line = update.state.doc.lineAt(head);
+                    var col = head - line.from + 1;
+                    var el = document.getElementById("status-cursor");
+                    if (el) {
+                        el.textContent = "Ln " + line.number + ", Col " + col;
+                    }
                 }
             })
         ];
@@ -435,7 +444,7 @@ eXide.edit.Editor = (function () {
         }
 
          //Set up outline status bar
-        var outlineData = [{label: "outline", cls: "outline"},{label:'directory', cls:"directory"}]
+        var outlineData = [{label: "directory", cls: "directory"},{label:'outline', cls:"outline"}]
         d3.select("#tabs-outline").selectAll("li").data(outlineData)
             .enter()
             .append("li")
@@ -918,15 +927,31 @@ eXide.edit.Editor = (function () {
         if (label.length > 16) {
             label = label.substring(0, 13) + "...";
         }
-        if (!doc.saved)
-            label += "*";
 
         $this.tabs.querySelectorAll("li a").forEach(function(a) { a.classList.remove("active"); });
 
         var li = document.createElement("li");
         var tab = document.createElement("a");
-        tab.appendChild(document.createTextNode(label));
-        tab.className = "tab active";
+        var tabLabel = document.createElement("span");
+        tabLabel.className = "tab-label";
+        tabLabel.textContent = label;
+        tab.appendChild(tabLabel);
+        var indicator = document.createElement("span");
+        indicator.className = "tab-indicator";
+        var closeBtn = document.createElement("span");
+        closeBtn.className = "tab-close";
+        closeBtn.textContent = "\u00d7";
+        closeBtn.addEventListener("click", function(ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            $this.closeDocument(doc);
+        });
+        indicator.appendChild(closeBtn);
+        var modDot = document.createElement("span");
+        modDot.className = "tab-modified";
+        indicator.appendChild(modDot);
+        tab.appendChild(indicator);
+        tab.className = "tab active" + (doc.saved ? "" : " modified");
         tab.id = tabId;
         tab.title = doc.path;
         tab.draggable = true;
@@ -956,16 +981,22 @@ eXide.edit.Editor = (function () {
         // Native HTML5 drop target (for reordering between tabs)
         tab.addEventListener("dragover", function(ev) {
             ev.preventDefault();
-            this.classList.add("dragover");
+            var rect = this.getBoundingClientRect();
+            var onRight = (ev.clientX - rect.left) > rect.width / 2;
+            var li = this.parentNode;
+            li.classList.remove("drop-left", "drop-right");
+            li.classList.add(onRight ? "drop-right" : "drop-left");
         });
         tab.addEventListener("dragleave", function(ev) {
-            this.classList.remove("dragover");
+            this.parentNode.classList.remove("drop-left", "drop-right");
         });
         tab.addEventListener("drop", function(ev) {
             ev.stopImmediatePropagation();
             ev.stopPropagation();
             ev.preventDefault();
-            this.classList.remove("dragover");
+            var li = this.parentNode;
+            var insertAfter = li.classList.contains("drop-right");
+            li.classList.remove("drop-left", "drop-right");
             var allTabs = Array.prototype.slice.call($this.tabs.querySelectorAll(".tab"));
             var sourceIdx = parseInt(ev.dataTransfer.getData("text/plain"), 10);
             var targetIdx = allTabs.indexOf(this);
@@ -973,11 +1004,26 @@ eXide.edit.Editor = (function () {
             var sourceTab = allTabs[sourceIdx];
             if (!sourceTab) return;
             var sourceLi = sourceTab.parentNode;
+            var targetLi = this.parentNode;
             sourceLi.parentNode.removeChild(sourceLi);
-            this.parentNode.parentNode.insertBefore(sourceLi, this.parentNode);
-            $this.documents.splice(targetIdx, 0, $this.documents[sourceIdx]);
-            var adjustedSourceIdx = sourceIdx > targetIdx ? sourceIdx + 1 : sourceIdx;
-            $this.documents.splice(adjustedSourceIdx, 1);
+            if (insertAfter) {
+                targetLi.parentNode.insertBefore(sourceLi, targetLi.nextSibling);
+            } else {
+                targetLi.parentNode.insertBefore(sourceLi, targetLi);
+            }
+            // Rebuild documents array from new tab order
+            var newTabs = $this.tabs.querySelectorAll(".tab");
+            var newDocs = [];
+            for (var i = 0; i < newTabs.length; i++) {
+                var path = newTabs[i].title;
+                for (var j = 0; j < $this.documents.length; j++) {
+                    if ($this.documents[j].path === path) {
+                        newDocs.push($this.documents[j]);
+                        break;
+                    }
+                }
+            }
+            $this.documents = newDocs;
             $this.rebuildBuffersMenu();
         });
 
@@ -1080,15 +1126,18 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.updateTabStatus = function(oldPath, doc) {
-        var label;
-        if (!doc.saved)
-            label = doc.name + "*";
-        else
-            label = doc.name;
+        var label = doc.name;
+        if (label.length > 16) {
+            label = label.substring(0, 13) + "...";
+        }
         var tabLink = this.tabs.querySelector("a[title=\"" + oldPath + "\"]");
         if (tabLink) {
             tabLink.setAttribute("title", doc.path);
-            tabLink.textContent = label;
+            var tabLabel = tabLink.querySelector(".tab-label");
+            if (tabLabel) {
+                tabLabel.textContent = label;
+            }
+            tabLink.classList.toggle("modified", !doc.saved);
         }
     };
 

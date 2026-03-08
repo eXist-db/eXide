@@ -89,7 +89,13 @@ eXide.edit.Directory = (function () {
 	};
 	
 	function init() {
-		build.call(d3.select("#tree-root"), [{key:'/db',isCollection: true, isOpen:false, name:'db', isLoaded: false}])
+		var root = {key:'/db',isCollection: true, isOpen:false, name:'db', isLoaded: false};
+		build.call(d3.select("#tree-root"), [root]);
+		// Auto-expand the db root
+		var rootEl = document.getElementById("tree-root");
+		if (rootEl) {
+			toggleFolder.call(rootEl, root);
+		}
 	};
 	
 	function toggleFolder(d) {

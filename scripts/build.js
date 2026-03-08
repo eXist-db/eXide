@@ -194,7 +194,6 @@ function replace(path, outPath, data) {
 			"!resources/images/fullscreen.png",
 			"!resources/images/layouts_split.png",
 			"!resources/images/layouts_split_vertical.png",
-			"!resources/images/folder.png",
 			"!resources/images/header.gif",
 			"!resources/images/exide.png",
 			"!resources/images/exide.svg",

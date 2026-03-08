@@ -75,11 +75,11 @@ eXide.util.Preferences = (function () {
 			height: 400,
 			width: 600,
 			buttons: {
-				"Close": function () { this.close(); editor.focus(); },
                 "Reset Defaults": function () {
                     $this.preferences = Object.assign({}, defaultPreferences);
                     $this.updateForm();
-                }
+                },
+				"Close": function () { this.close(); editor.focus(); }
 			}
 		});
     };

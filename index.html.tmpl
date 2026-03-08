@@ -29,6 +29,7 @@
             <div class="header"/>
             <div class="editor-header">
                 <div class="menu">
+                    <span class="logo-wrapper"><img src="resources/images/logo.png" alt="eXide" class="logo"/></span>
                     <ul>
                         <li>
                             <a href="#">File</a>
@@ -252,6 +253,19 @@
                     </ul>
                 </div>
                 <span id="toolbar">
+                    <span class="toolbar-buttons">
+                        <button id="new"><i class="fa fa-file-o"></i> New</button>
+                        <button id="new-xquery"><i class="fa fa-file-code-o"></i> New XQuery</button>
+                        <button id="open"><i class="fa fa-folder-open-o"></i> Open</button>
+                        <button id="save"><i class="fa fa-floppy-o"></i> Save</button>
+                        <button id="close"><i class="fa fa-times"></i> Close</button>
+                        <button id="eval" title="Evaluate current query inside eXide"><i class="fa fa-cogs"></i> Eval</button>
+                        <button id="run" title="Run current query or project in new tab/window"><i class="fa fa-play"></i> Run</button>
+                        <button id="toggle-outline" title="Toggle outline panel"><svg class="toolbar-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="1.5"/><line x1="5" y1="2" x2="5" y2="14"/></svg></button>
+                        <button id="toggle-results" title="Toggle results panel"><svg class="toolbar-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="1.5"/><line x1="1" y1="10" x2="15" y2="10"/></svg></button>
+                        <button id="toggle-dark-mode" title="Toggle Dark Mode"><i class="fa fa-moon-o"></i></button>
+                        <button id="toggle-fullscreen" title="Toggle Fullscreen Mode"><i class="fa fa-arrows-alt"></i></button>
+                    </span>
                     <div class="options">
                         <span class="current-app" title="Displays the application the current buffer belongs to - if any">
                         Current app: <span id="toolbar-current-app">Unknown</span>
@@ -268,22 +282,7 @@
                             <option value="json">JSON</option>
                             <option value="markdown">Markdown</option>
                         </select>
-                        <a id="toggle-dark-mode" href="#" title="Toggle Dark Mode">
-                            <i class="fa fa-moon-o"></i>
-                        </a>
-                        <a id="toggle-fullscreen" href="#" title="Toggle Fullscreen Mode">
-                            <i class="fa fa-arrows-alt"></i>
-                        </a>
                     </div>
-                    <span class="toolbar-buttons">
-                        <button id="new"><i class="fa fa-file-o"></i> New</button>
-                        <button id="new-xquery"><i class="fa fa-file-code-o"></i> New XQuery</button>
-                        <button id="open"><i class="fa fa-folder-open-o"></i> Open</button>
-                        <button id="save"><i class="fa fa-floppy-o"></i> Save</button>
-                        <button id="close"><i class="fa fa-times"></i> Close</button>
-                        <button id="eval" title="Evaluate current query inside eXide"><i class="fa fa-cogs"></i> Eval</button>
-                        <button id="run" title="Run current query or project in new tab/window"><i class="fa fa-play"></i> Run</button>
-                    </span>
                 </span>
             </div>
             <div id="body">
@@ -335,7 +334,22 @@
                                         </a>
                                         <span class="path">Path</span>
                                     </span>
-                                    <a href="#" id="error-status"/>
+                                    <span class="status-separator">|</span>
+                                    <span id="status-cursor">Ln 1, Col 1</span>
+                                    <a href="#" id="error-status"></a>
+                                    <span id="exide-err-pill" role="button" tabindex="0" aria-label="Error details">
+                                        <span class="fa fa-exclamation-circle"></span>
+                                        <span id="exide-err-pill-label"></span>
+                                        <span id="exide-err-pill-arrow"></span>
+                                    </span>
+                                    <span class="status-right" id="status-db-version"></span>
+                                </div>
+                                <div id="exide-err-panel">
+                                    <div id="exide-err-panel-body"></div>
+                                    <button id="exide-err-panel-copy" aria-label="Copy error" title="Copy error to clipboard">
+                                        <span class="fa fa-clipboard"></span>
+                                    </button>
+                                    <button id="exide-err-panel-close" aria-label="Close error panel">&#215;</button>
                                 </div>
                                 <div id="ext-status-bar"/>
                             </div>

@@ -235,6 +235,17 @@ eXide.app = (function(util) {
             return menu;
         },
 
+		updateAuthStatus: function(user) {
+		    var el = document.getElementById("user");
+		    if (user) {
+		        el.innerHTML = '<span class="auth-dot auth-dot-ok"></span>' + user;
+		        el.title = "Click to logout";
+		    } else {
+		        el.textContent = "Login";
+		        el.title = "Click to login";
+		    }
+		},
+
 		updateLayoutTop: function() {
 		    var toolbarBtns = document.querySelector(".toolbar-buttons");
 		    var layoutH = document.querySelector(".layout-horizontal");
@@ -1063,7 +1074,7 @@ eXide.app = (function(util) {
             .then(function(data) {
                 if (data && data.user) {
                     app.login = data;
-                    document.getElementById("user").textContent = "Logged in as " + app.login.user + ". ";
+                    app.updateAuthStatus(app.login.user);
                     if (callback) callback(app.login.user);
                 } else {
                     app.login = null;
@@ -1072,7 +1083,7 @@ eXide.app = (function(util) {
             })
             .catch(function(err) {
                 app.login = null;
-                document.getElementById("user").textContent = "Login";
+                app.updateAuthStatus(null);
                 if (callback) callback(null);
             });
         },
@@ -1405,7 +1416,10 @@ eXide.app = (function(util) {
                     }
 					fetch("login", {
 					    method: "POST",
-					    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+					    headers: {
+					        "Content-Type": "application/x-www-form-urlencoded",
+					        "Accept": "application/json"
+					    },
 					    body: formData.toString()
 					})
 					.then(function(response) {
@@ -1420,7 +1434,7 @@ eXide.app = (function(util) {
 						    app.login = data;
 						    console.log("Logged in as %o. Is dba: %s", data, app.login.isAdmin);
 						    dialogs["login-dialog"].close();
-						    document.getElementById("user").textContent = "Logged in as " + app.login.user + ". ";
+						    app.updateAuthStatus(app.login.user);
 						    editor.focus();
 					    }
 					})
@@ -1583,6 +1597,28 @@ eXide.app = (function(util) {
             var btnRun = document.getElementById("run");
 			btnRun.addEventListener("click", function(ev) { app.runAppOrQuery() });
 
+            var statusCursor = document.getElementById("status-cursor");
+            if (statusCursor) {
+                statusCursor.style.cursor = "pointer";
+                statusCursor.title = "Go to Line";
+                statusCursor.addEventListener("click", function() {
+                    editor.gotoLine();
+                });
+            }
+
+            var btnToggleOutline = document.getElementById("toggle-outline");
+            if (btnToggleOutline) {
+                btnToggleOutline.addEventListener("click", function() {
+                    layout.toggle("west");
+                });
+            }
+            var btnToggleResults = document.getElementById("toggle-results");
+            if (btnToggleResults) {
+                btnToggleResults.addEventListener("click", function() {
+                    layout.toggle(resultPanel);
+                });
+            }
+
             var btnDebug = document.getElementById("debug");
             if (btnDebug) btnDebug.addEventListener("click", app.startDebug);
 
@@ -1720,7 +1756,7 @@ eXide.app = (function(util) {
 				if (app.login) {
 					// logout
 					fetch("login?logout=logout");
-					document.getElementById("user").textContent = "Login";
+					app.updateAuthStatus(null);
 					app.login = null;
 				} else {
 					dialogs["login-dialog"].open();
