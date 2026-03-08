@@ -32,15 +32,26 @@ eXide.edit.commands = (function () {
      */
     function displayKey(cm6Key) {
         if (!cm6Key) return "";
+        var str = cm6Key
+            .replace(/ArrowLeft/g, "←")
+            .replace(/ArrowRight/g, "→")
+            .replace(/ArrowUp/g, "↑")
+            .replace(/ArrowDown/g, "↓")
+            .replace(/Backspace/g, "⌫")
+            .replace(/Enter/g, "↩")
+            .replace(/Escape/g, "⎋")
+            .replace(/PageUp/g, "⇞")
+            .replace(/PageDown/g, "⇟")
+            .replace(/Space/g, "␣");
         if (isMac) {
-            return cm6Key
+            return str
                 .replace(/Mod-/g, "⌘")
                 .replace(/Alt-/g, "⌥")
                 .replace(/Shift-/g, "⇧")
                 .replace(/Ctrl-/g, "⌃")
                 .replace(/-/g, "");
         }
-        return cm6Key
+        return str
             .replace(/Mod-/g, "Ctrl+")
             .replace(/Alt-/g, "Alt+")
             .replace(/Shift-/g, "Shift+");
@@ -53,6 +64,36 @@ eXide.edit.commands = (function () {
             return entry.mac || entry.key;
         }
         return entry.key;
+    }
+
+    var nameLabels = {
+        undo: "Undo", redo: "Redo", gotoLine: "Go to Line",
+        historyBack: "Go to Last Edit", fold: "Fold", unfold: "Unfold",
+        saveDocument: "Save", runQuery: "Eval", runQueryOrApp: "Run",
+        openDocument: "Open", newDocumentFromTemplate: "New from Template",
+        closeDocument: "Close", closeAll: "Close All",
+        autocomplete: "Autocomplete", nextTab: "Next Tab", previousTab: "Previous Tab",
+        functionDoc: "Function Documentation", gotoDefinition: "Go to Definition",
+        gotoSymbol: "Go to Symbol", searchReplace: "Find/Replace",
+        escape: "Cancel/Escape", dbManager: "DB Manager",
+        toggleComment: "Toggle Comment", synchronize: "Synchronize",
+        preferences: "Preferences", openApp: "Open Application",
+        "xquery-format": "Format Code", quickfix: "Quick Fix",
+        expandSelection: "Expand Selection", renameSymbol: "Rename Symbol",
+        removeTags: "Remove Tags", extractFunction: "Extract Function",
+        extractVariable: "Extract Variable", openTab: "Switch Buffer",
+        toggleQueryResults: "Toggle Results", commandPalette: "Command Palette",
+        findFiles: "Find in Files"
+    };
+
+    function humanName(id) {
+        if (nameLabels[id]) return nameLabels[id];
+        // gotoTab1 → "Go to Tab 1"
+        var tabMatch = id.match(/^gotoTab(\d)$/);
+        if (tabMatch) return "Go to Tab " + tabMatch[1];
+        // fallback: camelCase → "Camel Case"
+        return id.replace(/([a-z])([A-Z])/g, "$1 $2")
+                  .replace(/^./, function(c) { return c.toUpperCase(); });
     }
 
     function addCommand(name, key, exec) {
@@ -73,6 +114,10 @@ eXide.edit.commands = (function () {
             if (xhr.status === 200) {
                 var kb = JSON.parse(xhr.responseText);
                 (function() {
+                    // Display-only entries for built-in CM6 commands (no exec — handled by CM6)
+                    addCommand("undo", getKeyBinding(kb, "undo"), null);
+                    addCommand("redo", getKeyBinding(kb, "redo"), null);
+
                     addCommand("gotoLine", getKeyBinding(kb, "gotoLine"), function() {
                         parent.gotoLine();
                         return true;
@@ -229,7 +274,7 @@ eXide.edit.commands = (function () {
                     var keymapEntries = [];
                     for (var j = 0; j < commandList.length; j++) {
                         var cmd = commandList[j];
-                        if (cmd.key) {
+                        if (cmd.key && cmd.exec) {
                             keymapEntries.push({
                                 key: cmd.key,
                                 run: cmd.exec,
@@ -258,11 +303,13 @@ eXide.edit.commands = (function () {
                     var cmd = commandList[i];
                     var tr = document.createElement("tr");
                     var td = document.createElement("td");
-                    td.appendChild(document.createTextNode(cmd.name));
+                    td.textContent = humanName(cmd.name);
                     tr.appendChild(td);
                     td = document.createElement("td");
                     if (cmd.key) {
-                        td.appendChild(document.createTextNode(displayKey(cmd.key)));
+                        var kbd = document.createElement("kbd");
+                        kbd.textContent = displayKey(cmd.key);
+                        td.appendChild(kbd);
                     }
                     tr.appendChild(td);
                     tbl.appendChild(tr);

@@ -35,6 +35,8 @@
     "openTab": {"key": "Ctrl-Alt-o", "mac": "Mod-Ctrl-o"},
     "toggleQueryResults": {"key": "Ctrl-Shift-e", "mac": "Mod-Shift-e"},
     "commandPalette": {"key": "Ctrl-Alt-k", "mac": "Mod-Shift-k"},
+    "undo": {"key": "Ctrl-z", "mac": "Mod-z"},
+    "redo": {"key": "Ctrl-Shift-z", "mac": "Mod-Shift-z"},
     "findFiles": {"key": "Ctrl-Alt-f", "mac": "Mod-Alt-f"},
     "gotoTab1": {"key": "Alt-1", "mac": "Ctrl-1"},
     "gotoTab2": {"key": "Alt-2", "mac": "Ctrl-2"},
