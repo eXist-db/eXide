@@ -19,7 +19,8 @@ var COLLAPSE_LIST = [
     "UnionExpr", "IntersectExceptExpr", "InstanceofExpr", "TreatExpr", "CastableExpr",
     "CastExpr", "UnaryExpr", "ValueExpr", "FTContainsExpr", "SimpleMapExpr", "PathExpr",
     "RelativePathExpr", "PostfixExpr", "StepExpr",
-    "SourceExpr", "TargetExpr", "NewNameExpr"
+    "SourceExpr", "TargetExpr", "NewNameExpr",
+    "FTOr", "FTAnd", "FTMildNot", "FTUnaryNot", "FTPrimaryWithOptions", "FTSelection"
 ];
 
 /**

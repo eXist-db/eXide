@@ -189,6 +189,33 @@ describe("XQuery Update 3.0 expressions", function () {
     });
 });
 
+describe("XQuery Full Text 1.0 expressions", function () {
+    it("contains text expression", function () {
+        const { ast } = parse('"hello world" contains text "hello"');
+        assert.ok(findNode(ast, "FTContainsExpr"));
+    });
+
+    it("ft-or expression", function () {
+        const { ast } = parse('"text" contains text "foo" ftor "bar"');
+        assert.ok(findNode(ast, "FTOr"));
+    });
+
+    it("ft-and expression", function () {
+        const { ast } = parse('"text" contains text "foo" ftand "bar"');
+        assert.ok(findNode(ast, "FTAnd"));
+    });
+
+    it("contains text with match options", function () {
+        const { ast } = parse('"text" contains text "hello" using stemming');
+        assert.ok(findNode(ast, "FTContainsExpr"));
+    });
+
+    it("for binding with score variable", function () {
+        const { ast } = parse('for $x score $s in /books/book where $x/title contains text "XML" return $x');
+        assert.ok(findNode(ast, "FTScoreVar"));
+    });
+});
+
 describe("Position accuracy", function () {
     it("single-line positions are correct", function () {
         const { ast } = parse("1 + 2");
