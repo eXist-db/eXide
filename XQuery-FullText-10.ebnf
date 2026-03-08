@@ -1,0 +1,196 @@
+(: ======================================================================
+   XQuery and XPath Full Text 1.0 — Additional Productions
+   https://www.w3.org/TR/xpath-full-text-10/
+
+   This is a REFERENCE file, not a standalone parseable grammar.
+   It documents only the productions that Full Text 1.0 adds to or
+   modifies in the base XQuery grammar. For a complete parseable
+   grammar that includes these productions, see
+   XQuery-31-Update-FullText.ebnf.
+
+   The base XQuery 3.1 grammar is in XQuery-31.ebnf.
+   ====================================================================== :)
+
+(: ======================================================================
+   MODIFIED PRODUCTIONS
+   These exist in the base grammar but are changed by Full Text.
+   ====================================================================== :)
+
+(: Changed: adds FTOptionDecl to the first group of prolog declarations.
+   Base grammar has: ( DefaultNamespaceDecl | Setter | NamespaceDecl | Import )
+   FT adds:          FTOptionDecl to that group. :)
+Prolog   ::= ( ( DefaultNamespaceDecl | Setter | NamespaceDecl | Import | FTOptionDecl ) Separator )* ( ( ContextItemDecl | AnnotatedDecl | OptionDecl ) Separator )*
+
+(: Changed: operand type changed from StringConcatExpr to FTContainsExpr.
+   Base grammar has: StringConcatExpr ( ( ValueComp | GeneralComp | NodeComp ) StringConcatExpr )?
+   FT replaces StringConcatExpr with FTContainsExpr to insert the
+   'contains text' expression into the precedence chain. :)
+ComparisonExpr
+         ::= FTContainsExpr ( ( ValueComp | GeneralComp | NodeComp ) FTContainsExpr )?
+
+(: Changed: adds optional FTScoreVar? before 'in'.
+   Base grammar has: '$' VarName TypeDeclaration? AllowingEmpty? PositionalVar? 'in' ExprSingle
+   FT adds:          FTScoreVar? after PositionalVar?. :)
+ForBinding
+         ::= '$' VarName TypeDeclaration? AllowingEmpty? PositionalVar? FTScoreVar? 'in' ExprSingle
+
+(: Changed: adds FTScoreVar as an alternative binding target.
+   Base grammar has: '$' VarName TypeDeclaration? ':=' ExprSingle
+   FT adds:          ( '$' VarName TypeDeclaration? | FTScoreVar ) as alternatives. :)
+LetBinding
+         ::= ( '$' VarName TypeDeclaration? | FTScoreVar ) ':=' ExprSingle
+
+(: ======================================================================
+   NEW PRODUCTIONS
+   These are entirely new nonterminals added by Full Text 1.0.
+   ====================================================================== :)
+
+(: --- Prolog Declaration --- :)
+
+FTOptionDecl
+         ::= 'declare' 'ft-option' FTMatchOptions
+
+(: --- Score Variable --- :)
+
+FTScoreVar
+         ::= 'score' '$' VarName
+
+(: --- Contains Expression --- :)
+
+FTContainsExpr
+         ::= StringConcatExpr ( 'contains' 'text' FTSelection FTIgnoreOption? )?
+
+(: --- Full-Text Selection (Boolean Operators) --- :)
+
+FTSelection
+         ::= FTOr FTPosFilter*
+FTWeight ::= 'weight' '{' Expr '}'
+FTOr     ::= FTAnd ( 'ftor' FTAnd )*
+FTAnd    ::= FTMildNot ( 'ftand' FTMildNot )*
+FTMildNot
+         ::= FTUnaryNot ( 'not' 'in' FTUnaryNot )*
+FTUnaryNot
+         ::= 'ftnot'? FTPrimaryWithOptions
+FTPrimaryWithOptions
+         ::= FTPrimary FTMatchOptions? FTWeight?
+
+(: --- Primary Full-Text Expressions --- :)
+
+FTPrimary
+         ::= FTWords FTTimes?
+           | '(' FTSelection ')'
+           | FTExtensionSelection
+FTWords  ::= FTWordsValue FTAnyallOption?
+FTWordsValue
+         ::= StringLiteral
+           | '{' Expr '}'
+FTExtensionSelection
+         ::= Pragma+ '{' FTSelection? '}'
+FTAnyallOption
+         ::= 'any' 'word'?
+           | 'all' 'words'?
+           | 'phrase'
+
+(: --- Occurrence Indicator --- :)
+
+FTTimes  ::= 'occurs' FTRange 'times'
+FTRange  ::= 'exactly' AdditiveExpr
+           | 'at' 'least' AdditiveExpr
+           | 'at' 'most' AdditiveExpr
+           | 'from' AdditiveExpr 'to' AdditiveExpr
+
+(: --- Positional Filters --- :)
+
+FTPosFilter
+         ::= FTOrder
+           | FTWindow
+           | FTDistance
+           | FTScope
+           | FTContent
+FTOrder  ::= 'ordered'
+FTWindow ::= 'window' AdditiveExpr FTUnit
+FTDistance
+         ::= 'distance' FTRange FTUnit
+FTUnit   ::= 'words'
+           | 'sentences'
+           | 'paragraphs'
+FTScope  ::= ( 'same' | 'different' ) FTBigUnit
+FTBigUnit
+         ::= 'sentence'
+           | 'paragraph'
+FTContent
+         ::= 'at' 'start'
+           | 'at' 'end'
+           | 'entire' 'content'
+
+(: --- Match Options --- :)
+
+FTMatchOptions
+         ::= ( 'using' FTMatchOption )+
+FTMatchOption
+         ::= FTLanguageOption
+           | FTWildCardOption
+           | FTThesaurusOption
+           | FTStemOption
+           | FTCaseOption
+           | FTDiacriticsOption
+           | FTStopWordOption
+           | FTExtensionOption
+FTCaseOption
+         ::= 'case' 'insensitive'
+           | 'case' 'sensitive'
+           | 'lowercase'
+           | 'uppercase'
+FTDiacriticsOption
+         ::= 'diacritics' 'insensitive'
+           | 'diacritics' 'sensitive'
+FTStemOption
+         ::= 'stemming'
+           | 'no' 'stemming'
+FTThesaurusOption
+         ::= 'thesaurus' ( FTThesaurusID | 'default' )
+           | 'thesaurus' '(' ( FTThesaurusID | 'default' ) ( ',' FTThesaurusID )* ')'
+           | 'no' 'thesaurus'
+FTThesaurusID
+         ::= 'at' URILiteral ( 'relationship' StringLiteral )? ( FTLiteralRange 'levels' )?
+FTLiteralRange
+         ::= 'exactly' IntegerLiteral
+           | 'at' 'least' IntegerLiteral
+           | 'at' 'most' IntegerLiteral
+           | 'from' IntegerLiteral 'to' IntegerLiteral
+FTStopWordOption
+         ::= 'stop' 'words' FTStopWords FTStopWordsInclExcl*
+           | 'stop' 'words' 'default' FTStopWordsInclExcl*
+           | 'no' 'stop' 'words'
+FTStopWords
+         ::= 'at' URILiteral
+           | '(' StringLiteral ( ',' StringLiteral )* ')'
+FTStopWordsInclExcl
+         ::= ( 'union' | 'except' ) FTStopWords
+FTLanguageOption
+         ::= 'language' StringLiteral
+FTWildCardOption
+         ::= 'wildcards'
+           | 'no' 'wildcards'
+FTExtensionOption
+         ::= 'option' EQName StringLiteral
+
+(: --- Ignore Option --- :)
+
+FTIgnoreOption
+         ::= 'without' 'content' UnionExpr
+
+(: ======================================================================
+   NEW KEYWORDS
+   Full Text 1.0 adds the following keywords that must appear in the
+   FunctionName and NCName disambiguation productions (and related
+   token/lookahead lines) of the combined grammar.
+
+   'all', 'any', 'contains', 'content', 'diacritics', 'different',
+   'distance', 'entire', 'exactly', 'from', 'ft-option', 'ftand',
+   'ftnot', 'ftor', 'insensitive', 'language', 'levels', 'lowercase',
+   'most', 'no', 'not', 'occurs', 'paragraph', 'paragraphs', 'phrase',
+   'relationship', 'same', 'score', 'sensitive', 'sentence', 'sentences',
+   'stemming', 'stop', 'thesaurus', 'times', 'uppercase', 'using',
+   'weight', 'wildcards', 'without', 'word', 'words'
+   ====================================================================== :)

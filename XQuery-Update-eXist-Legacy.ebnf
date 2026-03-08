@@ -1,0 +1,35 @@
+/* XQuery Update Facility — eXist Legacy (XQUFEL)
+ * Reference grammar for eXist-db's proprietary update syntax.
+ * See: http://exist-db.org/exist/apps/doc/update_ext.xml
+ *
+ * These are eXist-db specific extensions, NOT part of any W3C specification.
+ * They predate the W3C XQuery Update Facility and use a different syntax.
+ *
+ * Integration: ExistUpdateExpr should be added as an alternative to ExprSingle.
+ * Keywords: 'update' must be added to FunctionName, NCName, and disambiguation lines.
+ */
+
+/* MODIFIED PRODUCTION:
+ * ExprSingle: add ExistUpdateExpr as alternative
+ *   ExprSingle ::= ... | ExistUpdateExpr | OrExpr
+ */
+
+/* NEW PRODUCTIONS */
+ExistUpdateExpr
+         ::= 'update' ( ExistInsertExpr | ExistReplaceExpr | ExistValueExpr | ExistDeleteExpr | ExistRenameExpr )
+ExistInsertExpr
+         ::= 'insert' ExprSingle ( 'into' | 'following' | 'preceding' ) ExprSingle
+ExistReplaceExpr
+         ::= 'replace' ExprSingle 'with' ExprSingle
+ExistValueExpr
+         ::= 'value' ExprSingle 'with' ExprSingle
+ExistDeleteExpr
+         ::= 'delete' ExprSingle
+ExistRenameExpr
+         ::= 'rename' ExprSingle 'as' ExprSingle
+
+/* NEW KEYWORDS to add to FunctionName, NCName, and disambiguation lines:
+ * 'update'
+ * Note: 'insert', 'delete', 'replace', 'rename', 'into', 'with', 'value',
+ * 'following', 'preceding' are already keywords from W3C Update Facility 3.0.
+ */
