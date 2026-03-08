@@ -100,6 +100,22 @@ describe('Error status UI', () => {
     cy.get('#exide-err-panel').should('not.have.class', 'ep-open')
   })
 
+  it('clears error when switching to a different tab', () => {
+    setError('err:XPST0003 Some error in first tab')
+
+    cy.get('#exide-err-pill').should('have.class', 'has-error')
+    cy.get('#exide-err-panel').should('have.class', 'ep-open')
+
+    // Create a new tab via the New XQuery button
+    cy.get('#new-xquery').click()
+    // Confirm we switched to a new tab
+    cy.get('.path').should('contain', '__new__2')
+
+    // Error should be cleared
+    cy.get('#exide-err-pill').should('not.have.class', 'has-error')
+    cy.get('#exide-err-panel').should('not.have.class', 'ep-open')
+  })
+
   it('copy button copies error text to clipboard', () => {
     const errorMsg = 'err:XPST0017 Call to undeclared function: local:foo'
 
