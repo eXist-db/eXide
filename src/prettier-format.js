@@ -26,12 +26,12 @@ var prettierFormat = (function () {
     var MODE_CONFIG = {
         "xquery":     { parser: "xquery" },
         "xml":        { parser: "xml", hasXmlOptions: true },
-        "html":       { parser: "html", hasXmlOptions: true },
+        "html":       { parser: "html", hasXmlOptions: true, hasHtmlOptions: true },
         "css":        { parser: "css" },
         "less":       { parser: "less" },
-        "javascript": { parser: "babel" },
+        "javascript": { parser: "babel", hasJsOptions: true },
         "json":       { parser: "json" },
-        "markdown":   { parser: "markdown" }
+        "markdown":   { parser: "markdown", hasMdOptions: true }
     };
 
     return {
@@ -66,6 +66,18 @@ var prettierFormat = (function () {
                 options.xmlQuoteAttributes = prefs.prettierXmlQuoteAttributes || "preserve";
                 options.singleAttributePerLine = prefs.prettierSingleAttributePerLine || false;
                 options.bracketSameLine = prefs.prettierBracketSameLine !== false;
+            }
+            if (config.hasHtmlOptions) {
+                options.htmlWhitespaceSensitivity = prefs.prettierHtmlWhitespaceSensitivity || "css";
+            }
+            if (config.hasJsOptions) {
+                options.bracketSpacing = prefs.prettierBracketSpacing !== false;
+                options.semi = prefs.prettierSemi !== false;
+                options.trailingComma = prefs.prettierTrailingComma || "all";
+                options.arrowParens = prefs.prettierArrowParens || "always";
+            }
+            if (config.hasMdOptions) {
+                options.proseWrap = prefs.prettierProseWrap || "preserve";
             }
             return prettierBundle.prettier.format(code, options);
         }

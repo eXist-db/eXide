@@ -703,6 +703,54 @@
                                     <input type="checkbox" name="prettier-bracket-same-line" id="pref-prettier-bracket-same-line"/>
                                 </li>
                             </ol>
+                            <legend>JavaScript Options</legend>
+                            <ol>
+                                <li>
+                                    <label for="pref-prettier-bracket-spacing">Bracket spacing:</label>
+                                    <input type="checkbox" name="prettier-bracket-spacing" id="pref-prettier-bracket-spacing"/>
+                                </li>
+                                <li>
+                                    <label for="pref-prettier-semi">Semicolons:</label>
+                                    <input type="checkbox" name="prettier-semi" id="pref-prettier-semi"/>
+                                </li>
+                                <li>
+                                    <label for="pref-prettier-trailing-comma">Trailing commas:</label>
+                                    <select name="prettier-trailing-comma" id="pref-prettier-trailing-comma">
+                                        <option value="all">All</option>
+                                        <option value="es5">ES5</option>
+                                        <option value="none">None</option>
+                                    </select>
+                                </li>
+                                <li>
+                                    <label for="pref-prettier-arrow-parens">Arrow function parens:</label>
+                                    <select name="prettier-arrow-parens" id="pref-prettier-arrow-parens">
+                                        <option value="always">Always</option>
+                                        <option value="avoid">Avoid</option>
+                                    </select>
+                                </li>
+                            </ol>
+                            <legend>HTML Options</legend>
+                            <ol>
+                                <li>
+                                    <label for="pref-prettier-html-ws">Whitespace sensitivity:</label>
+                                    <select name="prettier-html-ws" id="pref-prettier-html-ws">
+                                        <option value="css">CSS</option>
+                                        <option value="strict">Strict</option>
+                                        <option value="ignore">Ignore</option>
+                                    </select>
+                                </li>
+                            </ol>
+                            <legend>Markdown Options</legend>
+                            <ol>
+                                <li>
+                                    <label for="pref-prettier-prose-wrap">Prose wrap:</label>
+                                    <select name="prettier-prose-wrap" id="pref-prettier-prose-wrap">
+                                        <option value="preserve">Preserve</option>
+                                        <option value="always">Always</option>
+                                        <option value="never">Never</option>
+                                    </select>
+                                </li>
+                            </ol>
                         </fieldset>
                         <fieldset>
                             <legend>Serialization</legend>
