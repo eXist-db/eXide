@@ -37,27 +37,57 @@ eXide.edit.JavascriptModeHelper = (function () {
     eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
 
     Constr.prototype.createOutline = function(doc, onComplete) {
-        // Use regex to find function definitions instead of TokenIterator
-        var lines = doc.getText().split("\n");
-        var funcRe = /(?:function\s+(\w+)|(\w+)\s*[:=]\s*function|(\w+)\s*\(.*\)\s*\{)/;
-        for (var i = 0; i < lines.length; i++) {
-            var match = funcRe.exec(lines[i]);
-            if (match) {
-                var name = match[1] || match[2] || match[3];
+        var tree = CM6.syntaxTree(this.editor.state);
+        var state = this.editor.state;
+        tree.iterate({
+            enter: function(node) {
+                var name = null, type = eXide.edit.Document.TYPE_FUNCTION, sig = null;
+                if (node.name === "FunctionDeclaration") {
+                    var vn = node.node.getChild("VariableDefinition");
+                    if (vn) name = state.sliceDoc(vn.from, vn.to);
+                    if (name) sig = state.sliceDoc(node.from, Math.min(node.to, node.from + 80)).split("{")[0].trim();
+                } else if (node.name === "ClassDeclaration") {
+                    var cn = node.node.getChild("VariableDefinition");
+                    if (cn) name = state.sliceDoc(cn.from, cn.to);
+                    if (name) sig = "class " + name;
+                } else if (node.name === "MethodDeclaration") {
+                    var pn = node.node.getChild("PropertyDefinition");
+                    if (pn) name = state.sliceDoc(pn.from, pn.to);
+                    if (name) sig = state.sliceDoc(node.from, Math.min(node.to, node.from + 80)).split("{")[0].trim();
+                } else if (node.name === "VariableDeclaration") {
+                    var child = node.node.firstChild;
+                    var keyword = child ? state.sliceDoc(child.from, child.to) : "var";
+                    child = child ? child.nextSibling : null;
+                    while (child) {
+                        if (child.name === "VariableDefinition") {
+                            var vname = state.sliceDoc(child.from, child.to);
+                            var nextSib = child.nextSibling;
+                            if (nextSib && (nextSib.name === "ArrowFunction" || nextSib.name === "FunctionExpression")) {
+                                name = vname;
+                                sig = keyword + " " + vname + " = " + (nextSib.name === "ArrowFunction" ? "() => …" : "function(…)");
+                            }
+                        }
+                        child = child.nextSibling;
+                    }
+                }
                 if (name) {
+                    var line = state.doc.lineAt(node.from);
                     doc.functions.push({
-                        type: eXide.edit.Document.TYPE_FUNCTION,
+                        type: type,
                         name: name,
-                        signature: name,
+                        signature: sig || name,
                         sort: name,
-                        row: i,
-                        column: 0
+                        row: line.number - 1,
+                        from: node.from,
+                        to: node.to
                     });
+                    if (node.name === "ClassDeclaration") return true;
+                    return false;
                 }
             }
-        }
-        if (onComplete)
-            onComplete(doc);
+        });
+        this.collectErrors(doc);
+        if (onComplete) onComplete(doc);
     };
 
     Constr.prototype.gotoSymbol = function(doc) {

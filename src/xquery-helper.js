@@ -1069,12 +1069,14 @@ eXide.edit.XQueryModeHelper = (function () {
                 var status = funcDef.length == 4 ? funcDef[2] : "public";
                 var signature =  name + "(" + text.substring(offset, end) + ")"
                 if (status.indexOf("%private") !== -1) {status = "private";}
+                var row = text.substring(0, funcDef.index).split("\n").length - 1;
                 doc.functions.push({
                     type: eXide.edit.Document.TYPE_FUNCTION,
                     name: name,
                     visibility: status,
                     signature: signature,
-                    sort : "$$" + signature
+                    sort : "$$" + signature,
+                    row: row
                 });
             };
             match = this.funcDefRe.exec(text);
@@ -1090,10 +1092,12 @@ eXide.edit.XQueryModeHelper = (function () {
                 if (name.substring(0, 1) == "$") {
                     name = name.substring(1);
                 }
+                var row = text.substring(0, varDef.index).split("\n").length - 1;
                 doc.functions.push({
                     type: eXide.edit.Document.TYPE_VARIABLE,
                     name: name,
-                    sort: "$$" + sort.join("")
+                    sort: "$$" + sort.join(""),
+                    row: row
                 });
             }
             match = this.varDefRe.exec(text);

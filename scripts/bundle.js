@@ -16,6 +16,8 @@ import '../src/xml-helper.js';
 import '../src/less-helper.js';
 import '../src/javascript-helper.js';
 import '../src/css-helper.js';
+import '../src/json-helper.js';
+import '../src/markdown-helper.js';
 import '../src/outline.js';
 import '../src/directory.js';
 import '../src/debuger.js';

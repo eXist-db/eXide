@@ -74,6 +74,35 @@ eXide.edit.ModeHelper = (function () {
                     .remove();
         },
 
+        collectErrors: function(doc) {
+            var tree = CM6.syntaxTree(this.editor.state);
+            var state = this.editor.state;
+            tree.iterate({
+                enter: function(node) {
+                    if (node.type.isError) {
+                        var line = state.doc.lineAt(node.from);
+                        var context = state.sliceDoc(
+                            Math.max(0, node.from - 10),
+                            Math.min(state.doc.length, node.to + 20)
+                        ).replace(/\n/g, " ").trim();
+                        if (context.length > 40) context = context.substring(0, 40) + "…";
+                        doc.functions.push({
+                            type: eXide.edit.Document.TYPE_FUNCTION,
+                            name: "Error at line " + line.number,
+                            outlineClass: "outline-error",
+                            source: doc.getPath(),
+                            signature: "Syntax error near: " + context,
+                            sort: "000000",
+                            row: line.number - 1,
+                            from: node.from,
+                            to: node.to
+                        });
+                        return false;
+                    }
+                }
+            });
+        },
+
         documentSaved: function(doc) {
         },
 

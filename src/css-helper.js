@@ -34,40 +34,54 @@ eXide.edit.CssModeHelper = (function () {
     eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
 
     Constr.prototype.createOutline = function(doc, onComplete) {
-        // Use regex-based approach instead of TokenIterator
-        var lines = doc.getText().split("\n");
-        var selectorParts = [];
-        for (var i = 0; i < lines.length; i++) {
-            var line = lines[i];
-            var braceIdx = line.indexOf("{");
-            if (braceIdx >= 0) {
-                // Everything before the brace on this line is part of the selector
-                var part = line.substring(0, braceIdx).trim();
-                if (part) selectorParts.push(part);
-                var selector = selectorParts.join(" ").trim();
-                if (selector) {
+        var tree = CM6.syntaxTree(this.editor.state);
+        var state = this.editor.state;
+        tree.iterate({
+            enter: function(node) {
+                if (node.name === "RuleSet") {
+                    var blockStart = node.to;
+                    var child = node.node.firstChild;
+                    while (child) {
+                        if (child.name === "Block") { blockStart = child.from; break; }
+                        child = child.nextSibling;
+                    }
+                    var selector = state.sliceDoc(node.from, blockStart).trim();
+                    if (selector) {
+                        var line = state.doc.lineAt(node.from);
+                        doc.functions.push({
+                            type: eXide.edit.Document.TYPE_FUNCTION,
+                            name: selector,
+                            source: doc.getPath(),
+                            signature: selector,
+                            sort: selector,
+                            row: line.number - 1,
+                            from: node.from,
+                            to: node.to
+                        });
+                    }
+                    return false;
+                }
+                if (node.name === "MediaStatement" || node.name === "KeyframesStatement") {
+                    var text = state.sliceDoc(node.from, node.to);
+                    var braceIdx = text.indexOf("{");
+                    if (braceIdx >= 0) text = text.substring(0, braceIdx).trim();
+                    if (text.length > 60) text = text.substring(0, 60) + "…";
+                    var line = state.doc.lineAt(node.from);
                     doc.functions.push({
                         type: eXide.edit.Document.TYPE_FUNCTION,
-                        name: selector,
+                        name: text,
                         source: doc.getPath(),
-                        signature: selector,
-                        sort: selector,
-                        row: i,
-                        column: braceIdx
+                        signature: text,
+                        sort: text,
+                        row: line.number - 1,
+                        from: node.from,
+                        to: node.to
                     });
                 }
-                selectorParts = [];
-            } else if (line.indexOf("}") >= 0) {
-                selectorParts = [];
-            } else {
-                var trimmed = line.trim();
-                if (trimmed && !trimmed.startsWith("/*") && !trimmed.startsWith("*")) {
-                    selectorParts.push(trimmed);
-                }
             }
-        }
-        if (onComplete)
-            onComplete(doc);
+        });
+        this.collectErrors(doc);
+        if (onComplete) onComplete(doc);
     };
 
     Constr.prototype.gotoSymbol = function(doc) {
