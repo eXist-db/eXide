@@ -266,23 +266,6 @@
                         <button id="toggle-dark-mode" title="Toggle Dark Mode"><i class="fa fa-moon-o"></i></button>
                         <button id="toggle-fullscreen" title="Toggle Fullscreen Mode"><i class="fa fa-arrows-alt"></i></button>
                     </span>
-                    <div class="options">
-                        <span class="current-app" title="Displays the application the current buffer belongs to - if any">
-                        Current app: <span id="toolbar-current-app">Unknown</span>
-                        </span>
-                        <label for="syntax">File Type: </label>
-                        <select id="syntax">
-                            <option value="text">Text</option>
-                            <option value="xml">XML</option>
-                            <option value="html">HTML</option>
-                            <option value="xquery">XQuery</option>
-                            <option value="javascript">Javascript</option>
-                            <option value="css">CSS</option>
-                            <option value="less">Less</option>
-                            <option value="json">JSON</option>
-                            <option value="markdown">Markdown</option>
-                        </select>
-                    </div>
                 </span>
             </div>
             <div id="body">
@@ -291,11 +274,20 @@
                      <div id="outline-container" class="panel-west">
                             <div id="tabs-outline-container">
                                 <ul id="tabs-outline"/>
+                                <button id="toggle-split-pane" title="Toggle stacked view" aria-pressed="false">⊟</button>
                             </div>
 
                             <div id="outline-body">
+                                <div id="outline-toolbar">
+                                    <button data-outline-mode="nested-doc" title="Nested, document order"><i class="fa fa-indent"/> </button>
+                                    <button data-outline-mode="flat-doc" title="Flat, document order"><i class="fa fa-list"/> </button>
+                                    <button data-outline-mode="flat-alpha" title="Flat, alphabetical"><i class="fa fa-sort-alpha-asc"/> </button>
+                                </div>
                                 <div class="panel-scroller">
                                     <ul id="outline"/>
+                                </div>
+                                <div class="panel-filter">
+                                    <input type="search" id="outline-filter" placeholder="Filter outline..."/>
                                 </div>
                             </div>
                             <div id="directory-body">
@@ -306,9 +298,9 @@
                                         </ul>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="outline-status">
-                                <input type="search" id="outline-filter" placeholder="Filter by..."/>
+                                <div class="panel-filter">
+                                    <input type="search" id="directory-filter" placeholder="Filter resources..."/>
+                                </div>
                             </div>
                             <div class="resize-handle">
                                 <span title="Click to close outline"/>
@@ -318,13 +310,21 @@
                         <div class="layout-vertical">
                             <div class="main">
                                 <div id="tabs-container">
-                                    <ul id="tabs">
-                                        <li class="drop-placeholder">
-                                            <a href="#" class="tab">+</a>
-                                        </li>
-                                    </ul>
-                                    <button id="tab-prev">Previous</button>
-                                    <button id="tab-next">Next</button>
+                                    <div id="tab-strip-wrap">
+                                        <ul id="tabs">
+                                            <li class="drop-placeholder">
+                                                <a href="#" class="tab">+</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div id="tab-controls-wrap">
+                                        <div id="tab-controls">
+                                            <button id="tab-scroll-left" class="tab-ctrl-btn" title="Scroll tabs left" aria-label="Scroll tabs left" disabled="disabled">&#x2039;</button>
+                                            <button id="tab-scroll-right" class="tab-ctrl-btn" title="Scroll tabs right" aria-label="Scroll tabs right">&#x203A;</button>
+                                            <button id="tab-list-btn" class="tab-ctrl-btn tab-list-arrow" title="All open files" aria-label="All open files" aria-haspopup="listbox" aria-expanded="false">&#x25BE;</button>
+                                        </div>
+                                        <ul id="tab-list-menu" role="listbox" aria-label="Open files"></ul>
+                                    </div>
                                 </div>
                                 <div class="content" id="editor"/>
                                 <div id="status-bar">
@@ -343,6 +343,26 @@
                                         <span id="exide-err-pill-arrow"></span>
                                     </span>
                                     <span class="status-right" id="status-db-version"></span>
+                                    <span class="status-segment" id="status-app" title="Current application">
+                                        <span class="status-segment-label">APP</span>
+                                        <span class="status-segment-value unknown" id="toolbar-current-app">unknown</span>
+                                    </span>
+                                    <span class="status-segment status-segment-clickable" id="status-type" title="File type — click to change">
+                                        <span class="status-segment-label">TYPE</span>
+                                        <span class="status-segment-value" id="status-type-value">XQuery</span>
+                                        <span class="status-segment-arrow">&#x25B2;</span>
+                                    </span>
+                                    <div id="type-popover">
+                                        <div class="type-popover-item" data-value="text">Text</div>
+                                        <div class="type-popover-item" data-value="xml">XML</div>
+                                        <div class="type-popover-item" data-value="html">HTML</div>
+                                        <div class="type-popover-item" data-value="xquery">XQuery</div>
+                                        <div class="type-popover-item" data-value="javascript">Javascript</div>
+                                        <div class="type-popover-item" data-value="css">CSS</div>
+                                        <div class="type-popover-item" data-value="less">Less</div>
+                                        <div class="type-popover-item" data-value="json">JSON</div>
+                                        <div class="type-popover-item" data-value="markdown">Markdown</div>
+                                    </div>
                                 </div>
                                 <div id="exide-err-panel">
                                     <div id="exide-err-panel-body"></div>
@@ -568,6 +588,30 @@
                 </div>
                 <div id="preferences-dialog">
                     <form>
+                        <fieldset>
+                            <legend>Layout</legend>
+                            <ol>
+                                <li>
+                                    <label for="pref-show-west"><svg style="width:14px;height:14px;vertical-align:-2px;margin-right:3px" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="1.5"/><line x1="5" y1="2" x2="5" y2="14"/></svg>Show side panel:</label>
+                                    <input type="checkbox" name="show-west" id="pref-show-west"/>
+                                </li>
+                                <li>
+                                    <label for="pref-show-south"><svg style="width:14px;height:14px;vertical-align:-2px;margin-right:3px" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="1.5"/><line x1="1" y1="10" x2="15" y2="10"/></svg>Show results panel:</label>
+                                    <input type="checkbox" name="show-south" id="pref-show-south"/>
+                                </li>
+                                <li>
+                                    <label for="pref-split-pane"><span style="display:inline-block;width:14px;text-align:center;margin-right:3px;font-size:13px;vertical-align:-1px">⊟</span>Stacked side panels:</label>
+                                    <input type="checkbox" name="split-pane" id="pref-split-pane"/>
+                                </li>
+                                <li>
+                                    <label for="pref-result-position"><i class="fa fa-columns" style="width:14px;text-align:center;margin-right:3px;font-size:13px"></i>Results panel position:</label>
+                                    <select name="result-position" id="pref-result-position">
+                                        <option value="south">Bottom</option>
+                                        <option value="east">Right</option>
+                                    </select>
+                                </li>
+                            </ol>
+                        </fieldset>
                         <fieldset>
                             <legend>Editor</legend>
                             <ol>
@@ -948,5 +992,21 @@
                 </form>
             </div>
         </div>
+        <div id="directory-context-menu" class="directory-context-menu">
+            <div class="ctx-item" data-action="new-collection"><i class="fa fa-folder"/>New Collection</div>
+            <div class="ctx-item" data-action="new-resource"><i class="fa fa-file"/>New Resource</div>
+            <div class="ctx-separator"/>
+            <div class="ctx-item" data-action="upload"><i class="fa fa-upload"/>Upload Files</div>
+            <div class="ctx-item" data-action="download"><i class="fa fa-download"/>Download</div>
+            <div class="ctx-separator"/>
+            <div class="ctx-item" data-action="rename"><i class="fa fa-pencil"/>Rename</div>
+            <div class="ctx-item" data-action="delete"><i class="fa fa-trash"/>Delete</div>
+            <div class="ctx-separator"/>
+            <div class="ctx-item" data-action="copy-path"><i class="fa fa-clipboard"/>Copy Path</div>
+            <div class="ctx-item" data-action="properties"><i class="fa fa-cog"/>Properties</div>
+            <div class="ctx-separator"/>
+            <div class="ctx-item" data-action="reload"><i class="fa fa-refresh"/>Reload</div>
+        </div>
+    <script type="text/javascript" src="resources/scripts/ui-init.js"></script>
     </body>
 </html>
