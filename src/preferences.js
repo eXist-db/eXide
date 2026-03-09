@@ -58,7 +58,11 @@ eXide.util.Preferences = (function () {
         prettierTrailingComma: "all",
         prettierArrowParens: "always",
         prettierProseWrap: "preserve",
-        prettierHtmlWhitespaceSensitivity: "css"
+        prettierHtmlWhitespaceSensitivity: "css",
+        splitPane: false,
+        showWestPanel: true,
+        showSouthPanel: false,
+        resultPanelPosition: "south"
 	};
     
     Constr = function(editor) {
@@ -119,6 +123,16 @@ eXide.util.Preferences = (function () {
         form.querySelector('input[name="auto-pair"]').checked = this.preferences.autoPair;
 		form.querySelector('input[name="print-margin"]').checked = this.preferences.showPrintMargin;
 		form.querySelector('input[name="emmet"]').checked = this.preferences.emmet;
+		form.querySelector('input[name="split-pane"]').checked = this.preferences.splitPane;
+		// Sync panel prefs from actual state
+		if (typeof eXide !== 'undefined' && eXide.app && eXide.app.isWestPanelVisible) {
+		    this.preferences.showWestPanel = eXide.app.isWestPanelVisible();
+		    this.preferences.showSouthPanel = eXide.app.isSouthPanelVisible();
+		    this.preferences.resultPanelPosition = eXide.app.getResultPanelPosition();
+		}
+		form.querySelector('input[name="show-west"]').checked = this.preferences.showWestPanel;
+		form.querySelector('input[name="show-south"]').checked = this.preferences.showSouthPanel;
+		form.querySelector('select[name="result-position"]').value = this.preferences.resultPanelPosition || "south";
 		form.querySelector('select[name="prettier-print-width"]').value = this.preferences.prettierPrintWidth;
 		form.querySelector('input[name="prettier-single-quote"]').checked = this.preferences.prettierSingleQuote;
 		form.querySelector('select[name="prettier-xml-ws"]').value = this.preferences.prettierXmlWhitespaceSensitivity;
@@ -162,6 +176,10 @@ eXide.util.Preferences = (function () {
         this.preferences.autoPair = form.querySelector('input[name="auto-pair"]').checked;
 		this.preferences.showPrintMargin = form.querySelector('input[name="print-margin"]').checked;
 		this.preferences.emmet = form.querySelector('input[name="emmet"]').checked;
+		this.preferences.splitPane = form.querySelector('input[name="split-pane"]').checked;
+		this.preferences.showWestPanel = form.querySelector('input[name="show-west"]').checked;
+		this.preferences.showSouthPanel = form.querySelector('input[name="show-south"]').checked;
+		this.preferences.resultPanelPosition = form.querySelector('select[name="result-position"]').value;
 		this.preferences.prettierPrintWidth = parseInt(form.querySelector('select[name="prettier-print-width"]').value, 10);
 		this.preferences.prettierSingleQuote = form.querySelector('input[name="prettier-single-quote"]').checked;
 		this.preferences.prettierXmlWhitespaceSensitivity = form.querySelector('select[name="prettier-xml-ws"]').value;
@@ -292,6 +310,24 @@ eXide.util.Preferences = (function () {
         document.querySelectorAll(".cm-editor").forEach(function(el) {
             el.style.fontSize = this.preferences.fontSize + "px";
         }.bind(this));
+        // Split pane
+        var pw = document.querySelector('.panel-west');
+        var btn = document.getElementById('toggle-split-pane');
+        if (pw) {
+            pw.classList.toggle('split-pane', !!this.preferences.splitPane);
+        }
+        if (btn) {
+            btn.setAttribute('aria-pressed', this.preferences.splitPane ? 'true' : 'false');
+            btn.textContent = this.preferences.splitPane ? '\u229E' : '\u229F';
+        }
+
+        // Panel visibility
+        if (typeof eXide !== 'undefined' && eXide.app && eXide.app.setWestPanel) {
+            eXide.app.setWestPanel(!!this.preferences.showWestPanel);
+            eXide.app.setSouthPanel(!!this.preferences.showSouthPanel);
+            eXide.app.setResultPanelPosition(this.preferences.resultPanelPosition || "south");
+        }
+
 		this.editor.resize();
 	};
 	

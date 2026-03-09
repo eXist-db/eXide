@@ -155,6 +155,9 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
                                 format-dateTime($date, "[M00]/[D00]/[Y0000] [H00]:[m00]:[s00]")
                     let $canWrite :=
                             sm:has-access(xs:anyURI($collection || "/" || $resource), "w")
+                    let $mime :=
+                        if ($isCollection) then ()
+                        else xmldb:get-mime-type(xs:anyURI($path))
                     return
                         <json:value json:array="true">
                             <name>{xmldb:decode-uri(xs:anyURI(if ($isCollection) then substring-after($resource, "/") else $resource))}</name>
@@ -165,6 +168,7 @@ declare function local:resources($collection as xs:string, $user as xs:string) {
                             <last-modified>{$lastMod}</last-modified>
                             <writable json:literal="true">{$canWrite}</writable>
                             <isCollection json:literal="true">{$isCollection}</isCollection>
+                            { if (not($isCollection) and $mime) then <mime>{$mime}</mime> else () }
                         </json:value>
             }
             </items>

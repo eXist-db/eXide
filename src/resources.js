@@ -48,6 +48,24 @@ eXide.browse.ResourceBrowser = (function () {
     var useragent = { isMac: /Mac/.test(navigator.platform) };
 	var BATCH_SIZE = 50;
 
+	function fileIcon(item) {
+		var mime = item.mime || "";
+		if (mime) {
+			if (mime === "application/pdf") return "fa-file-pdf-o";
+			if (/^image\//.test(mime)) return "fa-file-image-o";
+			if (/xml|html/.test(mime)) return "fa-file-code-o";
+			if (/^text\/|javascript|json|css/.test(mime)) return "fa-file-text-o";
+			if (/zip|compress|archive|xar|jar/.test(mime)) return "fa-file-archive-o";
+		}
+		var name = item.name || "";
+		if (/\.(xml|xq|xquery|xql|xqm|xconf|xhtml|html|htm|svg|xsl|xslt|odd|rng|sch|wsdl)$/i.test(name)) return "fa-file-code-o";
+		if (/\.(css|less|scss|js|json|md|txt|csv|properties)$/i.test(name)) return "fa-file-text-o";
+		if (/\.(png|jpe?g|gif|ico|webp|bmp|tiff?)$/i.test(name)) return "fa-file-image-o";
+		if (/\.pdf$/i.test(name)) return "fa-file-pdf-o";
+		if (/\.(zip|tar|gz|xar|jar|war|ear)$/i.test(name)) return "fa-file-archive-o";
+		return "fa-file-o";
+	}
+
 	Constr = function(container, parentContainer) {
 		var self = this;
 		this.container = typeof container === "string" ? document.querySelector(container) : container;
@@ -413,7 +431,12 @@ eXide.browse.ResourceBrowser = (function () {
 		var tdName = document.createElement("td");
 		tdName.className = "col-name";
 		if (item.isCollection) tdName.classList.add("collection");
-		tdName.textContent = item.name;
+		var icon = document.createElement("i");
+		icon.className = item.isCollection
+			? "fa fa-folder browse-icon"
+			: "fa " + fileIcon(item) + " browse-icon";
+		tdName.appendChild(icon);
+		tdName.appendChild(document.createTextNode(item.name));
 
 		var tdPerm = document.createElement("td");
 		tdPerm.className = "col-permissions";

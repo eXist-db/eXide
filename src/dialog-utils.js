@@ -48,7 +48,7 @@ eXide.util.DialogManager = (function() {
         titleBar.appendChild(titleSpan);
         var closeBtn = document.createElement("button");
         closeBtn.className = "eXide-dialog-close";
-        closeBtn.textContent = "\u00d7";
+        closeBtn.textContent = "\u2715";
         closeBtn.type = "button";
         titleBar.appendChild(closeBtn);
         dialog.appendChild(titleBar);

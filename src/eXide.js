@@ -413,8 +413,17 @@ eXide.app = (function(util) {
 			        if (!response.ok) {
 			            throw { status: response.status, statusText: response.statusText };
 			        }
-			        var contentType = response.headers.get("Content-Type");
+			        var contentType = response.headers.get("Content-Type") || "";
 			        var externalPath = response.headers.get("X-Link");
+			        var baseMime = contentType.replace(/;.*$/, "").trim();
+			        // Show binary files in a preview overlay
+			        if (!reload && /^image\/|^audio\/|^video\/|^application\/pdf|^application\/octet-stream|^application\/zip/.test(baseMime)) {
+			            var fileUrl = externalPath || ("rest" + resource.path);
+			            var fileName = resource.name || resource.path.replace(/^.*\//, "");
+			            app.$showBinaryPreview(fileUrl, fileName, baseMime);
+			            if (callback) { callback(null); }
+			            return true;
+			        }
 			        return response.text().then(function(data) {
 			            if (reload) {
 			                editor.reload(data);
@@ -436,6 +445,110 @@ eXide.app = (function(util) {
 			        }
 			        return false;
 			    });
+		},
+
+		$showBinaryPreview: function(fileUrl, fileName, mime) {
+		    // Remove existing overlay
+		    var existing = document.getElementById("binary-preview-overlay");
+		    if (existing) existing.remove();
+
+		    var overlay = document.createElement("div");
+		    overlay.id = "binary-preview-overlay";
+		    overlay.className = "binary-preview-overlay";
+
+		    var panel = document.createElement("div");
+		    panel.className = "binary-preview-panel";
+
+		    // Header
+		    var header = document.createElement("div");
+		    header.className = "binary-preview-header";
+		    var title = document.createElement("span");
+		    title.className = "binary-preview-title";
+		    title.textContent = fileName;
+		    title.title = fileName;
+		    header.appendChild(title);
+		    var closeBtn = document.createElement("button");
+		    closeBtn.className = "binary-preview-close";
+		    closeBtn.textContent = "\u2715";
+		    closeBtn.title = "Close";
+		    header.appendChild(closeBtn);
+		    panel.appendChild(header);
+
+		    // Content
+		    var content = document.createElement("div");
+		    content.className = "binary-preview-content";
+		    if (/^image\//.test(mime)) {
+		        var img = document.createElement("img");
+		        img.src = fileUrl;
+		        img.alt = fileName;
+		        content.appendChild(img);
+		    } else if (mime === "application/pdf") {
+		        var embed = document.createElement("embed");
+		        embed.src = fileUrl;
+		        embed.type = "application/pdf";
+		        embed.style.width = "100%";
+		        embed.style.height = "100%";
+		        content.appendChild(embed);
+		    } else if (/^audio\//.test(mime)) {
+		        var audio = document.createElement("audio");
+		        audio.src = fileUrl;
+		        audio.controls = true;
+		        content.appendChild(audio);
+		    } else if (/^video\//.test(mime)) {
+		        var video = document.createElement("video");
+		        video.src = fileUrl;
+		        video.controls = true;
+		        video.style.maxWidth = "100%";
+		        video.style.maxHeight = "100%";
+		        content.appendChild(video);
+		    } else {
+		        var msg = document.createElement("div");
+		        msg.className = "binary-preview-nopreview";
+		        msg.innerHTML = '<i class="fa fa-file-o" style="font-size:48px;margin-bottom:12px;display:block"></i>No preview available<br><small>' + mime + '</small>';
+		        content.appendChild(msg);
+		    }
+		    panel.appendChild(content);
+
+		    // Footer
+		    var footer = document.createElement("div");
+		    footer.className = "binary-preview-footer";
+		    var openBtn = document.createElement("button");
+		    openBtn.textContent = "Open in New Tab";
+		    openBtn.addEventListener("click", function() {
+		        window.open(fileUrl, fileName);
+		    });
+		    var dlBtn = document.createElement("button");
+		    dlBtn.textContent = "Download";
+		    dlBtn.addEventListener("click", function() {
+		        var a = document.createElement("a");
+		        a.href = fileUrl;
+		        a.download = fileName;
+		        a.click();
+		    });
+		    var cancelBtn = document.createElement("button");
+		    cancelBtn.textContent = "Close";
+		    cancelBtn.addEventListener("click", close);
+		    footer.appendChild(openBtn);
+		    footer.appendChild(dlBtn);
+		    footer.appendChild(cancelBtn);
+		    panel.appendChild(footer);
+
+		    overlay.appendChild(panel);
+		    document.body.appendChild(overlay);
+
+		    function close() {
+		        overlay.remove();
+		    }
+		    closeBtn.addEventListener("click", close);
+		    overlay.addEventListener("click", function(e) {
+		        if (e.target === overlay) close();
+		    });
+		    document.addEventListener("keydown", function onKey(e) {
+		        if (e.key === "Escape") {
+		            close();
+		            document.removeEventListener("keydown", onKey);
+		        }
+		    });
 		},
 
         reloadDocument: function() {
@@ -1165,9 +1278,17 @@ eXide.app = (function(util) {
         },
 
         updateStatus: function(doc) {
-            document.getElementById("syntax").value = doc.getSyntax();
+            var syntax = doc.getSyntax();
+            // Update status bar type segment
+            var typeLabels = {text:"Text",xml:"XML",html:"HTML",xquery:"XQuery",javascript:"Javascript",css:"CSS",less:"Less",json:"JSON",markdown:"Markdown"};
+            var typeVal = document.getElementById("status-type-value");
+            if (typeVal) typeVal.textContent = typeLabels[syntax] || syntax;
+            // Update popover active state
+            document.querySelectorAll("#type-popover .type-popover-item").forEach(function(el) {
+                el.classList.toggle("active", el.dataset.value === syntax);
+            });
             document.querySelector("#status .path").textContent = decodeURI(util.normalizePath(doc.getPath()));
-            if (!doc.isNew() && (doc.getSyntax() == "xquery" || doc.getSyntax() == "html" || doc.getSyntax() == "xml")) {
+            if (!doc.isNew() && (syntax == "xquery" || syntax == "html" || syntax == "xml")) {
                 document.querySelector("#status a").setAttribute("href", doc.getExternalLink());
                 document.querySelector("#status a").style.visibility = "visible";
             } else {
@@ -1183,6 +1304,54 @@ eXide.app = (function(util) {
         toggleResultsPanel: function() {
             layout.toggle(resultPanel);
 			app.resize(true);
+        },
+
+        setWestPanel: function(visible) {
+            if (visible) {
+                layout.show("west", true);
+            } else {
+                layout.hide("west");
+            }
+            app.resize(true);
+        },
+
+        isWestPanelVisible: function() {
+            var el = document.querySelector(".panel-west");
+            return el && el.style.display !== "none" && el.offsetParent !== null;
+        },
+
+        setSouthPanel: function(visible) {
+            if (visible) {
+                layout.show(resultPanel, true);
+            } else {
+                layout.hide(resultPanel);
+            }
+            app.resize(true);
+        },
+
+        isSouthPanelVisible: function() {
+            var el = document.querySelector(".panel-" + resultPanel);
+            return el && el.style.display !== "none" && el.offsetParent !== null;
+        },
+
+        getResultPanelPosition: function() {
+            return resultPanel;
+        },
+
+        setResultPanelPosition: function(pos) {
+            if (pos !== resultPanel) {
+                app.switchResultsPanel();
+            }
+        },
+
+        $savePanelPrefs: function() {
+            try {
+                var prefs = JSON.parse(localStorage.getItem('eXide.preferences') || '{}');
+                prefs.showWestPanel = app.isWestPanelVisible();
+                prefs.showSouthPanel = app.isSouthPanelVisible();
+                prefs.resultPanelPosition = resultPanel;
+                localStorage.setItem('eXide.preferences', JSON.stringify(prefs));
+            } catch(e) {}
         },
 
         prepareResultsPanel: function(target, switchPanels) {
@@ -1360,7 +1529,12 @@ eXide.app = (function(util) {
 
 		initGUI: function(menu) {
             if (util.supportsHtml5Storage && localStorage.getItem("eXide.firstTime")) {
-                resultPanel = localStorage["eXide.layout.resultPanel"] || "south";
+                try {
+                    var savedPrefs = JSON.parse(localStorage.getItem("eXide.preferences") || "{}");
+                    resultPanel = savedPrefs.resultPanelPosition || localStorage["eXide.layout.resultPanel"] || "south";
+                } catch(e) {
+                    resultPanel = localStorage["eXide.layout.resultPanel"] || "south";
+                }
             }
             layout = new app.Layout(editor);
             if (resultPanel == "south") {
@@ -1610,12 +1784,14 @@ eXide.app = (function(util) {
             if (btnToggleOutline) {
                 btnToggleOutline.addEventListener("click", function() {
                     layout.toggle("west");
+                    app.$savePanelPrefs();
                 });
             }
             var btnToggleResults = document.getElementById("toggle-results");
             if (btnToggleResults) {
                 btnToggleResults.addEventListener("click", function() {
                     layout.toggle(resultPanel);
+                    app.$savePanelPrefs();
                 });
             }
 
@@ -1718,16 +1894,40 @@ eXide.app = (function(util) {
             menu.click("#menu-help-documentation", function(ev) {
                 window.open("https://github.com/eXist-db/eXide#readme");
             });
-			// syntax drop down
-			document.getElementById("syntax").addEventListener("change", function () {
-				editor.setMode(this.value);
-			});
-			// register listener to update syntax drop down
+			// type popover in status bar
+			(function() {
+				var typeBtn = document.getElementById("status-type");
+				var popover = document.getElementById("type-popover");
+				var arrow = typeBtn ? typeBtn.querySelector(".status-segment-arrow") : null;
+				if (typeBtn && popover) {
+					typeBtn.addEventListener("click", function(ev) {
+						ev.stopPropagation();
+						var isOpen = popover.classList.toggle("open");
+						if (arrow) arrow.innerHTML = isOpen ? "&#x25BC;" : "&#x25B2;";
+					});
+					popover.addEventListener("click", function(ev) {
+						var item = ev.target.closest(".type-popover-item");
+						if (!item) return;
+						editor.setMode(item.dataset.value);
+						var doc = editor.getActiveDocument();
+						if (doc) app.updateStatus(doc);
+						popover.classList.remove("open");
+						if (arrow) arrow.innerHTML = "&#x25B2;";
+					});
+					document.addEventListener("click", function() {
+						popover.classList.remove("open");
+						if (arrow) arrow.innerHTML = "&#x25B2;";
+					});
+				}
+			})();
+			// register listener to update status bar segments
 			editor.addEventListener("activate", null, function (doc) {
                 app.updateStatus(doc);
                 projects.findProject(doc.getBasePath(), function(app) {
                     if (app) {
-                        document.getElementById("toolbar-current-app").textContent = app.abbrev;
+                        var appEl = document.getElementById("toolbar-current-app");
+                        appEl.textContent = app.abbrev;
+                        appEl.classList.remove("unknown");
                         document.getElementById("menu-deploy-active").textContent = app.abbrev;
                         document.querySelector("#menu-deploy-live span").setAttribute("class", app.liveReload ? "fa fa-check-square-o" : "fa fa-square-o");
                         // update show/hide git stuff
@@ -1742,7 +1942,9 @@ eXide.app = (function(util) {
                         }
 
                     } else {
-                        document.getElementById("toolbar-current-app").textContent = "unknown";
+                        var appEl2 = document.getElementById("toolbar-current-app");
+                        appEl2.textContent = "unknown";
+                        appEl2.classList.add("unknown");
                         document.getElementById("menu-deploy-active").textContent = "unknown";
                         document.querySelectorAll(".current-branch").forEach(function(el) { el.style.display = "none"; });
                         document.getElementById("menu-git").style.display = "none";
@@ -1786,6 +1988,7 @@ eXide.app = (function(util) {
                 el.addEventListener("click", function(ev) {
                     ev.preventDefault();
                     app.switchResultsPanel();
+                    app.$savePanelPrefs();
                 });
             });
 
