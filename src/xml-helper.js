@@ -39,6 +39,7 @@ eXide.edit.XMLModeHelper = (function () {
         menubar.click("#menu-xml-remove-tag", function() {
             self.deleteTags(editor.getActiveDocument());
         });
+        this.addCommand("locate", this.locate);
         this.addCommand("closeTag", this.closeTag);
         this.addCommand("removeTags", this.deleteTags);
         this.addCommand("suggest", this.suggest);
@@ -55,6 +56,113 @@ eXide.edit.XMLModeHelper = (function () {
 
     Constr.prototype.deactivate = function(doc) {
         this.menu.style.display = "none";
+    };
+
+    var ATTR_PRIORITY = { "xml:id": 0, "id": 1, "n": 2, "class": 3 };
+
+    function pickAttr(attrs) {
+        if (attrs.length === 0) return null;
+        if (attrs.length === 1) return attrs[0];
+        var best = attrs[0];
+        var bestRank = ATTR_PRIORITY[best.name] !== undefined ? ATTR_PRIORITY[best.name] : 99;
+        for (var i = 1; i < attrs.length; i++) {
+            var rank = ATTR_PRIORITY[attrs[i].name] !== undefined ? ATTR_PRIORITY[attrs[i].name] : 99;
+            if (rank < bestRank) { best = attrs[i]; bestRank = rank; }
+        }
+        return best;
+    }
+
+    Constr.prototype.createOutline = function(doc, onComplete) {
+        var tree = CM6.syntaxTree(this.editor.state);
+        var state = this.editor.state;
+        var depth = 0;
+        tree.iterate({
+            enter: function(node) {
+                if (node.name === "Element" || node.name === "SelfClosingTag") {
+                    var tagNameNode = null;
+                    var attrs = [];
+                    var child = node.node.firstChild;
+                    while (child) {
+                        if (child.name === "TagName") {
+                            tagNameNode = child;
+                        } else if (child.name === "OpenTag" || child.name === "SelfClosingTag") {
+                            var gc = child.firstChild;
+                            while (gc) {
+                                if (gc.name === "TagName") tagNameNode = gc;
+                                if (gc.name === "Attribute") {
+                                    var an = gc.firstChild;
+                                    var aname = null;
+                                    var aval = null;
+                                    while (an) {
+                                        if (an.name === "AttributeName") aname = state.sliceDoc(an.from, an.to);
+                                        if (an.name === "AttributeValue") {
+                                            aval = state.sliceDoc(an.from, an.to);
+                                            if (aval.charAt(0) === '"' || aval.charAt(0) === "'") aval = aval.slice(1, -1);
+                                        }
+                                        an = an.nextSibling;
+                                    }
+                                    if (aname) attrs.push({ name: aname, value: aval || "" });
+                                }
+                                gc = gc.nextSibling;
+                            }
+                        }
+                        child = child.nextSibling;
+                    }
+                    if (tagNameNode) {
+                        var tagName = state.sliceDoc(tagNameNode.from, tagNameNode.to);
+                        var hint = "";
+                        var chosen = pickAttr(attrs);
+                        if (chosen) {
+                            hint = chosen.value;
+                            if (hint.length > 30) hint = hint.substring(0, 30) + "…";
+                        }
+                        var sigParts = attrs.map(function(a) { return a.name + '="' + a.value + '"'; });
+                        var line = state.doc.lineAt(node.from);
+                        doc.functions.push({
+                            type: eXide.edit.Document.TYPE_FUNCTION,
+                            name: tagName,
+                            indent: depth,
+                            hint: hint,
+                            outlineClass: "outline-element",
+                            source: doc.getPath(),
+                            signature: "<" + tagName + (sigParts.length ? " " + sigParts.join(" ") : "") + ">",
+                            sort: String(line.number).padStart(6, "0"),
+                            row: line.number - 1,
+                            from: node.from,
+                            to: node.to
+                        });
+                    }
+                    depth++;
+                } else if (node.name === "Comment") {
+                    var text = state.sliceDoc(node.from, node.to);
+                    text = text.replace(/^<!--\s*/, "").replace(/\s*-->$/, "");
+                    if (text.length > 40) text = text.substring(0, 40) + "…";
+                    if (text) {
+                        var line = state.doc.lineAt(node.from);
+                        doc.functions.push({
+                            type: eXide.edit.Document.TYPE_FUNCTION,
+                            name: text,
+                            indent: depth,
+                            outlineClass: "outline-comment",
+                            source: doc.getPath(),
+                            signature: state.sliceDoc(node.from, Math.min(node.to, node.from + 120)),
+                            sort: String(line.number).padStart(6, "0"),
+                            row: line.number - 1,
+                            from: node.from,
+                            to: node.to
+                        });
+                    }
+                    return false;
+                }
+            },
+            leave: function(node) {
+                if (node.name === "Element" || node.name === "SelfClosingTag") {
+                    depth--;
+                }
+            }
+        });
+        this.collectErrors(doc);
+        if (onComplete) onComplete(doc);
     };
 
     Constr.prototype.closeTag = function (doc, text, row) {

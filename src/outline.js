@@ -1,6 +1,6 @@
 /*
  *  eXide - web-based XQuery IDE
- *  
+ *
  *  Copyright (C) 2011 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -20,76 +20,117 @@
 eXide.namespace("eXide.edit.Outline");
 
 /**
- * XQuery function outline view. Available functions and variables are
- * kept in the document instance. Templates are loaded once and kept in
- * this class.
- * 
+ * Outline view for functions, variables, elements, etc.
+ * Supports three display modes: nested/document, flat/document, flat/alpha.
  */
 eXide.edit.Outline = (function () {
-	
-	Constr = function() {
-		this.currentDoc = null;
+
+    // View modes
+    var MODE_NESTED_DOC = "nested-doc";
+    var MODE_FLAT_DOC   = "flat-doc";
+    var MODE_FLAT_ALPHA = "flat-alpha";
+
+    Constr = function() {
+        this.currentDoc = null;
         this.__activated = false;
-        
+        this._viewMode = MODE_NESTED_DOC;
+
         var self = this;
         document.getElementById("outline-filter").addEventListener("keyup", function() {
             self.filter(this.value);
         });
-	};
-	
-	Constr.prototype = {
-		
-		toggle : function(state) {
-			if(state || state === false) {this.__activated = !!state}
-			else {this.__activated = !this.__activated};
-// 			d3.select("#outline-body").style("display", this.__activated ? "block" : "none")
-			d3.select("#outline-body").style("position", this.__activated ? "relative" : "absolute");
+
+        // Toolbar buttons
+        var toolbar = document.getElementById("outline-toolbar");
+        if (toolbar) {
+            toolbar.addEventListener("click", function(e) {
+                var btn = e.target.closest("[data-outline-mode]");
+                if (!btn) return;
+                self._viewMode = btn.getAttribute("data-outline-mode");
+                toolbar.querySelectorAll("[data-outline-mode]").forEach(function(b) {
+                    b.classList.toggle("active", b === btn);
+                });
+                if (self.currentDoc) {
+                    self.$outlineUpdate(self.currentDoc);
+                }
+            });
+            // Mark initial active
+            var initial = toolbar.querySelector('[data-outline-mode="' + this._viewMode + '"]');
+            if (initial) initial.classList.add("active");
+        }
+    };
+
+    function indentPrefix(level) {
+        var s = "";
+        for (var i = 0; i < level; i++) s += "\u00A0\u00A0";
+        return s;
+    }
+
+    function docOrderSort(a, b) {
+        var ra = a.row !== undefined ? a.row : 999999;
+        var rb = b.row !== undefined ? b.row : 999999;
+        return ra - rb;
+    }
+
+    function alphaSort(a, b) {
+        var na = (a.name || "").toLowerCase();
+        var nb = (b.name || "").toLowerCase();
+        return na > nb ? 1 : na < nb ? -1 : 0;
+    }
+
+    Constr.prototype = {
+
+        toggle : function(state) {
+            if(state || state === false) {this.__activated = !!state}
+            else {this.__activated = !this.__activated};
+            d3.select("#outline-body")
+                .style("position", this.__activated ? "relative" : "absolute")
+                .style("visibility", this.__activated ? "visible" : "hidden");
             if(this.__activated && this.currentDoc) {
                 this.updateOutline(this.currentDoc)
             }
-		},
-		
-		getTemplates: function (prefix) {
-			var re = new RegExp("^" + prefix);
-			var matches = [];
-			for (var i = 0; i < this.templates.length; i++) {
-				if (this.templates[i].name.match(re)) {
-					matches.push(this.templates[i]);
-				}
-			}
-			return matches;
-		},
-		
-		gotoDefinition: function(doc, name) {
-		    var type = "function"
+        },
+
+        getTemplates: function (prefix) {
+            var re = new RegExp("^" + prefix);
+            var matches = [];
+            for (var i = 0; i < this.templates.length; i++) {
+                if (this.templates[i].name.match(re)) {
+                    matches.push(this.templates[i]);
+                }
+            }
+            return matches;
+        },
+
+        gotoDefinition: function(doc, name) {
+            var type = "function"
             if (name.indexOf("$") === 0) {
-		        name = name.substring(1);
-		        type = "variable";
-		        
-		    }
-			for (var i = 0; i < doc.functions.length; i++) {
-				var func = doc.functions[i];
-				if (name == func.name && type == func.type) {
-					eXide.app.locate(func.type, func.source == '' ? null : func.source, name);
-					break;
-				}
-			}
-		},
-		
+                name = name.substring(1);
+                type = "variable";
+            }
+            for (var i = 0; i < doc.functions.length; i++) {
+                var func = doc.functions[i];
+                if (name == func.name && type == func.type) {
+                    eXide.app.locate(func.type, func.source == '' ? null : func.source, name);
+                    break;
+                }
+            }
+        },
+
         findDefinition: function(doc, name) {
             for (var i = 0; i < doc.functions.length; i++) {
                 var func = doc.functions[i];
-    			if (name == func.name) {
-					return func;
-				}
-			}
+                if (name == func.name) {
+                    return func;
+                }
+            }
             return null;
         },
-        
-		updateOutline: function(doc) {
+
+        updateOutline: function(doc) {
             var self = this;
-			self.currentDoc = doc;
-            
+            self.currentDoc = doc;
+
             var helper = doc.getModeHelper();
             if (helper != null && this.__activated) {
                 doc.functions = [];
@@ -97,12 +138,12 @@ eXide.edit.Outline = (function () {
                     self.$outlineUpdate(doc);
                 });
             }
-		},
-		
-		clearOutline: function() {
-			var el = document.getElementById("outline");
-			if (el) el.innerHTML = "";
-		},
+        },
+
+        clearOutline: function() {
+            var el = document.getElementById("outline");
+            if (el) el.innerHTML = "";
+        },
 
         filter: function(str) {
             var regex = new RegExp(str, "i");
@@ -112,31 +153,38 @@ eXide.edit.Outline = (function () {
                 link.style.display = regex.test(link.textContent) ? "" : "none";
             }
         },
-        
+
         $outlineUpdate: function (doc) {
             if (this.currentDoc != doc)
                 return;
-            
+
+            var mode = this._viewMode;
+            var nested = (mode === MODE_NESTED_DOC);
+
+            // Prepare sorted data
+            var items = doc.functions.slice();
+            if (mode === MODE_FLAT_ALPHA) {
+                items.sort(alphaSort);
+            } else {
+                items.sort(docOrderSort);
+            }
+
             eXide.app.resize();
-            // use d3s for smooth transitions
+
             var outline = d3.select("#outline");
+            outline.selectAll("li").remove();
 
             var sel = outline.selectAll("li")
-                .data(doc.functions, function(d) {
-                    return d.sort;
-                });
-
-            function stringCompare(a, b) {
-                a = a.toLowerCase();
-                b = b.toLowerCase();
-                return a > b ? 1 : a == b ? 0 : -1;
-            }   
+                .data(items);
 
             var li = sel.enter()
                 .append("li")
                     .attr("class",function(d) {
-                      var cl =  d.type == eXide.edit.Document.TYPE_FUNCTION ?  "t.function" : "t_variable";
-                      return cl + " " + (d.visibility === "private" ? "private" : "public" );
+                      var cl =  d.type == eXide.edit.Document.TYPE_FUNCTION ?  "t_function" : "t_variable";
+                      if (d.visibility === "private") cl += " private";
+                      else if (d.visibility === "public") cl += " public";
+                      if (d.outlineClass) cl += " " + d.outlineClass;
+                      return cl;
                     })
                     .append("a")
                         .style("opacity", 0)
@@ -147,17 +195,35 @@ eXide.edit.Outline = (function () {
                         .attr("href", function(d) {
                             return  "#" + (d.source ? d.source : "");
                         })
-                       .text(function(d) {
-                            if (d.type == eXide.edit.Document.TYPE_VARIABLE) {
-                                return "$" + d.name;
-                            } else {
-                                return d.name;
-                            }    
+                       .each(function(d) {
+                            var a = d3.select(this);
+                            var text = d.type == eXide.edit.Document.TYPE_VARIABLE ? "$" + d.name : d.name;
+                            if (nested && d.indent) {
+                                text = indentPrefix(d.indent) + text;
+                            }
+                            a.append("span")
+                                .attr("class", "outline-name")
+                                .text(text);
+                            if (d.hint) {
+                                a.append("span")
+                                    .attr("class", "outline-hint")
+                                    .text(" \u201C" + d.hint + "\u201D");
+                            }
                        })
 
                        .on("click", function(d) {
                             var path = this.hash.substring(1);
-                            if(d.row) {
+                            // Select the full span if from/to are available
+                            if (d.from !== undefined && d.to !== undefined) {
+                                var ed = eXide.app.getEditor();
+                                if (ed && ed.editor) {
+                                    ed.editor.dispatch({
+                                        selection: { anchor: d.from, head: d.to },
+                                        scrollIntoView: true
+                                    });
+                                    ed.editor.focus();
+                                }
+                            } else if(d.row !== undefined && d.row !== null) {
                                 eXide.app.locate("function", path == '' ? null: path, parseInt(d.row));
                             } else if(d.type == eXide.edit.Document.TYPE_FUNCTION) {
                                 eXide.app.locate("function", path == '' ? null: path, d.name);
@@ -166,17 +232,10 @@ eXide.edit.Outline = (function () {
                             }
                        })
                        .transition()
-                            .duration(800)
+                            .duration(400)
                             .style("opacity",1);
-
-            sel.exit()
-                .transition()
-                    .duration(400)
-                    .style("opacity",0)
-                    .remove();
-            sel.sort(function (a, b) { return a == null || b == null ? -1  : stringCompare(a.sort, b.sort); });
         }
-	};
-	
-	return Constr;
+    };
+
+    return Constr;
 }());
