@@ -362,23 +362,6 @@ eXide.edit.Editor = (function () {
             }
         });
 
-        var tabsDiv = document.getElementById("tabs-container");
-        tabsDiv.style.overflow = "hidden";
-
-        //When user move mouse over menu
-        tabsDiv.addEventListener("mousemove", function(e) {
-            var tabsUl = tabsDiv.querySelector("ul");
-            var tabsWidth = tabsDiv.offsetWidth;
-            var lastLi = tabsUl.querySelectorAll("li");
-
-            if (lastLi.length > 1) {
-                var ulWidth = lastLi[lastLi.length - 2].offsetLeft + lastLi[0].offsetWidth;
-                var rect = tabsDiv.getBoundingClientRect();
-                var left = (e.pageX - (rect.left + window.pageXOffset)) * (ulWidth-tabsWidth) / tabsWidth;
-                tabsDiv.scrollLeft = left;
-            }
-        });
-
         this.validateTimeout = null;
         this.validationEnabled = true;
 
@@ -391,6 +374,8 @@ eXide.edit.Editor = (function () {
             "less": new eXide.edit.LessModeHelper($this),
             "javascript": new eXide.edit.JavascriptModeHelper($this),
             "css": new eXide.edit.CssModeHelper($this),
+            "json": new eXide.edit.JsonModeHelper($this),
+            "markdown": new eXide.edit.MarkdownModeHelper($this),
             "tmsnippet": new eXide.edit.SnippetModeHelper($this)
         };
 
@@ -457,7 +442,7 @@ eXide.edit.Editor = (function () {
         }
 
          //Set up outline status bar
-        var outlineData = [{label: "directory", cls: "directory"},{label:'outline', cls:"outline"}]
+        var outlineData = [{label: "collections", cls: "directory"},{label:'outline', cls:"outline"}]
         d3.select("#tabs-outline").selectAll("li").data(outlineData)
             .enter()
             .append("li")
@@ -528,7 +513,7 @@ eXide.edit.Editor = (function () {
         } else {
             text = "";
         }
-        var newDocument = new eXide.edit.Document("new-document " + newDocId,
+        var newDocument = new eXide.edit.Document("untitled " + newDocId,
                 "__new__" + newDocId, text);
         newDocument.saved = true;
         if (type) {
@@ -574,7 +559,7 @@ eXide.edit.Editor = (function () {
                 }
             }
             newDocId++;
-            var newDocument = new eXide.edit.Document("new-document " + newDocId,
+            var newDocument = new eXide.edit.Document("untitled " + newDocId,
                     "__new__" + newDocId, data);
             newDocument.setSyntax(mode);
             newDocument.template = template;
@@ -1155,22 +1140,9 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.scrollToTab = function (current) {
-        var rect = current.getBoundingClientRect();
-        var tabsContainer = document.getElementById("tabs-container");
-        var containerRect = tabsContainer.getBoundingClientRect();
-        var offset = rect.left - containerRect.left + tabsContainer.scrollLeft;
-        var offsetRight = offset + current.offsetWidth;
-        var width = tabsContainer.clientWidth;
-        var scrollLeft = tabsContainer.scrollLeft;
-        if (offsetRight > width + scrollLeft) {
-            tabsContainer.scrollLeft = offsetRight - width;
-        } else if (offset < scrollLeft) {
-            if (offset < width)
-                tabsContainer.scrollLeft = 0;
-            else
-                tabsContainer.scrollLeft = offset;
-        }
-        console.log("Scrolling to %d %d", offset, tabsContainer.scrollLeft);
+        var strip = document.getElementById("tab-strip-wrap");
+        if (!strip) return;
+        current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
     };
 
     Constr.prototype.setTheme = function(theme) {
