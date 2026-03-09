@@ -58,13 +58,9 @@ eXide.edit.XQueryModeHelper = (function () {
 		this.editor = this.parent.editor;
         this.xqDebugger = null;
         
-//      this.funcDefRe = /\(:[^)]*:\)|(declare\s+((?:%[\w\:\-]+(?:\([^\)]*\))?\s*)*)function\s+([^\(]+)\()/g;
-//      this.varDefRe = /\(:[^)]*:\)|(declare\s+(?:%\w+\s+)*variable\s+\$[^\s;]+)/gm;
         this.funcDefRe = /\(:.*declare.+function.+:\)|(declare\s+((?:%[\w\:\-]+(?:\([^\)]*\))?\s*)*)function\s+([^\(]+)\()/g;
         this.varDefRe = /\(:.*declare.+variable.+:\)|(declare\s+(?:%\w+\s+)*variable\s+\$[^\s;]+)/gm;
-        
         this.varRe = /declare\s+(?:%\w+\s+)*variable\s+(\$[^\s;]+)/;
-        // this.parseImportRe = /import\s+module\s+namespace\s+[^=]+\s*=\s*["'][^"']+["']\s*at\s+["'][^"']+["']\s*;/g;
         this.parseImportRe = /\(:[^)]*:\)|(import\s+module\s+namespace\s+[^=]+\s*=\s*["'][^"']+["']\s*at\s+["'][^"']+["']\s*;)/g
         this.moduleRe = /import\s+module\s+namespace\s+([^=\s]+)\s*=\s*["']([^"']+)["']\s*at\s+["']([^"']+)["']\s*;/;
 

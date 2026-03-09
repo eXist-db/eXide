@@ -83,9 +83,11 @@ eXide.edit.Outline = (function () {
         toggle : function(state) {
             if(state || state === false) {this.__activated = !!state}
             else {this.__activated = !this.__activated};
-            d3.select("#outline-body")
-                .style("position", this.__activated ? "relative" : "absolute")
-                .style("visibility", this.__activated ? "visible" : "hidden");
+            var body = document.getElementById("outline-body");
+            if (body) {
+                body.style.position = this.__activated ? "relative" : "absolute";
+                body.style.visibility = this.__activated ? "visible" : "hidden";
+            }
             if(this.__activated && this.currentDoc) {
                 this.updateOutline(this.currentDoc)
             }
@@ -171,69 +173,68 @@ eXide.edit.Outline = (function () {
 
             eXide.app.resize();
 
-            var outline = d3.select("#outline");
-            outline.selectAll("li").remove();
+            var outline = document.getElementById("outline");
+            outline.innerHTML = "";
 
-            var sel = outline.selectAll("li")
-                .data(items);
+            items.forEach(function(d) {
+                var li = document.createElement("li");
+                var cl = d.type == eXide.edit.Document.TYPE_FUNCTION ? "t_function" : "t_variable";
+                if (d.visibility === "private") cl += " private";
+                else if (d.visibility === "public") cl += " public";
+                if (d.outlineClass) cl += " " + d.outlineClass;
+                li.className = cl;
 
-            var li = sel.enter()
-                .append("li")
-                    .attr("class",function(d) {
-                      var cl =  d.type == eXide.edit.Document.TYPE_FUNCTION ?  "t_function" : "t_variable";
-                      if (d.visibility === "private") cl += " private";
-                      else if (d.visibility === "public") cl += " public";
-                      if (d.outlineClass) cl += " " + d.outlineClass;
-                      return cl;
-                    })
-                    .append("a")
-                        .style("opacity", 0)
-                        .attr("title", function(d) {
-                            if (d.signature) { return d.signature }
-                            return null;
-                        })
-                        .attr("href", function(d) {
-                            return  "#" + (d.source ? d.source : "");
-                        })
-                       .each(function(d) {
-                            var a = d3.select(this);
-                            var text = d.type == eXide.edit.Document.TYPE_VARIABLE ? "$" + d.name : d.name;
-                            if (nested && d.indent) {
-                                text = indentPrefix(d.indent) + text;
-                            }
-                            a.append("span")
-                                .attr("class", "outline-name")
-                                .text(text);
-                            if (d.hint) {
-                                a.append("span")
-                                    .attr("class", "outline-hint")
-                                    .text(" \u201C" + d.hint + "\u201D");
-                            }
-                       })
+                var a = document.createElement("a");
+                if (d.signature) a.title = d.signature;
+                a.href = "#" + (d.source ? d.source : "");
 
-                       .on("click", function(d) {
-                            var path = this.hash.substring(1);
-                            // Select the full span if from/to are available
-                            if (d.from !== undefined && d.to !== undefined) {
-                                var ed = eXide.app.getEditor();
-                                if (ed && ed.editor) {
-                                    ed.editor.dispatch({
-                                        selection: { anchor: d.from, head: d.to },
-                                        scrollIntoView: true
-                                    });
-                                    ed.editor.focus();
-                                }
-                            } else if(d.row !== undefined && d.row !== null) {
-                                eXide.app.locate("function", path == '' ? null: path, parseInt(d.row));
-                            } else if(d.type == eXide.edit.Document.TYPE_FUNCTION) {
-                                eXide.app.locate("function", path == '' ? null: path, d.name);
-                            } else {
-                                eXide.app.locate("variable", path == '' ? null: path,d.name);
-                            }
-                       })
-                       .transition()
-                            .duration(400)
-                            .style("opacity",1);
+                var text = d.type == eXide.edit.Document.TYPE_VARIABLE ? "$" + d.name : d.name;
+                if (nested && d.indent) {
+                    text = indentPrefix(d.indent) + text;
+                }
+                var nameSpan = document.createElement("span");
+                nameSpan.className = "outline-name";
+                nameSpan.textContent = text;
+                a.appendChild(nameSpan);
+
+                if (d.hint) {
+                    var hintSpan = document.createElement("span");
+                    hintSpan.className = "outline-hint";
+                    hintSpan.textContent = " \u201C" + d.hint + "\u201D";
+                    a.appendChild(hintSpan);
+                }
+
+                a.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    var path = this.hash.substring(1);
+                    if (d.from !== undefined && d.to !== undefined) {
+                        var ed = eXide.app.getEditor();
+                        if (ed && ed.editor) {
+                            ed.editor.dispatch({
+                                selection: { anchor: d.from, head: d.to },
+                                scrollIntoView: true
+                            });
+                            ed.editor.focus();
+                        }
+                    } else if(d.row !== undefined && d.row !== null) {
+                        eXide.app.locate("function", path == '' ? null: path, parseInt(d.row));
+                    } else if(d.type == eXide.edit.Document.TYPE_FUNCTION) {
+                        eXide.app.locate("function", path == '' ? null: path, d.name);
+                    } else {
+                        eXide.app.locate("variable", path == '' ? null: path, d.name);
+                    }
+                });
+
+                a.style.opacity = "0";
+                li.appendChild(a);
+                outline.appendChild(li);
+
+                // Fade in
+                requestAnimationFrame(function() {
+                    a.style.transition = "opacity 0.4s";
+                    a.style.opacity = "1";
+                });
+            });
         }
     };
 

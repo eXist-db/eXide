@@ -441,25 +441,27 @@ eXide.edit.Editor = (function () {
             });
         }
 
-         //Set up outline status bar
-        var outlineData = [{label: "collections", cls: "directory"},{label:'outline', cls:"outline"}]
-        d3.select("#tabs-outline").selectAll("li").data(outlineData)
-            .enter()
-            .append("li")
-                .append("a")
-                .attr("class", "tab")
-                .text(function(d,i){return d.label})
-                .on('click', function(d,i) {
-                    d3.selectAll("#tabs-outline a.tab").classed("active", function(d,ii){return ii ==i})
-                    outlineData.map(function(m,ii){return menubar.editor[m.cls].toggle(ii == i) })
-                    })
-                .each(function(d,i){ // activate the first one
-                    if (i===0){
-                        d3.select(this).classed('active', true)
-                    }
-                    menubar.editor[d.cls].toggle(i ===0 )
-
-                })
+         // Set up west panel tab bar (collections / outline)
+        var outlineData = [{label: "collections", cls: "directory"},{label:'outline', cls:"outline"}];
+        var tabsOutline = document.getElementById("tabs-outline");
+        outlineData.forEach(function(d, i) {
+            var li = document.createElement("li");
+            var a = document.createElement("a");
+            a.className = "tab";
+            a.textContent = d.label;
+            a.addEventListener("click", function() {
+                tabsOutline.querySelectorAll("a.tab").forEach(function(t, ii) {
+                    t.classList.toggle("active", ii === i);
+                });
+                outlineData.forEach(function(m, ii) {
+                    menubar.editor[m.cls].toggle(ii === i);
+                });
+            });
+            if (i === 0) a.classList.add("active");
+            menubar.editor[d.cls].toggle(i === 0);
+            li.appendChild(a);
+            tabsOutline.appendChild(li);
+        });
     };
 
     // Extend eXide.events.Sender for event support

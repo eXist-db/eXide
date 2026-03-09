@@ -67,11 +67,8 @@ eXide.edit.ModeHelper = (function () {
         },
 
         createOutline: function(doc, onComplete) {
-            d3.select("#outline").selectAll("li")
-                .transition()
-                    .duration(400)
-                    .style("opacity",0)
-                    .remove();
+            var outline = document.getElementById("outline");
+            if (outline) outline.innerHTML = "";
         },
 
         collectErrors: function(doc) {

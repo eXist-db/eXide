@@ -218,10 +218,6 @@ body {
     font-size: 12px;
 }
 
-.ui-front {
-    z-index: 10001;
-}
-
 table {
     font-size: 100%;
     border-collapse: collapse;
@@ -2406,7 +2402,7 @@ form.file_upload .file_upload_body input {
     width: 150px;
 }
 
-.file_upload_progress .ui-progressbar-value, .file_upload_overall_progress .ui-progressbar-value, .progressbar div, #progress-all {
+.progressbar div, #progress-all {
     background: url(../images/pbar-ani.gif);
 }
 
@@ -2437,7 +2433,7 @@ form.file_upload .file_upload_body input {
     margin: 20px 0;
 }
 
-.file_upload_error .ui-progressbar, .file_upload_error .progressbar, .file_upload_error .file_upload_start button {
+.file_upload_error .progressbar, .file_upload_error .file_upload_start button {
     display: none;
 }
 

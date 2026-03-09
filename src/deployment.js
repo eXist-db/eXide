@@ -355,17 +355,16 @@ eXide.edit.PackageEditor = (function () {
 			}
             $this.currentProject = project;
 
-            var options = d3.select("#git-checkout-select").selectAll("option")
-                .data(project.gitBranch)
-                .attr('value', function(d){return d})
-                .text(String);
-
-                options.enter()
-                    .append('option')
-                    .attr('value', function(d){return d})
-                    .text(String);
-
-                options.exit().remove();
+            var select = document.getElementById("git-checkout-select");
+            if (select) {
+                select.innerHTML = "";
+                project.gitBranch.forEach(function(branch) {
+                    var opt = document.createElement("option");
+                    opt.value = branch;
+                    opt.textContent = branch;
+                    select.appendChild(opt);
+                });
+            }
 
             $this.gitCheckoutDialog.open();
         })

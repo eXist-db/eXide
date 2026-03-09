@@ -1241,20 +1241,7 @@ eXide.app = (function(util) {
         },
 
         startDebug: function() {
-            var _class1 = "ui-icon-stop";
-            var _class2 = "ui-icon-play";
-            var _icon = document.querySelector("#debug span.ui-icon");
-            if (_icon) {
-                if (_icon.classList.contains(_class1)){
-                    _icon.classList.remove(_class1);
-                    _icon.classList.add(_class2);
-                } else {
-                    _icon.classList.remove(_class2);
-                    _icon.classList.add(_class1);
-                }
-            }
             editor.exec("debug");
-            console.log("start debugging click");
         },
 
         stepOver: function() {
