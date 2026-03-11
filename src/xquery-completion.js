@@ -70,14 +70,12 @@ eXide.edit.CompletionSource = (function () {
         var state = context.state;
         var pos = context.pos;
         var lead = editorUtils.offsetToRowCol(state, pos);
-
         var token = "";
         var mode = "templates";
         var from = pos, to = pos;
 
         if (state.selection.main.empty) {
             var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
-
             if (!astNode) {
                 // No AST node: scan preceding text
                 mode = "functions";
@@ -111,6 +109,10 @@ eXide.edit.CompletionSource = (function () {
                         astNode.name === "EQName" ? astNode.pos.sc - 1 : astNode.pos.sc);
                     to = editorUtils.rowColToOffset(state, astNode.pos.sl, astNode.pos.ec);
                     token = astNode.name === "EQName" ? astNode.value : "";
+                    // Pass the VarRef ancestor to the InScopeVariables visitor
+                    // (it matches on VarRef/VarName nodes, not EQName leaves)
+                    astNode = parent.name === "VarName" && parent.getParent &&
+                        parent.getParent.name === "VarRef" ? parent.getParent : parent;
                 } else {
                     var importStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "Import");
                     var nsDeclStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "NamespaceDecl");
