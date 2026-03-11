@@ -157,7 +157,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		var $this = this;
 		var basePath = "xmldb:exist://" + doc.getBasePath();
 		
-        this.xqlint(doc);
+        this.parseXQuery(doc);
         for (var i = 0; i < this.validationListeners.length; i++) {
             var listener = this.validationListeners[i];
             listener.exec.apply(listener.context, [doc]);
@@ -208,11 +208,10 @@ eXide.edit.XQueryModeHelper = (function () {
 		}
 	};
 	
-    Constr.prototype.xqlint = function(doc) {
+    Constr.prototype.parseXQuery = function(doc) {
         if (doc.ast && doc.lastValidation >= doc.getLastChanged()) {
             return;
         }
-        console.log("Running xqlint...");
         var value = doc.getText();
         var result = rexAdapter.parseXQuery(value, RExParser);
         if (result.error) {
@@ -265,7 +264,7 @@ eXide.edit.XQueryModeHelper = (function () {
     };
 
 	Constr.prototype.autocomplete = function(doc, alwaysShow) {
-        this.xqlint(doc);
+        this.parseXQuery(doc);
 
         if (alwaysShow === undefined) {
             alwaysShow = true;
@@ -647,7 +646,7 @@ eXide.edit.XQueryModeHelper = (function () {
 	};
 	
 	Constr.prototype.showFunctionDoc = function (doc) {
-        this.xqlint(doc);
+        this.parseXQuery(doc);
 		var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
 
 		var pos = editorUtils.textToScreenCoordinates(this.editor, lead.row, lead.column);
@@ -693,7 +692,7 @@ eXide.edit.XQueryModeHelper = (function () {
     };
     
 	Constr.prototype.gotoDefinition = function (doc) {
-        this.xqlint(doc);
+        this.parseXQuery(doc);
 		var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
 		var funcName = this.getFunctionAtCursor(doc, lead);
 		if (funcName) {
@@ -717,7 +716,7 @@ eXide.edit.XQueryModeHelper = (function () {
 	}
 	
     Constr.prototype.extractVariable = function(doc) {
-        this.xqlint(doc);
+        this.parseXQuery(doc);
         // get text of selection
         var sel = this.editor.state.selection.main;
         var range = { start: editorUtils.offsetToRowCol(this.editor.state, sel.from), end: editorUtils.offsetToRowCol(this.editor.state, sel.to) };
@@ -763,7 +762,7 @@ eXide.edit.XQueryModeHelper = (function () {
     };
     
     Constr.prototype.extractFunction = function(doc) {
-        this.xqlint(doc);
+        this.parseXQuery(doc);
         // get text of selection
         var sel = this.editor.state.selection.main;
         var range = { start: editorUtils.offsetToRowCol(this.editor.state, sel.from), end: editorUtils.offsetToRowCol(this.editor.state, sel.to) };
@@ -915,7 +914,7 @@ eXide.edit.XQueryModeHelper = (function () {
     }
     
     Constr.prototype.expandSelection = function(doc) {
-        this.xqlint(doc);
+        this.parseXQuery(doc);
         var selMain = this.editor.state.selection.main;
         var selRange = { start: editorUtils.offsetToRowCol(this.editor.state, selMain.from), end: editorUtils.offsetToRowCol(this.editor.state, selMain.to) };
 
@@ -961,7 +960,7 @@ eXide.edit.XQueryModeHelper = (function () {
             self.editor.focus();
         }
 
-        this.xqlint(doc);
+        this.parseXQuery(doc);
         var self = this;
         var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
         var ast = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
@@ -1002,7 +1001,7 @@ eXide.edit.XQueryModeHelper = (function () {
     
     Constr.prototype.runTest = function(doc) {
         var self = this;
-        this.xqlint(doc);
+        this.parseXQuery(doc);
         var info = new eXide.edit.ModuleInfo(doc.ast);
         if (info.isModule() && info.hasTests()) {
             var params = new URLSearchParams({ source: doc.getPath() });
