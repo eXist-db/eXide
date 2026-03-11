@@ -160,7 +160,7 @@ eXide.app.Layout = (function () {
     var PANEL_DEFAULTS = {
         "west": { size: 200, preferred: 200 },
         "south": { size: 10, preferred: 200 },
-        "east": { size: 0, preferred: 380 }
+        "east": { size: 0, preferred: 220 }
     };
 
     var Constr = function(editor) {
@@ -168,7 +168,7 @@ eXide.app.Layout = (function () {
         this.regions = {
             "west": new eXide.app.FlexboxSplitter(this, ".panel-west", "west", 100, 200),
             "south": new eXide.app.FlexboxSplitter(this, ".panel-south", "south", 100, 200),
-            "east": new eXide.app.FlexboxSplitter(this, ".panel-east", "east", 360, 380)
+            "east": new eXide.app.FlexboxSplitter(this, ".panel-east", "east", 180, 220)
         };
         this.regions["east"].addEventListener("beforeResize", eXide.app.beforeResize);
         this.regions["east"].addEventListener("afterResize", eXide.app.afterResize);

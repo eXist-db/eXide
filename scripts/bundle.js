@@ -36,6 +36,7 @@ import '../src/xquery-utils.js';
 import '../src/quickfix.js';
 import '../src/snippets.js';
 import '../src/snippet-helper.js';
+import '../src/monitor.js';
 import '../src/layout.js';
 import '../src/dnd.js';
 import '../src/error-status-ui.js';
