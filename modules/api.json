@@ -106,7 +106,7 @@
                 }
             }
         },
-        "/api/db/{path}": {
+        "/api/storage/{path}": {
             "get": {
                 "summary": "Browse collection or load document",
                 "operationId": "db:get",
@@ -988,6 +988,14 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "name": "collection",
+                        "in": "query",
+                        "description": "Resolve package by collection path instead of abbrev (use _ as abbrev placeholder)",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
@@ -1246,6 +1254,27 @@
                 "responses": {
                     "200": {
                         "description": "Server status",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/accounts": {
+            "get": {
+                "summary": "List users and groups",
+                "operationId": "admin:accounts",
+                "tags": [
+                    "admin"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Users and groups",
                         "content": {
                             "application/json": {
                                 "schema": {

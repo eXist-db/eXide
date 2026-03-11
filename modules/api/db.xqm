@@ -12,11 +12,27 @@ import module namespace config="http://exist-db.org/xquery/apps/config" at "../c
 
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
 
+(: Handle difference between 4.x.x and 5.x.x releases of eXist :)
+declare variable $db:copy-collection :=
+    let $fnNew := function-lookup(xs:QName("xmldb:copy-collection"), 2)
+    return
+        if (exists($fnNew)) then $fnNew else function-lookup(xs:QName("xmldb:copy"), 2);
+
+declare variable $db:copy-resource :=
+    let $fnNew := function-lookup(xs:QName("xmldb:copy-resource"), 4)
+    return
+        if (exists($fnNew)) then $fnNew
+        else
+            let $fnOld := function-lookup(xs:QName("xmldb:copy"), 3)
+            return function($sourceCol, $sourceName, $targetCol, $targetName) {
+                $fnOld($sourceCol, $targetCol, $sourceName)
+            };
+
 (:~
- : GET /api/db/{path} — Browse collection or load document.
+ : GET /api/storage/{path} — Browse collection or load document.
  :)
 declare function db:get($request as map(*)) {
-    let $path := "/" || $request?parameters?path
+    let $path := db:encode-path("/" || $request?parameters?path)
     let $user := (request:get-attribute("org.exist.login.user"), "guest")[1]
     return
         if (xmldb:collection-available($path)) then
@@ -29,10 +45,10 @@ declare function db:get($request as map(*)) {
 };
 
 (:~
- : PUT /api/db/{path} — Create or update document.
+ : PUT /api/storage/{path} — Create or update document.
  :)
 declare function db:put($request as map(*)) {
-    let $path := "/" || $request?parameters?path
+    let $path := db:encode-path("/" || $request?parameters?path)
     let $data := $request?body
     let $collection := replace($path, "/[^/]+$", "")
     let $resource := replace($path, "^.*/", "")
@@ -56,11 +72,11 @@ declare function db:put($request as map(*)) {
 };
 
 (:~
- : POST /api/db/{path} — Create subcollection or batch operations.
+ : POST /api/storage/{path} — Create subcollection or batch operations.
  : Body: { "action": "create" | "copy" | "move" | "rename", ... }
  :)
 declare function db:post($request as map(*)) {
-    let $path := "/" || $request?parameters?path
+    let $path := db:encode-path("/" || $request?parameters?path)
     let $body := $request?body
     let $action := $body?action
     return
@@ -78,9 +94,14 @@ declare function db:post($request as map(*)) {
                 try {
                     let $sources := $body?sources?*
                     for $source in $sources
-                    let $name := replace($source, "^.*/", "")
-                    return xmldb:copy-resource(
-                        replace($source, "/[^/]+$", ""), $name, $path, $name)
+                    let $enc-source := db:encode-path($source)
+                    return
+                        if (xmldb:collection-available($enc-source)) then
+                            $db:copy-collection($enc-source, $path)
+                        else
+                            let $name := replace($enc-source, "^.*/", "")
+                            let $src-col := replace($enc-source, "/[^/]+$", "")
+                            return $db:copy-resource($src-col, $name, $path, $name)
                     ,
                     map { "status": "ok" }
                 } catch * {
@@ -91,9 +112,14 @@ declare function db:post($request as map(*)) {
                 try {
                     let $sources := $body?sources?*
                     for $source in $sources
-                    let $name := replace($source, "^.*/", "")
-                    let $src-col := replace($source, "/[^/]+$", "")
-                    return xmldb:move($src-col, $path, $name)
+                    let $enc-source := db:encode-path($source)
+                    return
+                        if (xmldb:collection-available($enc-source)) then
+                            xmldb:move($enc-source, $path)
+                        else
+                            let $name := replace($enc-source, "^.*/", "")
+                            let $src-col := replace($enc-source, "/[^/]+$", "")
+                            return xmldb:move($src-col, $path, $name)
                     ,
                     map { "status": "ok" }
                 } catch * {
@@ -103,12 +129,18 @@ declare function db:post($request as map(*)) {
             case "rename" return
                 try {
                     let $target := $body?target
-                    let $col := replace($path, "/[^/]+$", "")
-                    let $name := replace($path, "^.*/", "")
-                    return (
-                        xmldb:rename($col, $name, $target),
-                        map { "status": "ok" }
-                    )
+                    return
+                        if (xmldb:collection-available($path)) then (
+                            xmldb:rename($path, $target),
+                            map { "status": "ok" }
+                        )
+                        else
+                            let $col := replace($path, "/[^/]+$", "")
+                            let $name := replace($path, "^.*/", "")
+                            return (
+                                xmldb:rename($col, $name, $target),
+                                map { "status": "ok" }
+                            )
                 } catch * {
                     roaster:response(400, "application/json",
                         map { "error": $err:description })
@@ -119,10 +151,10 @@ declare function db:post($request as map(*)) {
 };
 
 (:~
- : DELETE /api/db/{path} — Delete resource or collection.
+ : DELETE /api/storage/{path} — Delete resource or collection.
  :)
 declare function db:delete($request as map(*)) {
-    let $path := "/" || $request?parameters?path
+    let $path := db:encode-path("/" || $request?parameters?path)
     return
         try {
             if (xmldb:collection-available($path)) then (
@@ -143,11 +175,11 @@ declare function db:delete($request as map(*)) {
 };
 
 (:~
- : PATCH /api/db/{path} — Modify permissions, owner, group, MIME type.
+ : PATCH /api/storage/{path} — Modify permissions, owner, group, MIME type.
  : Body: { "owner": "...", "group": "...", "mode": "rwxr-x---", "mime": "..." }
  :)
 declare function db:patch($request as map(*)) {
-    let $path := "/" || $request?parameters?path
+    let $path := db:encode-path("/" || $request?parameters?path)
     let $body := $request?body
     return
         try {
@@ -163,6 +195,20 @@ declare function db:patch($request as map(*)) {
 };
 
 
+(:~
+ : Encode each segment of a path for eXist-db internal use.
+ : Converts /db/AéB → /db/A%C3%A9B while preserving path separators.
+ :)
+declare %private function db:encode-path($path as xs:string) as xs:string {
+    string-join(
+        for $segment in tokenize($path, "/")
+        return
+            if ($segment = "") then ""
+            else xmldb:encode($segment),
+        "/"
+    )
+};
+
 (: ── Internal helpers ─────────────────────────────────────── :)
 
 declare %private function db:browse-collection($path, $request, $user) {
@@ -175,33 +221,47 @@ declare %private function db:browse-collection($path, $request, $user) {
         for $child in $children
         where empty($filter) or contains($child, $filter)
         order by lower-case($child)
-        return map {
-            "name": $child,
-            "isCollection": true(),
-            "path": $path || "/" || $child,
-            "writable": sm:has-access(xs:anyURI($path || "/" || $child), "w")
-        },
+        return
+            let $child-path := $path || "/" || $child
+            let $child-uri := xs:anyURI($child-path)
+            return map {
+                "name": xmldb:decode-uri(xs:anyURI($child)),
+                "isCollection": true(),
+                "path": xmldb:decode-uri(xs:anyURI($child-path)),
+                "writable": sm:has-access($child-uri, "w"),
+                "permissions": sm:get-permissions($child-uri)/sm:permission/string(@mode),
+                "owner": sm:get-permissions($child-uri)/sm:permission/string(@owner),
+                "group": sm:get-permissions($child-uri)/sm:permission/string(@group)
+            },
         for $res in $resources
         where empty($filter) or contains($res, $filter)
         order by lower-case($res)
         return
             let $res-path := $path || "/" || $res
+            let $res-uri := xs:anyURI($res-path)
             return map {
-                "name": $res,
+                "name": xmldb:decode-uri(xs:anyURI($res)),
                 "isCollection": false(),
-                "path": $res-path,
+                "path": xmldb:decode-uri(xs:anyURI($res-path)),
                 "mime": xmldb:get-mime-type($res-path),
-                "writable": sm:has-access(xs:anyURI($res-path), "w"),
-                "lastModified": string(xmldb:last-modified($path, $res))
+                "writable": sm:has-access($res-uri, "w"),
+                "lastModified": string(xmldb:last-modified($path, $res)),
+                "permissions": sm:get-permissions($res-uri)/sm:permission/string(@mode),
+                "owner": sm:get-permissions($res-uri)/sm:permission/string(@owner),
+                "group": sm:get-permissions($res-uri)/sm:permission/string(@group)
             }
     )
     let $total := count($all-items)
+    let $path-uri := xs:anyURI($path)
     return map {
         "path": $path,
         "total": $total,
         "start": $start,
         "count": $count,
-        "writable": sm:has-access(xs:anyURI($path), "w"),
+        "writable": sm:has-access($path-uri, "w"),
+        "permissions": sm:get-permissions($path-uri)/sm:permission/string(@mode),
+        "owner": sm:get-permissions($path-uri)/sm:permission/string(@owner),
+        "group": sm:get-permissions($path-uri)/sm:permission/string(@group),
         "items": array { subsequence($all-items, $start, $count) }
     }
 };
@@ -218,13 +278,17 @@ declare %private function db:load-document($path, $request, $user) {
                 roaster:response(200, $mime, util:binary-doc($path))
             else
                 (: Return metadata for binary docs unless downloading :)
-                map {
+                let $uri := xs:anyURI($path)
+                return map {
                     "path": $path,
                     "mime": $mime,
                     "binary": true(),
                     "size": xmldb:size(replace($path, "/[^/]+$", ""), replace($path, "^.*/", "")),
                     "lastModified": string(xmldb:last-modified(
-                        replace($path, "/[^/]+$", ""), replace($path, "^.*/", "")))
+                        replace($path, "/[^/]+$", ""), replace($path, "^.*/", ""))),
+                    "permissions": sm:get-permissions($uri)/sm:permission/string(@mode),
+                    "owner": sm:get-permissions($uri)/sm:permission/string(@owner),
+                    "group": sm:get-permissions($uri)/sm:permission/string(@group)
                 }
         else
             let $content := serialize(doc($path), <output:serialization-parameters>
@@ -236,12 +300,16 @@ declare %private function db:load-document($path, $request, $user) {
                 if ($download) then
                     roaster:response(200, $mime, $content)
                 else
-                    map {
+                    let $uri := xs:anyURI($path)
+                    return map {
                         "path": $path,
                         "mime": $mime,
                         "binary": false(),
                         "content": $content,
                         "lastModified": string(xmldb:last-modified(
-                            replace($path, "/[^/]+$", ""), replace($path, "^.*/", "")))
+                            replace($path, "/[^/]+$", ""), replace($path, "^.*/", ""))),
+                        "permissions": sm:get-permissions($uri)/sm:permission/string(@mode),
+                        "owner": sm:get-permissions($uri)/sm:permission/string(@owner),
+                        "group": sm:get-permissions($uri)/sm:permission/string(@group)
                     }
 };

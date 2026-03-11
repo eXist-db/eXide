@@ -50,6 +50,23 @@ declare function admin:queries($request as map(*)) {
 };
 
 (:~
+ : GET /api/admin/accounts — List users and groups (for permissions dialogs).
+ :)
+declare function admin:accounts($request as map(*)) {
+    map {
+        "users": array {
+            distinct-values(
+                for $group in sm:list-groups()
+                return
+                    try { sm:get-group-members($group) }
+                    catch * { () }
+            )
+        },
+        "groups": array { sm:list-groups() }
+    }
+};
+
+(:~
  : DELETE /api/admin/queries/{id} — Kill a running query.
  :)
 declare function admin:kill-query($request as map(*)) {
