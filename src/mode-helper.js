@@ -54,7 +54,6 @@ eXide.edit.ModeHelper = (function () {
                 for (var i = 0; i < args.length; i++) {
                     nargs.push(args[i]);
                 }
-                console.log("Calling command %s ...", command);
                 this.commands[command].apply(this, nargs);
             } else {
                 eXide.util.message(command + " not supported in this mode.")

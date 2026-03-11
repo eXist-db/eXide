@@ -647,12 +647,73 @@ eXide.edit.XQueryModeHelper = (function () {
 	
 	Constr.prototype.showFunctionDoc = function (doc) {
         this.parseXQuery(doc);
+		var self = this;
 		var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
-
-		var pos = editorUtils.textToScreenCoordinates(this.editor, lead.row, lead.column);
-        eXide.util.Popup.position(pos);
 		var func = this.getFunctionAtCursor(doc, lead);
-		this.functionLookup(doc, func, null, false);
+		if (!func) {
+			eXide.util.message("Place cursor on a function name first.");
+			return;
+		}
+
+		// Build request params for funcdoc.xq (atom-editor-support format)
+		var params = new URLSearchParams({ prefix: func });
+
+		// Extract module imports so funcdoc.xq can search imported functions too
+		var code = doc.getText();
+		var imports = this.$parseImports(code);
+		if (imports) {
+			var basePath = "xmldb:exist://" + doc.getBasePath();
+			params.set("base", basePath);
+			for (var i = 0; i < imports.length; i++) {
+				var matches = this.moduleRe.exec(imports[i]);
+				if (matches != null && matches.length == 4) {
+					params.append("mprefix", matches[1]);
+					params.append("uri", matches[2]);
+					params.append("source", matches[3]);
+				}
+			}
+		}
+
+		fetch("modules/funcdoc.xq?" + params.toString())
+		.then(function(response) { return response.json(); })
+		.then(function(serverFuncs) {
+			// Merge local functions (from AST parse) with server results
+			var items = [];
+			var regex = new RegExp("^" + func.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+			doc.functions.forEach(function(f) {
+				if (f.type !== "variable" && f.name && f.name.match(regex)) {
+					// Normalize local functions to the funcdoc.xq shape
+					items.push({
+						text: f.signature || f.name,
+						snippet: f.template || null,
+						type: "function",
+						description: null,
+						arguments: [],
+						leftLabel: null,
+						source: f.source || doc.getPath(),
+						// Preserve legacy help HTML for local functions
+						help: f.help || null
+					});
+				}
+			});
+			if (serverFuncs) items = items.concat(serverFuncs);
+			if (items.length === 0) {
+				eXide.util.message("No documentation found for " + func);
+				return;
+			}
+			eXide.edit.FuncDocTooltip.show(self.editor, items, function(selected) {
+				if (selected) {
+					var template = selected.snippet || selected.template;
+					if (template) {
+						editorUtils.insertSnippet(self.editor, template);
+					}
+				}
+			});
+		})
+		.catch(function(e) {
+			console.log("Error fetching function docs: %s", e.message);
+			eXide.util.error("Could not load function documentation: " + e.message);
+		});
 	}
 	
     Constr.prototype.quickFix = function (doc, row) {

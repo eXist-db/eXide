@@ -268,6 +268,7 @@ eXide.edit.Editor = (function () {
             lineWrappingCompartment.of([]),
             showInvisiblesCompartment.of([]),
             rectangularSelectionCompartment.of([CM6.rectangularSelection(), CM6.crosshairCursor()]),
+            eXide.edit.FuncDocTooltip.extension(),
             CM6.scrollPastEnd(),
             EditorView.updateListener.of(function(update) {
                 if (update.docChanged && $this.activeDoc && !$this._switching) {
@@ -481,9 +482,10 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.exec = function () {
-        if (this.activeDoc.getModeHelper()) {
+        var helper = this.activeDoc.getModeHelper();
+        if (helper) {
             var args = Array.prototype.slice.call(arguments, 1);
-            this.activeDoc.getModeHelper().exec(arguments[0], this.activeDoc, args);
+            helper.exec(arguments[0], this.activeDoc, args);
         } else {
             eXide.util.message("Not supported in this mode.");
         }

@@ -1,0 +1,319 @@
+/*
+ * Function documentation tooltip styles.
+ *
+ * Designed to match the visual language of eXide's existing UI while
+ * using CM6's tooltip positioning. Layout inspired by VS Code's
+ * signature help / hover panels (as used in existdb-langserver).
+ */
+
+.cm-funcdoc-tooltip {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    max-width: 700px;
+    min-width: 400px;
+    outline: none;
+}
+
+/* --- Filter bar --- */
+
+.cm-funcdoc-filter {
+    padding: 4px 6px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #f8f8f8;
+    border-radius: 4px 4px 0 0;
+}
+
+.cm-funcdoc-filter-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 3px 6px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+}
+
+.cm-funcdoc-filter-input:focus {
+    border-color: #4a90d9;
+    box-shadow: 0 0 0 1px rgba(74, 144, 217, 0.3);
+}
+
+/* --- Two-panel body --- */
+
+.cm-funcdoc-body {
+    display: flex;
+    min-height: 120px;
+    max-height: 300px;
+}
+
+.cm-funcdoc-list {
+    flex: 0 0 280px;
+    overflow-y: auto;
+    border-right: 1px solid #e0e0e0;
+}
+
+.cm-funcdoc-detail {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 10px;
+    min-width: 200px;
+}
+
+/* --- List rows --- */
+
+.cm-funcdoc-row {
+    padding: 3px 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cm-funcdoc-row:hover {
+    background: #f0f0f0;
+}
+
+.cm-funcdoc-selected {
+    background: #d0e0f0;
+}
+
+.cm-funcdoc-selected:hover {
+    background: #c0d5ea;
+}
+
+.cm-funcdoc-sig {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 11px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cm-funcdoc-private {
+    font-size: 9px;
+    color: #888;
+    background: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    padding: 0 4px;
+    flex-shrink: 0;
+}
+
+/* --- Detail pane --- */
+
+.cm-funcdoc-detail-placeholder {
+    color: #999;
+    font-style: italic;
+    margin: 0;
+}
+
+.cm-funcdoc-detail-sig {
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #eee;
+}
+
+.cm-funcdoc-detail-sig code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+    word-break: break-all;
+    white-space: pre-wrap;
+}
+
+/* Help content — matches eXide's existing .function-help structure from docs.xq */
+.cm-funcdoc-detail-help {
+    margin-bottom: 8px;
+}
+
+.cm-funcdoc-detail-help p {
+    margin: 0 0 6px 0;
+    color: #444;
+}
+
+.cm-funcdoc-detail-help dl {
+    margin: 4px 0;
+}
+
+.cm-funcdoc-detail-help dt {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: #555;
+    margin-top: 4px;
+}
+
+.cm-funcdoc-detail-help dd {
+    margin: 0 0 2px 12px;
+    color: #666;
+    font-size: 11px;
+}
+
+/* Template / insert section */
+.cm-funcdoc-detail-template {
+    margin-top: 8px;
+    padding-top: 6px;
+    border-top: 1px solid #eee;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.cm-funcdoc-detail-label {
+    color: #888;
+    font-size: 11px;
+}
+
+.cm-funcdoc-detail-template code {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 11px;
+    color: #333;
+    background: #f5f5f5;
+    padding: 1px 4px;
+    border-radius: 2px;
+}
+
+.cm-funcdoc-insert-btn {
+    font-size: 11px;
+    padding: 2px 8px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    background: #f8f8f8;
+    cursor: pointer;
+    color: #333;
+}
+
+.cm-funcdoc-insert-btn:hover {
+    background: #e8e8e8;
+    border-color: #bbb;
+}
+
+/* Source path */
+.cm-funcdoc-detail-source {
+    margin-top: 6px;
+    font-size: 10px;
+    color: #999;
+}
+
+/* --- Status bar --- */
+
+.cm-funcdoc-status {
+    padding: 2px 8px;
+    font-size: 10px;
+    color: #888;
+    border-top: 1px solid #e0e0e0;
+    background: #f8f8f8;
+    border-radius: 0 0 4px 4px;
+}
+
+/* --- Dark mode support --- */
+
+.dark-mode .cm-funcdoc-tooltip {
+    background: #1e1e1e;
+    border-color: #444;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.dark-mode .cm-funcdoc-filter {
+    background: #252525;
+    border-bottom-color: #444;
+}
+
+.dark-mode .cm-funcdoc-filter-input {
+    background: #333;
+    border-color: #555;
+    color: #ddd;
+}
+
+.dark-mode .cm-funcdoc-filter-input:focus {
+    border-color: #4a90d9;
+}
+
+.dark-mode .cm-funcdoc-list {
+    border-right-color: #444;
+}
+
+.dark-mode .cm-funcdoc-row:hover {
+    background: #2a2a2a;
+}
+
+.dark-mode .cm-funcdoc-selected {
+    background: #264f78;
+}
+
+.dark-mode .cm-funcdoc-selected:hover {
+    background: #2d5a8a;
+}
+
+.dark-mode .cm-funcdoc-sig {
+    color: #ddd;
+}
+
+.dark-mode .cm-funcdoc-private {
+    color: #999;
+    background: #333;
+    border-color: #555;
+}
+
+.dark-mode .cm-funcdoc-detail-sig code {
+    color: #e0e0e0;
+}
+
+.dark-mode .cm-funcdoc-detail-help p {
+    color: #bbb;
+}
+
+.dark-mode .cm-funcdoc-detail-help dt {
+    color: #ccc;
+}
+
+.dark-mode .cm-funcdoc-detail-help dd {
+    color: #aaa;
+}
+
+.dark-mode .cm-funcdoc-detail-template code {
+    color: #ddd;
+    background: #333;
+}
+
+.dark-mode .cm-funcdoc-insert-btn {
+    background: #333;
+    border-color: #555;
+    color: #ddd;
+}
+
+.dark-mode .cm-funcdoc-insert-btn:hover {
+    background: #444;
+}
+
+.dark-mode .cm-funcdoc-status {
+    background: #252525;
+    border-top-color: #444;
+    color: #777;
+}
+
+.dark-mode .cm-funcdoc-detail-placeholder {
+    color: #666;
+}
+
+.dark-mode .cm-funcdoc-detail-source {
+    color: #666;
+}
+
+.dark-mode .cm-funcdoc-detail-sig {
+    border-bottom-color: #444;
+}
+
+.dark-mode .cm-funcdoc-detail-template {
+    border-top-color: #444;
+}
