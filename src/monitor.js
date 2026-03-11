@@ -142,11 +142,11 @@ eXide.app.Monitor = (function () {
 
     Constr.prototype.fetchToken = function () {
         var self = this;
-        fetch("modules/monitor.xq?action=token")
+        fetch("api/admin/status")
             .then(function (r) { return r.json(); })
             .then(function (data) {
-                if (data.token) {
-                    self.token = data.token;
+                if (data.jmxToken) {
+                    self.token = data.jmxToken;
                     self.poll();
                 } else {
                     self.showError("Could not obtain JMX token. DBA login required.");
@@ -278,7 +278,7 @@ eXide.app.Monitor = (function () {
     };
 
     Constr.prototype.killQuery = function (id) {
-        fetch("modules/monitor.xq?action=kill&id=" + encodeURIComponent(id), { method: "POST" });
+        fetch("api/admin/queries/" + encodeURIComponent(id), { method: "DELETE" });
     };
 
     Constr.prototype.showError = function (msg) {

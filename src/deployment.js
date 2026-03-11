@@ -35,8 +35,9 @@ eXide.edit.Projects = (function(oop) {
 
     Constr.prototype.getProject = function (collection, callback) {
         var $this = this;
-        var url = "modules/deployment.xq?info=" + encodeURIComponent(collection);
+        var url = "api/packages/_?collection=" + encodeURIComponent(collection);
         fetch(url).then(function(response) {
+            if (!response.ok) return null;
             return response.json();
         }).then(function(data) {
             if (!data) {
@@ -160,10 +161,18 @@ eXide.edit.PackageEditor = (function () {
                     });
                     var reportEl = document.getElementById("synchronize-report");
 					reportEl.textContent = "Synchronization in progress ...";
-					fetch("modules/synchronize.xq?" + params.toString()).then(function(response) {
-					    return response.text();
-					}).then(function(text) {
-					    reportEl.innerHTML = text;
+					fetch("api/sync", {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						body: JSON.stringify({
+							collection: syncDialogEl.querySelector("input[name=\"collection\"]").value,
+							dir: dir,
+							after: syncDialogEl.querySelector("input[name=\"start\"]").value
+						})
+					}).then(function(response) {
+					    return response.json();
+					}).then(function(data) {
+					    reportEl.textContent = data.error || ("Updated: " + (data.updated || 0) + " files");
 					});
 				},
 				"Close": function () { this.close(); }
@@ -212,18 +221,18 @@ eXide.edit.PackageEditor = (function () {
 						return;
 					}
 
-                    var params = new URLSearchParams({
-                        collection: $this.currentProject.root,
-                        start: start,
-                        indent: document.getElementById("indent-on-download-package").checked,
-                        "expand-xincludes": document.getElementById("expand-xincludes-on-download-package").checked,
-                        "omit-xml-declaration": document.getElementById("omit-xml-declaration-on-download-package").checked
-                    });
                     statusEl.textContent = "Synchronization in progress ...";
-					fetch("modules/synchronize.xq?" + params.toString()).then(function(response) {
-					    return response.text();
-					}).then(function(text) {
-					    statusEl.innerHTML = text;
+					fetch("api/sync", {
+					    method: "POST",
+					    headers: { "Content-Type": "application/json" },
+					    body: JSON.stringify({
+					        collection: $this.currentProject.root,
+					        after: start
+					    })
+					}).then(function(response) {
+					    return response.json();
+					}).then(function(data) {
+					    statusEl.textContent = data.error || ("Updated: " + (data.updated || 0) + " files");
 					    eXide.app.git.command($this.currentProject, 'commit', option);
 					});
 
@@ -239,10 +248,32 @@ eXide.edit.PackageEditor = (function () {
     eXide.util.oop.inherit(Constr, eXide.events.Sender);
 
     Constr.prototype.download = function (collection) {
-        var indentOnDownloadPackage = document.getElementById("indent-on-download-package").checked;
-        var expandXIncludesOnDownloadPackage = document.getElementById("expand-xincludes-on-download-package").checked;
-        var omitXMLDeclatarionOnDownloadPackage = document.getElementById("omit-xml-declaration-on-download-package").checked;
-        window.location.href = "modules/deployment.xq?download=true&collection=" + encodeURIComponent(collection) + "&indent=" + indentOnDownloadPackage + "&expand-xincludes=" + expandXIncludesOnDownloadPackage + "&omit-xml-decl=" + omitXMLDeclatarionOnDownloadPackage;
+        var $this = this;
+        this.projects.findProject(collection, function (project) {
+            if (!project) {
+                eXide.util.error("Application not found.");
+                return;
+            }
+            // POST triggers XAR build + download via Roaster
+            fetch("api/packages/" + encodeURIComponent(project.abbrev) + "/build", {
+                method: "POST"
+            })
+            .then(function(response) {
+                if (!response.ok) throw new Error("Build failed: " + response.status);
+                return response.blob();
+            })
+            .then(function(blob) {
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement("a");
+                a.href = url;
+                a.download = project.abbrev + "-" + (project.version || "0.1") + ".xar";
+                a.click();
+                URL.revokeObjectURL(url);
+            })
+            .catch(function(err) {
+                eXide.util.error("Download failed: " + err.message);
+            });
+        });
     };
     
 	/**
@@ -281,15 +312,15 @@ eXide.edit.PackageEditor = (function () {
      Constr.prototype.autoSync = function (collection) {
          var project = this.projects.getProjectFor(collection);
          if (project && project.autoSync) {
-             var params = new URLSearchParams({
-                 collection: project.root,
-                 start: project.deployed,
-                 dir: project.dir,
-                 indent: document.getElementById("indent-on-download-package").checked,
-                 "expand-xincludes": document.getElementById("expand-xincludes-on-download-package").checked,
-                 "omit-xml-declaration": document.getElementById("omit-xml-declaration-on-download-package").checked
-             });
-             fetch("modules/synchronize.xq?" + params.toString()).then(function(response) {
+             fetch("api/sync", {
+                 method: "POST",
+                 headers: { "Content-Type": "application/json" },
+                 body: JSON.stringify({
+                     collection: project.root,
+                     dir: project.dir,
+                     after: project.deployed
+                 })
+             }).then(function(response) {
                  if (response.ok) {
                      eXide.util.message("Synchronized directory");
                  }

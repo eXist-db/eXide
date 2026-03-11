@@ -26,8 +26,8 @@
  *   - Other modes: template snippets
  *
  * Context detection reuses XQueryModeHelper's AST analysis patterns.
- * Server-side data from modules/funcdoc.xq (functions) and
- * modules/find.xq (module imports).
+ * Server-side data from /api/editor/completions (functions) and
+ * /api/editor/modules (module imports).
  */
 eXide.namespace("eXide.edit.CompletionSource");
 
@@ -195,7 +195,7 @@ eXide.edit.CompletionSource = (function () {
             }
         }
 
-        return fetch("modules/funcdoc.xq?" + params.toString())
+        return fetch("api/editor/completions?" + params.toString())
             .then(function (response) { return response.json(); })
             .then(function (serverFuncs) {
                 var options = [];
@@ -210,7 +210,7 @@ eXide.edit.CompletionSource = (function () {
                     }
                 });
 
-                // Server functions (from funcdoc.xq)
+                // Server functions (from /api/editor/completions)
                 if (serverFuncs) {
                     for (var i = 0; i < serverFuncs.length; i++) {
                         var f = serverFuncs[i];
@@ -260,8 +260,8 @@ eXide.edit.CompletionSource = (function () {
 
     /**
      * Build the info panel DOM for a function completion.
-     * Renders structured data from funcdoc.xq (description + per-param details)
-     * or falls back to legacy HTML help from docs.xq.
+     * Renders structured data from completions API (description + per-param details)
+     * or falls back to legacy HTML help.
      */
     function buildInfoDOM(signature, description, args, helpHtml, path) {
         var div = document.createElement("div");
@@ -350,7 +350,7 @@ eXide.edit.CompletionSource = (function () {
     // -------------------------------------------------------------------
 
     function fetchModuleCompletions(doc, prefix, from, to) {
-        return fetch("modules/find.xq?" + new URLSearchParams({ prefix: prefix }))
+        return fetch("api/editor/modules?" + new URLSearchParams({ prefix: prefix }))
             .then(function (response) { return response.json(); })
             .then(function (data) {
                 if (!data) return null;

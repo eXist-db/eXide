@@ -116,16 +116,14 @@ eXide.edit.Directory = (function () {
 			}
 			return fn(d)
 		}
-		d3.json("modules/collections.xq?root=" + encodeURIComponent(sel.datum().key || "/db") + "&view=r", function(error, data){
-			if(error)	{
-				return
-			}
+		var path = (sel.datum().key || "/db").replace(/^\//, "");
+		fetch("api/db/" + encodeURIComponent(path)).then(function(r) { return r.json(); }).then(function(data) {
 			var d = sel.datum()
 			d.isOpen = true;
 			d.isLoaded = true;
-			d.children = data.items.filter(function(i){return i.name != ".."})
+			d.children = (data.items || []).filter(function(i){return i.name != ".."}).map(mapItem)
 			fn(d)
-		} )
+		}).catch(function() {})
 	};
 
 	function init() {
@@ -275,22 +273,21 @@ eXide.edit.Directory = (function () {
 		}
 	}
 
-	// ── Helper: fetch JSON from collections.xq ──────────────────────────
+	// ── Helper: map API response items to d3 data shape ─────────────────
 
-	function collectionAction(params) {
-		var parts = [];
-		Object.keys(params).forEach(function(key) {
-			var val = params[key];
-			if (Array.isArray(val)) {
-				val.forEach(function(v) {
-					parts.push(encodeURIComponent(key + "[]") + "=" + encodeURIComponent(v));
-				});
-			} else {
-				parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(val));
-			}
-		});
-		return fetch("modules/collections.xq?" + parts.join("&"))
-			.then(function(r) { return r.json(); });
+	function mapItem(item) {
+		return {
+			name: item.name,
+			key: item.path,
+			isCollection: item.isCollection,
+			writable: item.writable,
+			mime: item.mime,
+			lastModified: item.lastModified
+		};
+	}
+
+	function apiPath(dbPath) {
+		return "api/db/" + encodeURIComponent(dbPath.replace(/^\//, ""));
 	}
 
 	// ── Actions ──────────────────────────────────────────────────────────
@@ -303,9 +300,13 @@ eXide.edit.Directory = (function () {
 			function() {
 				var name = document.getElementById("dir-new-collection").value;
 				if (!name) return;
-				collectionAction({ create: name, collection: d.key }).then(function(data) {
-					if (data.status === "fail") {
-						eXide.util.Dialog.warning("Create Collection Error", data.message);
+				fetch(apiPath(d.key), {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ action: "create", name: name })
+				}).then(function(r) { return r.json(); }).then(function(data) {
+					if (data.error) {
+						eXide.util.Dialog.warning("Create Collection Error", data.error);
 					} else {
 						reloadNode(d, el);
 						if (flatViewActive) loadFlatView(flatCollection);
@@ -339,12 +340,13 @@ eXide.edit.Directory = (function () {
 
 	function uploadFiles(files, collection) {
 		var promises = files.map(function(file) {
-			var formData = new FormData();
-			formData.append("file[]", file);
-			formData.append("path", file.webkitRelativePath || file.name);
-			formData.append("collection", collection);
-			return fetch("modules/upload.xq", { method: "POST", body: formData })
-				.then(function(r) { return r.json(); });
+			var name = file.webkitRelativePath || file.name;
+			var path = collection + "/" + name;
+			return fetch(apiPath(path), {
+				method: "PUT",
+				headers: { "Content-Type": file.type || "application/octet-stream" },
+				body: file
+			}).then(function(r) { return r.json(); });
 		});
 		return Promise.all(promises);
 	}
@@ -375,9 +377,13 @@ eXide.edit.Directory = (function () {
 			spanEl.style.display = "";
 			if (save && newName && newName !== oldName) {
 				var parentKey = d.key.substring(0, d.key.lastIndexOf("/"));
-				collectionAction({ rename: oldName, target: newName, root: parentKey }).then(function(data) {
-					if (data.status === "fail") {
-						eXide.util.Dialog.warning("Rename Error", data.message);
+				fetch(apiPath(d.key), {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ action: "rename", target: newName })
+				}).then(function(r) { return r.json(); }).then(function(data) {
+					if (data.error) {
+						eXide.util.Dialog.warning("Rename Error", data.error);
 					} else {
 						// Reload the parent in tree view
 						var parentSel = d3.select("[data-key='" + parentKey + "']");
@@ -405,9 +411,10 @@ eXide.edit.Directory = (function () {
 		eXide.util.Dialog.input("Confirm Deletion",
 			"Are you sure you want to delete " + label + " <strong>" + d.name + "</strong>?",
 			function() {
-				collectionAction({ remove: d.key }).then(function(data) {
-					if (data.status === "fail") {
-						eXide.util.Dialog.warning("Delete Error", data.message);
+				fetch(apiPath(d.key), { method: "DELETE" })
+				.then(function(r) { return r.json(); }).then(function(data) {
+					if (data.error) {
+						eXide.util.Dialog.warning("Delete Error", data.error);
 					} else {
 						// Reload the parent collection in tree view
 						var parentKey = d.key.substring(0, d.key.lastIndexOf("/"));
@@ -434,16 +441,13 @@ eXide.edit.Directory = (function () {
 		if (!eXide.app.$checkLogin()) return;
 		var contentEl = document.getElementById("resource-properties-content");
 		if (!contentEl) return;
-		var params = new URLSearchParams();
-		params.append("properties[]", d.key);
-		fetch("modules/collections.xq", {
-			method: "POST",
-			headers: { "Content-Type": "application/x-www-form-urlencoded" },
-			body: params.toString()
-		})
-		.then(function(r) { return r.text(); })
-		.then(function(html) {
-			contentEl.innerHTML = html;
+		fetch(apiPath(d.key))
+		.then(function(r) { return r.json(); })
+		.then(function(data) {
+			contentEl.innerHTML = '<form>' +
+				'<label>Path: <input type="text" name="path" value="' + escapeHtml(data.path || d.key) + '" readonly/></label><br>' +
+				'<label>MIME: <input type="text" name="mime" value="' + escapeHtml(data.mime || "") + '"/></label><br>' +
+				'</form>';
 		});
 
 		var dialog = document.getElementById("resource-properties-dialog");
@@ -469,18 +473,25 @@ eXide.edit.Directory = (function () {
 	function applyProperties(d, dialog, dlg) {
 		var form = dialog.querySelector("form");
 		if (!form) return;
-		var formData = new FormData(form);
-		var params = new URLSearchParams(formData);
-		params.append("modify[]", d.key);
-		fetch("modules/collections.xq", {
-			method: "POST",
-			headers: { "Content-Type": "application/x-www-form-urlencoded" },
-			body: params.toString()
+		var body = {};
+		var owner = form.querySelector("[name='owner']");
+		if (owner) body.owner = owner.value;
+		var group = form.querySelector("[name='group']");
+		if (group) body.group = group.value;
+		var mode = form.querySelector("[name='permissions']");
+		if (mode) body.mode = mode.value;
+		var mime = form.querySelector("[name='mime']");
+		if (mime) body.mime = mime.value;
+
+		fetch(apiPath(d.key), {
+			method: "PATCH",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(body)
 		})
 		.then(function(r) { return r.json(); })
 		.then(function(data) {
-			if (data.status === "fail") {
-				eXide.util.Dialog.warning("Properties Error", data.message);
+			if (data.error) {
+				eXide.util.Dialog.warning("Properties Error", data.error);
 			} else {
 				dlg.close();
 			}
@@ -659,24 +670,26 @@ eXide.edit.Directory = (function () {
 		if (!list) return;
 		list.innerHTML = '<li class="dir-flat-loading">Loading\u2026</li>';
 
-		fetch("modules/collections.xq?root=" + encodeURIComponent(collection) + "&view=r")
+		fetch(apiPath(collection))
 			.then(function(r) { return r.json(); })
 			.then(function(data) {
 				list.innerHTML = "";
-				var items = data.items || [];
+				var items = (data.items || []).map(mapItem);
+				// Add parent link if not at /db
+				if (collection !== "/db") {
+					items.unshift({ name: "..", isCollection: true, key: collection.substring(0, collection.lastIndexOf("/")) || "/db" });
+				}
 				if (items.length === 0) {
 					list.innerHTML = '<li class="dir-flat-empty">Empty collection</li>';
 					return;
 				}
 				items.forEach(function(item) {
 					if (item.name === "..") {
-						// parent link
 						var li = document.createElement("li");
 						li.className = "dir-flat-item dir-flat-collection";
 						li.innerHTML = '<span>../</span>';
 						li.addEventListener("click", function() {
-							var parent = collection.substring(0, collection.lastIndexOf("/")) || "/db";
-							loadFlatView(parent);
+							loadFlatView(item.key);
 						});
 						list.appendChild(li);
 						return;

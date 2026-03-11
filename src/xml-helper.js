@@ -195,9 +195,9 @@ eXide.edit.XMLModeHelper = (function () {
 
     Constr.prototype.validate = function(doc, code, onComplete) {
         var $this = this;
-        fetch("modules/validate-xml.xq", {
-            method: "PUT",
-            headers: { "Content-Type": "application/octet-stream" },
+        fetch("api/editor/validate", {
+            method: "POST",
+            headers: { "Content-Type": "application/xml" },
             body: code
         })
         .then(function(response) { return response.json(); })
@@ -214,20 +214,18 @@ eXide.edit.XMLModeHelper = (function () {
     Constr.prototype.compileError = function(data, doc) {
         console.log("Validation returned %o", data);
         if (data.status && data.status == "invalid") {
-            var messages;
-            if (data.message instanceof Array)
-                messages = data.message;
-            else
-                messages = [ data.message ];
+            var errors = data.errors || [];
             var annotations = [];
-            for (var i = 0; i < messages.length; i++) {
+            for (var i = 0; i < errors.length; i++) {
                 annotations.push({
-                    row: parseInt(messages[i].line) - 1,
-                    text: messages[i]["#text"],
+                    row: parseInt(errors[i].line) - 1,
+                    text: errors[i].message,
                     type: "error"
                 });
             }
-            this.parent.updateStatus(messages[0]["#text"], doc.getPath() + "#" + messages[0].line);
+            if (errors.length > 0) {
+                this.parent.updateStatus(errors[0].message, doc.getPath() + "#" + errors[0].line);
+            }
             editorUtils.setAnnotations(this.editor, annotations);
         } else {
             this.parent.clearErrors();
@@ -237,11 +235,10 @@ eXide.edit.XMLModeHelper = (function () {
 
     Constr.prototype.suggest = function(doc, text, row, column) {
         console.log("Getting suggestions for %s", text);
-        var params = new URLSearchParams({ xml: text, row: row, column: column });
-        fetch("modules/validate-xml.xq", {
+        fetch("api/editor/validate?validate=false", {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: params.toString()
+            headers: { "Content-Type": "application/xml" },
+            body: text
         })
         .then(function(response) { return response.json(); })
         .then(function(data) {
@@ -260,14 +257,14 @@ eXide.edit.XMLModeHelper = (function () {
             eXide.util.Dialog.input("Apply Configuration?", "You have saved a collection configuration file. Would you like to " +
                 "apply it to collection " + collection.replace(/^\/db\/system\/config/, "") + " now?", function() {
                     eXide.util.message("Apply configuration and reindex...");
-                    var params = new URLSearchParams({
-                        collection: doc.getBasePath(),
-                        config: doc.getName()
-                    });
-                    fetch("modules/apply-config.xq", {
+                    var basePath = doc.getBasePath();
+                    // Extract app abbrev from /db/system/config/db/apps/{abbrev}/...
+                    var pathParts = basePath.replace(/^\/db\/system\/config/, "").split("/").filter(Boolean);
+                    var abbrev = pathParts.length >= 2 ? pathParts[1] : pathParts[0] || "unknown";
+                    fetch("api/packages/" + encodeURIComponent(abbrev) + "/config", {
                         method: "POST",
-                        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                        body: params.toString()
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ collection: basePath, config: doc.getName() })
                     })
                     .then(function(response) { return response.json(); })
                     .then(function(data) {

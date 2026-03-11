@@ -13,6 +13,7 @@ import module namespace tmpl="http://exist-db.org/xquery/template" at "../tmpl.x
 
 declare namespace expath="http://expath.org/ns/pkg";
 declare namespace repo="http://exist-db.org/xquery/repo";
+declare namespace git="http://exist-db.org/eXide/git";
 
 (: Handle difference between 4.x.x and 5.x.x releases of eXist :)
 declare variable $packages:copy-resource :=
@@ -80,16 +81,25 @@ declare function packages:install($request as map(*)) {
 
 (:~
  : GET /api/packages/{abbrev} — Package descriptor and metadata.
+ : Also accepts ?collection= query param to look up by collection path.
  :)
 declare function packages:get($request as map(*)) {
     let $abbrev := $request?parameters?abbrev
-    let $col := repo:get-root() || $abbrev
+    let $collection := $request?parameters?collection
+    (: If collection param given and abbrev is a wildcard placeholder, resolve from collection :)
+    let $resolved-abbrev :=
+        if (exists($collection) and $collection != "") then
+            packages:abbrev-for-collection($collection)
+        else $abbrev
+    let $col := repo:get-root() || $resolved-abbrev
     let $expath := doc($col || "/expath-pkg.xml")/expath:package
     let $repo-meta := doc($col || "/repo.xml")/repo:meta
     return
         if (exists($expath)) then
             let $user := sm:id()//sm:real/sm:username/string()
             let $is-admin := if ($user) then sm:is-dba($user) else false()
+            let $target-col := "/db/" || string($repo-meta/repo:target)
+            let $git-xml := doc($target-col || "/git.xml")
             return map {
                 "abbrev": string($expath/@abbrev),
                 "name": string($expath/@name),
@@ -97,16 +107,27 @@ declare function packages:get($request as map(*)) {
                 "version": string($expath/@version),
                 "type": string(($repo-meta/repo:type, "application")[1]),
                 "target": string($repo-meta/repo:target),
+                "root": $target-col,
+                "url": "/" || string($repo-meta/repo:target),
                 "deployed": string($repo-meta/repo:deployed),
                 "description": string($repo-meta/repo:description),
                 "authors": array { $repo-meta/repo:author ! string(.) },
                 "website": string($repo-meta/repo:website),
                 "path": $col,
-                "isAdmin": $is-admin
+                "isAdmin": $is-admin,
+                "dir": string(($git-xml//git:directory, "")[1]),
+                "autoSync": exists($git-xml//git:auto) and string($git-xml//git:auto) = "true",
+                "liveReload": false(),
+                "gitBranch": array {
+                    if (exists($git-xml)) then
+                        for $branch in $git-xml//git:branch
+                        return string($branch)
+                    else ()
+                }
             }
         else
             roaster:response(404, "application/json",
-                map { "error": "Package not found: " || $abbrev })
+                map { "error": "Package not found: " || ($resolved-abbrev, $abbrev)[1] })
 };
 
 (:~
@@ -337,6 +358,24 @@ declare %private function packages:mkcol-recursive($collection, $components, $us
 
 declare %private function packages:set-execute-bit($permissions as xs:string) {
     replace($permissions, "(..).(..).(..).", "$1x$2x$3x")
+};
+
+(:~
+ : Resolve a collection path (e.g. /db/apps/myapp/modules) to a package abbrev.
+ : Walks up from the collection until it finds an expath-pkg.xml.
+ :)
+declare %private function packages:abbrev-for-collection($path as xs:string) as xs:string? {
+    let $root := repo:get-root()
+    (: Try each installed package to see if the collection is within its target :)
+    return
+        (for $app in xmldb:get-child-collections($root)
+         let $col := $root || $app
+         let $expath := doc($col || "/expath-pkg.xml")/expath:package
+         let $repo-meta := doc($col || "/repo.xml")/repo:meta
+         let $target := "/db/" || string($repo-meta/repo:target)
+         where exists($expath) and starts-with($path, $target)
+         return string($expath/@abbrev)
+        )[1]
 };
 
 declare %private function packages:copy-templates($target as xs:string, $source as xs:string, $userData as xs:string+, $permissions as xs:string) {

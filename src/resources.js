@@ -17,24 +17,22 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-function buildQueryString(params) {
-	var parts = [];
-	Object.keys(params).forEach(function(key) {
-		var val = params[key];
-		if (Array.isArray(val)) {
-			val.forEach(function(v) {
-				parts.push(encodeURIComponent(key + "[]") + "=" + encodeURIComponent(v));
-			});
-		} else {
-			parts.push(encodeURIComponent(key) + "=" + encodeURIComponent(val));
-		}
-	});
-	return parts.join("&");
+function apiPath(dbPath) {
+	return "api/db/" + encodeURIComponent(dbPath.replace(/^\//, ""));
 }
 
-function fetchJSON(url, params) {
-	var qs = buildQueryString(params);
-	return fetch(url + "?" + qs).then(function(r) { return r.json(); });
+function mapItem(item) {
+	return {
+		name: item.name,
+		key: item.path,
+		isCollection: item.isCollection,
+		writable: item.writable,
+		mime: item.mime,
+		permissions: item.permissions,
+		owner: item.owner,
+		group: item.group,
+		"last-modified": item.lastModified
+	};
 }
 
 eXide.namespace("eXide.browse.ResourceBrowser");
@@ -183,17 +181,27 @@ eXide.browse.ResourceBrowser = (function () {
                         resources.push(selected[i].key);
                     }
                     var form = propsDialogEl.querySelector("form");
-                    var formData = new FormData(form);
-                    var params = new URLSearchParams(formData);
-                    resources.forEach(function(r) {
-                        params.append("modify[]", r);
+                    var body = {};
+                    var ownerEl = form.querySelector("[name='owner']");
+                    if (ownerEl) body.owner = ownerEl.value;
+                    var groupEl = form.querySelector("[name='group']");
+                    if (groupEl) body.group = groupEl.value;
+                    var modeEl = form.querySelector("[name='permissions']");
+                    if (modeEl) body.mode = modeEl.value;
+                    var mimeEl = form.querySelector("[name='mime']");
+                    if (mimeEl) body.mime = mimeEl.value;
+
+                    var promises = resources.map(function(r) {
+                        return fetch(apiPath(r), {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(body)
+                        }).then(function(r) { return r.json(); });
                     });
-                    fetch("modules/collections.xq?" + params.toString())
-                        .then(function(r) { return r.json(); })
-                        .then(function(data) {
-                            dlg.close();
-                            self.reload();
-                        });
+                    Promise.all(promises).then(function() {
+                        dlg.close();
+                        self.reload();
+                    });
                 }
             }
         });
@@ -404,12 +412,12 @@ eXide.browse.ResourceBrowser = (function () {
 
 			// Upload files
 			var promises = files.map(function(file) {
-				var formData = new FormData();
-				formData.append("file[]", file);
-				formData.append("path", file.webkitRelativePath || file.name);
-				formData.append("collection", targetKey);
-				return fetch("modules/upload.xq", { method: "POST", body: formData })
-					.then(function(r) { return r.json(); });
+				var filePath = targetKey + "/" + (file.webkitRelativePath || file.name);
+				return fetch(apiPath(filePath), {
+					method: "PUT",
+					headers: { "Content-Type": file.type || "application/octet-stream" },
+					body: file
+				}).then(function(r) { return r.json(); });
 			});
 			Promise.all(promises).then(function() {
 				self.reload();
@@ -554,29 +562,41 @@ eXide.browse.ResourceBrowser = (function () {
 		if (this.loading) return;
 		this.loading = true;
 
-		var params = { root: this._collection, view: "r", start: startRow, end: startRow + BATCH_SIZE };
+		var params = new URLSearchParams();
+		params.set("start", startRow + 1);
+		params.set("count", BATCH_SIZE);
 		if (this._filter) {
-			params.filter = this._filter;
+			params.set("filter", this._filter);
 		}
-		fetchJSON("modules/collections.xq", params).then(function(json) {
-			self.loading = false;
-			if (!json || !json.items) return;
+		fetch(apiPath(this._collection) + "?" + params.toString())
+			.then(function(r) { return r.json(); })
+			.then(function(json) {
+				self.loading = false;
+				if (!json || !json.items) return;
 
-			self.totalRows = json.total;
-			for (var i = 0; i < json.items.length; i++) {
-				var rowIdx = startRow + i;
-				self.data[rowIdx] = json.items[i];
-				self._renderRow(json.items[i], rowIdx);
-			}
+				// Add parent ".." entry at position 0 when at start
+				var items = json.items.map(mapItem);
+				if (startRow === 0 && self._collection !== "/db") {
+					items.unshift({ name: "..", key: "", isCollection: true });
+					self.totalRows = json.total + 1;
+				} else {
+					self.totalRows = json.total + (self._collection !== "/db" ? 1 : 0);
+				}
 
-			if (startRow === 0 && json.items.length > 0) {
-				self._focusedRow = 0;
-				self._selectedIndices.clear();
-				self._selectedIndices.add(0);
-				self._updateSelectionDisplay();
-				self._fireSelectionChanged();
-			}
-		});
+				for (var i = 0; i < items.length; i++) {
+					var rowIdx = startRow + i;
+					self.data[rowIdx] = items[i];
+					self._renderRow(items[i], rowIdx);
+				}
+
+				if (startRow === 0 && items.length > 0) {
+					self._focusedRow = 0;
+					self._selectedIndices.clear();
+					self._selectedIndices.add(0);
+					self._updateSelectionDisplay();
+					self._fireSelectionChanged();
+				}
+			});
 	};
 
 	Constr.prototype._renderRow = function(item, index) {
@@ -761,13 +781,15 @@ eXide.browse.ResourceBrowser = (function () {
 			cell.textContent = commit && newValue ? newValue : oldValue;
 			setTimeout(function() { self.inEditor = false; }, 200);
 			if (commit && newValue && newValue !== oldValue) {
-				fetchJSON("modules/collections.xq", {
-					target: encodeURI(newValue),
-					rename: encodeURI(oldValue),
-					root: self._collection
-				}).then(function(data) {
-					if (data.status == "fail") {
-						eXide.util.Dialog.warning("Rename Error", data.message);
+				var renamePath = self._collection + "/" + oldValue;
+				fetch(apiPath(renamePath), {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ action: "rename", target: newValue })
+				}).then(function(r) { return r.json(); })
+				.then(function(data) {
+					if (data.error) {
+						eXide.util.Dialog.warning("Rename Error", data.error);
 					}
 					self.reload();
 				});
@@ -794,17 +816,22 @@ eXide.browse.ResourceBrowser = (function () {
 			function () {
 			    var spinner = document.getElementById("eXide-browse-spinner");
 			    spinner.style.display = "";
-				fetchJSON("modules/collections.xq", {
-						create: document.getElementById("eXide-browse-collection-name").value,
-						collection: self._collection
-					}).then(function (data) {
-					    spinner.style.display = "none";
-						if (data.status == "fail") {
-							eXide.util.Dialog.warning("Create Collection Error", data.message);
-						} else {
-							self.reload();
-						}
-					});
+				fetch(apiPath(self._collection), {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						action: "create",
+						name: document.getElementById("eXide-browse-collection-name").value
+					})
+				}).then(function(r) { return r.json(); })
+				.then(function (data) {
+					spinner.style.display = "none";
+					if (data.error) {
+						eXide.util.Dialog.warning("Create Collection Error", data.error);
+					} else {
+						self.reload();
+					}
+				});
 			}
 		);
 	};
@@ -815,16 +842,16 @@ eXide.browse.ResourceBrowser = (function () {
 			function () {
 			    var spinner = document.getElementById("eXide-browse-spinner");
 			    spinner.style.display = "";
-				fetchJSON("modules/collections.xq", {
-    					remove: self._collection
-    				}).then(function (data) {
-    				    spinner.style.display = "none";
-    					if (data.status == "fail") {
-    						eXide.util.Dialog.warning("Delete Collection Error", data.message);
-    					} else {
-    						self.reload();
-    					}
-    				});
+				fetch(apiPath(self._collection), { method: "DELETE" })
+				.then(function(r) { return r.json(); })
+				.then(function (data) {
+					spinner.style.display = "none";
+					if (data.error) {
+						eXide.util.Dialog.warning("Delete Collection Error", data.error);
+					} else {
+						self.reload();
+					}
+				});
 		});
 	};
 
@@ -843,16 +870,18 @@ eXide.browse.ResourceBrowser = (function () {
 				function () {
 				    var spinner = document.getElementById("eXide-browse-spinner");
 				    spinner.style.display = "";
-					fetchJSON("modules/collections.xq", {
-							remove: resources,
-							root: self._collection
-						}).then(function (data) {
-						    spinner.style.display = "none";
-							self.reload();
-							if (data.status == "fail") {
-								eXide.util.Dialog.warning("Delete Resource Error", data.message);
-							}
-						});
+					var promises = resources.map(function(r) {
+						return fetch(apiPath(r), { method: "DELETE" })
+							.then(function(resp) { return resp.json(); });
+					});
+					Promise.all(promises).then(function (results) {
+						spinner.style.display = "none";
+						self.reload();
+						var err = results.find(function(d) { return d.error; });
+						if (err) {
+							eXide.util.Dialog.warning("Delete Resource Error", err.error);
+						}
+					});
 		});
 	};
 
@@ -871,19 +900,19 @@ eXide.browse.ResourceBrowser = (function () {
 		}
         if (resources.length > 0) {
             var contentEl = document.getElementById("resource-properties-content");
-            var params = new URLSearchParams();
-            resources.forEach(function(r) {
-                params.append("properties[]", r);
-            });
-            fetch("modules/collections.xq", {
-                method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: params.toString()
-            })
-            .then(function(r) { return r.text(); })
-            .then(function(html) {
-                contentEl.innerHTML = html;
-            });
+            // Fetch properties for the first selected resource
+            fetch(apiPath(resources[0]))
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    contentEl.innerHTML = '<form>' +
+                        '<table class="props-table">' +
+                        '<tr><td>Path:</td><td>' + (data.path || '') + '</td></tr>' +
+                        '<tr><td>Owner:</td><td><input type="text" name="owner" value="' + (data.owner || '') + '"/></td></tr>' +
+                        '<tr><td>Group:</td><td><input type="text" name="group" value="' + (data.group || '') + '"/></td></tr>' +
+                        '<tr><td>Permissions:</td><td><input type="text" name="permissions" value="' + (data.permissions || '') + '"/></td></tr>' +
+                        (data.mime ? '<tr><td>MIME Type:</td><td><input type="text" name="mime" value="' + data.mime + '"/></td></tr>' : '') +
+                        '</table></form>';
+                });
             this.propertiesDialog.open();
         }
     };
@@ -913,16 +942,21 @@ eXide.browse.ResourceBrowser = (function () {
     Constr.prototype.paste = function() {
         var self = this;
         console.log("Pasting resources %o to %s in mode %s", this.clipboard, this._collection, this.clipboardMode);
-        var params = { root: this._collection };
-        params[this.clipboardMode] = this.clipboard;
-		fetchJSON("modules/collections.xq", params).then(function (data) {
-				console.log(data.status);
-				if (data.status == "fail") {
-					eXide.util.Dialog.warning("Delete Resource Error", data.message);
-				} else {
-					self.reload();
-				}
-			});
+        fetch(apiPath(this._collection), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                action: this.clipboardMode,
+                sources: this.clipboard
+            })
+        }).then(function(r) { return r.json(); })
+        .then(function (data) {
+            if (data.error) {
+                eXide.util.Dialog.warning("Paste Error", data.error);
+            } else {
+                self.reload();
+            }
+        });
     };
 
     Constr.prototype.goto = function(row) {
@@ -1016,17 +1050,11 @@ eXide.browse.Upload = (function () {
 	                count++;
 	            }
 
-	            var formData = new FormData();
-	            formData.append("file[]", file);
-	            formData.append("path", path);
-	            formData.append("collection", collectionInput.value);
-	            if (deployInput.checked) {
-	                formData.append("deploy", "on");
-	            }
+	            var uploadPath = collectionInput.value + "/" + path;
 
 	            var p = new Promise(function(resolve, reject) {
 	                var xhr = new XMLHttpRequest();
-	                xhr.open("POST", "modules/upload.xq");
+	                xhr.open("PUT", apiPath(uploadPath));
 	                xhr.upload.addEventListener("progress", function(evt) {
 	                    if (evt.lengthComputable) {
 	                        var pct = Math.round(evt.loaded / evt.total * 100);
@@ -1053,7 +1081,8 @@ eXide.browse.Upload = (function () {
 	                    console.log("Upload error for file: ", file.name);
 	                    reject();
 	                };
-	                xhr.send(formData);
+	                xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+	                xhr.send(file);
 	            });
 	            promises.push(p);
 	        });
@@ -1061,6 +1090,17 @@ eXide.browse.Upload = (function () {
 	        Promise.all(promises).then(function() {
 	            progressAll.textContent = "";
 	            progressAll.style.width = "0%";
+	            // If deploy checkbox is checked, install .xar files as packages
+	            if (deployInput.checked) {
+	                var xarFiles = files.filter(function(f) { return /\.xar$/i.test(f.name); });
+	                xarFiles.forEach(function(f) {
+	                    fetch("api/packages", {
+	                        method: "POST",
+	                        headers: { "Content-Type": "application/octet-stream" },
+	                        body: f
+	                    });
+	                });
+	            }
 	        });
 
 	        fileInput.value = "";

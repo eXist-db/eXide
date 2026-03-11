@@ -24,7 +24,7 @@
  * Uses a StateField to manage tooltip lifecycle within CM6's state model.
  *
  * Data flow:
- *   1. User triggers showFunctionDoc → fetches from modules/funcdoc.xq
+ *   1. User triggers showFunctionDoc → fetches from api/editor/completions
  *   2. Dispatches setFuncDocItems effect with structured results
  *   3. StateField creates tooltip anchored at cursor position
  *   4. Tooltip DOM: filter input + signature list + detail pane

@@ -126,22 +126,23 @@ eXide.edit.XQueryModeHelper = (function () {
 	Constr.prototype.closeTag = function (doc, text, row) {
 		var basePath = "xmldb:exist://" + doc.getBasePath();
 		var $this = this;
-		fetch("modules/compile.xq", {
-			method: "PUT",
-			headers: { "Content-Type": "application/octet-stream", "X-BasePath": basePath },
-			body: text
+		fetch("api/query/compile", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ query: text, base: basePath })
 		})
 		.then(function(response) { return response.json(); })
 		.then(function(data) {
-			if (data.result == "fail") {
-				var err = parseErrMsg(data.error);
-				var tag = /constructor:\s([^\)]+)\)?$/.exec(err.msg);
+			if (data.errors && data.errors.length > 0) {
+				var err = data.errors[0];
+				var msg = err.message || "";
+				var tag = /constructor:\s([^\)]+)\)?$/.exec(msg);
 				if (tag && tag.length > 0) {
 					var insertText = tag[1] + ">";
 					var insertPos = $this.editor.state.selection.main.head;
 					$this.editor.dispatch({ changes: { from: insertPos, insert: insertText }, selection: { anchor: insertPos + insertText.length } });
 				} else {
-					tag = /tag:.*;\sexpected:\s(.*)$/.exec(err.msg);
+					tag = /tag:.*;\sexpected:\s(.*)$/.exec(msg);
 					if (tag && tag.length > 0) {
 						var insertText2 = tag[1] + ">";
 						var insertPos2 = $this.editor.state.selection.main.head;
@@ -164,10 +165,10 @@ eXide.edit.XQueryModeHelper = (function () {
         }
         this.validationListeners.length = 0;
         
-		fetch("modules/compile.xq", {
-			method: "PUT",
-			headers: { "Content-Type": "application/octet-stream", "X-BasePath": basePath },
-			body: code
+		fetch("api/query/compile", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ query: code, base: basePath })
 		})
 		.then(function(response) { return response.json(); })
 		.then(function(data) {
@@ -185,18 +186,21 @@ eXide.edit.XQueryModeHelper = (function () {
 	}
 	
 	/*
-	 * { "result" : "fail", "error" : { "line" : "52", "column" : "43", "#text" : "XPDY0002
+	 * New API response: { "errors": [{ "line": 52, "column": 43, "message": "...", "code": "..." }] }
 	 */
 	Constr.prototype.compileError = function(data, doc) {
-		if (data.result == "fail") {
-			var err = parseErrMsg(data.error);
+		if (data.errors && data.errors.length > 0) {
+			var err = data.errors[0];
+			var line = (err.line || 0) - 1;
+			var column = err.column || 0;
+			var msg = err.message || err.code || "Unknown error";
 			var annotation = {
-				row: err.line,
-                column: err.column,
-				text: err.msg,
+				row: line,
+                column: column,
+				text: msg,
 				type: "error"
 			};
-			this.parent.updateStatus(err.msg, doc.getPath() + "#" + err.line);
+			this.parent.updateStatus(msg, doc.getPath() + "#" + (line + 1));
             var annotations = this.clearAnnotations(doc, "error");
             annotations.push(annotation);
 			editorUtils.setAnnotations(this.editor, annotations);
@@ -334,10 +338,10 @@ eXide.edit.XQueryModeHelper = (function () {
 			return;
 		}
 
-		// Build request params for funcdoc.xq (atom-editor-support format)
+		// Build request params for /api/editor/completions
 		var params = new URLSearchParams({ prefix: func });
 
-		// Extract module imports so funcdoc.xq can search imported functions too
+		// Extract module imports so completions API can search imported functions too
 		var code = doc.getText();
 		var imports = this.$parseImports(code);
 		if (imports) {
@@ -353,7 +357,7 @@ eXide.edit.XQueryModeHelper = (function () {
 			}
 		}
 
-		fetch("modules/funcdoc.xq?" + params.toString())
+		fetch("api/editor/completions?" + params.toString())
 		.then(function(response) { return response.json(); })
 		.then(function(serverFuncs) {
 			// Merge local functions (from AST parse) with server results
@@ -361,7 +365,7 @@ eXide.edit.XQueryModeHelper = (function () {
 			var regex = new RegExp("^" + func.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
 			doc.functions.forEach(function(f) {
 				if (f.type !== "variable" && f.name && f.name.match(regex)) {
-					// Normalize local functions to the funcdoc.xq shape
+					// Normalize local functions to the completions API shape
 					items.push({
 						text: f.signature || f.name,
 						snippet: f.template || null,
@@ -738,26 +742,54 @@ eXide.edit.XQueryModeHelper = (function () {
         this.parseXQuery(doc);
         var info = new eXide.edit.ModuleInfo(doc.ast);
         if (info.isModule() && info.hasTests()) {
-            var params = new URLSearchParams({ source: doc.getPath() });
-            fetch("modules/run-test.xq", {
+            fetch("api/test", {
                 method: "POST",
-                headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                body: params.toString()
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ source: doc.getPath() })
             })
-            .then(function(response) { return response.text(); })
-            .then(function(html) {
+            .then(function(response) { return response.json(); })
+            .then(function(data) {
                 self.parent.updateStatus("");
                 self.parent.clearErrors();
                 eXide.app.showResultsPanel();
                 var results = document.querySelector(".results-container .results");
                 if (results) {
-                    results.innerHTML = html;
+                    results.innerHTML = self.renderTestResults(data);
                 }
             })
             .catch(function(err) {
                 eXide.util.error(String(err), "Server Error");
             })
         }
+    };
+
+    Constr.prototype.renderTestResults = function(data) {
+        if (data.error) {
+            return '<div class="test-error">' + escapeHtml(data.error) + '</div>';
+        }
+        var html = '<div class="test-summary">';
+        html += '<span class="test-count">' + data.tests + ' tests</span>';
+        if (data.failures > 0) html += ', <span class="test-failures">' + data.failures + ' failures</span>';
+        if (data.errors > 0) html += ', <span class="test-errors">' + data.errors + ' errors</span>';
+        if (data.time) html += ' (' + data.time + ')';
+        html += '</div>';
+        html += '<table class="test-results"><thead><tr><th>Test</th><th>Status</th><th>Details</th></tr></thead><tbody>';
+        if (data.testcases) {
+            for (var i = 0; i < data.testcases.length; i++) {
+                var tc = data.testcases[i];
+                var status = tc.failure ? 'failure' : (tc.error ? 'error' : 'pass');
+                var detail = '';
+                if (tc.failure) detail = tc.failure.message || tc.failure.detail || '';
+                if (tc.error) detail = tc.error.message || tc.error.detail || '';
+                html += '<tr class="test-' + status + '">';
+                html += '<td>' + escapeHtml(tc.name) + '</td>';
+                html += '<td>' + status + '</td>';
+                html += '<td>' + escapeHtml(detail) + '</td>';
+                html += '</tr>';
+            }
+        }
+        html += '</tbody></table>';
+        return html;
     };
     
     Constr.prototype.createOutline = function(doc, onComplete) {
@@ -867,29 +899,24 @@ eXide.edit.XQueryModeHelper = (function () {
 	Constr.prototype.$resolveImports = function(doc, imports, onComplete) {
 		var $this = this;
 		var functions = [];
-		
-		var params = [];
+
+		var params = new URLSearchParams();
 		for (var i = 0; i < imports.length; i++) {
 			var matches = this.moduleRe.exec(imports[i]);
 			if (matches != null && matches.length == 4) {
-				params.push("prefix=" + encodeURIComponent(matches[1]));
-				params.push("uri=" + encodeURIComponent(matches[2]));
-				params.push("source=" + encodeURIComponent(matches[3]));
+				params.append("prefix", matches[1]);
+				params.append("uri", matches[2]);
+				params.append("source", matches[3]);
 			}
 		}
 
 		var basePath = "xmldb:exist://" + doc.getBasePath();
-		params.push("base=" + encodeURIComponent(basePath));
+		params.append("base", basePath);
 
-		fetch("outline", {
-			method: "POST",
-			headers: { "Content-Type": "application/x-www-form-urlencoded" },
-			body: params.join("&")
-		})
+		fetch("api/editor/symbols?" + params.toString())
 		.then(function(response) { return response.json(); })
-		.then(function(data) {
-			if (data != null) {
-				var modules = data.modules;
+		.then(function(modules) {
+			if (modules != null) {
 				for (var i = 0; i < modules.length; i++) {
 					var funcs = modules[i].functions;
 					if (funcs) {
@@ -944,27 +971,11 @@ eXide.edit.XQueryModeHelper = (function () {
         }
     }
     
-	var COMPILE_MSG_RE = /.*line:?\s(\d+)/i;
-	
-	function parseErrMsg(error) {
-		var msg;
-		if (error.line) {
-			msg = error["#text"];
-		} else if (typeof error === "object" && error !== null) {
-			msg = error["#text"] || error.code || JSON.stringify(error);
-		} else {
-			msg = error;
-		}
-		var str = COMPILE_MSG_RE.exec(msg);
-		var line = -1;
-		if (str) {
-			line = parseInt(str[1]) - 1;
-		} else if (error.line) {
-			line = parseInt(error.line) - 1;
-		}
-        var column = error.column || 0;
-		return { line: line, column: parseInt(column), msg: msg };
+	function escapeHtml(str) {
+		var d = document.createElement("div");
+		d.textContent = str || "";
+		return d.innerHTML;
 	}
-	
+
 	return Constr;
 }());
