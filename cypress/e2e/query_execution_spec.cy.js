@@ -3,9 +3,8 @@ describe('Query execution', () => {
     cy.loginXHR('admin', '')
     cy.visit('/eXide/index.html')
     cy.reload(true)
-    cy.get('.path', { timeout: 10000 }).should('contain', '__new__1')
-    // Wait for initial compilation to settle
-    cy.wait(2000)
+    cy.get('.path', { timeout: 10000 }).should('contain', 'untitled-1')
+    cy.get('#user', { timeout: 10000 }).should('not.have.text', 'Login')
   })
 
   /**
@@ -20,7 +19,7 @@ describe('Query execution', () => {
 
   it('runs a simple XQuery and shows results', () => {
     setEditorContent('for $i in 1 to 3 return <n>{$i}</n>')
-    cy.get('#eval').click()
+    cy.get('#run').click()
 
     // Results panel should appear with content
     cy.get('.panel-south .results', { timeout: 10000 })
@@ -36,7 +35,7 @@ describe('Query execution', () => {
 
   it('shows an error for invalid XQuery', () => {
     setEditorContent('for $x in return')
-    cy.get('#eval').click()
+    cy.get('#run').click()
 
     // Error should appear in the error status area
     cy.get('#error-status', { timeout: 10000 })
@@ -46,7 +45,7 @@ describe('Query execution', () => {
 
   it('displays correct result count', () => {
     setEditorContent('for $i in 1 to 5 return $i')
-    cy.get('#eval').click()
+    cy.get('#run').click()
 
     cy.get('.panel-south .current', { timeout: 10000 })
       .invoke('text')
@@ -55,7 +54,7 @@ describe('Query execution', () => {
 
   it('evaluates a string expression', () => {
     setEditorContent('"Hello, eXide!"')
-    cy.get('#eval').click()
+    cy.get('#run').click()
 
     cy.get('.panel-south .results .content', { timeout: 10000 })
       .first()
@@ -64,13 +63,13 @@ describe('Query execution', () => {
 
   it('clears previous results before running new query', () => {
     setEditorContent('1 + 1')
-    cy.get('#eval').click()
+    cy.get('#run').click()
     cy.get('.panel-south .results .content', { timeout: 10000 })
       .should('have.length.at.least', 1)
 
     // Run a different query
     setEditorContent('"second query"')
-    cy.get('#eval').click()
+    cy.get('#run').click()
     cy.get('.panel-south .results .content', { timeout: 10000 })
       .first()
       .should('contain', 'second query')
@@ -78,7 +77,7 @@ describe('Query execution', () => {
 
   it('shows a toast notification with result count', () => {
     setEditorContent('1')
-    cy.get('#eval').click()
+    cy.get('#run').click()
 
     // util.message() shows a toast with "Query returned N item(s) in Xs"
     cy.get('.eXide-toast', { timeout: 10000 })
@@ -89,14 +88,14 @@ describe('Query execution', () => {
   it('supports adaptive serialization mode', () => {
     // First run a simple query to make results panel visible
     setEditorContent('1')
-    cy.get('#eval').click()
+    cy.get('#run').click()
     cy.get('.panel-south .results .content', { timeout: 10000 })
       .should('have.length.at.least', 1)
 
     // Now switch serialization mode and run again
     cy.get('.panel-south #serialization-mode').select('adaptive')
     setEditorContent('"adaptive output"')
-    cy.get('#eval').click()
+    cy.get('#run').click()
 
     cy.get('.panel-south .results .content', { timeout: 10000 })
       .should('have.length.at.least', 1)

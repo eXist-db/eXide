@@ -3,8 +3,7 @@ describe('Binary file preview', () => {
     cy.loginXHR('admin', '')
     cy.visit('/eXide/index.html')
     cy.reload(true)
-    cy.get('.path', { timeout: 10000 }).should('contain', '__new__1')
-    cy.wait(1000)
+    cy.get('.path', { timeout: 10000 }).should('contain', 'untitled-1')
   })
 
   function openBinaryFile(path) {

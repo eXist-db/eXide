@@ -2,7 +2,7 @@ describe('Tab bar overflow controls', () => {
   beforeEach(() => {
     cy.visit('/eXide/index.html')
     cy.reload(true)
-    cy.get('.path', { timeout: 10000 }).should('contain', '__new__1')
+    cy.get('.path', { timeout: 10000 }).should('contain', 'untitled-1')
   })
 
   describe('control buttons exist', () => {

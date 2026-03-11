@@ -9,7 +9,7 @@ describe('Navbar', function () {
     cy.wait(500)
     cy.dismissDialog()
     cy.get('#editor > div.ace_scroller > div').type("<weeeeeeeeeeeeeeeeee/>")
-    cy.get("#eval").click()
+    cy.get("#run").click()
     cy.wait(1300)
 
     cy.get("#copy-all-clipboard").click({ force: true })
@@ -26,7 +26,7 @@ describe('Navbar', function () {
     cy.wait(500)
     cy.dismissDialog()
     cy.get('#editor > div.ace_scroller > div').type("<weeeeeeeeeeeeeeeeee/>")
-    cy.get("#eval").click()
+    cy.get("#run").click()
     cy.wait(1300)
 
     cy.get("#copy-all-clipboard").click({ force: true })

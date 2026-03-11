@@ -2,7 +2,7 @@ describe('Outline modes and filter', () => {
   beforeEach(() => {
     cy.visit('/eXide/index.html')
     cy.reload(true)
-    cy.get('.path', { timeout: 10000 }).should('contain', '__new__1')
+    cy.get('.path', { timeout: 10000 }).should('contain', 'untitled-1')
 
     // Open config.xqm which has multiple functions
     cy.get('#directory li').contains('span', 'apps', { timeout: 5000 }).click()
@@ -105,11 +105,9 @@ describe('Outline modes and filter', () => {
     })
 
     cy.get('#outline-filter').clear().type('access')
-    cy.wait(200)
 
     // Clear the filter
     cy.get('#outline-filter').clear()
-    cy.wait(200)
 
     // All links should be visible again
     cy.get('#outline li a').then(($links) => {
@@ -127,8 +125,7 @@ describe('Outline modes and filter', () => {
     // Click the first function in the outline
     cy.get('#outline li a').first().click()
 
-    // Editor should receive focus
-    cy.wait(500)
+    // Editor should still exist
     cy.get('#editor .cm-editor', { timeout: 5000 }).should('exist')
   })
 })

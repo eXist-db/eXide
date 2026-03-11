@@ -2,7 +2,7 @@ describe('Layout fills viewport', () => {
   beforeEach(() => {
     cy.visit('/eXide/index.html')
     cy.reload(true)
-    cy.get('.path', { timeout: 10000 }).should('contain', '__new__1')
+    cy.get('.path', { timeout: 10000 }).should('contain', 'untitled-1')
   })
 
   it('layout-horizontal extends to the bottom of the viewport', () => {
@@ -31,7 +31,6 @@ describe('Layout fills viewport', () => {
     // Wait for theme to apply
     cy.get('body').should('have.class', 'dark')
     // Small wait for any reflow
-    cy.wait(100)
 
     cy.get('#tabs-outline-container').then(($west) => {
       cy.get('#tabs-container').then(($editor) => {
@@ -45,7 +44,6 @@ describe('Layout fills viewport', () => {
   it('layout fills viewport in dark mode', () => {
     cy.get('#toggle-dark-mode').click()
     cy.get('body').should('have.class', 'dark')
-    cy.wait(100)
 
     cy.window().then((win) => {
       const viewportHeight = win.innerHeight

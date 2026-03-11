@@ -19,18 +19,19 @@ describe('Error status UI', () => {
    * #error-status. We need to wait for that to settle before testing.
    */
   function waitForInitialLoad() {
-    cy.get('.path', { timeout: 10000 }).should('contain', '__new__1')
-    // Wait for any initial compilation to finish
-    cy.wait(2000)
+    cy.get('.path', { timeout: 10000 }).should('contain', 'untitled-1')
+    // Wait for the initial compilation cycle to finish
+    cy.wait('@compile', { timeout: 10000 })
     // Clear any existing error state before each test
     cy.window().then((win) => {
       const el = win.document.getElementById('error-status')
       el.textContent = ''
     })
-    cy.wait(100)
+    cy.wait(50)
   }
 
   beforeEach(() => {
+    cy.intercept('PUT', '**/compile.xq').as('compile')
     cy.visit('/eXide/index.html')
     cy.reload(true)
     waitForInitialLoad()
@@ -109,7 +110,7 @@ describe('Error status UI', () => {
     // Create a new tab via the New XQuery button
     cy.get('#new-xquery').click()
     // Confirm we switched to a new tab
-    cy.get('.path').should('contain', '__new__2')
+    cy.get('.path').should('contain', 'untitled-2')
 
     // Error should be cleared
     cy.get('#exide-err-pill').should('not.have.class', 'has-error')

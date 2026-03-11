@@ -33,7 +33,6 @@ context('DB Manager', () => {
       it('should create a new collection', () => {
         cy.get('#eXide-browse-toolbar-create').click()
         cy.get('#eXide-browse-collection-name').type(collectionName)
-        cy.wait(500)
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
 
         cy.get('div.eXide-browse-main').within(() => {
@@ -57,7 +56,6 @@ context('DB Manager', () => {
       it('should create a new collection', () => {
         cy.get('#eXide-browse-toolbar-create').click()
         cy.get('#eXide-browse-collection-name').type('toBeRenamed')
-        cy.wait(500)
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
 
         cy.get('div.eXide-browse-main').within(() => {
@@ -73,11 +71,10 @@ context('DB Manager', () => {
         //click on toolbar action
         cy.get('#eXide-browse-toolbar-rename').click()
         cy.focused().type('AéB{enter}')
-        cy.wait(1000)
 
         //check for modification
         cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'AéB').should('exist')
+          cy.contains('.browse-table tbody td.col-name', 'AéB', { timeout: 5000 }).should('exist')
         })
       })
 
@@ -97,7 +94,6 @@ context('DB Manager', () => {
       it('should create a new collection', () => {
         cy.get('#eXide-browse-toolbar-create').click()
         cy.get('#eXide-browse-collection-name').type('AéB')
-        cy.wait(500)
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
 
         cy.get('div.eXide-browse-main').within(() => {
@@ -178,7 +174,6 @@ context('DB Manager', () => {
       it('should create collection to be copied', () => {
         cy.get('#eXide-browse-toolbar-create').click()
         cy.get('#eXide-browse-collection-name').type('toBeCopiedAéB')
-        cy.wait(500)
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
 
         cy.get('div.eXide-browse-main').within(() => {
@@ -189,7 +184,6 @@ context('DB Manager', () => {
       it('should create collection to be copied in', () => {
         cy.get('#eXide-browse-toolbar-create').click()
         cy.get('#eXide-browse-collection-name').type('toBeCopiedInAéB')
-        cy.wait(500)
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
 
         cy.get('div.eXide-browse-main').within(() => {
@@ -202,7 +196,6 @@ context('DB Manager', () => {
         cy.get('div.eXide-browse-main').within(() => {
           cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').click()
         })
-        cy.wait(500)
         //click on toolbar action
         cy.get('#eXide-browse-toolbar-copy').click()
 
@@ -222,19 +215,18 @@ context('DB Manager', () => {
 
       it('should delete the created collection', () => {
         cy.get('div.eXide-browse-main').within(() => {
-          cy.wait(500)
           cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB').click()
         })
-        cy.wait(500)
         cy.get('#eXide-browse-toolbar-delete-resource').click()
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
-        cy.wait(500)
 
         cy.get('div.eXide-browse-main').within(() => {
-          cy.wait(500)
+          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB', { timeout: 5000 }).should('not.exist')
+        })
+
+        cy.get('div.eXide-browse-main').within(() => {
           cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').click()
         })
-        cy.wait(500)
 
         cy.get('#eXide-browse-toolbar-delete-resource').click()
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
@@ -251,7 +243,6 @@ context('DB Manager', () => {
       it('should create collection to be copied', () => {
         cy.get('#eXide-browse-toolbar-create').click()
         cy.get('#eXide-browse-collection-name').type('toBeCopiedAéB')
-        cy.wait(500)
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
 
         cy.get('div.eXide-browse-main').within(() => {
@@ -262,7 +253,6 @@ context('DB Manager', () => {
       it('should create collection to be copied in', () => {
         cy.get('#eXide-browse-toolbar-create').click()
         cy.get('#eXide-browse-collection-name').type('toBeCopiedInAéB')
-        cy.wait(500)
         cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
 
         cy.get('div.eXide-browse-main').within(() => {

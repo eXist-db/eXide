@@ -43,7 +43,6 @@ Cypress.Commands.add("dismissDialog", () => {
     // Wait for the login check to complete (user text changes from default)
     cy.get('#user', { timeout: 10000 }).should('not.have.text', 'Login')
     // Dismiss any startup dialogs
-    cy.wait(300)
     cy.get('body').then(($body) => {
         const btn = $body.find('.eXide-dialog[open] .eXide-dialog-buttons button')
         if (btn.length) {

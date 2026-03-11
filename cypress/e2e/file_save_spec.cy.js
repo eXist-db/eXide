@@ -3,14 +3,24 @@ describe('File save', () => {
   var testCollection = '/db'
   var testFile = 'cypress-test-' + Date.now() + '.xq'
 
+  before(() => {
+    // Clean up stale test files from previous interrupted runs
+    cy.loginXHR('admin', '')
+    cy.request({
+      method: 'POST',
+      url: '/exist/rest/db',
+      headers: { 'Content-Type': 'application/xquery' },
+      body: 'for $r in xmldb:get-child-resources("/db") where starts-with($r, "cypress-test-") return xmldb:remove("/db", $r)',
+      failOnStatusCode: false
+    })
+  })
+
   beforeEach(() => {
     cy.loginXHR('admin', '')
     cy.visit('/eXide/index.html')
     cy.reload(true)
-    cy.get('.path', { timeout: 10000 }).should('contain', '__new__1')
-    // Wait for login check and initial compilation
+    cy.get('.path', { timeout: 10000 }).should('contain', 'untitled-1')
     cy.get('#user', { timeout: 10000 }).should('not.have.text', 'Login')
-    cy.wait(1000)
   })
 
   function setEditorContent(text) {

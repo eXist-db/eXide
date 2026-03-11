@@ -2,8 +2,7 @@ describe('Prettier formatting', () => {
   beforeEach(() => {
     cy.visit('/eXide/index.html')
     cy.reload(true)
-    cy.get('.path', { timeout: 10000 }).should('contain', '__new__1')
-    cy.wait(2000)
+    cy.get('.path', { timeout: 10000 }).should('contain', 'untitled-1')
   })
 
   function setEditorContent(text) {
@@ -28,7 +27,7 @@ describe('Prettier formatting', () => {
     cy.get('#menu-edit-format').click({ force: true })
 
     // Content should change (Prettier reformats it)
-    cy.wait(1000)
+    cy.wait(500)
     getEditorContent().should('not.eq', ugly)
   })
 
@@ -37,8 +36,7 @@ describe('Prettier formatting', () => {
     cy.window().then((win) => {
       win.eXide.app.newDocument('<root><child attr="val"><nested>text</nested></child></root>', 'xml')
     })
-    cy.get('.path', { timeout: 5000 }).should('contain', '__new__')
-    cy.wait(500)
+    cy.get('.path', { timeout: 5000 }).should('contain', 'untitled-')
 
     var before
     getEditorContent().then((text) => {
@@ -46,7 +44,7 @@ describe('Prettier formatting', () => {
     })
 
     cy.get('#menu-edit-format').click({ force: true })
-    cy.wait(1000)
+    cy.wait(500)
 
     // XML should be indented/reformatted
     getEditorContent().then((text) => {
@@ -60,11 +58,10 @@ describe('Prettier formatting', () => {
     cy.window().then((win) => {
       win.eXide.app.newDocument('body{color:red;margin:0;padding:0}h1{font-size:2em}', 'css')
     })
-    cy.get('.path', { timeout: 5000 }).should('contain', '__new__')
-    cy.wait(500)
+    cy.get('.path', { timeout: 5000 }).should('contain', 'untitled-')
 
     cy.get('#menu-edit-format').click({ force: true })
-    cy.wait(1000)
+    cy.wait(500)
 
     getEditorContent().then((text) => {
       // Formatted CSS should have newlines and proper structure
@@ -78,7 +75,6 @@ describe('Prettier formatting', () => {
     setEditorContent('{{{{{')
 
     cy.get('#menu-edit-format').click({ force: true })
-    cy.wait(1000)
 
     // Error toast should appear
     cy.get('.eXide-toast', { timeout: 5000 })
