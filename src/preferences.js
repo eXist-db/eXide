@@ -351,11 +351,11 @@ eXide.util.Preferences = (function () {
     };
     
     Constr.prototype.read = function() {
-        var sameVersion = false;
+        var sameVersion = true;
         if (localStorage["eXide.preferences"]) {
             const loaded = JSON.parse(localStorage.getItem("eXide.preferences"));
             this.preferences = Object.assign({}, defaultPreferences, loaded);
-            sameVersion = (loaded.version === eXide.app.version());
+            sameVersion = !loaded.version || (loaded.version === eXide.app.version());
         }
 
         this.preferences.version = eXide.app.version();
