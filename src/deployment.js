@@ -34,6 +34,10 @@ eXide.edit.Projects = (function() {
     };
 
     Constr.prototype.getProject = function (collection, callback) {
+        if (!collection || collection === "/db" || collection === "/db/") {
+            if (typeof callback == "function") callback(null);
+            return;
+        }
         var $this = this;
         var url = "api/packages/_?collection=" + encodeURIComponent(collection);
         fetch(url).then(function(response) {

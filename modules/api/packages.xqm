@@ -91,6 +91,11 @@ declare function packages:get($request as map(*)) {
         if (exists($collection) and $collection != "") then
             packages:abbrev-for-collection($collection)
         else $abbrev
+    return
+        if (empty($resolved-abbrev) or $resolved-abbrev = "") then
+            roaster:response(404, "application/json",
+                map { "error": "No package found for collection: " || ($collection, $abbrev)[1] })
+        else
     let $col := repo:get-root() || $resolved-abbrev
     let $expath := doc($col || "/expath-pkg.xml")/expath:package
     let $repo-meta := doc($col || "/repo.xml")/repo:meta

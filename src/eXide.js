@@ -1980,6 +1980,12 @@ eXide.app = (function(util) {
             menu.click("#menu-view-reset", function() {
                 layout.reset();
             });
+            menu.click("#menu-view-reset-workspace", function() {
+                if (confirm("This will clear all saved tabs, preferences, and layout state, then reload. Continue?")) {
+                    Object.keys(localStorage).filter(function(k) { return k.startsWith("eXide."); }).forEach(function(k) { localStorage.removeItem(k); });
+                    location.reload();
+                }
+            });
             menu.click("#menu-view-toggle-dark-mode", function() {
                 document.getElementById("toggle-dark-mode").click();
             });
