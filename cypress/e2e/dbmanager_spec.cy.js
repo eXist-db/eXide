@@ -6,6 +6,20 @@ function openDbManager() {
 }
 
 context('DB Manager', () => {
+  after(() => {
+    // Clean up any test collections left behind by failed or interrupted tests
+    cy.loginXHR('admin', '')
+    cy.request({
+      method: 'POST',
+      url: '/exist/rest/db',
+      headers: { 'Content-Type': 'application/xquery' },
+      body: `for $col in ("${collectionName}", "def", "AéB")
+             where xmldb:collection-available("/db/" || $col)
+             return xmldb:remove("/db/" || $col)`,
+      failOnStatusCode: false
+    })
+  })
+
   describe('DB Manager operations', () => {
     beforeEach(() => {
       cy.loginXHR('admin', '')

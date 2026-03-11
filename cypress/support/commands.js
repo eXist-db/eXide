@@ -67,18 +67,15 @@ Cypress.Commands.add("setConf", function (executeQuery, restrictAccess) {
     const body = getConf(executeQuery, restrictAccess);
     const confFilePath = "/apps/eXide/configuration.xml"
     cy.request({
-        method: 'POST',
-        url: `/eXide/store/db${confFilePath}`,
+        method: 'PUT',
+        url: `/eXide/api/storage${confFilePath}`,
         headers: {
-            'Content-Type': 'application/xml',
-            'Content-length': body.length
+            'Content-Type': 'application/xml'
         },
         body
     })
     .then((response) => {
-        const parsed = JSON.parse(response.body)
-        expect(parsed).to.have.property('status', 'ok')
-        expect(parsed).to.have.property('externalLink', `/exist${confFilePath}`)
+        expect(response.body).to.have.property('status', 'ok')
     })
 })
 
