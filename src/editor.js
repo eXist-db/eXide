@@ -269,6 +269,12 @@ eXide.edit.Editor = (function () {
             showInvisiblesCompartment.of([]),
             rectangularSelectionCompartment.of([CM6.rectangularSelection(), CM6.crosshairCursor()]),
             eXide.edit.FuncDocTooltip.extension(),
+            CM6.autocompletion({
+                override: [eXide.edit.CompletionSource.completionSource],
+                activateOnTyping: false,
+                maxRenderedOptions: 50,
+                icons: true
+            }),
             CM6.scrollPastEnd(),
             EditorView.updateListener.of(function(update) {
                 if (update.docChanged && $this.activeDoc && !$this._switching) {
@@ -379,6 +385,9 @@ eXide.edit.Editor = (function () {
             "markdown": new eXide.edit.MarkdownModeHelper($this),
             "tmsnippet": new eXide.edit.SnippetModeHelper($this)
         };
+
+        // Initialize CM6 completion source with editor reference
+        eXide.edit.CompletionSource.init($this);
 
         var gotoLineEl = document.getElementById("dialog-goto-line");
         this._gotoLineDlg = eXide.util.DialogManager.create(gotoLineEl, {

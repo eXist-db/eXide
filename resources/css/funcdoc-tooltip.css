@@ -317,3 +317,52 @@
 .dark-mode .cm-funcdoc-detail-template {
     border-top-color: #444;
 }
+
+/* ============================================================
+ * CM6 Autocompletion info panel styles
+ * (shown alongside completion list when a function is highlighted)
+ * ============================================================ */
+
+.cm-completion-info-funcdoc {
+    font-size: 12px;
+    line-height: 1.4;
+    max-width: 350px;
+    padding: 6px 8px;
+}
+
+.cm-completion-info-funcdoc p {
+    margin: 0 0 6px 0;
+    color: #444;
+}
+
+.cm-completion-info-funcdoc dl {
+    margin: 4px 0;
+}
+
+.cm-completion-info-funcdoc dt {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 11px;
+    font-weight: 600;
+    color: #555;
+    margin-top: 4px;
+}
+
+.cm-completion-info-funcdoc dd {
+    margin: 0 0 2px 12px;
+    color: #666;
+    font-size: 11px;
+}
+
+.cm-completion-info-source {
+    margin-top: 6px;
+    font-size: 10px;
+    color: #999;
+    border-top: 1px solid #eee;
+    padding-top: 4px;
+}
+
+/* Dark mode */
+.dark-mode .cm-completion-info-funcdoc p { color: #bbb; }
+.dark-mode .cm-completion-info-funcdoc dt { color: #ccc; }
+.dark-mode .cm-completion-info-funcdoc dd { color: #aaa; }
+.dark-mode .cm-completion-info-source { color: #666; border-top-color: #444; }

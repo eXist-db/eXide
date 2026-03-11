@@ -158,8 +158,8 @@ eXide.edit.commands = (function () {
                         eXide.app.closeAll();
                         return true;
                     });
-                    addCommand("autocomplete", getKeyBinding(kb, "autocomplete"), function() {
-                        parent.autocomplete();
+                    addCommand("autocomplete", getKeyBinding(kb, "autocomplete"), function(view) {
+                        CM6.startCompletion(view);
                         return true;
                     });
                     addCommand("nextTab", getKeyBinding(kb, "nextTab"), function() {
