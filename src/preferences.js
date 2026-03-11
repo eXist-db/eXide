@@ -62,7 +62,8 @@ eXide.util.Preferences = (function () {
         splitPane: false,
         showWestPanel: true,
         showSouthPanel: false,
-        resultPanelPosition: "south"
+        showEastPanel: false,
+        collectionsView: "tree"
 	};
     
     Constr = function(editor) {
@@ -128,11 +129,15 @@ eXide.util.Preferences = (function () {
 		if (typeof eXide !== 'undefined' && eXide.app && eXide.app.isWestPanelVisible) {
 		    this.preferences.showWestPanel = eXide.app.isWestPanelVisible();
 		    this.preferences.showSouthPanel = eXide.app.isSouthPanelVisible();
-		    this.preferences.resultPanelPosition = eXide.app.getResultPanelPosition();
 		}
 		form.querySelector('input[name="show-west"]').checked = this.preferences.showWestPanel;
 		form.querySelector('input[name="show-south"]').checked = this.preferences.showSouthPanel;
-		form.querySelector('select[name="result-position"]').value = this.preferences.resultPanelPosition || "south";
+		// Sync east panel pref from actual state
+		if (typeof eXide !== 'undefined' && eXide.app && eXide.app.isEastPanelVisible) {
+		    this.preferences.showEastPanel = eXide.app.isEastPanelVisible();
+		}
+		form.querySelector('input[name="show-east"]').checked = this.preferences.showEastPanel;
+		form.querySelector('select[name="collections-view"]').value = this.preferences.collectionsView;
 		form.querySelector('select[name="prettier-print-width"]').value = this.preferences.prettierPrintWidth;
 		form.querySelector('input[name="prettier-single-quote"]').checked = this.preferences.prettierSingleQuote;
 		form.querySelector('select[name="prettier-xml-ws"]').value = this.preferences.prettierXmlWhitespaceSensitivity;
@@ -179,7 +184,8 @@ eXide.util.Preferences = (function () {
 		this.preferences.splitPane = form.querySelector('input[name="split-pane"]').checked;
 		this.preferences.showWestPanel = form.querySelector('input[name="show-west"]').checked;
 		this.preferences.showSouthPanel = form.querySelector('input[name="show-south"]').checked;
-		this.preferences.resultPanelPosition = form.querySelector('select[name="result-position"]').value;
+		this.preferences.showEastPanel = form.querySelector('input[name="show-east"]').checked;
+		this.preferences.collectionsView = form.querySelector('select[name="collections-view"]').value;
 		this.preferences.prettierPrintWidth = parseInt(form.querySelector('select[name="prettier-print-width"]').value, 10);
 		this.preferences.prettierSingleQuote = form.querySelector('input[name="prettier-single-quote"]').checked;
 		this.preferences.prettierXmlWhitespaceSensitivity = form.querySelector('select[name="prettier-xml-ws"]').value;
@@ -250,6 +256,10 @@ eXide.util.Preferences = (function () {
     Constr.prototype.applyPreferences = function () {
         this.preferences.theme = migrateTheme(this.preferences.theme);
 		this.editor.setTheme(resolveTheme(this.preferences.theme));
+		// Sync the toolbar dark-mode icon with the resolved theme
+		if (typeof eXide !== 'undefined' && eXide.app && eXide.app.updateDarkModeIcon) {
+		    eXide.app.updateDarkModeIcon(resolveTheme(this.preferences.theme));
+		}
 
         // Store preferences on editor for use during document switching
         this.editor._preferences = this.preferences;
@@ -325,7 +335,12 @@ eXide.util.Preferences = (function () {
         if (typeof eXide !== 'undefined' && eXide.app && eXide.app.setWestPanel) {
             eXide.app.setWestPanel(!!this.preferences.showWestPanel);
             eXide.app.setSouthPanel(!!this.preferences.showSouthPanel);
-            eXide.app.setResultPanelPosition(this.preferences.resultPanelPosition || "south");
+            eXide.app.setEastPanel(!!this.preferences.showEastPanel);
+        }
+
+        // Collections view (tree vs folder)
+        if (typeof eXide !== 'undefined' && eXide.app && eXide.app.setCollectionsView) {
+            eXide.app.setCollectionsView(this.preferences.collectionsView);
         }
 
 		this.editor.resize();

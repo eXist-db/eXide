@@ -82,6 +82,8 @@ eXide.app = (function(util) {
 
     var resultPanel = "south";
 
+    var monitor = null;
+
     var dialogs = {};
 
     /**
@@ -165,9 +167,7 @@ eXide.app = (function(util) {
 			deploymentEditor = new eXide.edit.PackageEditor(projects);
 
 			dbBrowser = new eXide.browse.Browser(document.getElementById("open-dialog"));
-			dbBrowser.addEventListener("upload-open", function(isOpen) {
-			    allowDnd = !isOpen;
-			});
+
 
 			preferences = new util.Preferences(editor);
 
@@ -244,6 +244,38 @@ eXide.app = (function(util) {
 		        el.textContent = "Login";
 		        el.title = "Click to login";
 		    }
+		    // Start/stop monitor based on auth and panel visibility
+		    var eastEl = document.querySelector(".panel-east");
+		    var eastVisible = eastEl && eastEl.style.display !== "none";
+		    if (app.login && app.login.isAdmin && eastVisible) {
+		        if (!monitor) {
+		            monitor = new eXide.app.Monitor();
+		            monitor.init();
+		        }
+		        monitor.start();
+		    } else if (monitor) {
+		        monitor.stop();
+		    }
+		},
+
+		toggleMonitor: function() {
+		    if (!monitor) {
+		        monitor = new eXide.app.Monitor();
+		        monitor.init();
+		    }
+		    layout.toggle("east");
+		    var eastEl = document.querySelector(".panel-east");
+		    var isVisible = eastEl && eastEl.style.display !== "none";
+		    if (isVisible) {
+		        if (app.login && app.login.isAdmin) {
+		            monitor.start();
+		        } else {
+		            monitor.showMessage("The monitoring panel is only available to the admin user or users in the dba group.");
+		        }
+		    } else {
+		        monitor.stop();
+		    }
+		    app.$savePanelPrefs();
 		},
 
 		updateLayoutTop: function() {
@@ -259,12 +291,6 @@ eXide.app = (function(util) {
 
 		resize: function(resizeIframe) {
 			var panel = document.getElementById("editor");
-            // Align east panel top with editor content (below tabs)
-            var tabsContainer = document.getElementById("tabs-container");
-            var eastPanel = document.querySelector(".panel-east");
-            if (tabsContainer && eastPanel) {
-                eastPanel.style.marginTop = tabsContainer.offsetHeight + "px";
-            }
             if (resizeIframe) {
                 var resultsContainer = document.querySelector(".panel-" + resultPanel);
                 var resultsBody = document.getElementById("results-body");
@@ -362,8 +388,8 @@ eXide.app = (function(util) {
 			dbBrowser.reload(["reload"], "open");
 			dialogs["open-dialog"].setTitle("Open Document");
 			dialogs["open-dialog"].setButtons({
-			    "cancel": function() { dialogs["open-dialog"].close(); editor.focus(); },
-			    "open": function(){ app.openSelectedDocument(null, true);}
+			    "Cancel": function() { dialogs["open-dialog"].close(); editor.focus(); },
+			    "Open": function(){ app.openSelectedDocument(null, true);}
 			});
 			dialogs["open-dialog"].open();
 		},
@@ -389,7 +415,7 @@ eXide.app = (function(util) {
 				dialogs["open-dialog"].close();
 		},
 
-		$doOpenDocument: function(resource, callback, reload) {
+		$doOpenDocument: function(resource, callback, reload, forceText) {
 			resource.path = util.normalizePath(resource.path);
             var indentOnOpen = document.getElementById("indent-on-open").checked;
             var expandXIncludesOnOpen = document.getElementById("expand-xincludes-on-open").checked;
@@ -417,10 +443,10 @@ eXide.app = (function(util) {
 			        var externalPath = response.headers.get("X-Link");
 			        var baseMime = contentType.replace(/;.*$/, "").trim();
 			        // Show binary files in a preview overlay
-			        if (!reload && /^image\/|^audio\/|^video\/|^application\/pdf|^application\/octet-stream|^application\/zip/.test(baseMime)) {
+			        if (!reload && !forceText && /^image\/|^audio\/|^video\/|^application\/pdf|^application\/octet-stream|^application\/zip/.test(baseMime)) {
 			            var fileUrl = externalPath || ("rest" + resource.path);
 			            var fileName = resource.name || resource.path.replace(/^.*\//, "");
-			            app.$showBinaryPreview(fileUrl, fileName, baseMime);
+			            app.$showBinaryPreview(fileUrl, fileName, baseMime, resource, callback);
 			            if (callback) { callback(null); }
 			            return true;
 			        }
@@ -428,7 +454,7 @@ eXide.app = (function(util) {
 			            if (reload) {
 			                editor.reload(data);
 			            } else {
-			                var mime = util.mimeTypes.getMime(contentType);
+			                var mime = forceText ? "text/text" : util.mimeTypes.getMime(contentType);
 			                editor.openDocument(data, mime, resource, externalPath);
 			            }
 			            if (callback) {
@@ -447,7 +473,7 @@ eXide.app = (function(util) {
 			    });
 		},
 
-		$showBinaryPreview: function(fileUrl, fileName, mime) {
+		$showBinaryPreview: function(fileUrl, fileName, mime, resource, callback) {
 		    // Remove existing overlay
 		    var existing = document.getElementById("binary-preview-overlay");
 		    if (existing) existing.remove();
@@ -525,9 +551,17 @@ eXide.app = (function(util) {
 		        a.download = fileName;
 		        a.click();
 		    });
+		    var openTextBtn = document.createElement("button");
+		    openTextBtn.textContent = "Open Anyway";
+		    openTextBtn.title = "Open as plain text in the editor";
+		    openTextBtn.addEventListener("click", function() {
+		        close();
+		        app.$doOpenDocument(resource, callback, false, true);
+		    });
 		    var cancelBtn = document.createElement("button");
 		    cancelBtn.textContent = "Close";
 		    cancelBtn.addEventListener("click", close);
+		    footer.appendChild(openTextBtn);
 		    footer.appendChild(openBtn);
 		    footer.appendChild(dlBtn);
 		    footer.appendChild(cancelBtn);
@@ -759,7 +793,7 @@ eXide.app = (function(util) {
                     } else {
                         lastQuery = editor.getActiveDocument().getPath();
                     }
-        			editor.updateStatus("Running query ...");
+        			eXide.util.message("Running query ...");
 
                     document.getElementById("serialization-mode").removeAttribute("disabled");
                     var serializationMode = document.getElementById("serialization-mode").value;
@@ -1062,11 +1096,11 @@ eXide.app = (function(util) {
 
         toggleRunStatus: function(doc) {
             var project = projects.getProjectFor(doc.getPath());
-            var enable = (project || (!doc.isNew() && doc.getSyntax() == "xquery"));
+            var syntax = doc.getSyntax();
+            var enable = ((syntax == "xquery" || syntax == "html") && (project || !doc.isNew()));
+            document.getElementById("launch").disabled = !enable;
+            enable = (doc.getSyntax() == "xquery");
             document.getElementById("run").disabled = !enable;
-            enable = (doc.getSyntax() == "xquery" || doc.getSyntax() == "html" ||
-                doc.getSyntax() == "javascript");
-            document.getElementById("eval").disabled = !enable;
         },
 
         ensureSaved: function(callback) {
@@ -1167,7 +1201,6 @@ eXide.app = (function(util) {
 			preferences.save();
 			layout.saveState();
 
-            localStorage["eXide.layout.resultPanel"] = resultPanel;
             if (editor.getActiveDocument()) {
                 localStorage["eXide.activeTab"] = editor.getActiveDocument().path;
             }
@@ -1256,12 +1289,12 @@ eXide.app = (function(util) {
             document.body.classList.toggle("dark", theme.isDark);
         },
 
-        updateDarkModeIcon: function(theme) {
+        updateDarkModeIcon: function(themeOrResolved) {
             var icon = document.querySelector("#toggle-dark-mode i");
             if (!icon) return;
-            if (theme === "system") icon.className = "fa fa-desktop";
-            else if (theme === "dark") icon.className = "fa fa-sun-o";
-            else icon.className = "fa fa-moon-o";
+            // Show sun when dark (click to go light), moon when light (click to go dark)
+            var isDark = themeOrResolved === "dark" || document.body.classList.contains("dark");
+            icon.className = isDark ? "fa fa-sun-o" : "fa fa-moon-o";
         },
 
         updateStatus: function(doc) {
@@ -1274,18 +1307,49 @@ eXide.app = (function(util) {
             document.querySelectorAll("#type-popover .type-popover-item").forEach(function(el) {
                 el.classList.toggle("active", el.dataset.value === syntax);
             });
-            document.querySelector("#status .path").textContent = decodeURI(util.normalizePath(doc.getPath()));
-            if (!doc.isNew() && (syntax == "xquery" || syntax == "html" || syntax == "xml")) {
-                document.querySelector("#status a").setAttribute("href", doc.getExternalLink());
-                document.querySelector("#status a").style.visibility = "visible";
+            var pathEl = document.querySelector("#status .path");
+            var pathText = doc.isNew() ? doc.getName() : decodeURI(util.normalizePath(doc.getPath()));
+            var copyBtn = document.getElementById("status-copy-url");
+            var extLink = doc.getExternalLink();
+            if (!extLink && !doc.isNew()) {
+                // Compute fallback external link from path
+                var ctx = eXide.configuration.context || "";
+                extLink = ctx + "/rest" + doc.getPath();
+            }
+            if (!doc.isNew() && extLink) {
+                if (pathEl.tagName !== "A") {
+                    var a = document.createElement("a");
+                    a.className = "path";
+                    a.target = "_blank";
+                    a.rel = "noopener";
+                    pathEl.replaceWith(a);
+                    pathEl = a;
+                }
+                pathEl.href = extLink;
+                pathEl.textContent = pathText;
+                pathEl.title = "Launch this saved resource in a new browser tab";
+                copyBtn.style.display = "";
             } else {
-                document.querySelector("#status a").style.visibility = "hidden";
+                if (pathEl.tagName !== "SPAN") {
+                    var span = document.createElement("span");
+                    span.className = "path";
+                    pathEl.replaceWith(span);
+                    pathEl = span;
+                }
+                pathEl.textContent = pathText;
+                copyBtn.style.display = "none";
             }
         },
 
         showResultsPanel: function() {
 			layout.show(resultPanel, true);
 			app.resize(true);
+        },
+
+        toggleCollectionsPanel: function() {
+            layout.toggle("west");
+            app.$savePanelPrefs();
+            app.resize(true);
         },
 
         toggleResultsPanel: function() {
@@ -1321,60 +1385,58 @@ eXide.app = (function(util) {
             return el && el.style.display !== "none" && el.offsetParent !== null;
         },
 
-        getResultPanelPosition: function() {
-            return resultPanel;
+        setEastPanel: function(visible) {
+            var eastEl = document.querySelector(".panel-east");
+            var isVisible = eastEl && eastEl.style.display !== "none";
+            if (visible && !isVisible) {
+                layout.show("east");
+                if (!monitor) {
+                    monitor = new eXide.app.Monitor();
+                    monitor.init();
+                }
+                if (app.login && app.login.isAdmin) {
+                    monitor.start();
+                }
+            } else if (!visible && isVisible) {
+                layout.hide("east");
+                if (monitor) monitor.stop();
+            }
+            app.resize(true);
         },
 
-        setResultPanelPosition: function(pos) {
-            if (pos !== resultPanel) {
-                app.switchResultsPanel();
+        isEastPanelVisible: function() {
+            var el = document.querySelector(".panel-east");
+            return !!(el && el.style.display !== "none");
+        },
+
+        setCollectionsView: function(view) {
+            var treeView = document.getElementById("dir-tree-view");
+            var flatView = document.getElementById("dir-flat-view");
+            var toggleBtn = document.getElementById("toggle-dir-view");
+            var isFolder = (view === "folder");
+            if (treeView) treeView.style.display = isFolder ? "none" : "";
+            if (flatView) flatView.style.display = isFolder ? "" : "none";
+            if (toggleBtn) {
+                toggleBtn.title = isFolder ? "Switch to tree view" : "Switch to folder view";
+                var icon = toggleBtn.querySelector("i");
+                if (icon) icon.className = isFolder ? "fa fa-sitemap" : "fa fa-folder-open-o";
+            }
+            if (editor && editor.directory && editor.directory.setFlatViewActive) {
+                editor.directory.setFlatViewActive(isFolder);
             }
         },
 
         $savePanelPrefs: function() {
             try {
-                var prefs = JSON.parse(localStorage.getItem('eXide.preferences') || '{}');
-                prefs.showWestPanel = app.isWestPanelVisible();
-                prefs.showSouthPanel = app.isSouthPanelVisible();
-                prefs.resultPanelPosition = resultPanel;
-                localStorage.setItem('eXide.preferences', JSON.stringify(prefs));
+                var eastEl = document.querySelector(".panel-east");
+                var eastVisible = !!(eastEl && eastEl.style.display !== "none");
+                // Update both localStorage and the live preferences object
+                // so saveState's localStorage.clear() + preferences.save() preserves the value
+                preferences.preferences.showWestPanel = app.isWestPanelVisible();
+                preferences.preferences.showSouthPanel = app.isSouthPanelVisible();
+                preferences.preferences.showEastPanel = eastVisible;
+                preferences.save();
             } catch(e) {}
-        },
-
-        prepareResultsPanel: function(target, switchPanels) {
-            var iframe = document.getElementById("results-iframe");
-            var resultsBody = document.getElementById("results-body");
-            var parent = resultsBody.parentNode;
-            var children = Array.from(parent.children).filter(function(child) {
-                return !child.classList.contains("resize-handle");
-            });
-            var targetPanel = document.querySelector(".panel-" + target);
-            children.forEach(function(child) {
-                child.parentNode.removeChild(child);
-                targetPanel.appendChild(child);
-            });
-            if (document.getElementById("serialization-mode").value == "html") {
-                iframe.style.display = "";
-                document.getElementById("serialization-mode").setAttribute("disabled", "disabled");
-                document.getElementById("serialization-mode").value = "html";
-                if (switchPanels) {
-                    app.runQuery();
-                }
-            } else {
-                iframe.style.display = "none";
-            }
-        },
-
-        switchResultsPanel: function() {
-            var target = resultPanel === "south" ? "east" : "south";
-            app.prepareResultsPanel(target, true);
-            layout.hide(resultPanel);
-
-            resultPanel = target;
-            document.querySelectorAll(".layout-switcher i").forEach(function(icon) {
-                icon.style.transform = (resultPanel === "south") ? "" : "rotate(90deg)";
-            });
-            app.showResultsPanel();
         },
 
         initStatus: function(msg) {
@@ -1515,22 +1577,9 @@ eXide.app = (function(util) {
         },
 
 		initGUI: function(menu) {
-            if (util.supportsHtml5Storage && localStorage.getItem("eXide.firstTime")) {
-                try {
-                    var savedPrefs = JSON.parse(localStorage.getItem("eXide.preferences") || "{}");
-                    resultPanel = savedPrefs.resultPanelPosition || localStorage["eXide.layout.resultPanel"] || "south";
-                } catch(e) {
-                    resultPanel = localStorage["eXide.layout.resultPanel"] || "south";
-                }
-            }
+            resultPanel = "south";
             layout = new app.Layout(editor);
-            if (resultPanel == "south") {
-                layout.hide("east");
-            } else {
-                layout.hide("south");
-            }
-
-            app.prepareResultsPanel(resultPanel);
+            layout.hide("east");
 
 			dialogs["open-dialog"] = eXide.util.DialogManager.create(
 			    document.getElementById("open-dialog"), {
@@ -1673,7 +1722,7 @@ eXide.app = (function(util) {
             dialogs["dialog-templates"] = eXide.util.DialogManager.create(
                 document.getElementById("dialog-templates"), {
                     appendTo: "#layout-container",
-    			    title: "New document",
+    			    title: "New Document",
     				modal: false,
     		        height: 280,
     		        width: 550,
@@ -1703,7 +1752,10 @@ eXide.app = (function(util) {
                     var templatesDiv = document.querySelector("#dialog-templates .templates");
                     if (templatesDiv) templatesDiv.style.display = "none";
                     var typeSelect = document.querySelector("#dialog-templates .type-select");
-                    if (typeSelect) typeSelect.value = "";
+                    if (typeSelect) {
+                        typeSelect.value = "xquery";
+                        typeSelect.dispatchEvent(new Event("change"));
+                    }
                 });
             };
             document.querySelector("#dialog-templates .type-select").addEventListener("change", function() {
@@ -1751,12 +1803,12 @@ eXide.app = (function(util) {
                 app.newDocument(null, "xquery");
     		});
 
-            var btnEval = document.getElementById("eval");
-            btnEval.disabled = true;
-			btnEval.addEventListener("click", function(ev) { app.runQuery() });
-
             var btnRun = document.getElementById("run");
-			btnRun.addEventListener("click", function(ev) { app.runAppOrQuery() });
+            btnRun.disabled = true;
+			btnRun.addEventListener("click", function(ev) { app.runQuery() });
+
+            var btnLaunch = document.getElementById("launch");
+			btnLaunch.addEventListener("click", function(ev) { app.runAppOrQuery() });
 
             var statusCursor = document.getElementById("status-cursor");
             if (statusCursor) {
@@ -1764,6 +1816,42 @@ eXide.app = (function(util) {
                 statusCursor.title = "Go to Line";
                 statusCursor.addEventListener("click", function() {
                     editor.gotoLine();
+                });
+            }
+
+            document.getElementById("status-copy-url").addEventListener("click", function() {
+                var pathEl = document.querySelector("#status .path");
+                var path = pathEl ? pathEl.textContent : null;
+                if (path) {
+                    navigator.clipboard.writeText(path).then(function() {
+                        app.showMessage("Path copied to clipboard");
+                    });
+                }
+            });
+
+            var btnToggleSplitPane = document.getElementById("toggle-split-pane");
+            if (btnToggleSplitPane) {
+                btnToggleSplitPane.addEventListener("click", function() {
+                    var prefs = preferences.preferences;
+                    prefs.splitPane = !prefs.splitPane;
+                    var pw = document.querySelector('.panel-west');
+                    if (pw) {
+                        pw.classList.toggle('split-pane', prefs.splitPane);
+                    }
+                    btnToggleSplitPane.setAttribute('aria-pressed', prefs.splitPane ? 'true' : 'false');
+                    btnToggleSplitPane.textContent = prefs.splitPane ? '\u229E' : '\u229F';
+                    if (prefs.splitPane) {
+                        editor.outline.toggle(true);
+                        editor.directory.toggle(true);
+                    } else {
+                        // Restore tabbed mode: activate whichever tab is marked active
+                        var tabs = document.querySelectorAll('#tabs-outline a.tab');
+                        var activeIndex = 0;
+                        tabs.forEach(function(t, i) { if (t.classList.contains('active')) activeIndex = i; });
+                        editor.directory.toggle(activeIndex === 0);
+                        editor.outline.toggle(activeIndex === 1);
+                    }
+                    preferences.save();
                 });
             }
 
@@ -1779,6 +1867,31 @@ eXide.app = (function(util) {
                 btnToggleResults.addEventListener("click", function() {
                     layout.toggle(resultPanel);
                     app.$savePanelPrefs();
+                });
+            }
+
+            var btnToggleMonitor = document.getElementById("toggle-monitor");
+            if (btnToggleMonitor) {
+                btnToggleMonitor.addEventListener("click", function() {
+                    app.toggleMonitor();
+                });
+            }
+
+            var btnMonitorClose = document.getElementById("monitor-close");
+            if (btnMonitorClose) {
+                btnMonitorClose.addEventListener("click", function() {
+                    app.toggleMonitor();
+                });
+            }
+
+            // delegate kill buttons in monitor
+            var monRunning = document.getElementById("mon-running-body");
+            if (monRunning) {
+                monRunning.addEventListener("click", function(ev) {
+                    var btn = ev.target.closest(".mon-kill");
+                    if (btn && monitor) {
+                        monitor.killQuery(btn.dataset.id);
+                    }
                 });
             }
 
@@ -1861,14 +1974,23 @@ eXide.app = (function(util) {
             menu.click("#menu-navigate-history", function() {
                 editor.historyBack();
             });
-            menu.click("#menu-navigate-toggle-results", function() {
+            menu.click("#menu-view-toggle-collections", function() {
+                app.toggleCollectionsPanel();
+            });
+            menu.click("#menu-view-toggle-results", function() {
                 app.toggleResultsPanel();
             });
-            menu.click("#menu-navigate-reset", function() {
-                if (resultPanel !== "south") {
-                    app.switchResultsPanel();
-                }
+            menu.click("#menu-view-toggle-monitor", function() {
+                app.toggleMonitor();
+            });
+            menu.click("#menu-view-reset", function() {
                 layout.reset();
+            });
+            menu.click("#menu-view-toggle-dark-mode", function() {
+                document.getElementById("toggle-dark-mode").click();
+            });
+            menu.click("#menu-view-toggle-fullscreen", function() {
+                util.requestFullScreen(document.getElementById("fullscreen"));
             });
 			menu.click("#menu-deploy-run", app.runAppOrQuery);
 
@@ -1914,7 +2036,17 @@ eXide.app = (function(util) {
                     if (app) {
                         var appEl = document.getElementById("toolbar-current-app");
                         appEl.textContent = app.abbrev;
-                        appEl.classList.remove("unknown");
+                        var appLink = document.getElementById("toolbar-current-app-link");
+                        appLink.classList.remove("unknown");
+                        var appUrl = app.url ? (eXide.configuration.context + app.url.replace(/\/{2,}/, "/") + "/") : "#";
+                        appLink.href = appUrl;
+                        var appIcon = document.getElementById("toolbar-current-app-icon");
+                        appIcon.src = eXide.configuration.context + "/apps/" + app.abbrev + "/icon.png";
+                        appIcon.style.display = "";
+                        appIcon.onerror = function() {
+                            this.style.display = "none";
+                            this.onerror = null;
+                        };
                         document.getElementById("menu-deploy-active").textContent = app.abbrev;
                         document.querySelector("#menu-deploy-live span").setAttribute("class", app.liveReload ? "fa fa-check-square-o" : "fa fa-square-o");
                         // update show/hide git stuff
@@ -1931,7 +2063,11 @@ eXide.app = (function(util) {
                     } else {
                         var appEl2 = document.getElementById("toolbar-current-app");
                         appEl2.textContent = "unknown";
-                        appEl2.classList.add("unknown");
+                        var appLink2 = document.getElementById("toolbar-current-app-link");
+                        appLink2.classList.add("unknown");
+                        appLink2.removeAttribute("href");
+                        var appIcon2 = document.getElementById("toolbar-current-app-icon");
+                        appIcon2.style.display = "none";
                         document.getElementById("menu-deploy-active").textContent = "unknown";
                         document.querySelectorAll(".current-branch").forEach(function(el) { el.style.display = "none"; });
                         document.getElementById("menu-git").style.display = "none";
@@ -1960,25 +2096,12 @@ eXide.app = (function(util) {
             });
             document.getElementById("toggle-dark-mode").addEventListener("click", function(ev) {
                 ev.preventDefault();
-                var current = preferences.get("theme");
-                var newTheme;
-                if (current === "light") newTheme = "dark";
-                else if (current === "dark") newTheme = "system";
-                else newTheme = "light";
-                preferences.preferences.theme = newTheme;
-                preferences.applyPreferences();
-                preferences.updateForm();
-                preferences.save();
+                // Toggle between light/dark for the current session only (does not save to preferences)
+                var isDark = document.body.classList.contains("dark");
+                var newTheme = isDark ? "light" : "dark";
+                app.setTheme({ isDark: newTheme === "dark" });
                 app.updateDarkModeIcon(newTheme);
             });
-            document.querySelectorAll(".results-container .layout-switcher").forEach(function(el) {
-                el.addEventListener("click", function(ev) {
-                    ev.preventDefault();
-                    app.switchResultsPanel();
-                    app.$savePanelPrefs();
-                });
-            });
-
             document.querySelectorAll('.navbar .toggle-btn[id$="-btn"]').forEach(function(btn) {
                 btn.addEventListener("click", function(e) {
                     e.preventDefault();

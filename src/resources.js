@@ -160,6 +160,8 @@ eXide.browse.ResourceBrowser = (function () {
 		this._setupIntersectionObserver();
 		this._setupKeyboardNav();
 		this._setupClickHandlers();
+		this._setupContextMenu();
+		this._setupDragDrop();
 
         var propsContentEl = document.getElementById("resource-properties-content");
         var propsDialogEl = document.getElementById("resource-properties-dialog");
@@ -259,6 +261,160 @@ eXide.browse.ResourceBrowser = (function () {
 					writable: item.writable
 				});
 			}
+		});
+	};
+
+	Constr.prototype._setupContextMenu = function() {
+		var self = this;
+		var ctxMenu = document.getElementById("browse-context-menu");
+		if (!ctxMenu) return;
+
+		this._browseCtxMenu = ctxMenu;
+		this._browseCtxItem = null;
+
+		this.tbody.addEventListener("contextmenu", function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			var tr = e.target.closest("tr");
+			if (!tr || !tr.dataset.index) return;
+			var idx = parseInt(tr.dataset.index, 10);
+			var item = self.data[idx];
+			if (!item) return;
+
+			self._browseCtxItem = item;
+
+			// Select the row
+			self._selectedIndices.clear();
+			self._selectedIndices.add(idx);
+			self._focusedRow = idx;
+			self._updateSelectionDisplay();
+			self._fireSelectionChanged();
+
+			// Enable/disable items
+			var isCollection = item.isCollection;
+			var isParent = item.name === "..";
+			ctxMenu.querySelector('[data-action="open"]').classList.toggle("disabled", !isCollection);
+			ctxMenu.querySelector('[data-action="create"]').classList.toggle("disabled", !isCollection);
+			ctxMenu.querySelector('[data-action="upload"]').classList.toggle("disabled", !isCollection);
+			ctxMenu.querySelector('[data-action="rename"]').classList.toggle("disabled", isParent);
+			ctxMenu.querySelector('[data-action="delete"]').classList.toggle("disabled", isParent);
+			ctxMenu.querySelector('[data-action="properties"]').classList.toggle("disabled", isParent);
+			ctxMenu.querySelector('[data-action="paste"]').classList.toggle("disabled", self.clipboard.length === 0);
+
+			// Position
+			var x = e.clientX;
+			var y = e.clientY;
+			ctxMenu.style.left = x + "px";
+			ctxMenu.style.top = y + "px";
+			ctxMenu.classList.add("visible");
+
+			var rect = ctxMenu.getBoundingClientRect();
+			if (rect.right > window.innerWidth) ctxMenu.style.left = (x - rect.width) + "px";
+			if (rect.bottom > window.innerHeight) ctxMenu.style.top = (y - rect.height) + "px";
+		});
+
+		ctxMenu.addEventListener("click", function(e) {
+			var menuItem = e.target.closest(".ctx-item");
+			if (!menuItem || menuItem.classList.contains("disabled")) return;
+			var action = menuItem.dataset.action;
+			ctxMenu.classList.remove("visible");
+			var item = self._browseCtxItem;
+			if (!item) return;
+			switch (action) {
+				case "open":
+					if (item.isCollection) {
+						var coll = item.name === ".." ? self._collection.replace(/\/[^\/]+$/, "") : item.key;
+						self.$triggerEvent("activateCollection", [coll, item.writable]);
+						self.update(coll, false);
+					}
+					break;
+				case "create": self.createCollection(); break;
+				case "upload":
+					if (typeof self._browseUploadCallback === "function") self._browseUploadCallback();
+					break;
+				case "download": eXide.app.download(item.key); break;
+				case "rename": self.startEditing(); break;
+				case "copy": self.copy(); break;
+				case "cut": self.cut(); break;
+				case "paste": self.paste(); break;
+				case "delete": self.deleteResource(item); break;
+				case "copy-path":
+					if (navigator.clipboard) navigator.clipboard.writeText(item.key);
+					break;
+				case "properties": self.properties(); break;
+			}
+		});
+
+		document.addEventListener("click", function() { ctxMenu.classList.remove("visible"); });
+		document.addEventListener("keydown", function(e) {
+			if (e.key === "Escape") ctxMenu.classList.remove("visible");
+		});
+	};
+
+	Constr.prototype._setupDragDrop = function() {
+		var self = this;
+
+		this.scrollContainer.addEventListener("dragover", function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			// Highlight collection row if hovering over one
+			self.tbody.querySelectorAll("tr.drag-highlight").forEach(function(el) {
+				el.classList.remove("drag-highlight");
+			});
+			var tr = e.target.closest("tr");
+			if (tr && tr.dataset.index) {
+				var idx = parseInt(tr.dataset.index, 10);
+				var item = self.data[idx];
+				if (item && item.isCollection && item.name !== "..") {
+					tr.classList.add("drag-highlight");
+				}
+			}
+			e.dataTransfer.dropEffect = "copy";
+		});
+
+		this.scrollContainer.addEventListener("dragleave", function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			self.tbody.querySelectorAll("tr.drag-highlight").forEach(function(el) {
+				el.classList.remove("drag-highlight");
+			});
+		});
+
+		this.scrollContainer.addEventListener("drop", function(e) {
+			e.preventDefault();
+			e.stopPropagation();
+			self.tbody.querySelectorAll("tr.drag-highlight").forEach(function(el) {
+				el.classList.remove("drag-highlight");
+			});
+
+			if (!eXide.app.$checkLogin()) return;
+			var files = Array.from(e.dataTransfer.files);
+			if (files.length === 0) return;
+
+			// Determine target collection
+			var targetKey = self._collection;
+			var tr = e.target.closest("tr");
+			if (tr && tr.dataset.index) {
+				var idx = parseInt(tr.dataset.index, 10);
+				var item = self.data[idx];
+				if (item && item.isCollection && item.name !== "..") {
+					targetKey = item.key;
+				}
+			}
+
+			// Upload files
+			var promises = files.map(function(file) {
+				var formData = new FormData();
+				formData.append("file[]", file);
+				formData.append("path", file.webkitRelativePath || file.name);
+				formData.append("collection", targetKey);
+				return fetch("modules/upload.xq", { method: "POST", body: formData })
+					.then(function(r) { return r.json(); });
+			});
+			Promise.all(promises).then(function() {
+				self.reload();
+				eXide.util.message(files.length + " file(s) uploaded to " + targetKey);
+			});
 		});
 	};
 
@@ -701,6 +857,8 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
     Constr.prototype.properties = function() {
+		if (!eXide.app.$checkLogin())
+			return;
 		var selected = this.getSelectedRows();
     	if (selected.length == 0) {
 			return;
@@ -930,8 +1088,9 @@ eXide.browse.Upload = (function () {
 	    });
 	}
 
-	Constr = function (container) {
-		this.container = typeof container === "string" ? document.querySelector(container) : container;
+	Constr = function () {
+		var self = this;
+		this.container = document.getElementById("upload-dialog");
 
 		this.events = {
 			"done": []
@@ -944,8 +1103,8 @@ eXide.browse.Upload = (function () {
 		}
 
 		var filesTable = document.getElementById("files");
-		var thead = this.container.querySelector("#file_upload thead");
-		var spinner = document.getElementById("eXide-browse-spinner");
+		var thead = this.container.querySelector("#file_upload_table thead");
+		var spinner = null; // no spinner in standalone dialog
 		var collectionInput = this.container.querySelector('input[name="collection"]');
 		var deployInput = this.container.querySelector('input[name="deploy"]');
 
@@ -968,24 +1127,31 @@ eXide.browse.Upload = (function () {
 		    }
 		}
 
-		var self = this;
-		var doneBtn = document.getElementById("eXide-browse-upload-done");
-		if (doneBtn) {
-		    doneBtn.addEventListener("click", function() {
-		        filesTable.innerHTML = "";
-		        self.$triggerEvent("done", []);
-		    });
-		}
+		this._dialog = eXide.util.DialogManager.create(this.container, {
+			title: "Upload Files",
+			modal: true,
+			width: 500,
+			buttons: {
+				"Close": function() {
+					this.close();
+					filesTable.innerHTML = "";
+					self.$triggerEvent("done", []);
+				}
+			}
+		});
 	}
 
     // Extend eXide.events.Sender for event support
     eXide.util.oop.inherit(Constr, eXide.events.Sender);
 
+	Constr.prototype.open = function() {
+		this._dialog.open();
+	};
+
 	Constr.prototype.update = function(collection) {
-        console.log("Upload collection: %s", collection);
         var filesTable = document.getElementById("files");
         if (filesTable) filesTable.innerHTML = "";
-        var thead = this.container.querySelector("#file_upload thead");
+        var thead = this.container.querySelector("#file_upload_table thead");
         if (thead) thead.style.display = "none";
 		var collectionInput = this.container.querySelector('input[name="collection"]');
 		if (collectionInput) collectionInput.value = collection;
@@ -1039,9 +1205,7 @@ eXide.browse.Browser = (function () {
 		this.btnUpload = createButton(toolbar, "Upload Files", "upload", 4, "cloud-upload");
 		this.btnUpload.addEventListener("click", function (ev) {
 			ev.preventDefault();
-			container.querySelector(".eXide-browse-resources").style.display = "none";
-			container.querySelector(".eXide-browse-upload").style.display = "";
-			self.$triggerEvent("upload-open", [true]);
+			self.upload.open();
 		});
 
 		this.btnDeleteResource = createButton(toolbar, "Delete", "delete-resource", 5, "trash-o");
@@ -1076,17 +1240,17 @@ eXide.browse.Browser = (function () {
 		this.selection = container.querySelector(".eXide-browse-form input");
 		this.container = container;
 		this.resources = new eXide.browse.ResourceBrowser(container, container);
-		var uploadEl = container.querySelector(".eXide-browse-upload");
-		if (uploadEl) uploadEl.style.display = "none";
-		this.upload = new eXide.browse.Upload(uploadEl);
+		this.upload = new eXide.browse.Upload();
 
 		this.resources.addEventListener("activate", this, this.onActivateResource);
 		this.resources.addEventListener("activateCollection", this, this.onActivateCollection);
 
+		// Wire upload callback for context menu
+		this.resources._browseUploadCallback = function() {
+			self.upload.open();
+		};
+
 		this.upload.addEventListener("done", this, function () {
-			container.querySelector(".eXide-browse-resources").style.display = "";
-			container.querySelector(".eXide-browse-upload").style.display = "none";
-			self.$triggerEvent("upload-open", [false]);
 			this.reload();
 		});
 

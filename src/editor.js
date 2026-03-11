@@ -515,7 +515,7 @@ eXide.edit.Editor = (function () {
         } else {
             text = "";
         }
-        var newDocument = new eXide.edit.Document("untitled " + newDocId,
+        var newDocument = new eXide.edit.Document("untitled-" + newDocId,
                 "__new__" + newDocId, text);
         newDocument.saved = true;
         if (type) {
@@ -561,7 +561,7 @@ eXide.edit.Editor = (function () {
                 }
             }
             newDocId++;
-            var newDocument = new eXide.edit.Document("untitled " + newDocId,
+            var newDocument = new eXide.edit.Document("untitled-" + newDocId,
                     "__new__" + newDocId, data);
             newDocument.setSyntax(mode);
             newDocument.template = template;
@@ -698,6 +698,12 @@ eXide.edit.Editor = (function () {
         this.editor.dispatch({
             effects: this._languageCompartment.reconfigure(langExt)
         });
+        // Clear old diagnostics, invalidate AST, and re-validate with the new mode helper
+        this.activeDoc._annotations = [];
+        editorUtils.clearAnnotations(this.editor);
+        this.activeDoc.ast = null;
+        this.activeDoc.lastValidation = 0;
+        this.validator.triggerNow(this.activeDoc);
     };
 
     Constr.prototype.$setMode = function(doc, setMime) {

@@ -52,7 +52,7 @@ To build eXide from scratch:
 ```bash
 git clone git://github.com/eXist-db/eXide.git
 cd eXide
-git submodule update --init --recursive
+
 ```
 
 Next, call `npm install` once:
@@ -81,7 +81,7 @@ To run tests locally, build and install eXide on localhost, and start the tests:
 # clone the repo
 git clone git://github.com/eXist-db/eXide.git
 cd eXide
-git submodule update --init --recursive
+
 # build exide
 npm install
 # at this point if you are planning to build another branch change it now

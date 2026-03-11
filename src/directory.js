@@ -32,6 +32,7 @@ eXide.edit.Directory = (function () {
 		init();
 		initContextMenu();
 		initDragDrop();
+		initFlatView();
 
 		var filterEl = document.getElementById("directory-filter");
 		if (filterEl) {
@@ -210,13 +211,17 @@ eXide.edit.Directory = (function () {
 	function onContextMenu(d) {
 		d3.event.preventDefault();
 		d3.event.stopPropagation();
+		showContextMenu(d, d3.event, this);
+	}
+
+	function showContextMenu(d, e, el) {
 		if (!ctxMenu) return;
 
 		ctxNode = d;
-		ctxEl = this;
+		ctxEl = el;
 
 		// Highlight the target node
-		document.querySelectorAll(".tree li.ctx-highlight").forEach(function(el) {
+		document.querySelectorAll(".ctx-highlight").forEach(function(el) {
 			el.classList.remove("ctx-highlight");
 		});
 		ctxEl.classList.add("ctx-highlight");
@@ -233,8 +238,8 @@ eXide.edit.Directory = (function () {
 		ctxMenu.querySelector('[data-action="properties"]').classList.toggle("disabled", isRoot);
 
 		// Position the menu
-		var x = d3.event.clientX;
-		var y = d3.event.clientY;
+		var x = e.clientX;
+		var y = e.clientY;
 		ctxMenu.style.left = x + "px";
 		ctxMenu.style.top = y + "px";
 		ctxMenu.classList.add("visible");
@@ -251,7 +256,7 @@ eXide.edit.Directory = (function () {
 
 	function hideContextMenu() {
 		if (ctxMenu) ctxMenu.classList.remove("visible");
-		document.querySelectorAll(".tree li.ctx-highlight").forEach(function(el) {
+		document.querySelectorAll(".ctx-highlight").forEach(function(el) {
 			el.classList.remove("ctx-highlight");
 		});
 	}
@@ -303,6 +308,7 @@ eXide.edit.Directory = (function () {
 						eXide.util.Dialog.warning("Create Collection Error", data.message);
 					} else {
 						reloadNode(d, el);
+						if (flatViewActive) loadFlatView(flatCollection);
 						eXide.app.syncManager(d.key);
 					}
 				});
@@ -324,6 +330,7 @@ eXide.edit.Directory = (function () {
 			if (files.length === 0) return;
 			uploadFiles(files, d.key).then(function() {
 				reloadNode(d, el);
+				if (flatViewActive) loadFlatView(flatCollection);
 				eXide.app.syncManager(d.key);
 			});
 		});
@@ -348,8 +355,7 @@ eXide.edit.Directory = (function () {
 
 	function renameItem(d, el) {
 		if (!eXide.app.$checkLogin()) return;
-		var sel = d3.select(el);
-		var spanEl = sel.select("span").node();
+		var spanEl = el.querySelector("span");
 		if (!spanEl) return;
 
 		var oldName = d.name;
@@ -373,11 +379,13 @@ eXide.edit.Directory = (function () {
 					if (data.status === "fail") {
 						eXide.util.Dialog.warning("Rename Error", data.message);
 					} else {
-						// Reload the parent
+						// Reload the parent in tree view
 						var parentSel = d3.select("[data-key='" + parentKey + "']");
 						if (!parentSel.empty()) {
 							build.call(parentSel);
 						}
+						// Refresh flat view if active
+						if (flatViewActive) loadFlatView(flatCollection);
 						eXide.app.syncManager(parentKey);
 					}
 				});
@@ -401,12 +409,14 @@ eXide.edit.Directory = (function () {
 					if (data.status === "fail") {
 						eXide.util.Dialog.warning("Delete Error", data.message);
 					} else {
-						// Reload the parent collection
+						// Reload the parent collection in tree view
 						var parentKey = d.key.substring(0, d.key.lastIndexOf("/"));
 						var parentSel = d3.select("[data-key='" + parentKey + "']");
 						if (!parentSel.empty()) {
 							build.call(parentSel);
 						}
+						// Refresh flat view if active
+						if (flatViewActive) loadFlatView(flatCollection);
 						eXide.app.syncManager(parentKey);
 					}
 				});
@@ -421,6 +431,7 @@ eXide.edit.Directory = (function () {
 	}
 
 	function showProperties(d) {
+		if (!eXide.app.$checkLogin()) return;
 		var contentEl = document.getElementById("resource-properties-content");
 		if (!contentEl) return;
 		var params = new URLSearchParams();
@@ -478,6 +489,11 @@ eXide.edit.Directory = (function () {
 
 	function reloadNode(d, el) {
 		if (!d.isCollection) return;
+		// Flat view items don't have D3 bindings; just refresh the flat view
+		if (flatViewActive && el && el.classList.contains("dir-flat-item")) {
+			loadFlatView(flatCollection);
+			return;
+		}
 		d.isLoaded = false;
 		d.isOpen = true;
 		build.call(el);
@@ -540,9 +556,189 @@ eXide.edit.Directory = (function () {
 	}
 
 	function clearDropHighlight() {
-		document.querySelectorAll(".tree li.ctx-highlight").forEach(function(el) {
+		document.querySelectorAll(".ctx-highlight").forEach(function(el) {
 			el.classList.remove("ctx-highlight");
 		});
+	}
+
+	// ── Flat (folder) view ───────────────────────────────────────────────
+
+	var flatViewActive = false;
+	var flatCollection = "/db";
+
+	function initFlatView() {
+		var toggleBtn = document.getElementById("toggle-dir-view");
+		if (toggleBtn) {
+			toggleBtn.addEventListener("click", function() {
+				var newView = flatViewActive ? "tree" : "folder";
+				if (typeof eXide !== 'undefined' && eXide.app && eXide.app.setCollectionsView) {
+					eXide.app.setCollectionsView(newView);
+				}
+				// Persist to preferences
+				if (typeof eXide !== 'undefined' && eXide.app && eXide.app.getPreference) {
+					try {
+						var prefs = JSON.parse(localStorage.getItem('eXide.preferences') || '{}');
+						prefs.collectionsView = newView;
+						localStorage.setItem('eXide.preferences', JSON.stringify(prefs));
+					} catch(e) {}
+				}
+			});
+		}
+
+		// Refresh button
+		var refreshBtn = document.getElementById("refresh-dir");
+		if (refreshBtn) {
+			refreshBtn.addEventListener("click", function() {
+				if (flatViewActive) {
+					loadFlatView(flatCollection);
+				} else {
+					// Reload tree view root
+					var rootSel = d3.select("#tree-root");
+					if (!rootSel.empty()) {
+						var d = rootSel.datum();
+						if (d) {
+							d.isLoaded = false;
+							d.isOpen = true;
+							build.call(rootSel.node());
+						}
+					}
+				}
+			});
+		}
+
+		// Drag & drop upload for flat view
+		var flatView = document.getElementById("dir-flat-view");
+		if (flatView) {
+			flatView.addEventListener("dragover", function(e) {
+				e.preventDefault();
+				e.stopPropagation();
+				clearDropHighlight();
+				var target = findFlatDropTarget(e.target);
+				if (target) target.classList.add("ctx-highlight");
+				e.dataTransfer.dropEffect = "copy";
+			});
+			flatView.addEventListener("dragleave", function(e) {
+				e.preventDefault();
+				e.stopPropagation();
+				clearDropHighlight();
+			});
+			flatView.addEventListener("drop", function(e) {
+				e.preventDefault();
+				e.stopPropagation();
+				clearDropHighlight();
+				if (!eXide.app.$checkLogin()) return;
+				var files = Array.from(e.dataTransfer.files);
+				if (files.length === 0) return;
+				// Drop on a collection item uploads there; otherwise use current collection
+				var target = findFlatDropTarget(e.target);
+				var targetKey = flatCollection;
+				if (target && target._flatItem && target._flatItem.isCollection) {
+					targetKey = target._flatItem.key;
+				}
+				uploadFiles(files, targetKey).then(function() {
+					loadFlatView(flatCollection);
+					eXide.app.syncManager(targetKey);
+				});
+			});
+		}
+	}
+
+	function findFlatDropTarget(el) {
+		while (el) {
+			if (el.classList && el.classList.contains("dir-flat-collection")) return el;
+			if (el.id === "dir-flat-view") return null;
+			el = el.parentElement;
+		}
+		return null;
+	}
+
+	function loadFlatView(collection) {
+		flatCollection = collection;
+		updateFlatBreadcrumbs(collection);
+		var list = document.getElementById("dir-flat-list");
+		if (!list) return;
+		list.innerHTML = '<li class="dir-flat-loading">Loading\u2026</li>';
+
+		fetch("modules/collections.xq?root=" + encodeURIComponent(collection) + "&view=r")
+			.then(function(r) { return r.json(); })
+			.then(function(data) {
+				list.innerHTML = "";
+				var items = data.items || [];
+				if (items.length === 0) {
+					list.innerHTML = '<li class="dir-flat-empty">Empty collection</li>';
+					return;
+				}
+				items.forEach(function(item) {
+					if (item.name === "..") {
+						// parent link
+						var li = document.createElement("li");
+						li.className = "dir-flat-item dir-flat-collection";
+						li.innerHTML = '<span>../</span>';
+						li.addEventListener("click", function() {
+							var parent = collection.substring(0, collection.lastIndexOf("/")) || "/db";
+							loadFlatView(parent);
+						});
+						list.appendChild(li);
+						return;
+					}
+					var li = document.createElement("li");
+					var isOpen = !item.isCollection && !!eXide.app.getEditor().getDocument(item.key);
+					li.className = "dir-flat-item" + (item.isCollection ? " dir-flat-collection" : "") + (isOpen ? " open" : "");
+					var iconClass = item.isCollection ? "fa fa-folder" : "fa " + fileIcon(item);
+					li.innerHTML = '<i class="' + iconClass + '"></i> <span>' + escapeHtml(item.name) + '</span>';
+					if (item.isCollection) {
+						li._flatItem = item;
+						li.addEventListener("click", function() {
+							loadFlatView(item.key);
+						});
+					} else {
+						li.addEventListener("click", function() {
+							eXide.app.$doOpenDocument({ name: item.name, path: item.key, writable: item.writable });
+						});
+					}
+					(function(itemData, liEl) {
+						liEl.addEventListener("contextmenu", function(e) {
+							e.preventDefault();
+							e.stopPropagation();
+							showContextMenu(itemData, e, liEl);
+						});
+					})(item, li);
+					list.appendChild(li);
+				});
+			})
+			.catch(function() {
+				list.innerHTML = '<li class="dir-flat-empty">Failed to load</li>';
+			});
+	}
+
+	function updateFlatBreadcrumbs(collection) {
+		var bc = document.getElementById("dir-flat-breadcrumbs");
+		if (!bc) return;
+		bc.innerHTML = "";
+		var parts = collection.split("/").filter(function(p) { return p.length > 0; });
+		var path = "";
+		for (var i = 0; i < parts.length; i++) {
+			path += "/" + parts[i];
+			var sep = document.createElement("span");
+			sep.className = "dir-bc-sep";
+			sep.textContent = "/";
+			bc.appendChild(sep);
+			var a = document.createElement("a");
+			a.href = "#";
+			a.textContent = parts[i];
+			a.dataset.path = path;
+			a.addEventListener("click", function(e) {
+				e.preventDefault();
+				loadFlatView(this.dataset.path);
+			});
+			bc.appendChild(a);
+		}
+	}
+
+	function escapeHtml(str) {
+		var d = document.createElement("div");
+		d.textContent = str;
+		return d.innerHTML;
 	}
 
 	// ── Prototype ────────────────────────────────────────────────────────
@@ -564,6 +760,16 @@ eXide.edit.Directory = (function () {
 			var sel = d3.select("[data-key='"+ key +"']")
 			if(sel.empty()) {return}
 			build.call(sel)
+			// Also refresh flat view if active and showing the same collection
+			if (flatViewActive && key === flatCollection) {
+				loadFlatView(flatCollection);
+			}
+		},
+		setFlatViewActive: function(active) {
+			flatViewActive = !!active;
+			if (flatViewActive) {
+				loadFlatView(flatCollection);
+			}
 		},
 		toggleEdit : function(key, state) {
 

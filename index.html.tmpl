@@ -144,14 +144,6 @@
                                     <a href="#" id="menu-navigate-history" data-command="historyBack">
                                         <span class="fa fa-history"/>Go to last edit</a>
                                 </li>
-                                <li>
-                                    <a href="#" id="menu-navigate-toggle-results" data-command="toggleQueryResults">
-                                        <span class="fa fa-columns"/>Toggle results panel</a>
-                                </li>
-                                <li>
-                                    <a href="#" id="menu-navigate-reset">
-                                        <span class="fa fa-refresh"/>Reset editor layout</a>
-                                </li>
                             </ul>
                         </li>
                         <li title="buffers">
@@ -234,6 +226,35 @@
                             </ul>
                         </li>
                         <li>
+                            <a href="#">View</a>
+                            <ul>
+                                <li>
+                                    <a href="#" id="menu-view-toggle-collections">
+                                        <span class="fa fa-folder-o"/>Toggle collections panel</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-view-toggle-results">
+                                        <span class="fa fa-columns"/>Toggle results panel</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-view-toggle-monitor">
+                                        <span class="fa fa-dashboard"/>Toggle monitoring panel</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-view-reset">
+                                        <span class="fa fa-refresh"/>Reset editor layout</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-view-toggle-dark-mode">
+                                        <span class="fa fa-moon-o"/>Toggle dark mode</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-view-toggle-fullscreen">
+                                        <span class="fa fa-arrows-alt"/>Toggle fullscreen</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
                             <a href="#">Help</a>
                             <ul>
                                 <li>
@@ -259,10 +280,13 @@
                         <button id="open"><i class="fa fa-folder-open-o"></i> Open</button>
                         <button id="save"><i class="fa fa-floppy-o"></i> Save</button>
                         <button id="close"><i class="fa fa-times"></i> Close</button>
-                        <button id="eval" title="Evaluate current query inside eXide"><i class="fa fa-cogs"></i> Eval</button>
-                        <button id="run" title="Run current query or project in new tab/window"><i class="fa fa-play"></i> Run</button>
+                        <button id="run" title="Evaluate this query in eXide"><i class="fa fa-play"></i> Run</button>
+                        <button id="launch" title="Launch this saved query in a new browser tab"><i class="fa fa-external-link"></i> Launch</button>
+                    </span>
+                    <span class="toolbar-buttons toolbar-buttons-right">
                         <button id="toggle-outline" title="Toggle outline panel"><svg class="toolbar-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="1.5"/><line x1="5" y1="2" x2="5" y2="14"/></svg></button>
                         <button id="toggle-results" title="Toggle results panel"><svg class="toolbar-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="1.5"/><line x1="1" y1="10" x2="15" y2="10"/></svg></button>
+                        <button id="toggle-monitor" title="Toggle Monitor"><svg class="toolbar-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="1.5"/><line x1="11" y1="2" x2="11" y2="14"/></svg></button>
                         <button id="toggle-dark-mode" title="Toggle Dark Mode"><i class="fa fa-moon-o"></i></button>
                         <button id="toggle-fullscreen" title="Toggle Fullscreen Mode"><i class="fa fa-arrows-alt"></i></button>
                     </span>
@@ -291,11 +315,23 @@
                                 </div>
                             </div>
                             <div id="directory-body">
-                                <div class="panel-scroller">
-                                    <div class="tree">
-                                        <ul id="directory">
-                                            <li id="tree-root"/>
-                                        </ul>
+                                <div id="dir-toolbar">
+                                    <button id="toggle-dir-view" title="Toggle tree / folder view"><i class="fa fa-folder-open-o"/></button>
+                                    <button id="refresh-dir" title="Reload"><i class="fa fa-refresh"/></button>
+                                </div>
+                                <div id="dir-tree-view">
+                                    <div class="panel-scroller">
+                                        <div class="tree">
+                                            <ul id="directory">
+                                                <li id="tree-root"/>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="dir-flat-view" style="display:none">
+                                    <div id="dir-flat-breadcrumbs" class="dir-breadcrumbs"/>
+                                    <div class="panel-scroller">
+                                        <ul id="dir-flat-list" class="dir-flat-list"/>
                                     </div>
                                 </div>
                                 <div class="panel-filter">
@@ -329,10 +365,10 @@
                                 <div class="content" id="editor"/>
                                 <div id="status-bar">
                                     <span id="status">
-                                        <a href="#" target="blank" title="Run in new tab">
-                                            <span class="fa fa-share"/>
-                                        </a>
                                         <span class="path">Path</span>
+                                        <button id="status-copy-url" class="status-copy-btn" title="Copy path to clipboard" style="display:none">
+                                            <span class="fa fa-clipboard"/>
+                                        </button>
                                     </span>
                                     <span class="status-separator">|</span>
                                     <span id="status-cursor">Ln 1, Col 1</span>
@@ -345,7 +381,10 @@
                                     <span class="status-right" id="status-db-version"></span>
                                     <span class="status-segment" id="status-app" title="Current application">
                                         <span class="status-segment-label">APP</span>
-                                        <span class="status-segment-value unknown" id="toolbar-current-app">unknown</span>
+                                        <img id="toolbar-current-app-icon" class="status-app-icon" style="display:none" alt="" />
+                                        <a id="toolbar-current-app-link" class="status-segment-value unknown" target="_blank" rel="noopener">
+                                            <span id="toolbar-current-app">unknown</span>
+                                        </a>
                                     </span>
                                     <span class="status-segment status-segment-clickable" id="status-type" title="File type — click to change">
                                         <span class="status-segment-label">TYPE</span>
@@ -353,15 +392,15 @@
                                         <span class="status-segment-arrow">&#x25B2;</span>
                                     </span>
                                     <div id="type-popover">
+                                        <div class="type-popover-item" data-value="css">CSS</div>
+                                        <div class="type-popover-item" data-value="html">HTML</div>
+                                        <div class="type-popover-item" data-value="javascript">Javascript</div>
+                                        <div class="type-popover-item" data-value="json">JSON</div>
+                                        <div class="type-popover-item" data-value="less">Less</div>
+                                        <div class="type-popover-item" data-value="markdown">Markdown</div>
                                         <div class="type-popover-item" data-value="text">Text</div>
                                         <div class="type-popover-item" data-value="xml">XML</div>
-                                        <div class="type-popover-item" data-value="html">HTML</div>
                                         <div class="type-popover-item" data-value="xquery">XQuery</div>
-                                        <div class="type-popover-item" data-value="javascript">Javascript</div>
-                                        <div class="type-popover-item" data-value="css">CSS</div>
-                                        <div class="type-popover-item" data-value="less">Less</div>
-                                        <div class="type-popover-item" data-value="json">JSON</div>
-                                        <div class="type-popover-item" data-value="markdown">Markdown</div>
                                     </div>
                                 </div>
                                 <div id="exide-err-panel">
@@ -378,59 +417,64 @@
                                     <span title="Click to close results"/>
                                 </div>
                                 <div class="navbar">
-                                    <select name="output-mode" id="serialization-mode">
-                                        <option value="adaptive">Adaptive Output</option>
-                                        <option value="json">JSON Output</option>
-                                        <option value="text">Text Output</option>
-                                        <option value="xml">XML Output</option>
-                                        <option value="html5">HTML5 Output</option>
-                                        <option value="xhtml">XHTML Output</option>
-                                        <option value="xhtml5">XHTML5 Output</option>
-                                        <option value="microxml">MicroXML Output</option>
-                                        <option disabled="disabled">-</option>
-                                        <option value="direct">Direct Output</option>
-                                    </select>
-                                    <a class="toggle-btn active" id="indent-results-btn" href="#" title="Indent results (effective in Adaptive, JSON, (X)HTML, and XML Output modes)">
-                                        <i class="fa fa-indent" aria-hidden="true"></i>
-                                        <input type="checkbox" id="indent-results" name="indent-results" checked="checked" style="display:none"/>
-                                    </a>
-                                    <a class="toggle-btn active" id="auto-expand-btn" href="#" title="Highlight Index Matches: highlight hits from index-based queries (e.g., Lucene full text, Range)">
-                                        <i class="fa fa-bolt" aria-hidden="true"></i>
-                                        <input type="checkbox" id="auto-expand-matches" name="auto-expand-matches" checked="checked" style="display:none"/>
-                                    </a>
-                                    <a class="toggle-btn" id="live-preview-btn" href="#" title="Live Preview: auto-update results while typing XQuery or saving HTML">
-                                        <i class="fa fa-eye" aria-hidden="true"></i>
-                                        <input type="checkbox" id="live-preview" name="live-preview" style="display:none"/>
-                                    </a>
-                                    <label title="Number of results per page">
-                                        <i class="fa fa-list-ol" aria-hidden="true"></i>
-                                        <input value="10" id="number-of-results" style="width:3ch;"/>
-                                    </label>
-                                    <a class="toggle-btn first-page" href="#" title="First page">
-                                        <i class="fa fa-chevron-left" aria-hidden="true"></i><i class="fa fa-chevron-left nav-double" aria-hidden="true"></i>
-                                    </a>
-                                    <a class="toggle-btn previous" href="#" title="Previous page">
-                                        <i class="fa fa-chevron-left" aria-hidden="true"></i>
-                                    </a>
-                                    <a class="toggle-btn result-prev" href="#" title="Previous result">
-                                        <i class="fa fa-chevron-up" aria-hidden="true"></i>
-                                    </a>
-                                    <a class="toggle-btn result-next" href="#" title="Next result">
-                                        <i class="fa fa-chevron-down" aria-hidden="true"></i>
-                                    </a>
-                                    <a class="toggle-btn next" href="#" title="Next page">
-                                        <i class="fa fa-chevron-right" aria-hidden="true"></i>
-                                    </a>
-                                    <a class="toggle-btn last-page" href="#" title="Last page">
-                                        <i class="fa fa-chevron-right" aria-hidden="true"></i><i class="fa fa-chevron-right nav-double" aria-hidden="true"></i>
-                                    </a>
-                                    <a class="toggle-btn" id="copy-all-clipboard" href="#" title="Copy all displayed results to clipboard">
-                                        <i class="fa fa-clipboard" aria-hidden="true"></i>
-                                    </a>
-                                    <span class="current"/>
-                                    <a class="toggle-btn layout-switcher" href="#" title="Switch results panel location between bottom and right">
-                                        <i class="fa fa-columns"></i>
-                                    </a>
+                                    <div class="navbar-left">
+                                        <select name="output-mode" id="serialization-mode" title="Serialization method">
+                                            <option value="adaptive">Adaptive</option>
+                                            <option value="json">JSON</option>
+                                            <option value="text">Text</option>
+                                            <option value="xml">XML</option>
+                                            <option value="html5">HTML5</option>
+                                            <option value="xhtml">XHTML</option>
+                                            <option value="xhtml5">XHTML5</option>
+                                            <option value="microxml">MicroXML</option>
+                                            <option disabled="disabled">-</option>
+                                            <option value="direct">Direct</option>
+                                        </select>
+                                        <a class="toggle-btn active" id="indent-results-btn" href="#" title="Indent results (effective in Adaptive, JSON, (X)HTML, and XML Output modes)">
+                                            <i class="fa fa-indent" aria-hidden="true"></i>
+                                            <input type="checkbox" id="indent-results" name="indent-results" checked="checked" style="display:none"/>
+                                        </a>
+                                        <a class="toggle-btn active" id="auto-expand-btn" href="#" title="Highlight Index Matches: highlight hits from index-based queries (e.g., Lucene full text, Range)">
+                                            <i class="fa fa-lightbulb-o" aria-hidden="true"></i>
+                                            <input type="checkbox" id="auto-expand-matches" name="auto-expand-matches" checked="checked" style="display:none"/>
+                                        </a>
+                                    </div>
+                                    <div class="navbar-center">
+                                        <a class="toggle-btn first-page" href="#" title="First page">
+                                            <i class="fa fa-chevron-left" aria-hidden="true"></i><i class="fa fa-chevron-left nav-double" aria-hidden="true"></i>
+                                        </a>
+                                        <a class="toggle-btn previous" href="#" title="Previous page">
+                                            <i class="fa fa-chevron-left" aria-hidden="true"></i>
+                                        </a>
+                                        <a class="toggle-btn result-prev" href="#" title="Previous result">
+                                            <i class="fa fa-chevron-up" aria-hidden="true"></i>
+                                        </a>
+                                        <span class="current"/>
+                                        <a class="toggle-btn result-next" href="#" title="Next result">
+                                            <i class="fa fa-chevron-down" aria-hidden="true"></i>
+                                        </a>
+                                        <a class="toggle-btn next" href="#" title="Next page">
+                                            <i class="fa fa-chevron-right" aria-hidden="true"></i>
+                                        </a>
+                                        <a class="toggle-btn last-page" href="#" title="Last page">
+                                            <i class="fa fa-chevron-right" aria-hidden="true"></i><i class="fa fa-chevron-right nav-double" aria-hidden="true"></i>
+                                        </a>
+                                    </div>
+                                    <div class="navbar-right">
+                                        <select id="number-of-results" title="Number of results per page">
+                                            <option value="10" selected="selected">10</option>
+                                            <option value="25">25</option>
+                                            <option value="50">50</option>
+                                            <option value="100">100</option>
+                                        </select>
+                                        <a class="toggle-btn" id="live-preview-btn" href="#" title="Live Preview: auto-update results while typing XQuery or saving HTML">
+                                            <i class="fa fa-eye" aria-hidden="true"></i>
+                                            <input type="checkbox" id="live-preview" name="live-preview" style="display:none"/>
+                                        </a>
+                                        <a class="toggle-btn" id="copy-all-clipboard" href="#" title="Copy all displayed results to clipboard">
+                                            <i class="fa fa-clipboard" aria-hidden="true"></i>
+                                        </a>
+                                    </div>
                                 </div>
                                 <div id="results-body">
                                     <div class="marker-layer">
@@ -440,9 +484,79 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="panel-east results-container">
+                        <div class="panel-east" id="monitor-panel">
                             <div class="resize-handle">
-                                <span title="Click to close results"/>
+                                <span title="Click to close monitor"/>
+                            </div>
+                            <div id="monitor-content">
+                                <div class="mon-bar">
+                                    <div class="mon-title">MONITORING</div>
+                                    <div class="mon-controls">
+                                        <button id="monitor-close" class="mon-ctrl" title="Close monitoring panel"><i class="fa fa-times"/></button>
+                                        <select id="monitor-interval" class="mon-ctrl">
+                                            <option value="1000">1s</option>
+                                            <option value="2000" selected="selected">2s</option>
+                                            <option value="5000">5s</option>
+                                            <option value="10000">10s</option>
+                                            <option value="30000">30s</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mon-body">
+                                    <div class="mon-section">
+                                        <div class="mon-sec-hd">JAVA MEMORY</div>
+                                        <div class="mon-mem-wrap">
+                                            <div class="mon-mem-nums">
+                                                <span>Used / Max</span>
+                                                <span id="mon-mem-nums">-- / -- MB</span>
+                                            </div>
+                                            <div class="mon-mem-bg">
+                                                <div class="mon-mem-committed" id="mon-mem-committed" style="width:0%"></div>
+                                                <div class="mon-mem-used" id="mon-mem-used" style="width:0%"></div>
+                                            </div>
+                                            <div class="mon-mem-legend">
+                                                <span><i class="mon-dot mon-dot-used"></i> used</span>
+                                                <span><i class="mon-dot mon-dot-committed"></i> committed</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mon-section">
+                                        <div class="mon-sec-hd">RUNNING QUERIES <span id="mon-running-count" class="mon-badge">0</span></div>
+                                        <div class="mon-table-wrap">
+                                            <table class="mon-tbl">
+                                                <colgroup>
+                                                    <col style="width:18px"/>
+                                                    <col style="width:36px"/>
+                                                    <col/>
+                                                </colgroup>
+                                                <thead><tr><th></th><th>Elapsed</th><th>Source</th></tr></thead>
+                                                <tbody id="mon-running-body">
+                                                    <tr><td colspan="3" class="mon-empty">none</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="mon-section">
+                                        <div class="mon-sec-hd">RECENT QUERIES</div>
+                                        <div class="mon-table-wrap">
+                                            <table class="mon-tbl">
+                                                <colgroup>
+                                                    <col style="width:36px"/>
+                                                    <col/>
+                                                </colgroup>
+                                                <thead><tr><th>ms</th><th>Source</th></tr></thead>
+                                                <tbody id="mon-recent-body">
+                                                    <tr><td colspan="2" class="mon-empty">none</td></tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="mon-chips">
+                                        <div class="mon-chip" id="mon-chip-db">DB <b>--</b></div>
+                                        <div class="mon-chip" id="mon-chip-uptime">Up <b>--</b></div>
+                                        <div class="mon-chip" id="mon-chip-wait">Wait <b>0</b></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -456,42 +570,11 @@
                         </div>
                         <div class="eXide-browse-main">
                             <div class="eXide-browse-resources"/>
-                            <div class="eXide-browse-upload">
-                                <p>Drop files here or click on the button below to upload them
-                          to the selected collection. Maximum file size is 100MB.</p>
-                                <form class="file_upload" action="modules/upload.xq" method="POST" enctype="multipart/form-data">
-                                    <div class="options">
-                                        <input type="checkbox" name="deploy" id="auto-deploy"/> 
-                                        <label for="auto-deploy">Auto deploy uploaded .xar packages</label>
-                                    </div>
-                                    <div class="file_upload_drop">Drop files here ...</div>
-                                    <div class="file_upload_body">
-                                        <div class="fileinput-button">
-                                            <input id="file_upload" type="file" name="file[]" multiple="multiple"/>
-                                            <button class="eXide-btn">
-                                                <span class="fa fa-cloud-upload"/>
-                                                Upload Files
-                                            </button>
-                                        </div>
-                                        <div class="fileinput-button">
-                                            <input id="dir_upload" type="file" name="file[]" multiple="multiple" directory="" webkitdirectory=""/>
-                                            <button class="eXide-btn">
-                                                <span class="fa fa-folder-open-o"/>
-                                                Upload Directory
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <input type="hidden" name="collection" value=""/>
-                                </form>
-                                <button id="eXide-browse-upload-done" class="eXide-btn">Done</button>
-                                <table id="files"/>
-                            </div>
                         </div>
                         <div class="eXide-browse-form">
                             <label>Name: </label>
                             <input name="resource" type="text"/>
                         </div>
-                        <div class="eXide-browse-upload"/>
                     </div>
                 </div>
                 <div id="login-dialog">
@@ -541,6 +624,38 @@
                 </div>
                 <div id="keyboard-help">
                     <table id="keybindings"/>
+                </div>
+                <div id="upload-dialog">
+                    <p>Drop files here or click on the button below to upload them
+                        to the selected collection. Maximum file size is 100MB.</p>
+                    <form class="file_upload" action="modules/upload.xq" method="POST" enctype="multipart/form-data">
+                        <div class="options">
+                            <input type="checkbox" name="deploy" id="auto-deploy"/>
+                            <label for="auto-deploy">Auto deploy uploaded .xar packages</label>
+                        </div>
+                        <div class="file_upload_drop">Drop files here ...</div>
+                        <div class="file_upload_body">
+                            <div class="fileinput-button">
+                                <input id="file_upload" type="file" name="file[]" multiple="multiple"/>
+                                <button class="eXide-btn">
+                                    <span class="fa fa-cloud-upload"/>
+                                    Upload Files
+                                </button>
+                            </div>
+                            <div class="fileinput-button">
+                                <input id="dir_upload" type="file" name="file[]" multiple="multiple" directory="" webkitdirectory=""/>
+                                <button class="eXide-btn">
+                                    <span class="fa fa-folder-open-o"/>
+                                    Upload Directory
+                                </button>
+                            </div>
+                        </div>
+                        <input type="hidden" name="collection" value=""/>
+                    </form>
+                    <div id="upload-progress-bar">
+                        <div id="progress-all"/>
+                    </div>
+                    <table id="file_upload_table"><thead style="display:none"><tr><th>File</th><th>Size</th><th>Progress</th></tr></thead><tbody id="files"/></table>
                 </div>
                 <div id="resource-properties-dialog">
                     <div id="resource-properties-content"/>
@@ -600,14 +715,19 @@
                                     <input type="checkbox" name="show-south" id="pref-show-south"/>
                                 </li>
                                 <li>
+                                    <label for="pref-show-east"><svg style="width:14px;height:14px;vertical-align:-2px;margin-right:3px" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="1.5"/><line x1="11" y1="2" x2="11" y2="14"/></svg>Show monitoring panel:</label>
+                                    <input type="checkbox" name="show-east" id="pref-show-east"/>
+                                    <div class="pref-hint">Opens automatically for admin/dba users</div>
+                                </li>
+                                <li>
                                     <label for="pref-split-pane"><span style="display:inline-block;width:14px;text-align:center;margin-right:3px;font-size:13px;vertical-align:-1px">⊟</span>Stacked side panels:</label>
                                     <input type="checkbox" name="split-pane" id="pref-split-pane"/>
                                 </li>
                                 <li>
-                                    <label for="pref-result-position"><i class="fa fa-columns" style="width:14px;text-align:center;margin-right:3px;font-size:13px"></i>Results panel position:</label>
-                                    <select name="result-position" id="pref-result-position">
-                                        <option value="south">Bottom</option>
-                                        <option value="east">Right</option>
+                                    <label for="pref-collections-view"><i class="fa fa-folder-open-o" style="width:14px;text-align:center;margin-right:3px"></i>Collections view:</label>
+                                    <select name="collections-view" id="pref-collections-view">
+                                        <option value="tree">Tree</option>
+                                        <option value="folder">Folder</option>
                                     </select>
                                 </li>
                             </ol>
@@ -914,15 +1034,15 @@
                             <ol>
                                 <li>
                                     <select class="type-select" name="type">
-                                        <option value="text">Other</option>
-                                        <option value="xml">XML</option>
-                                        <option value="html">HTML</option>
-                                        <option value="xquery">XQuery</option>
-                                        <option value="javascript">Javascript</option>
                                         <option value="css">CSS</option>
-                                        <option value="less">Less</option>
+                                        <option value="html">HTML</option>
+                                        <option value="javascript">Javascript</option>
                                         <option value="json">JSON</option>
+                                        <option value="less">Less</option>
                                         <option value="markdown">Markdown</option>
+                                        <option value="text">Text</option>
+                                        <option value="xml">XML</option>
+                                        <option value="xquery" selected="selected">XQuery</option>
                                     </select>
                                     <label for="type">Type:</label>
                                 </li>
@@ -1003,9 +1123,26 @@
             <div class="ctx-item" data-action="delete"><i class="fa fa-trash"/>Delete</div>
             <div class="ctx-separator"/>
             <div class="ctx-item" data-action="copy-path"><i class="fa fa-clipboard"/>Copy Path</div>
-            <div class="ctx-item" data-action="properties"><i class="fa fa-cog"/>Properties</div>
+            <div class="ctx-item" data-action="properties"><i class="fa fa-info"/>Properties</div>
             <div class="ctx-separator"/>
             <div class="ctx-item" data-action="reload"><i class="fa fa-refresh"/>Reload</div>
+        </div>
+        <div id="browse-context-menu" class="directory-context-menu">
+            <div class="ctx-item" data-action="open"><i class="fa fa-folder-open"/>Open</div>
+            <div class="ctx-separator"/>
+            <div class="ctx-item" data-action="create"><i class="fa fa-folder-o"/>New Collection</div>
+            <div class="ctx-item" data-action="upload"><i class="fa fa-upload"/>Upload Files</div>
+            <div class="ctx-item" data-action="download"><i class="fa fa-download"/>Download</div>
+            <div class="ctx-separator"/>
+            <div class="ctx-item" data-action="rename"><i class="fa fa-pencil"/>Rename</div>
+            <div class="ctx-item" data-action="copy"><i class="fa fa-copy"/>Copy</div>
+            <div class="ctx-item" data-action="cut"><i class="fa fa-cut"/>Cut</div>
+            <div class="ctx-item" data-action="paste"><i class="fa fa-paste"/>Paste</div>
+            <div class="ctx-separator"/>
+            <div class="ctx-item" data-action="delete"><i class="fa fa-trash"/>Delete</div>
+            <div class="ctx-separator"/>
+            <div class="ctx-item" data-action="copy-path"><i class="fa fa-clipboard"/>Copy Path</div>
+            <div class="ctx-item" data-action="properties"><i class="fa fa-info"/>Properties</div>
         </div>
     <script type="text/javascript" src="resources/scripts/ui-init.js"></script>
     </body>
