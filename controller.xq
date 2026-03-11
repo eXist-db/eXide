@@ -105,6 +105,14 @@ else if ($local:method = 'get' and $exist:resource = "backdrop.svg") then
         </forward>
     </dispatch>
 
+(: REST API — all /api/* requests are handled by Roaster.
+ : Placed before the unauthorized check so that Roaster can handle
+ : its own auth via OpenAPI security schemes and x-constraints. :)
+else if (starts-with($exist:path, "/api/")) then
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/modules/api/router.xq"/>
+    </dispatch>
+
 (: handle unauthorized request :)
 
 else if (not($user-allowed))
