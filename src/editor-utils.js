@@ -48,21 +48,16 @@
      * Insert a snippet template, stripping tab-stop placeholders.
      */
     function insertSnippet(view, template) {
-        var sel = view.state.selection.main;
-        var hasPlaceholders = /\$\{?\d/.test(template);
-        var text;
-        if (hasPlaceholders) {
-            text = template
-                .replace(/\$\{(\d+):([^}]*)}/g, "$2")
-                .replace(/\$\{(\d+)}/g, "")
-                .replace(/\$(\d+)/g, "");
+        if (/\$\{?\d/.test(template)) {
+            // eXide's ${N:label} syntax is native CM6 snippet syntax
+            CM6.snippet(template)(view, null, view.state.selection.main.from, view.state.selection.main.to);
         } else {
-            text = template;
+            var sel = view.state.selection.main;
+            view.dispatch({
+                changes: { from: sel.from, to: sel.to, insert: template },
+                selection: { anchor: sel.from + template.length }
+            });
         }
-        view.dispatch({
-            changes: { from: sel.from, to: sel.to, insert: text },
-            selection: { anchor: sel.from + text.length }
-        });
     }
 
     /**
