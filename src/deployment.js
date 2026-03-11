@@ -34,7 +34,7 @@ eXide.edit.Projects = (function() {
     };
 
     Constr.prototype.getProject = function (collection, callback) {
-        if (!collection || collection === "/db" || collection === "/db/") {
+        if (!collection || collection === "/db" || collection === "/db/" || collection.indexOf("__new__") !== -1) {
             if (typeof callback == "function") callback(null);
             return;
         }
