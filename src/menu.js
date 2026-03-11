@@ -72,23 +72,17 @@ eXide.util.Menubar = (function() {
 
     Constr.prototype.commandPalette = function() {
         var self = this;
-        var popupItems = [];
+        var items = [];
         for (var key in self.commands) {
-            var command = self.commands[key];
-            popupItems.push(command);
+            items.push(self.commands[key]);
         }
-
-        if (popupItems.length > 1) {
-            var left = this.editor.getOffset().left;
-            eXide.util.Popup.position({ pageX: left, pageY: 40 });
-            eXide.util.Popup.show(popupItems, function (selected) {
+        if (items.length > 0) {
+            eXide.util.QuickPicker.show(items, function (selected) {
                 if (selected) {
                     selected.callback();
-                    if (self.editor) {
-                        self.editor.focus();
-                    }
                 }
-            });
+                if (self.editor) self.editor.focus();
+            }, { placeholder: "Run command\u2026", parentEditor: self.editor });
         }
     };
 

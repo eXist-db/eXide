@@ -86,27 +86,24 @@ eXide.edit.CssModeHelper = (function () {
 
     Constr.prototype.gotoSymbol = function(doc) {
         var self = this;
-        var popupItems = [];
+        var items = [];
         for (var i = 0; i < doc.functions.length; i++) {
             if (doc.functions[i].name !== "") {
-                item = {
+                items.push({
                     label: doc.functions[i].name,
                     name: doc.functions[i].name,
                     type: doc.functions[i].type,
                     row: doc.functions[i].row
-                };
-                popupItems.push(item);
+                });
             }
-        };
-        if (popupItems.length > 1) {
-            var left = this.parent.getOffset().left;
-            eXide.util.Popup.position({pageX: left, pageY: 40});
-            eXide.util.Popup.show(popupItems, function (selected) {
+        }
+        if (items.length > 0) {
+            eXide.util.QuickPicker.show(items, function (selected) {
                 if (selected) {
                     self.parent.history.push(doc.getPath(), doc.getCurrentLine());
                     editorUtils.gotoLine(self.editor, selected.row + 1);
                 }
-            });
+            }, { placeholder: "Go to symbol\u2026", parentEditor: self.editor });
         }
     };
 

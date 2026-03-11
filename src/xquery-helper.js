@@ -265,9 +265,9 @@ eXide.edit.XQueryModeHelper = (function () {
 
     Constr.prototype.gotoSymbol = function(doc) {
         var self = this;
-        var popupItems = [];
+        var items = [];
         for (var i = 0; i < doc.functions.length; i++) {
-            item = { 
+            var item = {
                 label: doc.functions[i].signature ? doc.functions[i].signature : doc.functions[i].name,
                 name: doc.functions[i].name,
                 type: doc.functions[i].type
@@ -275,17 +275,14 @@ eXide.edit.XQueryModeHelper = (function () {
             if (doc.functions[i].help) {
                 item.tooltip = doc.functions[i].help;
             }
-            popupItems.push(item);
-        };
-        if (popupItems.length > 1) {
-            var editorWidth = this.parent.getWidth();
-            var left = this.parent.getOffset().left;
-            eXide.util.Popup.position({ pageX: left, pageY: 40 });
-            eXide.util.Popup.show(popupItems, function (selected) {
+            items.push(item);
+        }
+        if (items.length > 0) {
+            eXide.util.QuickPicker.show(items, function (selected) {
                 if (selected) {
                     self.parent.outline.gotoDefinition(doc, selected.name);
                 }
-            });
+            }, { placeholder: "Go to symbol\u2026", parentEditor: self.editor });
         }
     };
 
@@ -402,10 +399,6 @@ eXide.edit.XQueryModeHelper = (function () {
         if (!row) {
             row = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head).row;
         }
-        console.log("Requesting quick fix for %s at %d", doc.getName(), row);
-        var pos = editorUtils.textToScreenCoordinates(this.editor, row, 0);
-    	eXide.util.Popup.position(pos);
-
         var resolutions = [];
         var an = editorUtils.getAnnotations(this.editor);
         for (var i = 0; i < an.length; i++) {
@@ -423,14 +416,12 @@ eXide.edit.XQueryModeHelper = (function () {
 
         if (resolutions.length > 0) {
             var self = this;
-            eXide.util.Popup.show(resolutions, function(selected) {
+            eXide.util.QuickPicker.show(resolutions, function(selected) {
                 if (selected) {
                     selected.resolve(self, self.parent, doc, selected.annotation);
-                    self.editor.focus();
                 }
-            });
-        } else {
-            console.log("No quick fix resolution found");
+                self.editor.focus();
+            }, { placeholder: "Quick fix\u2026", parentEditor: self.editor });
         }
     };
     

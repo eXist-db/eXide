@@ -3,7 +3,7 @@ import '../src/editor-utils.js';
 import '../src/util.js';
 import '../src/dialog-utils.js';
 import '../src/history.js';
-import '../src/popup.js';
+import '../src/quick-picker.js';
 import '../src/events.js';
 import '../src/commands.js';
 import '../src/mode-helper.js';

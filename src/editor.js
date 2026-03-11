@@ -1076,22 +1076,19 @@ eXide.edit.Editor = (function () {
         if (pos >= 0 && pos < this.documents.length) {
             this.switchTo(this.documents[pos]);
         } else {
-            var popupItems = [];
+            var items = [];
             for (var i = 0; i < this.documents.length; i++) {
-                item = {
+                items.push({
                     label: this.documents[i].name,
                     pos: i
-                };
-                popupItems.push(item);
-            };
-            if (popupItems.length > 1) {
-                var left = this.getOffset().left;
-                eXide.util.Popup.position({ pageX: left, pageY: 40 });
-                eXide.util.Popup.show(popupItems, function (selected) {
+                });
+            }
+            if (items.length > 0) {
+                eXide.util.QuickPicker.show(items, function (selected) {
                     if (selected) {
                         self.switchTo(self.documents[selected.pos]);
                     }
-                });
+                }, { placeholder: "Switch to file\u2026" });
             }
         }
     };

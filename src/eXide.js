@@ -1776,8 +1776,6 @@ eXide.app = (function(util) {
                 }
             });
 
-            util.Popup.init("#autocomplete-box", editor);
-
 			// initialize buttons and menu events
             var btnOpen = document.getElementById("open");
 			btnOpen.addEventListener("click", app.openDocument);
