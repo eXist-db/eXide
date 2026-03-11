@@ -231,7 +231,7 @@ eXide.edit.CompletionSource = (function () {
                 }
 
                 if (options.length === 0) return null;
-                return { from: from, to: to, options: options, filter: true };
+                return { from: from, to: to, options: options, filter: true, validFor: /^[\w:.\-$]*$/ };
             })
             .catch(function () { return null; });
     }
@@ -340,7 +340,7 @@ eXide.edit.CompletionSource = (function () {
         }
 
         if (options.length === 0) return null;
-        return { from: from, to: to, options: options, filter: true };
+        return { from: from, to: to, options: options, filter: true, validFor: /^[\w:.\-$]*$/ };
     }
 
     // -------------------------------------------------------------------
@@ -416,7 +416,7 @@ eXide.edit.CompletionSource = (function () {
                 apply: makeSnippetApply(templates[i].template, from, to)
             });
         }
-        return { from: from, to: to, options: options, filter: true };
+        return { from: from, to: to, options: options, filter: true, validFor: /^[\w:.\-$]*$/ };
     }
 
     // -------------------------------------------------------------------
@@ -457,7 +457,7 @@ eXide.edit.CompletionSource = (function () {
                     apply: makeSnippetApply(templates[i].template, from, to)
                 });
             }
-            return { from: from, to: to, options: options, filter: true };
+            return { from: from, to: to, options: options, filter: true, validFor: /^[\w:.\-$]*$/ };
         }
 
         return null;
