@@ -1195,7 +1195,7 @@ eXide.app = (function(util) {
         },
 
 		saveState: function() {
-			if (!util.supportsHtml5Storage)
+			if (!util.supportsHtml5Storage || app._skipSaveState)
 				return;
 			localStorage.clear();
 			preferences.save();
@@ -1982,6 +1982,7 @@ eXide.app = (function(util) {
             });
             menu.click("#menu-view-reset-workspace", function() {
                 if (confirm("This will clear all saved tabs, preferences, and layout state, then reload. Continue?")) {
+                    app._skipSaveState = true;
                     Object.keys(localStorage).filter(function(k) { return k.startsWith("eXide."); }).forEach(function(k) { localStorage.removeItem(k); });
                     location.reload();
                 }
