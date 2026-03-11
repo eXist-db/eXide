@@ -84,7 +84,7 @@
         var diagnostics = [];
         for (var i = 0; i < annotations.length; i++) {
             var ann = annotations[i];
-            var row = ann.row || 0;
+            var row = Math.max(ann.row || 0, 0);
             var lineNum = Math.min(row + 1, view.state.doc.lines);
             var line = view.state.doc.line(lineNum);
             var from = line.from + (ann.column || 0);

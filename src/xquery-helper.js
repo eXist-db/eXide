@@ -1217,6 +1217,8 @@ eXide.edit.XQueryModeHelper = (function () {
 		var msg;
 		if (error.line) {
 			msg = error["#text"];
+		} else if (typeof error === "object" && error !== null) {
+			msg = error["#text"] || error.code || JSON.stringify(error);
 		} else {
 			msg = error;
 		}
