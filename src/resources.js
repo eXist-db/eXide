@@ -18,7 +18,81 @@
  */
 
 function apiPath(dbPath) {
-	return "api/db/" + encodeURIComponent(dbPath.replace(/^\//, ""));
+	return "api/storage/" + dbPath.replace(/^\//, "").split("/").map(encodeURIComponent).join("/");
+}
+
+function permCheckbox(name, perms, index, char) {
+	var checked = perms.length > index && perms.charAt(index) === char ? ' checked="checked"' : '';
+	return '<input type="checkbox" name="' + name + '" id="' + name + '"' + checked + '/>';
+}
+
+function permissionsFromForm(form) {
+	var parts = [];
+	["u", "g", "o"].forEach(function(scope) {
+		["r", "w", "x"].forEach(function(perm) {
+			var cb = form.querySelector("#" + scope + perm);
+			parts.push(scope + (cb && cb.checked ? "+" : "-") + perm);
+		});
+	});
+	// special bits: setuid, setgid, sticky
+	var us = form.querySelector("#us");
+	parts.push("u" + (us && us.checked ? "+" : "-") + "s");
+	var gs = form.querySelector("#gs");
+	parts.push("g" + (gs && gs.checked ? "+" : "-") + "s");
+	var ot = form.querySelector("#ot");
+	parts.push("o" + (ot && ot.checked ? "+" : "-") + "t");
+	return parts.join(",");
+}
+
+function buildPropertiesForm(data, accounts) {
+	var perms = data.permissions || "---------";
+	var html = '<form id="browsing-dialog-form" action="">';
+	html += '<fieldset>';
+	if (data.mime) {
+		html += '<div class="control-group"><label for="mime">Mime:</label>';
+		html += '<input type="text" name="mime" value="' + data.mime + '"/></div>';
+	}
+	html += '<div class="control-group"><label for="owner">Owner:</label>';
+	html += '<select name="owner">';
+	(accounts.users || []).sort().forEach(function(u) {
+		html += '<option value="' + u + '"' + (u === data.owner ? ' selected="selected"' : '') + '>' + u + '</option>';
+	});
+	html += '</select></div>';
+	html += '<div class="control-group"><label for="group">Group:</label>';
+	html += '<select name="group">';
+	(accounts.groups || []).sort().forEach(function(g) {
+		html += '<option value="' + g + '"' + (g === data.group ? ' selected="selected"' : '') + '>' + g + '</option>';
+	});
+	html += '</select></div>';
+	html += '</fieldset>';
+	html += '<fieldset><legend>Permissions</legend>';
+	html += '<table><tr><th>User</th><th>Group</th><th>Other</th></tr>';
+	// read row
+	html += '<tr>';
+	html += '<td>' + permCheckbox("ur", perms, 0, "r") + '<label for="ur">read</label></td>';
+	html += '<td>' + permCheckbox("gr", perms, 3, "r") + '<label for="gr">read</label></td>';
+	html += '<td>' + permCheckbox("or", perms, 6, "r") + '<label for="or">read</label></td>';
+	html += '</tr>';
+	// write row
+	html += '<tr>';
+	html += '<td>' + permCheckbox("uw", perms, 1, "w") + '<label for="uw">write</label></td>';
+	html += '<td>' + permCheckbox("gw", perms, 4, "w") + '<label for="gw">write</label></td>';
+	html += '<td>' + permCheckbox("ow", perms, 7, "w") + '<label for="ow">write</label></td>';
+	html += '</tr>';
+	// execute row
+	html += '<tr>';
+	html += '<td>' + permCheckbox("ux", perms, 2, "x") + '<label for="ux">execute</label></td>';
+	html += '<td>' + permCheckbox("gx", perms, 5, "x") + '<label for="gx">execute</label></td>';
+	html += '<td>' + permCheckbox("ox", perms, 8, "x") + '<label for="ox">execute</label></td>';
+	html += '</tr>';
+	// setuid/setgid/sticky row
+	html += '<tr>';
+	html += '<td>' + permCheckbox("us", perms, 2, "s") + '<label for="us">setuid</label></td>';
+	html += '<td>' + permCheckbox("gs", perms, 5, "s") + '<label for="gs">setgid</label></td>';
+	html += '<td>' + permCheckbox("ot", perms, 8, "t") + '<label for="ot">sticky</label></td>';
+	html += '</tr>';
+	html += '</table></fieldset></form>';
+	return html;
 }
 
 function mapItem(item) {
@@ -182,14 +256,14 @@ eXide.browse.ResourceBrowser = (function () {
                     }
                     var form = propsDialogEl.querySelector("form");
                     var body = {};
-                    var ownerEl = form.querySelector("[name='owner']");
+                    var ownerEl = form.querySelector("select[name='owner']");
                     if (ownerEl) body.owner = ownerEl.value;
-                    var groupEl = form.querySelector("[name='group']");
+                    var groupEl = form.querySelector("select[name='group']");
                     if (groupEl) body.group = groupEl.value;
-                    var modeEl = form.querySelector("[name='permissions']");
-                    if (modeEl) body.mode = modeEl.value;
                     var mimeEl = form.querySelector("[name='mime']");
                     if (mimeEl) body.mime = mimeEl.value;
+                    // Build permissions mode from checkboxes
+                    body.mode = permissionsFromForm(form);
 
                     var promises = resources.map(function(r) {
                         return fetch(apiPath(r), {
@@ -900,19 +974,13 @@ eXide.browse.ResourceBrowser = (function () {
 		}
         if (resources.length > 0) {
             var contentEl = document.getElementById("resource-properties-content");
-            // Fetch properties for the first selected resource
-            fetch(apiPath(resources[0]))
-                .then(function(r) { return r.json(); })
-                .then(function(data) {
-                    contentEl.innerHTML = '<form>' +
-                        '<table class="props-table">' +
-                        '<tr><td>Path:</td><td>' + (data.path || '') + '</td></tr>' +
-                        '<tr><td>Owner:</td><td><input type="text" name="owner" value="' + (data.owner || '') + '"/></td></tr>' +
-                        '<tr><td>Group:</td><td><input type="text" name="group" value="' + (data.group || '') + '"/></td></tr>' +
-                        '<tr><td>Permissions:</td><td><input type="text" name="permissions" value="' + (data.permissions || '') + '"/></td></tr>' +
-                        (data.mime ? '<tr><td>MIME Type:</td><td><input type="text" name="mime" value="' + data.mime + '"/></td></tr>' : '') +
-                        '</table></form>';
-                });
+            var propsPromise = fetch(apiPath(resources[0])).then(function(r) { return r.json(); });
+            var accountsPromise = fetch("api/admin/accounts").then(function(r) { return r.ok ? r.json() : { users: [], groups: [] }; }).catch(function() { return { users: [], groups: [] }; });
+            Promise.all([propsPromise, accountsPromise]).then(function(results) {
+                var data = results[0];
+                var accounts = results[1];
+                contentEl.innerHTML = buildPropertiesForm(data, accounts);
+            });
             this.propertiesDialog.open();
         }
     };

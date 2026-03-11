@@ -117,7 +117,7 @@ eXide.edit.Directory = (function () {
 			return fn(d)
 		}
 		var path = (sel.datum().key || "/db").replace(/^\//, "");
-		fetch("api/db/" + encodeURIComponent(path)).then(function(r) { return r.json(); }).then(function(data) {
+		fetch("api/storage/" + encodeURIComponent(path)).then(function(r) { return r.json(); }).then(function(data) {
 			var d = sel.datum()
 			d.isOpen = true;
 			d.isLoaded = true;
@@ -287,7 +287,72 @@ eXide.edit.Directory = (function () {
 	}
 
 	function apiPath(dbPath) {
-		return "api/db/" + encodeURIComponent(dbPath.replace(/^\//, ""));
+		return "api/storage/" + dbPath.replace(/^\//, "").split("/").map(encodeURIComponent).join("/");
+	}
+
+	function permCheckbox(name, perms, index, char) {
+		var checked = perms.length > index && perms.charAt(index) === char ? ' checked="checked"' : '';
+		return '<input type="checkbox" name="' + name + '" id="' + name + '"' + checked + '/>';
+	}
+
+	function permissionsFromForm(form) {
+		var parts = [];
+		["u", "g", "o"].forEach(function(scope) {
+			["r", "w", "x"].forEach(function(perm) {
+				var cb = form.querySelector("#" + scope + perm);
+				parts.push(scope + (cb && cb.checked ? "+" : "-") + perm);
+			});
+		});
+		var us = form.querySelector("#us");
+		parts.push("u" + (us && us.checked ? "+" : "-") + "s");
+		var gs = form.querySelector("#gs");
+		parts.push("g" + (gs && gs.checked ? "+" : "-") + "s");
+		var ot = form.querySelector("#ot");
+		parts.push("o" + (ot && ot.checked ? "+" : "-") + "t");
+		return parts.join(",");
+	}
+
+	function buildPropertiesForm(data, accounts) {
+		var perms = data.permissions || "---------";
+		var html = '<form id="browsing-dialog-form" action="">';
+		html += '<fieldset>';
+		if (data.mime) {
+			html += '<div class="control-group"><label for="mime">Mime:</label>';
+			html += '<input type="text" name="mime" value="' + escapeHtml(data.mime) + '"/></div>';
+		}
+		html += '<div class="control-group"><label for="owner">Owner:</label>';
+		html += '<select name="owner">';
+		(accounts.users || []).sort().forEach(function(u) {
+			html += '<option value="' + escapeHtml(u) + '"' + (u === data.owner ? ' selected="selected"' : '') + '>' + escapeHtml(u) + '</option>';
+		});
+		html += '</select></div>';
+		html += '<div class="control-group"><label for="group">Group:</label>';
+		html += '<select name="group">';
+		(accounts.groups || []).sort().forEach(function(g) {
+			html += '<option value="' + escapeHtml(g) + '"' + (g === data.group ? ' selected="selected"' : '') + '>' + escapeHtml(g) + '</option>';
+		});
+		html += '</select></div>';
+		html += '</fieldset>';
+		html += '<fieldset><legend>Permissions</legend>';
+		html += '<table><tr><th>User</th><th>Group</th><th>Other</th></tr>';
+		html += '<tr>';
+		html += '<td>' + permCheckbox("ur", perms, 0, "r") + '<label for="ur">read</label></td>';
+		html += '<td>' + permCheckbox("gr", perms, 3, "r") + '<label for="gr">read</label></td>';
+		html += '<td>' + permCheckbox("or", perms, 6, "r") + '<label for="or">read</label></td>';
+		html += '</tr><tr>';
+		html += '<td>' + permCheckbox("uw", perms, 1, "w") + '<label for="uw">write</label></td>';
+		html += '<td>' + permCheckbox("gw", perms, 4, "w") + '<label for="gw">write</label></td>';
+		html += '<td>' + permCheckbox("ow", perms, 7, "w") + '<label for="ow">write</label></td>';
+		html += '</tr><tr>';
+		html += '<td>' + permCheckbox("ux", perms, 2, "x") + '<label for="ux">execute</label></td>';
+		html += '<td>' + permCheckbox("gx", perms, 5, "x") + '<label for="gx">execute</label></td>';
+		html += '<td>' + permCheckbox("ox", perms, 8, "x") + '<label for="ox">execute</label></td>';
+		html += '</tr><tr>';
+		html += '<td>' + permCheckbox("us", perms, 2, "s") + '<label for="us">setuid</label></td>';
+		html += '<td>' + permCheckbox("gs", perms, 5, "s") + '<label for="gs">setgid</label></td>';
+		html += '<td>' + permCheckbox("ot", perms, 8, "t") + '<label for="ot">sticky</label></td>';
+		html += '</tr></table></fieldset></form>';
+		return html;
 	}
 
 	// ── Actions ──────────────────────────────────────────────────────────
@@ -441,13 +506,12 @@ eXide.edit.Directory = (function () {
 		if (!eXide.app.$checkLogin()) return;
 		var contentEl = document.getElementById("resource-properties-content");
 		if (!contentEl) return;
-		fetch(apiPath(d.key))
-		.then(function(r) { return r.json(); })
-		.then(function(data) {
-			contentEl.innerHTML = '<form>' +
-				'<label>Path: <input type="text" name="path" value="' + escapeHtml(data.path || d.key) + '" readonly/></label><br>' +
-				'<label>MIME: <input type="text" name="mime" value="' + escapeHtml(data.mime || "") + '"/></label><br>' +
-				'</form>';
+		var propsPromise = fetch(apiPath(d.key)).then(function(r) { return r.json(); });
+		var accountsPromise = fetch("api/admin/accounts").then(function(r) { return r.ok ? r.json() : { users: [], groups: [] }; }).catch(function() { return { users: [], groups: [] }; });
+		Promise.all([propsPromise, accountsPromise]).then(function(results) {
+			var data = results[0];
+			var accounts = results[1];
+			contentEl.innerHTML = buildPropertiesForm(data, accounts);
 		});
 
 		var dialog = document.getElementById("resource-properties-dialog");
@@ -474,12 +538,11 @@ eXide.edit.Directory = (function () {
 		var form = dialog.querySelector("form");
 		if (!form) return;
 		var body = {};
-		var owner = form.querySelector("[name='owner']");
+		var owner = form.querySelector("select[name='owner']");
 		if (owner) body.owner = owner.value;
-		var group = form.querySelector("[name='group']");
+		var group = form.querySelector("select[name='group']");
 		if (group) body.group = group.value;
-		var mode = form.querySelector("[name='permissions']");
-		if (mode) body.mode = mode.value;
+		body.mode = permissionsFromForm(form);
 		var mime = form.querySelector("[name='mime']");
 		if (mime) body.mime = mime.value;
 

@@ -31,7 +31,7 @@ describe('Error status UI', () => {
   }
 
   beforeEach(() => {
-    cy.intercept('PUT', '**/compile.xq').as('compile')
+    cy.intercept('POST', '**/api/query/compile').as('compile')
     cy.visit('/eXide/index.html')
     cy.reload(true)
     waitForInitialLoad()

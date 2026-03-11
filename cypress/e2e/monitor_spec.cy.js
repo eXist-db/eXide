@@ -9,11 +9,11 @@ describe('Monitor panel', () => {
 
   it('token endpoint returns a token for admin user', () => {
     cy.window().then((win) => {
-      return win.fetch('modules/monitor.xq?action=token')
+      return win.fetch('api/admin/status')
         .then((r) => r.json())
     }).then((data) => {
-      expect(data).to.have.property('token')
-      expect(data.token).to.have.length.greaterThan(0)
+      expect(data).to.have.property('jmxToken')
+      expect(data.jmxToken).to.have.length.greaterThan(0)
     })
   })
 
@@ -25,7 +25,7 @@ describe('Monitor panel', () => {
   })
 
   it('starts polling when toggled open by admin', () => {
-    cy.intercept('GET', '**/modules/monitor.xq?action=token').as('fetchToken')
+    cy.intercept('GET', '**/api/admin/status').as('fetchToken')
     cy.intercept('GET', /\/status\?/).as('poll')
 
     cy.get('#toggle-monitor').click()
