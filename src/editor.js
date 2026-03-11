@@ -892,14 +892,6 @@ eXide.edit.Editor = (function () {
         }
     };
 
-    Constr.prototype.autocomplete = function(alwaysShow) {
-        var mode = this.activeDoc.getModeHelper();
-        if (mode && mode.autocomplete) {
-            return mode.autocomplete(this.activeDoc, alwaysShow);
-        }
-        return false;
-    };
-
     Constr.prototype.getHeight = function () {
         return document.getElementById("fullscreen").offsetHeight;
     };

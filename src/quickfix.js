@@ -78,7 +78,6 @@ eXide.edit.XQueryQuickFix = (function () {
                                 var adder = new eXide.edit.PrologAdder(editor, doc);
                                 adder.importModule(matches[1]);
                                 helper.parseXQuery(doc);
-                                helper.autocomplete(doc);
                                 helper.parent.validator.setEnabled(true);
                             },
                             action: "Import module \"" + matches[1] + "\""
@@ -91,7 +90,6 @@ eXide.edit.XQueryQuickFix = (function () {
                                 var adder = new eXide.edit.PrologAdder(editor, doc);
                                 adder.declareNamespace(matches[1]);
                                 helper.parseXQuery(doc);
-                                helper.autocomplete(doc);
                                 helper.parent.validator.setEnabled(true);
                             },
                             action: "Declare namespace \"" + matches[1] + "\""
