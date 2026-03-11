@@ -18,7 +18,7 @@
  */
 eXide.namespace("eXide.edit.Projects");
 
-eXide.edit.Projects = (function(oop) {
+eXide.edit.Projects = (function() {
 
     Constr = function() {
         this.projects = {};
@@ -47,7 +47,7 @@ eXide.edit.Projects = (function(oop) {
             } else {
                 var project = $this.projects[data.abbrev];
                 if (project) {
-                    oop.extend(project, data);
+                    Object.assign(project, data);
                 } else {
                     project = data;
                     $this.projects[data.abbrev] = project;

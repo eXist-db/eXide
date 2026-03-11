@@ -47,10 +47,6 @@ eXide.XQueryDebuger = (function () {
         this.runCommand({action: "step-into"});
     };
 
-    Constr.prototype.stepOut = function() {
-        this.runCommand({action: "step-out"});
-    };
-	
 	Constr.prototype.runCommand = function(params){
 		var $this = this;
         params.session = this.session;

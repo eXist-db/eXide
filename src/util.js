@@ -333,13 +333,4 @@ eXide.util.oop.inherit = (function() {
 	}
 }());
 
-eXide.util.oop.extend = (function() {
-  return function(destination, source) {
-      for (var k in source) {
-        if (source.hasOwnProperty(k)) {
-          destination[k] = source[k];
-        }
-      }
-  }
-}());
 
