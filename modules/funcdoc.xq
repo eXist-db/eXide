@@ -109,7 +109,7 @@ declare function local:get-built-in-functions($q as xs:string) {
 declare function local:get-imported-functions(
     $q as xs:string?,
     $signature as xs:string?,
-    $base as xs:string,
+    $base as xs:string?,
     $imported-module-source-urls as xs:string*,
     $imported-module-namespace-uris as xs:string*,
     $imported-module-prefixes as xs:string*
@@ -124,8 +124,10 @@ declare function local:get-imported-functions(
     let $imported-module-source-url :=
         if (matches($imported-module-source-urls[$i], "^(/|\w+:)")) then
             $imported-module-source-urls[$i]
-        else
+        else if (exists($base)) then
             concat($base, "/", $imported-module-source-urls[$i])
+        else
+            $imported-module-source-urls[$i]
     return
         try {
             let $module := inspect:inspect-module($imported-module-source-url)
