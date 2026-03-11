@@ -28,7 +28,7 @@ Cypress.Commands.add("loginXHR", (user, password) => {
     cy.session(['xhr', user, password], () => {
         cy.request({
             method: 'POST',
-            url: '/eXide/login',
+            url: '/eXide/api/auth/session',
             form: true,
             body: { user, password },
             headers: { 'Accept': 'application/json' }

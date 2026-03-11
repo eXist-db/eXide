@@ -1209,10 +1209,7 @@ eXide.app = (function(util) {
 		},
 
         getLogin: function(callback) {
-            fetch("login", {
-                method: "POST",
-                headers: { "Accept": "application/json" }
-            })
+            fetch("api/auth/whoami")
             .then(function(response) {
                 if (!response.ok) throw new Error(response.statusText);
                 return response.json();
@@ -1624,11 +1621,10 @@ eXide.app = (function(util) {
                     if (durationEl && durationEl.checked) {
                         formData.append("duration", "P14D");
                     }
-					fetch("login", {
+					fetch("api/auth/session", {
 					    method: "POST",
 					    headers: {
-					        "Content-Type": "application/x-www-form-urlencoded",
-					        "Accept": "application/json"
+					        "Content-Type": "application/x-www-form-urlencoded"
 					    },
 					    body: formData.toString()
 					})
@@ -2078,7 +2074,7 @@ eXide.app = (function(util) {
 				ev.preventDefault();
 				if (app.login) {
 					// logout
-					fetch("login?logout=logout");
+					fetch("api/auth/session", { method: "DELETE" });
 					app.updateAuthStatus(null);
 					app.login = null;
 				} else {

@@ -555,13 +555,7 @@ eXide.edit.Editor = (function () {
             return;
         }
         var self = this;
-        var formData = new URLSearchParams();
-        formData.append("template", template);
-        fetch("modules/get-template.xq", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: formData.toString()
-        })
+        fetch("api/templates/" + encodeURIComponent(template))
         .then(function(response) { return response.text(); })
         .then(function(data) {
             var newDocId = 0;
