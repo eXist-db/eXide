@@ -343,13 +343,17 @@ body {
 }
 
 .panel-south .resize-handle, .panel-south .minimized {
-    top: -5px;
+    top: 0;
     left: 0;
     right: 0;
     height: 10px;
     border-top: 2px solid #ccc;
     box-sizing: border-box;
     z-index: 10;
+    cursor: row-resize;
+}
+.panel-south .navbar {
+    margin-top: 10px;
 }
 
 .exist-match {

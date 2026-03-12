@@ -29,8 +29,8 @@ eXide.app.FlexboxSplitter = (function () {
                     }
                 } else {
                     var h = self.el.offsetHeight;
-                    if (h - (1 - diff) >= min) {
-                        self.el.style.height = (h - (1 - diff)) + "px";
+                    if ((h < min && diff > 0) || h + diff >= min) {
+                        self.el.style.height = (h + diff) + "px";
                     }
                 }
                 layout.resize();
@@ -52,7 +52,7 @@ eXide.app.FlexboxSplitter = (function () {
         }
 
         function onMouseUp() {
-            container.removeEventListener("mousemove", onMouseMove);
+            document.removeEventListener("mousemove", onMouseMove);
             document.removeEventListener("mouseup", onMouseUp);
             if (!hasMoved) {
                 togglePanel();
@@ -65,7 +65,7 @@ eXide.app.FlexboxSplitter = (function () {
             pos = (self.isHorizontal ? e.pageX : e.pageY);
             hasMoved = false;
             self.$triggerEvent("beforeResize");
-            container.addEventListener("mousemove", onMouseMove);
+            document.addEventListener("mousemove", onMouseMove);
             document.addEventListener("mouseup", onMouseUp);
         });
     };
