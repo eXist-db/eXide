@@ -49,6 +49,11 @@ var prettierFormat = (function () {
             if (!config) {
                 return Promise.reject(new Error("No formatter available for mode: " + mode));
             }
+            // TODO: remove this guard when prettier-plugin-xquery supports XQuery 4.0
+            // See https://github.com/nickcollins/prettier-plugin-xquery
+            if (mode === "xquery" && /xquery\s+version\s+["']4\.0["']/.test(code)) {
+                return Promise.reject(new Error("Formatting is not yet supported for XQuery 4.0 code."));
+            }
             var prefs = (typeof eXide !== "undefined" && eXide.app && eXide.app.editor && eXide.app.editor._preferences) || {};
             var useTabs = prefs.indent === 0;
             var options = {

@@ -223,6 +223,11 @@ eXide.edit.XQueryModeHelper = (function () {
         var result = rexAdapter.parseXQuery(value, selection.parser);
         doc.xqueryVersion = selection.version;
 
+        // Refresh status bar to show detected XQuery version
+        if (typeof eXide !== 'undefined' && eXide.app && eXide.app.updateStatus) {
+            eXide.app.updateStatus(doc);
+        }
+
         // If 4.0 parser is still loading, re-parse when it arrives
         if (selection.pending) {
             parserRegistry.loadParser40().then(function () {
