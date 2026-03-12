@@ -47,7 +47,13 @@ jobs:
         run: docker run --rm --name exist --volume $(pwd)/build:/exist/autodeploy:ro --publish 8080:8080 --detach existdb/existdb:${{ matrix.exist-version }}
 
       - name: Wait for eXist-db Startup and Package Deployment
-        run: timeout 120 sh -c 'until curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/exist/apps/eXide/ | grep -q "200\|302"; do sleep 5; done'
+        run: |
+          timeout 120 bash -c '
+            until [ "$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/exist/apps/eXide/)" = "200" ] || \
+                  [ "$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/exist/apps/eXide/)" = "302" ]; do
+              sleep 5
+            done
+          '
 
       - name: Run Cypress Integration Tests
         run: npx cypress run
