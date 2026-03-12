@@ -801,7 +801,8 @@ eXide.edit.Editor = (function () {
 
         eXide.util.message("Storing resource " + $this.activeDoc.name + "...");
 
-        fetch("store" + $this.activeDoc.path, {
+        var encodedPath = $this.activeDoc.path.replace(/^\//, "").split("/").map(encodeURIComponent).join("/");
+        fetch("api/storage/" + encodedPath, {
             method: "PUT",
             headers: {
                 "Content-Type": $this.activeDoc.mime ? $this.activeDoc.mime : "application/octet-stream"
