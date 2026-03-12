@@ -4646,3 +4646,33 @@ body.dark .mon-chip {
     background: #2d3a56;
 }
 body.dark .mon-chip b { color: #7bb3e8; }
+body.dark .mon-error { color: #fc8181; }
+body.dark .mon-message { color: #cbd5e0; }
+body.dark .mon-kill { background: #c53030; }
+body.dark .mon-kill:hover { background: #e53e3e; }
+
+/* Toast variant colors — dark mode */
+body.dark .eXide-toast-success { background: #1a332a; color: #68d391; border-left-color: #48bb78; }
+body.dark .eXide-toast-error   { background: #331a1a; color: #fc8181; border-left-color: #fc8181; }
+body.dark .eXide-toast-info    { background: #1a2633; color: #90cdf4; border-left-color: #4299e1; }
+
+/* Auth status dots — slightly brighter on dark backgrounds */
+body.dark .auth-dot-ok { background: #68d391; }
+body.dark .auth-dot-no { background: #fc8181; }
+
+/* Column resize handle */
+body.dark .col-resize-handle:hover { background: #555; }
+
+/* Lint markers — slightly softer on dark */
+body.dark .cm-lint-marker-error   { background: #c53030; }
+body.dark .cm-lint-marker-warning { background: #b7791f; }
+body.dark .cm-lint-marker-info    { background: #2b6cb0; }
+
+/* Resize handles */
+body.dark .panel-west .resize-handle:hover,
+body.dark .panel-east .resize-handle:hover { background: linear-gradient(to left, #444, #555); }
+body.dark .panel-south .resize-handle:hover,
+body.dark .panel-south .minimized { background: linear-gradient(to top, #444, #555); }
+
+/* Login error */
+body.dark #login-error { color: #fc8181; }
