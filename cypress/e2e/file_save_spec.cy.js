@@ -57,11 +57,13 @@ describe('File save', () => {
   }
 
   after(() => {
-    // Clean up test file
+    // Clean up all cypress-test-* files (including from interrupted runs)
     cy.loginXHR('admin', '')
     cy.request({
-      method: 'DELETE',
-      url: '/exist/rest/db/' + testFile,
+      method: 'POST',
+      url: '/exist/rest/db',
+      headers: { 'Content-Type': 'application/xquery' },
+      body: 'for $r in xmldb:get-child-resources("/db") where starts-with($r, "cypress-test-") return xmldb:remove("/db", $r)',
       failOnStatusCode: false
     })
   })

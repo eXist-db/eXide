@@ -91,19 +91,19 @@
                                 </li>
                                 <li>
                                     <a href="#" id="menu-edit-find" data-command="searchIncremental">
-                                        <span class="fa fa-search"/>Find in buffer</a>
+                                        <span class="fa fa-search"/>Find</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-edit-find-files" data-command="findFiles">
-                                        <span class="fa fa-search"/>Find in files</a>
+                                        <span class="fa fa-search"/>Find in Files</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-edit-find-replace" data-command="searchIncremental">
-                                        <span class="fa fa-search"/>Find/replace in buffer</a>
+                                        <span class="fa fa-search"/>Find/Replace</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-edit-toggle-comment" data-command="toggleComment">
-                                        <span class="fa fa-comment-o"/>Toggle comment</a>
+                                        <span class="fa fa-comment-o"/>Toggle Comment</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-edit-preferences" data-command="preferences">
@@ -111,7 +111,40 @@
                                 </li>
                                 <li>
                                     <a href="#" id="menu-edit-format" data-command="xquery-format">
-                                        <span class="fa fa-indent"/>Format code</a>
+                                        <span class="fa fa-indent"/>Format Code</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="#">View</a>
+                            <ul>
+                                <li>
+                                    <a href="#" id="menu-view-toggle-collections">
+                                        <svg class="menu-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="1.5"/><line x1="5" y1="2" x2="5" y2="14"/></svg>Collections Panel</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-view-toggle-results">
+                                        <svg class="menu-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="1.5"/><line x1="1" y1="10" x2="15" y2="10"/></svg>Results Panel</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-view-toggle-monitor">
+                                        <svg class="menu-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="14" height="12" rx="1.5"/><line x1="11" y1="2" x2="11" y2="14"/></svg>Monitoring Panel</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-view-toggle-dark-mode">
+                                        <span class="fa fa-moon-o"/>Dark Mode</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-view-toggle-fullscreen">
+                                        <span class="fa fa-arrows-alt"/>Fullscreen</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-view-reset">
+                                        <span class="fa fa-refresh"/>Reset Editor Layout</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-view-reset-workspace">
+                                        <span class="fa fa-trash-o"/>Reset Workspace</a>
                                 </li>
                             </ul>
                         </li>
@@ -120,41 +153,56 @@
                             <ul>
                                 <li>
                                     <a href="#" id="menu-navigate-commands" data-command="commandPalette">
-                                        <span class="fa fa-terminal"/>Command palette</a>
+                                        <span class="fa fa-terminal"/>Command Palette</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-navigate-definition" data-command="gotoDefinition">
-                                        <span class="fa fa-crosshairs"/>Go to definition</a>
+                                        <span class="fa fa-crosshairs"/>Go to Definition</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-navigate-info" data-command="functionDoc">
-                                        <span class="fa fa-info"/>Function doc</a>
+                                        <span class="fa fa-info"/>Function Doc</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-navigate-symbol" data-command="gotoSymbol">
-                                        <span class="fa fa-search"/>Go to symbol</a>
+                                        <span class="fa fa-search"/>Go to Symbol</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-navigate-buffer" data-command="openTab">
-                                        <span class="fa fa-sitemap"/>Go to buffer</a>
+                                        <span class="fa fa-sitemap"/>Go to Editor</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-navigate-line" data-command="gotoLine">
-                                        <span class="fa fa-arrow-circle-o-down"/>Go to line</a>
+                                        <span class="fa fa-arrow-circle-o-down"/>Go to Line</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-navigate-history" data-command="historyBack">
-                                        <span class="fa fa-history"/>Go to last edit</a>
+                                        <span class="fa fa-history"/>Go to Last Edit</a>
                                 </li>
                             </ul>
                         </li>
-                        <li title="buffers">
-                            <a href="#">Buffers</a>
+                        <li id="menu-xquery">
+                            <a href="#">XQuery</a>
                             <ul>
+                                <li>
+                                    <a href="#" id="menu-xquery-expand" data-command="expandSelection">Expand Selection</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-xquery-rename" data-command="renameSymbol">Rename</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-xquery-extract-function" data-command="extractFunction">Extract Function</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-xquery-extract-variable" data-command="extractVariable">Extract Variable</a>
+                                </li>
+                                <li>
+                                    <a href="#" id="menu-xquery-run-test" data-command="xquery-run-test">Run as Test</a>
+                                </li>
                             </ul>
                         </li>
                         <li>
-                            <a href="#">Application</a>
+                            <a href="#">App</a>
                             <ul>
                                 <li>
                                     <span class="separator">App: <span id="menu-deploy-active">unknown</span>
@@ -162,7 +210,7 @@
                                 </li>
                                 <li>
                                     <a href="#" id="menu-deploy-download">
-                                        <span class="fa fa-cloud-download"/>Download app</a>
+                                        <span class="fa fa-cloud-download"/>Download App</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-deploy-sync" data-command="synchronize">
@@ -171,26 +219,6 @@
                                 <li>
                                     <a href="#" id="menu-deploy-live">
                                         <span class="fa fa-check-square-o"/> Live Reload</a>
-                                </li>
-                            </ul>
-                        </li>
-                        <li id="menu-xquery">
-                            <a href="#">XQuery</a>
-                            <ul>
-                                <li>
-                                    <a href="#" id="menu-xquery-expand" data-command="expandSelection">Expand selection</a>
-                                </li>
-                                <li>
-                                    <a href="#" id="menu-xquery-rename" data-command="renameSymbol">Rename</a>
-                                </li>
-                                <li>
-                                    <a href="#" id="menu-xquery-extract-function" data-command="extractFunction">Extract function</a>
-                                </li>
-                                <li>
-                                    <a href="#" id="menu-xquery-extract-variable" data-command="extractVariable">Extract variable</a>
-                                </li>
-                                <li>
-                                    <a href="#" id="menu-xquery-run-test" data-command="xquery-run-test">Run as test</a>
                                 </li>
                             </ul>
                         </li>
@@ -209,7 +237,7 @@
                                     <a href="#" id="menu-git-checkout">Checkout</a>
                                 </li>
                                 <li>
-                                    <a href="#" id="menu-git-commit">Synchronize and commit</a>
+                                    <a href="#" id="menu-git-commit">Synchronize and Commit</a>
                                 </li>
                             </ul>
                         </li>
@@ -220,54 +248,26 @@
                                     <a href="#" id="menu-xml-rename" data-command="renameSymbol">Rename</a>
                                 </li>
                                 <li>
-                                    <a href="#" id="menu-xml-select-element" data-command="expandSelection">Select element</a>
+                                    <a href="#" id="menu-xml-select-element" data-command="expandSelection">Select Element</a>
                                 </li>
                                 <li>
-                                    <a href="#" id="menu-xml-remove-tag" data-command="removeTags">Remove tags</a>
+                                    <a href="#" id="menu-xml-remove-tag" data-command="removeTags">Remove Tags</a>
                                 </li>
                             </ul>
                         </li>
-                        <li>
-                            <a href="#">View</a>
+                        <li title="editors">
+                            <a href="#">Window</a>
                             <ul>
-                                <li>
-                                    <a href="#" id="menu-view-toggle-collections">
-                                        <span class="fa fa-folder-o"/>Toggle collections panel</a>
-                                </li>
-                                <li>
-                                    <a href="#" id="menu-view-toggle-results">
-                                        <span class="fa fa-columns"/>Toggle results panel</a>
-                                </li>
-                                <li>
-                                    <a href="#" id="menu-view-toggle-monitor">
-                                        <span class="fa fa-dashboard"/>Toggle monitoring panel</a>
-                                </li>
-                                <li>
-                                    <a href="#" id="menu-view-reset">
-                                        <span class="fa fa-refresh"/>Reset editor layout</a>
-                                </li>
-                                <li>
-                                    <a href="#" id="menu-view-reset-workspace">
-                                        <span class="fa fa-trash-o"/>Reset workspace</a>
-                                </li>
-                                <li>
-                                    <a href="#" id="menu-view-toggle-dark-mode">
-                                        <span class="fa fa-moon-o"/>Toggle dark mode</a>
-                                </li>
-                                <li>
-                                    <a href="#" id="menu-view-toggle-fullscreen">
-                                        <span class="fa fa-arrows-alt"/>Toggle fullscreen</a>
-                                </li>
                             </ul>
                         </li>
                         <li>
                             <a href="#">Help</a>
                             <ul>
                                 <li>
-                                    <a href="https://github.com/eXist-db/eXide/docs/docs.md" id="menu-help-documentation">Documentation</a>
+                                    <a href="https://github.com/eXist-db/eXide/docs/docs.md" id="menu-help-documentation">Documentation <span class="fa fa-external-link"></span></a>
                                 </li>
                                 <li>
-                                    <a href="#" id="menu-help-keyboard">Keyboard shortcuts</a>
+                                    <a href="#" id="menu-help-keyboard">Keyboard Shortcuts</a>
                                 </li>
                                 <li>
                                     <a href="#" id="menu-help-about">About</a>
@@ -281,11 +281,11 @@
                 </div>
                 <span id="toolbar">
                     <span class="toolbar-buttons">
-                        <button id="new"><i class="fa fa-file-o"></i> New</button>
-                        <button id="new-xquery"><i class="fa fa-file-code-o"></i> New XQuery</button>
-                        <button id="open"><i class="fa fa-folder-open-o"></i> Open</button>
-                        <button id="save"><i class="fa fa-floppy-o"></i> Save</button>
-                        <button id="close"><i class="fa fa-times"></i> Close</button>
+                        <button id="new" title="Create a new untitled editor tab"><i class="fa fa-file-o"></i> New</button>
+                        <button id="new-xquery" title="Create a new untitled XQuery editor tab"><i class="fa fa-file-code-o"></i> New XQuery</button>
+                        <button id="open" title="Open a resource from eXist-db"><i class="fa fa-folder-open-o"></i> Open</button>
+                        <button id="save" title="Save the active editor tab to eXist-db"><i class="fa fa-floppy-o"></i> Save</button>
+                        <button id="close" title="Close the active editor tab"><i class="fa fa-times"></i> Close</button>
                         <button id="run" title="Evaluate this query in eXide"><i class="fa fa-play"></i> Run</button>
                         <button id="launch" title="Launch this saved query in a new browser tab"><i class="fa fa-external-link"></i> Launch</button>
                     </span>
@@ -498,7 +498,6 @@
                                 <div class="mon-bar">
                                     <div class="mon-title">MONITORING</div>
                                     <div class="mon-controls">
-                                        <button id="monitor-close" class="mon-ctrl" title="Close monitoring panel"><i class="fa fa-times"/></button>
                                         <select id="monitor-interval" class="mon-ctrl">
                                             <option value="1000">1s</option>
                                             <option value="2000" selected="selected">2s</option>

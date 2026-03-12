@@ -49,12 +49,14 @@ eXide.edit.commands = (function () {
                 .replace(/Alt-/g, "⌥")
                 .replace(/Shift-/g, "⇧")
                 .replace(/Ctrl-/g, "⌃")
-                .replace(/-/g, "");
+                .replace(/-/g, "")
+                .toUpperCase();
         }
         return str
             .replace(/Mod-/g, "Ctrl+")
             .replace(/Alt-/g, "Alt+")
-            .replace(/Shift-/g, "Shift+");
+            .replace(/Shift-/g, "Shift+")
+            .toUpperCase();
     }
 
     function getKeyBinding(bindingsObj, name) {
@@ -81,7 +83,7 @@ eXide.edit.commands = (function () {
         "xquery-format": "Format Code", quickfix: "Quick Fix",
         expandSelection: "Expand Selection", renameSymbol: "Rename Symbol",
         removeTags: "Remove Tags", extractFunction: "Extract Function",
-        extractVariable: "Extract Variable", openTab: "Switch Buffer",
+        extractVariable: "Extract Variable", openTab: "Switch Editor",
         toggleQueryResults: "Toggle Results", commandPalette: "Command Palette",
         findFiles: "Find in Files"
     };

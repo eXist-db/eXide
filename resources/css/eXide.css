@@ -830,6 +830,12 @@ Sub level menu list items (undo style from Top level List Items)
     height: 14px;
     vertical-align: middle;
 }
+.menu-icon {
+    width: 13px;
+    height: 13px;
+    vertical-align: middle;
+    margin-right: 10px;
+}
 .toolbar-buttons #toggle-outline:hover,
 .toolbar-buttons #toggle-results:hover,
 .toolbar-buttons #toggle-monitor:hover,
@@ -1841,8 +1847,8 @@ body.dark .eXide-dialog-content .browse-filter {
 .browse-table .col-owner { width: 90px; }
 .browse-table .col-group {
     width: 70px;
-    color: #a0aec0;
-    font-size: 11px;
+    color: #4a5568;
+    font-size: 12px;
 }
 .browse-table .col-lastmod { width: 130px; }
 
@@ -1881,7 +1887,8 @@ body.dark .eXide-dialog-content .browse-filter {
 }
 
 .browse-table .collection {
-    color: #2b6cb0;
+    color: #2d3748;
+    font-weight: 500;
 }
 .browse-table .browse-icon {
     width: 16px;
@@ -3914,9 +3921,6 @@ body.dark .browse-table tbody tr.selected {
 body.dark .browse-table tbody tr.focused {
     outline-color: #7af;
 }
-body.dark .browse-table .col-group {
-    color: #4a5568;
-}
 body.dark .browse-filter {
     background: #333;
     color: #ccc;
@@ -4054,11 +4058,30 @@ body.dark #tabs-outline-container {
     background: #1a202c;
     border-bottom-color: #444;
 }
+body.dark .menu ul li ul {
+    background: #2d2d2d;
+    border-color: #444;
+}
 body.dark .menu ul li a {
-    background: rgba(255,255,255,0.08);
+    background: transparent;
+}
+body.dark .menu ul li ul li a {
+    background: #2d2d2d;
+    color: #ccc;
 }
 body.dark .menu ul li a:hover, body.dark .menu ul li a.open {
-    background: rgba(255,255,255,0.15);
+    background: #3a3a3a;
+}
+body.dark .menu ul li ul li a:hover {
+    background: #3a3a3a;
+    color: #fff;
+}
+body.dark .menu .separator {
+    color: #888;
+    border-bottom-color: #444;
+}
+body.dark .menu .shortcut {
+    color: #888;
 }
 body.dark .toolbar-buttons button {
     background: #383838;

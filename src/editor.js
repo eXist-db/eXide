@@ -769,7 +769,7 @@ eXide.edit.Editor = (function () {
         this.$triggerEvent("close", [doc]);
         var tabLink = document.querySelector("#tabs a[title=\"" + doc.path + "\"]");
         if (tabLink) tabLink.parentNode.remove();
-        this.menubar.remove("buffers", doc.path);
+        this.menubar.remove("editors", doc.path);
         for (var i = 0; i < this.documents.length; i++) {
             if (this.documents[i].path == doc.path) {
                 this.documents.splice(i, 1);
@@ -1037,7 +1037,7 @@ eXide.edit.Editor = (function () {
             $this.tabs.querySelector("ul").appendChild(li);
         }
 
-        $this.menubar.add("buffers", label, tab.title, $this.documents.length + 1, function() {
+        $this.menubar.add("editors", label, tab.title, $this.documents.length + 1, function() {
             $this.switchTo(doc);
         });
 
@@ -1051,7 +1051,7 @@ eXide.edit.Editor = (function () {
 
     Constr.prototype.rebuildBuffersMenu = function() {
         var self = this;
-        self.menubar.removeAll("buffers");
+        self.menubar.removeAll("editors");
         self.documents.forEach(function(doc, idx) {
             var label = doc.name;
             if (label.length > 16) {
@@ -1059,7 +1059,7 @@ eXide.edit.Editor = (function () {
             }
             if (!doc.saved)
                 label += "*";
-            self.menubar.add("buffers", label, doc.path, idx + 1, function() {
+            self.menubar.add("editors", label, doc.path, idx + 1, function() {
                 self.switchTo(doc);
             });
         });
