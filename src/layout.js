@@ -221,7 +221,12 @@ eXide.app.Layout = (function () {
         } else {
             for (var region in this.regions) {
                 var size = localStorage["eXide.layout." + region];
-                this.regions[region].setSize(parseInt(size));
+                if (size != null) {
+                    var parsed = parseInt(size);
+                    if (!isNaN(parsed)) {
+                        this.regions[region].setSize(parsed);
+                    }
+                }
             }
         }
     };
