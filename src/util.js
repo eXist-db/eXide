@@ -254,6 +254,17 @@ eXide.util.Dialog = (function () {
 			inputDlg.setTitle(title);
 			document.getElementById("eXide-dialog-input-body").innerHTML = msg || "";
 			inputDlg.open();
+			var firstInput = document.querySelector("#eXide-dialog-input-body input");
+			if (firstInput) {
+				firstInput.focus();
+				firstInput.addEventListener("keyup", function handler(e) {
+					if (e.key === "Enter") {
+						firstInput.removeEventListener("keyup", handler);
+						inputDlg.close();
+						if (callback != null) callback.call(null);
+					}
+				});
+			}
 		}
 	};
 }());

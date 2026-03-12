@@ -82,7 +82,7 @@ eXide.util.Menubar = (function() {
                     selected.callback();
                 }
                 if (self.editor) self.editor.focus();
-            }, { placeholder: "Run command\u2026", parentEditor: self.editor });
+            }, { title: "Command Palette", placeholder: "Run command\u2026", parentEditor: self.editor });
         }
     };
 

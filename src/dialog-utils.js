@@ -15,6 +15,21 @@ eXide.namespace("eXide.util.DialogManager");
 
 eXide.util.DialogManager = (function() {
 
+    // Stack of open non-modal dialog controllers (most recent on top)
+    var openStack = [];
+
+    // Single document-level Escape handler for all non-modal dialogs.
+    // Skip if a modal <dialog> (e.g. QuickPicker, confirm) is open on top —
+    // those handle Escape themselves via the native cancel event.
+    document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape" && openStack.length > 0) {
+            var topModal = document.querySelector("dialog[open]");
+            if (topModal) return; // let the modal handle it
+            e.preventDefault();
+            openStack[openStack.length - 1].close();
+        }
+    });
+
     function create(contentEl, options) {
         options = options || {};
         var el = typeof contentEl === "string" ? document.querySelector(contentEl) : contentEl;
@@ -53,6 +68,9 @@ eXide.util.DialogManager = (function() {
         titleBar.appendChild(closeBtn);
         dialog.appendChild(titleBar);
 
+        // Drag state (declared here so open() can reset it)
+        var dragResolved = false;
+
         // Drag support via title bar
         if (options.draggable !== false) {
             titleBar.style.cursor = "move";
@@ -60,14 +78,28 @@ eXide.util.DialogManager = (function() {
             titleBar.addEventListener("mousedown", function(e) {
                 if (e.target === closeBtn) return;
                 e.preventDefault();
-                // Remove centering transform on first drag
-                if (dialog.style.transform) {
+                // On first drag, resolve CSS centering to fixed pixel position.
+                // Modal <dialog> uses UA inset:0/margin:auto in the top layer;
+                // non-modal <div> uses top:50%/left:50%/transform.
+                if (!dragResolved) {
                     var rect = dialog.getBoundingClientRect();
-                    dialog.style.transform = "none";
-                    dialog.style.left = rect.left + "px";
-                    dialog.style.top = rect.top + "px";
+                    if (isModal) {
+                        // Top-layer: position relative to viewport
+                        dialog.style.inset = "auto";
+                        dialog.style.margin = "0";
+                        dialog.style.left = rect.left + "px";
+                        dialog.style.top = rect.top + "px";
+                    } else {
+                        var parentRect = (dialog.offsetParent || document.body).getBoundingClientRect();
+                        dialog.style.transform = "none";
+                        dialog.style.left = (rect.left - parentRect.left) + "px";
+                        dialog.style.top = (rect.top - parentRect.top) + "px";
+                    }
+                    dragResolved = true;
                 }
-                dragState = { startX: e.clientX, startY: e.clientY, origLeft: dialog.offsetLeft, origTop: dialog.offsetTop };
+                var left = parseInt(dialog.style.left, 10) || 0;
+                var top = parseInt(dialog.style.top, 10) || 0;
+                dragState = { startX: e.clientX, startY: e.clientY, origLeft: left, origTop: top };
                 function onMove(e) {
                     if (!dragState) return;
                     dialog.style.left = (dragState.origLeft + e.clientX - dragState.startX) + "px";
@@ -107,12 +139,25 @@ eXide.util.DialogManager = (function() {
             dialog: dialog,
             content: el,
             open: function() {
+                // Reset drag position so dialog re-centers each time
+                if (dragResolved) {
+                    dialog.style.left = "";
+                    dialog.style.top = "";
+                    if (isModal) {
+                        dialog.style.inset = "";
+                        dialog.style.margin = "";
+                    } else {
+                        dialog.style.transform = "";
+                    }
+                    dragResolved = false;
+                }
                 if (isModal) {
                     dialog.showModal();
                     if (options.height) dialog.style.display = "flex";
                 } else {
                     dialog.style.display = "flex";
                     dialog.setAttribute("open", "");
+                    openStack.push(controller);
                 }
             },
             close: function() {
@@ -122,6 +167,8 @@ eXide.util.DialogManager = (function() {
                 } else {
                     dialog.style.display = "none";
                     dialog.removeAttribute("open");
+                    var idx = openStack.indexOf(controller);
+                    if (idx !== -1) openStack.splice(idx, 1);
                     dialog.dispatchEvent(new Event("close"));
                 }
             },
@@ -164,11 +211,7 @@ eXide.util.DialogManager = (function() {
                 controller.close();
             });
         }
-        dialog.addEventListener("keydown", function(e) {
-            if (e.key === "Escape" && !isModal) {
-                controller.close();
-            }
-        });
+        // Non-modal Escape is handled by the shared openStack listener above
 
         return controller;
     }

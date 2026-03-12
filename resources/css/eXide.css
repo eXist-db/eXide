@@ -2263,13 +2263,44 @@ body.dark .eXide-dialog-content .browse-filter {
     box-shadow: 0 8px 32px rgba(0,0,0,.25);
     background: #fff;
     color: #333;
-    display: flex;
     flex-direction: column;
     overflow: hidden;
     font-size: 13px;
+    z-index: 10002;
+}
+.quick-picker[open] {
+    display: flex;
 }
 .quick-picker::backdrop {
     background: rgba(0,0,0,.25);
+    z-index: 10001;
+}
+.quick-picker-titlebar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 8px 4px 12px;
+    border-bottom: 1px solid #e0e0e0;
+    background: #f5f5f5;
+    border-radius: 8px 8px 0 0;
+    user-select: none;
+}
+.quick-picker-title {
+    font-weight: 600;
+    font-size: 13px;
+    color: #333;
+}
+.quick-picker-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #666;
+    padding: 0 4px;
+    line-height: 1;
+}
+.quick-picker-close:hover {
+    color: #333;
 }
 .quick-picker-header {
     padding: 8px;
@@ -2954,8 +2985,8 @@ div#valueHighLight {
     align-items: center;
     flex-wrap: wrap;
 }
-#find-dialog.visible {
-    display: flex;
+.eXide-dialog-content > #find-dialog {
+    display: block;
 }
 #find-dialog input[type="text"],
 #find-dialog input[type="search"] {
@@ -4195,6 +4226,19 @@ body.dark .quick-picker {
 }
 body.dark .quick-picker::backdrop {
     background: rgba(0,0,0,.45);
+}
+body.dark .quick-picker-titlebar {
+    background: #383838;
+    border-bottom-color: #444;
+}
+body.dark .quick-picker-title {
+    color: #ccc;
+}
+body.dark .quick-picker-close {
+    color: #999;
+}
+body.dark .quick-picker-close:hover {
+    color: #ccc;
 }
 body.dark .quick-picker-header {
     border-bottom-color: #444;

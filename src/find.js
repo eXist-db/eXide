@@ -174,7 +174,7 @@ eXide.find.Files = (function() {
         if (dlg) return;
         dialogEl = document.getElementById("find-dialog");
         dlg = eXide.util.DialogManager.create(dialogEl, {
-            title: "Search binary files",
+            title: "Search Binary Files",
             modal: false,
             height: 400,
             width: 600

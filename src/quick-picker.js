@@ -56,6 +56,10 @@ eXide.util.QuickPicker = (function () {
         dialog = document.createElement("dialog");
         dialog.className = "quick-picker";
         dialog.innerHTML =
+            '<div class="quick-picker-titlebar">' +
+                '<span class="quick-picker-title"></span>' +
+                '<button type="button" class="quick-picker-close">\u2715</button>' +
+            '</div>' +
             '<div class="quick-picker-header">' +
                 '<input type="text" class="quick-picker-filter" placeholder="Type to filter\u2026" autocomplete="off" spellcheck="false">' +
             '</div>' +
@@ -64,6 +68,32 @@ eXide.util.QuickPicker = (function () {
                 '<div class="quick-picker-detail"></div>' +
             '</div>';
         document.body.appendChild(dialog);
+
+        // Close button
+        dialog.querySelector(".quick-picker-close").addEventListener("click", cancel);
+
+        // Drag support via title bar
+        var titleBar = dialog.querySelector(".quick-picker-titlebar");
+        titleBar.style.cursor = "move";
+        var dragState = null;
+        titleBar.addEventListener("mousedown", function(e) {
+            if (e.target.classList.contains("quick-picker-close")) return;
+            e.preventDefault();
+            dragState = { startX: e.clientX, startY: e.clientY, origLeft: dialog.offsetLeft, origTop: dialog.offsetTop };
+            function onMove(e) {
+                if (!dragState) return;
+                dialog.style.left = (dragState.origLeft + e.clientX - dragState.startX) + "px";
+                dialog.style.top = (dragState.origTop + e.clientY - dragState.startY) + "px";
+                dialog.style.transform = "none";
+            }
+            function onUp() {
+                dragState = null;
+                document.removeEventListener("mousemove", onMove);
+                document.removeEventListener("mouseup", onUp);
+            }
+            document.addEventListener("mousemove", onMove);
+            document.addEventListener("mouseup", onUp);
+        });
 
         filterInput = dialog.querySelector(".quick-picker-filter");
         listEl = dialog.querySelector(".quick-picker-list");
@@ -127,6 +157,14 @@ eXide.util.QuickPicker = (function () {
 
         if (options.placeholder) filterInput.placeholder = options.placeholder;
         else filterInput.placeholder = "Type to filter\u2026";
+
+        var titleEl = dialog.querySelector(".quick-picker-title");
+        titleEl.textContent = options.title || "";
+
+        // Reset position for each open
+        dialog.style.left = "";
+        dialog.style.top = "";
+        dialog.style.transform = "";
 
         filterInput.value = "";
         renderList();

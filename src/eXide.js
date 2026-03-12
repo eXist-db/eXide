@@ -610,6 +610,7 @@ eXide.app = (function(util) {
 				    dialogs["dialog-confirm-close"] = eXide.util.DialogManager.create(
 				        document.getElementById("dialog-confirm-close"), {
 				            appendTo: "#layout-container",
+				            title: "Close Document",
 				            modal: true,
 				            width: 420,
 				            buttons: {
@@ -668,6 +669,8 @@ eXide.app = (function(util) {
     					}
     				});
     				dialogs["open-dialog"].open();
+					var nameInput = document.querySelector("#open-dialog input[name='resource']");
+					if (nameInput) nameInput.focus();
     			} else {
     				editor.saveDocument(null, function () {
     					util.message(editor.getActiveDocument().getName() + " stored.");
@@ -711,6 +714,8 @@ eXide.app = (function(util) {
     				}
     			});
     			dialogs["open-dialog"].open();
+				var nameInput = document.querySelector("#open-dialog input[name='resource']");
+				if (nameInput) nameInput.focus();
             });
         },
 
@@ -1741,6 +1746,7 @@ eXide.app = (function(util) {
                     if (typeSelect) {
                         typeSelect.value = "xquery";
                         typeSelect.dispatchEvent(new Event("change"));
+                        typeSelect.focus();
                     }
                 });
             };
@@ -1921,9 +1927,17 @@ eXide.app = (function(util) {
 			});
             menu.click("#menu-edit-find", function() {
                 CM6.openSearchPanel(editor.editor);
+                setTimeout(function() {
+                    var searchInput = document.querySelector(".cm-search input[main-field]");
+                    if (searchInput) searchInput.focus();
+                }, 0);
             });
             menu.click("#menu-edit-find-replace", function() {
                 CM6.openSearchPanel(editor.editor);
+                setTimeout(function() {
+                    var searchInput = document.querySelector(".cm-search input[main-field]");
+                    if (searchInput) searchInput.focus();
+                }, 0);
             });
             menu.click("#menu-edit-find-files", function() {
                 app.findFiles();
