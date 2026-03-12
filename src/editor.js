@@ -269,6 +269,7 @@ eXide.edit.Editor = (function () {
             showInvisiblesCompartment.of([]),
             rectangularSelectionCompartment.of([CM6.rectangularSelection(), CM6.crosshairCursor()]),
             eXide.edit.FuncDocTooltip.extension(),
+            eXide.edit.SemanticHighlight.extension(),
             CM6.autocompletion({
                 override: [eXide.edit.CompletionSource.completionSource],
                 activateOnTyping: false,

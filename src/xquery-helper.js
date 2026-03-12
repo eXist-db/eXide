@@ -233,7 +233,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 console.log("Static analysis error (non-fatal): %s", te.message);
             }
 
-            // TODO: add semantic highlighting via CM6 decorations
+            eXide.edit.SemanticHighlight.update(this.editor, doc.ast);
 
             var markers = doc.ast.markers;
             if (markers) {
@@ -687,15 +687,20 @@ eXide.edit.XQueryModeHelper = (function () {
     Constr.prototype.rename = function(doc) {
 
         function doRename(references) {
-            // Select the first reference for manual rename
-            // TODO: CM6 multi-cursor rename
-            if (references.length > 0) {
-                var node = references[0];
-                var renameFrom = editorUtils.rowColToOffset(self.editor.state, node.pos.sl, node.pos.sc);
-                var renameTo = editorUtils.rowColToOffset(self.editor.state, node.pos.el, node.pos.ec);
-                self.editor.dispatch({ selection: { anchor: renameFrom, head: renameTo } });
+            if (references.length === 0) return;
+            // Create a multi-cursor selection covering all references
+            var ranges = [];
+            for (var i = 0; i < references.length; i++) {
+                var node = references[i];
+                var from = editorUtils.rowColToOffset(self.editor.state, node.pos.sl, node.pos.sc);
+                var to = editorUtils.rowColToOffset(self.editor.state, node.pos.el, node.pos.ec);
+                ranges.push(CM6.EditorSelection.range(from, to));
             }
+            // Sort by position (required by EditorSelection)
+            ranges.sort(function(a, b) { return a.from - b.from; });
+            self.editor.dispatch({ selection: CM6.EditorSelection.create(ranges) });
             self.editor.focus();
+            eXide.util.message("Editing " + references.length + " occurrence" + (references.length > 1 ? "s" : "") + " — type to rename.");
         }
 
         this.parseXQuery(doc);
