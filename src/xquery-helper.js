@@ -219,7 +219,7 @@ eXide.edit.XQueryModeHelper = (function () {
         var value = doc.getText();
         var result = rexAdapter.parseXQuery(value, RExParser);
         if (result.error) {
-            console.log("Error while parsing XQuery: %s", result.error.message || result.error);
+            console.debug("Error while parsing XQuery: %s", result.error);
         }
         try {
             doc.ast = result.ast;

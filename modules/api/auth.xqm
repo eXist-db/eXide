@@ -42,7 +42,11 @@ declare function auth:login($request as map(*)) {
 };
 
 (:~
- : DELETE /api/auth/session — Logout.
+ : DELETE /api/auth/session?logout=true — Logout.
+ :
+ : The persistent login cookie is cleared by controller.xq's login:set-user()
+ : call, which runs before this handler and detects the "logout" request
+ : parameter. This handler invalidates the HTTP session.
  :)
 declare function auth:logout($request as map(*)) {
     let $_ := session:invalidate()

@@ -248,7 +248,11 @@ function parseXQuery(input, ParserConstructor) {
     try {
         parser.parse_XQuery();
     } catch (e) {
-        error = e;
+        try {
+            error = parser.getErrorMessage(e);
+        } catch (_) {
+            error = e.message || String(e);
+        }
     }
 
     var rexRoot = extractTree(handler, input);

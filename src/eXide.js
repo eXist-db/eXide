@@ -1215,12 +1215,13 @@ eXide.app = (function(util) {
                 return response.json();
             })
             .then(function(data) {
-                if (data && data.user) {
+                if (data && data.isLoggedIn) {
                     app.login = data;
                     app.updateAuthStatus(app.login.user);
                     if (callback) callback(app.login.user);
                 } else {
                     app.login = null;
+                    app.updateAuthStatus(null);
                     if (callback) callback(null);
                 }
             })
@@ -1704,17 +1705,6 @@ eXide.app = (function(util) {
 				    }
                 }
             );
-            dialogs["version-warning"] = eXide.util.DialogManager.create(
-                document.getElementById("version-warning"), {
-                    appendTo: "#layout-container",
-                    modal: false,
-                    height: 300,
-                    width: 450,
-                    buttons: {
-    				    "Close": function () { dialogs["version-warning"].close(); }
-				    }
-                }
-            );
             dialogs["dialog-templates"] = eXide.util.DialogManager.create(
                 document.getElementById("dialog-templates"), {
                     appendTo: "#layout-container",
@@ -2081,7 +2071,7 @@ eXide.app = (function(util) {
 				ev.preventDefault();
 				if (app.login) {
 					// logout
-					fetch("api/auth/session", { method: "DELETE" });
+					fetch("api/auth/session?logout=true", { method: "DELETE" });
 					app.updateAuthStatus(null);
 					app.login = null;
 				} else {
