@@ -8,7 +8,7 @@ const esbuild = require("esbuild");
 const path = require("path");
 
 const entryContents = `
-import {EditorState, Compartment, StateField, StateEffect, Prec, Facet} from "@codemirror/state";
+import {EditorState, EditorSelection, Compartment, StateField, StateEffect, Prec, Facet} from "@codemirror/state";
 import {EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter,
         drawSelection, dropCursor, rectangularSelection, crosshairCursor,
         highlightSpecialChars, highlightWhitespace, highlightTrailingWhitespace,
@@ -43,6 +43,7 @@ import {tags, classHighlighter, highlightTree} from "@lezer/highlight";
 globalThis.CM6 = {
     // @codemirror/state
     EditorState,
+    EditorSelection,
     Compartment,
     StateField,
     StateEffect,
