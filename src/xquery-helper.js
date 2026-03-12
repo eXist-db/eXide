@@ -233,7 +233,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 console.log("Static analysis error (non-fatal): %s", te.message);
             }
 
-            // TODO: add semantic highlighting via CM6 decorations
+            eXide.edit.SemanticHighlight.update(this.editor, doc.ast);
 
             var markers = doc.ast.markers;
             if (markers) {

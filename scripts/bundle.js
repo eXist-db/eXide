@@ -12,6 +12,7 @@ import '../src/parser/adapter.js';
 import '../src/static-analysis.js';
 import '../src/prettier-format.js';
 import '../src/funcdoc-tooltip.js';
+import '../src/semantic-highlight.js';
 import '../src/xquery-completion.js';
 import '../src/xquery-helper.js';
 import '../src/xml-helper.js';

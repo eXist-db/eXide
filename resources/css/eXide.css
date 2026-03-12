@@ -584,6 +584,21 @@ a:link, a:visited {
     font-family: inherit !important;
 }
 
+/* Semantic highlighting — AST-aware token classes
+   Target both the span itself and any CM6 syntax spans nested inside,
+   since CM6 wraps text in inner <span>s with their own color rules */
+.sem-function-name,    .sem-function-name *    { color: #4a6fa5 !important; }
+.sem-variable,         .sem-variable *         { color: #8b5cf6 !important; }
+.sem-namespace-prefix, .sem-namespace-prefix * { color: #718096 !important; font-style: italic !important; }
+.sem-annotation,       .sem-annotation *       { color: #d97706 !important; }
+.sem-type-name,        .sem-type-name *        { color: #0d9488 !important; }
+
+body.dark .sem-function-name,    body.dark .sem-function-name *    { color: #7fb3ff !important; }
+body.dark .sem-variable,         body.dark .sem-variable *         { color: #b49aff !important; }
+body.dark .sem-namespace-prefix, body.dark .sem-namespace-prefix * { color: #a0aec0 !important; font-style: italic !important; }
+body.dark .sem-annotation,       body.dark .sem-annotation *       { color: #fbbf24 !important; }
+body.dark .sem-type-name,        body.dark .sem-type-name *        { color: #2dd4bf !important; }
+
 .header {
     position: absolute;
     left: 0;
