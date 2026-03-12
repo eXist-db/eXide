@@ -54,7 +54,7 @@ declare function db:put($request as map(*)) {
     let $resource := replace($path, "^.*/", "")
     return
         try {
-            let $stored := xmldb:store($collection, $resource, $data)
+            let $stored := xs:anyURI(xmldb:store($collection, $resource, $data))
             (: Fix permissions for XQuery files :)
             let $mime := xmldb:get-mime-type($stored)
             let $_ :=
