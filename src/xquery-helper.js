@@ -708,13 +708,27 @@ eXide.edit.XQueryModeHelper = (function () {
         var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
         var ast = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
         if (ast) {
-            if (ast.name == "QName" && ast.getParent.name == "DirElemConstructor") {
-                var tags = eXide.edit.XQueryUtils.findSiblings(ast, "QName");
-                tags.push(ast);
-                doRename(tags);
-            } else if (ast.getParent.name == "VarName" || ast.getParent.name == "Param") {
-                var varName = eXide.edit.XQueryUtils.getValue(ast);
-                var ancestor = eXide.edit.XQueryUtils.findVariableContext(ast, varName);
+            // XML element tag rename: cursor lands on EQName inside QName inside DirElemConstructor
+            var dirElem = eXide.edit.XQueryUtils.findAncestor(ast, "DirElemConstructor");
+            if (dirElem && ast.name == "EQName" && ast.getParent.name == "QName" && ast.getParent.getParent.name == "DirElemConstructor") {
+                // Collect the open/close tag QNames (direct children of DirElemConstructor, skip attribute QNames)
+                var tagNames = [];
+                for (var t = 0; t < dirElem.children.length; t++) {
+                    if (dirElem.children[t].name === "QName") {
+                        tagNames.push(dirElem.children[t]);
+                    }
+                }
+                doRename(tagNames);
+            } else if (ast.getParent.name == "VarName" || ast.getParent.name == "Param"
+                    || (ast.name == "TOKEN" && ast.value == "$" && ast.getParent.name == "VarRef")) {
+                // If cursor is on the $ token, navigate to the EQName inside VarName
+                var varNode = ast;
+                if (ast.name == "TOKEN" && ast.getParent.name == "VarRef") {
+                    varNode = eXide.edit.XQueryUtils.findChild(ast.getParent, "VarName");
+                    if (varNode) varNode = eXide.edit.XQueryUtils.findChild(varNode, "EQName") || varNode;
+                }
+                var varName = eXide.edit.XQueryUtils.getValue(varNode);
+                var ancestor = eXide.edit.XQueryUtils.findVariableContext(varNode, varName);
                 if (ancestor) {
                     var references = new eXide.edit.VariableReferences(varName, ancestor).getReferences();
                     doRename(references);
