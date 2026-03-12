@@ -801,8 +801,7 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
 	Constr.prototype.resize = function () {
-	    console.log("Resizing canvas...");
-		this.reload();
+		this.reload(true);
 	};
 
 	Constr.prototype.update = function(collection, reload) {
@@ -1041,9 +1040,11 @@ eXide.browse.ResourceBrowser = (function () {
         this.scrollContainer.focus();
     };
 
-	Constr.prototype.reload = function() {
+	Constr.prototype.reload = function(skipSync) {
 		this.update(this._collection, true);
-		eXide.app.syncDirectory(this._collection);
+		if (!skipSync) {
+			eXide.app.syncDirectory(this._collection);
+		}
 	};
 
 	return Constr;
@@ -1331,7 +1332,15 @@ eXide.browse.Browser = (function () {
 		button = createButton(toolbar, "Open Selected", "open", 6, "folder-open-o");
 		button.addEventListener("click", function (ev) {
 			ev.preventDefault();
-			eXide.app.openSelectedDocument(null, false);
+			var rows = self.resources.getSelectedRows();
+			if (rows.length === 1 && rows[0].isCollection) {
+				var coll = rows[0].name === ".." ?
+					self.resources._collection.replace(/\/[^\/]+$/, "") :
+					rows[0].key;
+				self.resources.update(coll, false);
+			} else {
+				eXide.app.openSelectedDocument(null, false);
+			}
 		});
 
 		button = createButton(toolbar, "Download Selected", "download", 11, "download");
@@ -1400,7 +1409,7 @@ eXide.browse.Browser = (function () {
             this.mode = mode;
         }
         this.resources.setMode(mode);
-        this.resources.reload();
+        this.resources.reload(true);
 		var browseForm = this.container.querySelector(".eXide-browse-form");
 		if (this.mode === "save") {
 			browseForm.style.display = "";

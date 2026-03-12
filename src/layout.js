@@ -17,7 +17,7 @@ eXide.app.FlexboxSplitter = (function () {
         function onMouseMove(e) {
             var current = (self.isHorizontal ? e.pageX : e.pageY);
             var diff = (pos - current);
-            hasMoved = diff !== 0;
+            hasMoved = hasMoved || diff !== 0;
             pos = current;
             if (hasMoved) {
                 if (self.isHorizontal) {

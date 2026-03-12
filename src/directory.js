@@ -750,7 +750,7 @@ eXide.edit.Directory = (function () {
 					if (item.name === "..") {
 						var li = document.createElement("li");
 						li.className = "dir-flat-item dir-flat-collection";
-						li.innerHTML = '<span>../</span>';
+						li.innerHTML = '<i class="fa fa-folder"></i> <span>..</span>';
 						li.addEventListener("click", function() {
 							loadFlatView(item.key);
 						});
