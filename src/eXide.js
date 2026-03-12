@@ -428,40 +428,42 @@ eXide.app = (function(util) {
                 }
                 return true;
             }
+			var encodedPath = resource.path.replace(/^\//, "");
 			var params = new URLSearchParams({
-			    "path": resource.path,
 			    "indent": indentOnOpen,
 			    "expand-xincludes": expandXIncludesOnOpen,
 			    "omit-xml-decl": omitXMLDeclatarionOnOpen
 			});
-			fetch("modules/load.xq?" + params.toString())
+			fetch("api/storage/" + encodeURIComponent(encodedPath) + "?" + params.toString())
 			    .then(function(response) {
 			        if (!response.ok) {
 			            throw { status: response.status, statusText: response.statusText };
 			        }
-			        var contentType = response.headers.get("Content-Type") || "";
-			        var externalPath = response.headers.get("X-Link");
-			        var baseMime = contentType.replace(/;.*$/, "").trim();
+			        return response.json();
+			    })
+			    .then(function(data) {
+			        var baseMime = data.mime || "";
+			        var externalPath = data.externalPath;
 			        // Show binary files in a preview overlay
-			        if (!reload && !forceText && /^image\/|^audio\/|^video\/|^application\/pdf|^application\/octet-stream|^application\/zip/.test(baseMime)) {
+			        if (!reload && !forceText && data.binary &&
+			            /^image\/|^audio\/|^video\/|^application\/pdf|^application\/octet-stream|^application\/zip/.test(baseMime)) {
 			            var fileUrl = externalPath || ("rest" + resource.path);
 			            var fileName = resource.name || resource.path.replace(/^.*\//, "");
 			            app.$showBinaryPreview(fileUrl, fileName, baseMime, resource, callback);
 			            if (callback) { callback(null); }
 			            return true;
 			        }
-			        return response.text().then(function(data) {
-			            if (reload) {
-			                editor.reload(data);
-			            } else {
-			                var mime = forceText ? "text/text" : util.mimeTypes.getMime(contentType);
-			                editor.openDocument(data, mime, resource, externalPath);
-			            }
-			            if (callback) {
-			                callback(resource);
-			            }
-			            return true;
-			        });
+			        var content = data.content || "";
+			        if (reload) {
+			            editor.reload(content);
+			        } else {
+			            var mime = forceText ? "text/text" : util.mimeTypes.getMime(baseMime);
+			            editor.openDocument(content, mime, resource, externalPath);
+			        }
+			        if (callback) {
+			            callback(resource);
+			        }
+			        return true;
 			    })
 			    .catch(function(err) {
 			        util.error("Failed to load document " + encodeURI(resource.path) + ": " +
@@ -733,7 +735,14 @@ eXide.app = (function(util) {
 				return;
 			}
             var path = path || doc.getPath()
-            const url = "modules/load.xq?download=true&path=" + encodeURIComponent(path) + "&indent=" + indentOnDownload + "&expand-xincludes=" + expandXIncludesOnDownload + "&omit-xml-decl=" + omitXMLDeclatarionOnDownload;
+            var encodedPath = path.replace(/^\//, "");
+            var dlParams = new URLSearchParams({
+                "download": "true",
+                "indent": indentOnDownload,
+                "expand-xincludes": expandXIncludesOnDownload,
+                "omit-xml-decl": omitXMLDeclatarionOnDownload
+            });
+            const url = "api/storage/" + encodeURIComponent(encodedPath) + "?" + dlParams.toString();
             fetch(url)
             .then(resp => resp.blob())
             .then(blob => {
@@ -1540,7 +1549,59 @@ eXide.app = (function(util) {
                     iframe.contentWindow.document.write("<html><body><p>Searching ...</p></body></html>");
                     iframe.contentWindow.document.close();
 
-                    iframe.src = "modules/search.xq?" + searchParams;
+                    // Parse form params into JSON body for POST /api/search
+                    var formParams = new URLSearchParams(searchParams);
+                    var target = formParams.get("target");
+                    var collection = target === "all" ? "/db" :
+                        target === "collection" ? formParams.get("collection") :
+                        (target || "/db");
+                    var body = {
+                        query: formParams.get("search"),
+                        collection: collection,
+                        type: formParams.get("type") || "all",
+                        regex: formParams.has("regex"),
+                        caseSensitive: formParams.has("case")
+                    };
+
+                    fetch("api/search", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(body)
+                    })
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.error) {
+                            iframe.contentWindow.document.open('text/html', 'replace');
+                            iframe.contentWindow.document.write("<html><body><p>" + data.error + "</p></body></html>");
+                            iframe.contentWindow.document.close();
+                            return;
+                        }
+                        var hits = data.hits || [];
+                        var html = '<html><head><link rel="stylesheet" type="text/css" href="resources/css/search.css"/></head><body>';
+                        html += '<div><h3>Search Results for ' + data.query + ' in ' + data.collection + '</h3><ul>';
+                        if (hits.length === 0) {
+                            html += '<li>No matches found.</li>';
+                        }
+                        for (var i = 0; i < hits.length; i++) {
+                            var hit = hits[i];
+                            html += '<li class="sourceinfo"><a class="resource" href="#" data-src="' +
+                                hit.resource + '" data-line="' + hit.line + '">' +
+                                hit.name + '</a><span class="line">line ' + hit.line + '</span></li>';
+                            html += '<li class="code">' + hit.text.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</li>';
+                        }
+                        html += '</ul></div></body></html>';
+                        iframe.contentWindow.document.open('text/html', 'replace');
+                        iframe.contentWindow.document.write(html);
+                        iframe.contentWindow.document.close();
+                        // Bind click handlers
+                        var links = iframe.contentDocument.querySelectorAll(".resource");
+                        for (var j = 0; j < links.length; j++) {
+                            links[j].addEventListener("click", function(ev) {
+                                ev.preventDefault();
+                                eXide.app.findDocument(this.dataset.src, parseInt(this.dataset.line));
+                            });
+                        }
+                    });
                 });
             });
         },
@@ -1734,9 +1795,7 @@ eXide.app = (function(util) {
             var origTemplOpen = dialogs["dialog-templates"].open;
             dialogs["dialog-templates"].open = function() {
                 origTemplOpen.call(dialogs["dialog-templates"]);
-                fetch("modules/get-template.xq", {
-                    method: "POST"
-                })
+                fetch("api/templates")
                 .then(function(response) { return response.json(); })
                 .then(function(data) {
                     templates = data;

@@ -13,30 +13,22 @@ import module namespace config="http://exist-db.org/xquery/apps/config" at "../c
  : GET /api/templates — Template catalog grouped by language.
  :)
 declare function templates:list($request as map(*)) {
-    let $templates-col := $config:app-root || "/templates"
+    let $doc-path := $config:app-root || "/templates/documents.xml"
     return
-        if (xmldb:collection-available($templates-col)) then
-            let $files := xmldb:get-child-resources($templates-col)
-            let $groups := map:merge(
-                for $file in $files
-                where not($file = "namespaces.json")
-                let $ext := replace($file, "^.*\.", "")
-                let $lang :=
-                    switch ($ext)
-                        case "xq" case "xql" case "xqm" return "xquery"
-                        case "xml" return "xml"
-                        case "html" return "html"
-                        case "css" return "css"
-                        case "js" return "javascript"
-                        default return $ext
-                let $name := replace($file, "\.[^.]+$", "")
-                group by $lang
-                return map:entry($lang, array {
-                    for $n at $i in $name
-                    return map { "name": $n[$i], "file": $file[$i] }
+        if (doc-available($doc-path)) then
+            let $templates := doc($doc-path)//template
+            return map:merge(
+                for $template in $templates
+                let $mode := string($template/@mode)
+                group by $mode
+                return map:entry($mode, array {
+                    for $t in $template
+                    return map {
+                        "name": string($t/@name),
+                        "description": string($t/description)
+                    }
                 })
             )
-            return $groups
         else
             map {}
 };
@@ -46,19 +38,15 @@ declare function templates:list($request as map(*)) {
  :)
 declare function templates:get($request as map(*)) {
     let $name := $request?parameters?name
-    let $templates-col := $config:app-root || "/templates"
-    (: Try common extensions :)
-    let $candidates := ($name, $name || ".xq", $name || ".xml", $name || ".html",
-                        $name || ".css", $name || ".js", $name || ".xql", $name || ".xqm")
-    let $found :=
-        for $candidate in $candidates
-        where util:binary-doc-available($templates-col || "/" || $candidate)
-        return $candidate
+    let $doc-path := $config:app-root || "/templates/documents.xml"
+    let $code :=
+        if (doc-available($doc-path)) then
+            let $text := doc($doc-path)//template[@name = $name]/code/text()
+            return if ($text) then replace($text, "^\s+", "") else ()
+        else ()
     return
-        if (exists($found)) then
-            let $path := $templates-col || "/" || $found[1]
-            return roaster:response(200, "text/plain",
-                util:binary-to-string(util:binary-doc($path)))
+        if ($code) then
+            roaster:response(200, "text/plain", $code)
         else
             roaster:response(404, "application/json",
                 map { "error": "Template not found: " || $name })

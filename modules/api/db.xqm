@@ -266,9 +266,26 @@ declare %private function db:browse-collection($path, $request, $user) {
     }
 };
 
+declare %private function db:get-run-path($path) {
+    let $appRoot := repo:get-root()
+    return
+        replace(
+            if (starts-with($path, $appRoot)) then
+                request:get-context-path() || "/" || request:get-attribute("$exist:prefix") || "/" ||
+                substring-after($path, $appRoot)
+            else
+                request:get-context-path() || "/rest" || $path,
+            "/{2,}", "/"
+        )
+};
+
 declare %private function db:load-document($path, $request, $user) {
     let $download := ($request?parameters?download, false())[1]
+    let $indent := ($request?parameters?indent, "true")[1] = "true"
+    let $expand-xincludes := ($request?parameters?("expand-xincludes"), "false")[1] = "true"
+    let $omit-xml-decl := ($request?parameters?("omit-xml-decl"), "true")[1] = "true"
     let $mime := xmldb:get-mime-type($path)
+    let $externalPath := db:get-run-path($path)
     return
         if (not(sm:has-access(xs:anyURI($path), "r"))) then
             roaster:response(404, "application/json",
@@ -277,24 +294,37 @@ declare %private function db:load-document($path, $request, $user) {
             if ($download) then
                 roaster:response(200, $mime, util:binary-doc($path))
             else
-                (: Return metadata for binary docs unless downloading :)
                 let $uri := xs:anyURI($path)
-                return map {
-                    "path": $path,
-                    "mime": $mime,
-                    "binary": true(),
-                    "size": xmldb:size(replace($path, "/[^/]+$", ""), replace($path, "^.*/", "")),
-                    "lastModified": string(xmldb:last-modified(
-                        replace($path, "/[^/]+$", ""), replace($path, "^.*/", ""))),
-                    "permissions": sm:get-permissions($uri)/sm:permission/string(@mode),
-                    "owner": sm:get-permissions($uri)/sm:permission/string(@owner),
-                    "group": sm:get-permissions($uri)/sm:permission/string(@group)
-                }
+                (: Text-based binary types: include content for editor :)
+                let $is-text := matches($mime, "^(text/|application/(xquery|javascript|json|xml|xslt\+xml|xsl-fo|css|less))")
+                let $content :=
+                    if ($is-text) then
+                        try { util:binary-to-string(util:binary-doc($path)) }
+                        catch * { () }
+                    else ()
+                return map:merge((
+                    map {
+                        "path": $path,
+                        "mime": $mime,
+                        "binary": true(),
+                        "externalPath": $externalPath,
+                        "size": xmldb:size(replace($path, "/[^/]+$", ""), replace($path, "^.*/", "")),
+                        "lastModified": string(xmldb:last-modified(
+                            replace($path, "/[^/]+$", ""), replace($path, "^.*/", ""))),
+                        "permissions": sm:get-permissions($uri)/sm:permission/string(@mode),
+                        "owner": sm:get-permissions($uri)/sm:permission/string(@owner),
+                        "group": sm:get-permissions($uri)/sm:permission/string(@group)
+                    },
+                    if ($content) then map { "content": $content } else ()
+                ))
         else
+            let $serialization-opts :=
+                "expand-xincludes=" || (if ($expand-xincludes) then "yes" else "no")
+            let $_ := util:declare-option("exist:serialize", $serialization-opts)
             let $content := serialize(doc($path), <output:serialization-parameters>
                 <output:method>xml</output:method>
-                <output:indent>yes</output:indent>
-                <output:omit-xml-declaration>yes</output:omit-xml-declaration>
+                <output:indent>{if ($indent) then "yes" else "no"}</output:indent>
+                <output:omit-xml-declaration>{if ($omit-xml-decl) then "yes" else "no"}</output:omit-xml-declaration>
             </output:serialization-parameters>)
             return
                 if ($download) then
@@ -305,6 +335,7 @@ declare %private function db:load-document($path, $request, $user) {
                         "path": $path,
                         "mime": $mime,
                         "binary": false(),
+                        "externalPath": $externalPath,
                         "content": $content,
                         "lastModified": string(xmldb:last-modified(
                             replace($path, "/[^/]+$", ""), replace($path, "^.*/", ""))),

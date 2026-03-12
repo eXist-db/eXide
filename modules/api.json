@@ -152,6 +152,30 @@
                             "type": "boolean",
                             "default": false
                         }
+                    },
+                    {
+                        "name": "indent",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "default": "true"
+                        }
+                    },
+                    {
+                        "name": "expand-xincludes",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "default": "false"
+                        }
+                    },
+                    {
+                        "name": "omit-xml-decl",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "default": "true"
+                        }
                     }
                 ],
                 "responses": {
