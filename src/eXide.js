@@ -1746,8 +1746,8 @@ eXide.app = (function(util) {
                     appendTo: "#layout-container",
     				title: "Keyboard Shortcuts",
     				modal: false,
-    				height: 400,
-                    width: 350,
+    				height: 520,
+                    width: 460,
     				buttons: {
     					"Close": function () { dialogs["keyboard-help"].close(); }
     				}

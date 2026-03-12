@@ -628,7 +628,21 @@
                     </div>
                 </div>
                 <div id="keyboard-help">
-                    <table id="keybindings"/>
+                    <div class="eXide-browse-resources">
+                        <input type="text" class="browse-filter" id="keybindings-filter"
+                               placeholder="Filter shortcuts…" autocomplete="off"/>
+                        <div class="browse-table-scroll">
+                            <table id="keybindings" class="browse-table">
+                                <thead>
+                                    <tr>
+                                        <th class="kb-col-action">Action</th>
+                                        <th class="kb-col-shortcut">Shortcut</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
                 <div id="upload-dialog">
                     <p>Drop files here or click on the button below to upload them

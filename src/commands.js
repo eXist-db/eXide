@@ -297,25 +297,39 @@ eXide.edit.commands = (function () {
 
         help: function (container, editor) {
             var el = typeof container === "string" ? document.querySelector(container) : container;
-            var tables = el.querySelectorAll("table");
-            for (var t = 0; t < tables.length; t++) {
-                var tbl = tables[t];
-                tbl.innerHTML = "";
-                for (var i = 0; i < commandList.length; i++) {
-                    var cmd = commandList[i];
-                    var tr = document.createElement("tr");
-                    var td = document.createElement("td");
-                    td.textContent = humanName(cmd.name);
-                    tr.appendChild(td);
-                    td = document.createElement("td");
-                    if (cmd.key) {
-                        var kbd = document.createElement("kbd");
-                        kbd.textContent = displayKey(cmd.key);
-                        td.appendChild(kbd);
-                    }
-                    tr.appendChild(td);
-                    tbl.appendChild(tr);
+            var tbody = el.querySelector("#keybindings tbody");
+            if (!tbody) return;
+            tbody.innerHTML = "";
+            for (var i = 0; i < commandList.length; i++) {
+                var cmd = commandList[i];
+                var tr = document.createElement("tr");
+                var td = document.createElement("td");
+                td.textContent = humanName(cmd.name);
+                tr.appendChild(td);
+                td = document.createElement("td");
+                if (cmd.key) {
+                    var span = document.createElement("span");
+                    span.className = "shortcut";
+                    span.textContent = displayKey(cmd.key);
+                    td.appendChild(span);
                 }
+                tr.appendChild(td);
+                tbody.appendChild(tr);
+            }
+            // Wire filter input
+            var filterInput = el.querySelector("#keybindings-filter");
+            if (filterInput) {
+                var newInput = filterInput.cloneNode(true);
+                filterInput.parentNode.replaceChild(newInput, filterInput);
+                newInput.value = "";
+                newInput.addEventListener("input", function() {
+                    var q = this.value.trim().toLowerCase();
+                    var trs = tbody.querySelectorAll("tr");
+                    trs.forEach(function(tr) {
+                        var text = tr.textContent.toLowerCase();
+                        tr.style.display = (!q || text.indexOf(q) >= 0) ? "" : "none";
+                    });
+                });
             }
         },
 
