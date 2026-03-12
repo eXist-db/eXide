@@ -1456,79 +1456,12 @@ eXide.app = (function(util) {
         },
 
         git: function() {
-            var gitUrl ="modules/git.xq",
-                gitError = function(response) {
-                           response.text().then(function(text) {
-                               util.error("Failed to apply configuration: " + text);
-                           });
-                       },
-                showResultsPanel = function() {
-                    editor.updateStatus("");
-				    editor.clearErrors();
-				    app.showResultsPanel();
-				    startOffset = 1;
-				    currentOffset = 1;
-                },
-                gitShow = function (data) {
-                                showResultsPanel();
-                                var iframe = document.getElementById("results-iframe");
-                                iframe.style.display = "";
-                                iframe.contentWindow.document.open('text/html', 'replace');
-                                iframe.contentWindow.document.write(JSON.stringify(data));
-                                iframe.contentWindow.document.close();
-                             };
-
+            var unavailable = function() {
+                util.message("Git integration is not available in this version of eXide.");
+            };
             return {
-                 branch: function(gitApp)   {
-                     console.info('git.branch');
-                     if(!app.login.isAdmin) {return}
-                     var params = new URLSearchParams({
-                         target: gitApp.root,
-                         "git-command": "branch"
-                     });
-                     fetch(gitUrl + "?" + params.toString())
-                         .then(function(response) {
-                             if (!response.ok) { gitError(response); return; }
-                             return response.json();
-                         })
-                         .then(function(data) {
-                             if (!data) return;
-                             var lines = data.stdout
-                                     ? Array.isArray(data.stdout.line)
-                                         ? data.stdout.line
-                                         : [data.stdout.line]
-                                             : [];
-                             gitApp.gitBranch = lines.map(function(l, index){
-                                 var current = l.split(' ').pop()
-                                 if(/^\*/.test(l)) {
-                                    gitApp.gitCurrentBranch = current ;
-                                    gitApp.gitCurrentBranchIndex = index;
-                                    }
-                                  return current
-                                 });
-                             document.getElementById("toolbar-current-branch").textContent = gitApp.gitCurrentBranch;
-                             document.getElementById("menu-git-active").textContent = gitApp.gitCurrentBranch;
-                             document.getElementById("menu-git-working-dir").textContent = gitApp.workingDir;
-                         });
-                 },
-                 command : function(gitApp, command,option, success){
-                      if(!app.login.isAdmin) {return}
-                     var params = new URLSearchParams({
-                         target: gitApp.root,
-                         "git-command": command,
-                         "git-option": option
-                     });
-                     fetch(gitUrl + "?" + params.toString())
-                         .then(function(response) {
-                             if (!response.ok) { gitError(response); return; }
-                             return response.json();
-                         })
-                         .then(function(data) {
-                             if (!data) return;
-                             if(typeof success =='function'){success(data)}
-                             gitShow(data)
-                         });
-                 }
+                 branch: unavailable,
+                 command: unavailable
              }
         }(),
 

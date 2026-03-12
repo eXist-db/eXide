@@ -338,10 +338,10 @@ describe("Arity", function () {
 });
 
 describe("Error recovery", function () {
-    it("produces error object on invalid input", function () {
+    it("produces error string on invalid input", function () {
         const { error } = parse("let $x :=");
         assert.ok(error);
-        assert.equal(typeof error.getMessage(), "string");
+        assert.equal(typeof error, "string");
     });
 
     it("still produces a partial AST on error", function () {

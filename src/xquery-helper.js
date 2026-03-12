@@ -955,8 +955,8 @@ eXide.edit.XQueryModeHelper = (function () {
 	}
     
     Constr.prototype.initDebugger = function(doc) {
-        this.xqDebugger = new eXide.XQueryDebuger(this.editor, doc);
-        this.xqDebugger.init();
+        eXide.util.message("The debugger is not available in this version of eXide.");
+        return;
     }
     
     Constr.prototype.stepOver = function(doc) {
