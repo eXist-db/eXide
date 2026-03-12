@@ -694,12 +694,7 @@ RelativePathExpr
 StepExpr ::= PostfixExpr
            | AxisStep
 PostfixExpr
-         ::= PrimaryExpr
-           | FilterExpr
-           | DynamicFunctionCall
-           | LookupExpr
-           | MethodCall
-           | FilterExprAM
+         ::= PrimaryExpr ( Predicate | PositionalArgumentList | Lookup | MethodCallSuffix | FilterExprAMSuffix )*
 PrimaryExpr
          ::= Literal
            | VarRef
@@ -731,8 +726,7 @@ UnreservedFunctionEQName
 ArgumentList
          ::= '(' ( PositionalArguments ( ',' KeywordArguments )? | KeywordArguments )? ')'
 PositionalArguments
-         ::= Argument
-           | PositionalArguments ',' Argument
+         ::= Argument ( ',' Argument )*
 Argument ::= ExprSingle
            | ArgumentPlaceholder
 ArgumentPlaceholder
@@ -875,20 +869,14 @@ KeySpecifier
            | LookupWildcard
 LookupWildcard
          ::= '*'
-FilterExpr
-         ::= PostfixExpr Predicate
 Predicate
          ::= '[' Expr ']'
-DynamicFunctionCall
-         ::= PostfixExpr PositionalArgumentList
 PositionalArgumentList
          ::= '(' PositionalArguments? ')'
-LookupExpr
-         ::= PostfixExpr Lookup
-MethodCall
-         ::= PostfixExpr '=?>' NCName PositionalArgumentList
-FilterExprAM
-         ::= PostfixExpr '?[' Expr ']'
+MethodCallSuffix
+         ::= '=?>' NCName PositionalArgumentList
+FilterExprAMSuffix
+         ::= '?[' Expr ']'
 AxisStep ::= ( AbbreviatedStep | FullStep ) Predicate*
 AbbreviatedStep
          ::= '..'

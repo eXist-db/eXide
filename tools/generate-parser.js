@@ -7,7 +7,7 @@
  * Usage:
  *   node tools/generate-parser.js            # generate from default grammar
  *   node tools/generate-parser.js --dry-run  # show command without running
- *   node tools/generate-parser.js --grammar XQuery-31-Update-FullText.ebnf
+ *   node tools/generate-parser.js --grammar grammars/XQuery-31-Update-FullText.ebnf
  */
 const { execSync } = require('child_process');
 const fs = require('fs');
@@ -17,7 +17,7 @@ const path = require('path');
 
 const CONFIG = {
     // Grammar source file (relative to project root)
-    grammar: 'XQuery-31-Family-XQUFEL.ebnf',
+    grammar: 'grammars/XQuery-31-Family-XQUFEL.ebnf',
 
     // REx parser generator options
     rexOptions: [
