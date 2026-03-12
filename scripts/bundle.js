@@ -9,6 +9,7 @@ import '../src/commands.js';
 import '../src/mode-helper.js';
 import '../src/parser/XQueryParser.js';
 import '../src/parser/adapter.js';
+import '../src/parser/parser-registry.js';
 import '../src/static-analysis.js';
 import '../src/prettier-format.js';
 import '../src/funcdoc-tooltip.js';

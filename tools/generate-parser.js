@@ -7,7 +7,8 @@
  * Usage:
  *   node tools/generate-parser.js            # generate from default grammar
  *   node tools/generate-parser.js --dry-run  # show command without running
- *   node tools/generate-parser.js --grammar grammars/XQuery-31-Update-FullText.ebnf
+ *   node tools/generate-parser.js --grammar grammars/XQuery-40-Family-XQUFEL.ebnf
+ *   node tools/generate-parser.js --name XQueryParser40 --output src/parser/XQueryParser40.js
  */
 const { execSync } = require('child_process');
 const fs = require('fs');
@@ -19,13 +20,15 @@ const CONFIG = {
     // Grammar source file (relative to project root)
     grammar: 'grammars/XQuery-31-Family-XQUFEL.ebnf',
 
-    // REx parser generator options
+    // Parser constructor name (used in REx -name flag, exports, and patches)
+    name: 'XQueryParser',
+
+    // REx parser generator options (excluding -name, which is added dynamically)
     rexOptions: [
         '-ll', '3',         // LL(3) lookahead
         '-backtrack',        // enable backtracking for ambiguous constructs
         '-tree',             // generate TopDownTreeBuilder for AST access
         '-javascript',       // JavaScript output
-        '-name', 'XQueryParser'  // constructor name
     ],
 
     // Output file (relative to project root)
@@ -33,42 +36,25 @@ const CONFIG = {
 
     // REx classpath (relative to project root)
     rexClasspath: 'tools',
-
-    // Export boilerplate appended to generated file
-    exportBoilerplate: [
-        '',
-        '// Browser global (needed when bundled by esbuild)',
-        'globalThis.XQueryParser = XQueryParser;',
-        '',
-        '// CommonJS export',
-        'if (typeof module !== "undefined" && module.exports) {',
-        '  module.exports = XQueryParser;',
-        '}',
-    ].join('\n'),
-
-    // Post-generation patches for REx v6.1 compatibility
-    // (Nonterminal constructor doesn't expose name/children as properties)
-    patches: [
-        {
-            description: 'Add name/children properties to Nonterminal constructor',
-            find: 'XQueryParser.Nonterminal = function(name, begin, end, children)\n{\n  this.begin = begin;\n  this.end = end;\n\n  this.send = function(e)',
-            replace: 'XQueryParser.Nonterminal = function(name, begin, end, children)\n{\n  this.name = name;\n  this.begin = begin;\n  this.end = end;\n  this.children = children;\n\n  var self = this;\n  this.send = function(e)',
-        }
-    ]
 };
 
 // ── CLI ──────────────────────────────────────────────────────────────────────
 
+function getArg(flag) {
+    const idx = args.indexOf(flag);
+    return idx !== -1 ? args[idx + 1] : null;
+}
+
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
-const grammarOverride = args.indexOf('--grammar') !== -1
-    ? args[args.indexOf('--grammar') + 1]
-    : null;
+
+const grammar = getArg('--grammar') || CONFIG.grammar;
+const parserName = getArg('--name') || CONFIG.name;
+const output = getArg('--output') || CONFIG.output;
 
 const root = path.resolve(__dirname, '..');
-const grammar = grammarOverride || CONFIG.grammar;
 const grammarPath = path.join(root, grammar);
-const outputPath = path.join(root, CONFIG.output);
+const outputPath = path.join(root, output);
 
 if (!fs.existsSync(grammarPath)) {
     console.error(`Grammar not found: ${grammarPath}`);
@@ -78,11 +64,13 @@ if (!fs.existsSync(grammarPath)) {
 const cmd = [
     'java', '-cp', CONFIG.rexClasspath,
     'REx', grammar,
-    ...CONFIG.rexOptions
+    ...CONFIG.rexOptions,
+    '-name', parserName
 ].join(' ');
 
 console.log(`Grammar:  ${grammar}`);
-console.log(`Output:   ${CONFIG.output}`);
+console.log(`Name:     ${parserName}`);
+console.log(`Output:   ${output}`);
 console.log(`Command:  ${cmd}`);
 
 if (dryRun) {
@@ -100,10 +88,10 @@ try {
     process.exit(1);
 }
 
-// REx outputs to cwd as XQueryParser.js — move to target
-const generatedPath = path.join(root, 'XQueryParser.js');
+// REx outputs to cwd as <name>.js — move to target
+const generatedPath = path.join(root, parserName + '.js');
 if (!fs.existsSync(generatedPath)) {
-    console.error('Expected output file not found: XQueryParser.js');
+    console.error(`Expected output file not found: ${parserName}.js`);
     process.exit(1);
 }
 
@@ -112,7 +100,17 @@ fs.unlinkSync(generatedPath); // clean up from root
 
 // ── Patch ────────────────────────────────────────────────────────────────────
 
-for (const patch of CONFIG.patches) {
+// Post-generation patches for REx v6.1 compatibility
+// (Nonterminal constructor doesn't expose name/children as properties)
+const patches = [
+    {
+        description: 'Add name/children properties to Nonterminal constructor',
+        find: `${parserName}.Nonterminal = function(name, begin, end, children)\n{\n  this.begin = begin;\n  this.end = end;\n\n  this.send = function(e)`,
+        replace: `${parserName}.Nonterminal = function(name, begin, end, children)\n{\n  this.name = name;\n  this.begin = begin;\n  this.end = end;\n  this.children = children;\n\n  var self = this;\n  this.send = function(e)`,
+    }
+];
+
+for (const patch of patches) {
     if (source.includes(patch.find)) {
         source = source.replace(patch.find, patch.replace);
         console.log(`Patched: ${patch.description}`);
@@ -123,10 +121,21 @@ for (const patch of CONFIG.patches) {
 
 // ── Append exports ───────────────────────────────────────────────────────────
 
-source = source.replace(/\/\/ End\s*$/, CONFIG.exportBoilerplate + '\n\n// End\n');
+const exportBoilerplate = [
+    '',
+    '// Browser global (needed when bundled by esbuild)',
+    `globalThis.${parserName} = ${parserName};`,
+    '',
+    '// CommonJS export',
+    'if (typeof module !== "undefined" && module.exports) {',
+    `  module.exports = ${parserName};`,
+    '}',
+].join('\n');
+
+source = source.replace(/\/\/ End\s*$/, exportBoilerplate + '\n\n// End\n');
 
 // ── Write ────────────────────────────────────────────────────────────────────
 
 fs.writeFileSync(outputPath, source, 'utf-8');
 const lines = source.split('\n').length;
-console.log(`\nWrote ${CONFIG.output} (${lines} lines)`);
+console.log(`\nWrote ${output} (${lines} lines)`);

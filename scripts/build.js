@@ -142,6 +142,25 @@ async function bundle() {
 			process.exit(1);
 		});
 
+    // Bundle XQuery 4.0 parser as a separate lazy-loaded file
+    const parser40Path = path.join(__dirname, '..', 'src', 'parser', 'XQueryParser40.js');
+    if (fs.existsSync(parser40Path)) {
+        console.log(chalk.blue('Bundling XQuery 4.0 parser (lazy-loaded) ...'));
+        await esbuild
+            .build({
+                entryPoints: [parser40Path],
+                outfile: "./resources/scripts/xquery-parser-40.js",
+                bundle: true,
+                minify: !args.dev,
+                logLevel: "info",
+                globalName: "XQueryParser40",
+                format: "iife",
+            })
+            .catch((err) => {
+                console.error(err);
+                process.exit(1);
+            });
+    }
 }
 
 function replace(path, outPath, data) {
@@ -203,7 +222,7 @@ function replace(path, outPath, data) {
 			"!resources/css/font-awesome/fonts/FontAwesome.otf",
 			"!resources/css/font-awesome/fonts/fontawesome-webfont.eot",
 			"!CLAUDE.md",
-			"!*.ebnf",
+			"!grammars/**",
 			"!build.js",
 		],
 		`build/eXide-${version}.xar`,

@@ -9,7 +9,8 @@
  * adapted for REx by rexify-xquery-40.xq
  */
 
-Module   ::= VersionDecl? ( LibraryModule | MainModule ) EOF
+XQuery   ::= Module EOF
+Module   ::= VersionDecl? ( LibraryModule | MainModule )
 VersionDecl
          ::= 'xquery' ( 'encoding' StringLiteral | 'version' StringLiteral ( 'encoding' StringLiteral )? ) Separator
 Separator

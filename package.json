@@ -10,10 +10,12 @@
 		"build": "npm run bundle-cm6 && npm run bundle-prettier && node scripts/build.js prepare && node scripts/build.js",
 		"build:dev": "npm run bundle-cm6 && npm run bundle-prettier && node scripts/build.js prepare && node scripts/build.js --dev",
 		"clean": "node scripts/build.js clean",
-		"test": "node --test test/parser-test.js test/visitor-test.js test/utils-test.js test/static-analysis-test.js test/snippet-test.js",
+		"test": "node --test test/parser-test.js test/visitor-test.js test/utils-test.js test/static-analysis-test.js test/snippet-test.js test/parser-registry-test.js",
 		"bundle-prettier": "node tools/bundle-prettier.js",
 		"bundle-cm6": "node tools/bundle-cm6.js",
 		"generate-parser": "node tools/generate-parser.js",
+		"generate-parser-40": "node tools/generate-parser.js --grammar grammars/XQuery-40-Family-XQUFEL.ebnf --name XQueryParser40 --output src/parser/XQueryParser40.js",
+		"generate-parsers": "npm run generate-parser && npm run generate-parser-40",
 		"cypress": "cypress run"
 	},
 	"repository": {

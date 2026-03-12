@@ -59,6 +59,7 @@ eXide.util.Preferences = (function () {
         prettierArrowParens: "always",
         prettierProseWrap: "preserve",
         prettierHtmlWhitespaceSensitivity: "css",
+        xqueryVersion: "auto",
         splitPane: false,
         showWestPanel: true,
         showSouthPanel: false,
@@ -152,6 +153,7 @@ eXide.util.Preferences = (function () {
 		form.querySelector('select[name="prettier-arrow-parens"]').value = this.preferences.prettierArrowParens;
 		form.querySelector('select[name="prettier-prose-wrap"]').value = this.preferences.prettierProseWrap;
 		form.querySelector('select[name="prettier-html-ws"]').value = this.preferences.prettierHtmlWhitespaceSensitivity;
+		form.querySelector('select[name="xquery-version"]').value = this.preferences.xqueryVersion;
 
         var indent = this.preferences.indent;
         var indentSize = this.preferences.indentSize;
@@ -200,6 +202,7 @@ eXide.util.Preferences = (function () {
 		this.preferences.prettierArrowParens = form.querySelector('select[name="prettier-arrow-parens"]').value;
 		this.preferences.prettierProseWrap = form.querySelector('select[name="prettier-prose-wrap"]').value;
 		this.preferences.prettierHtmlWhitespaceSensitivity = form.querySelector('select[name="prettier-html-ws"]').value;
+		this.preferences.xqueryVersion = form.querySelector('select[name="xquery-version"]').value;
         this.preferences.indentOnOpen = form.querySelector('input[name="indent-on-open"]').checked;
         this.preferences.indentOnDownload = form.querySelector('input[name="indent-on-download"]').checked;
         this.preferences.indentOnDownloadPackage = form.querySelector('input[name="indent-on-download-package"]').checked;
@@ -341,6 +344,11 @@ eXide.util.Preferences = (function () {
         // Collections view (tree vs folder)
         if (typeof eXide !== 'undefined' && eXide.app && eXide.app.setCollectionsView) {
             eXide.app.setCollectionsView(this.preferences.collectionsView);
+        }
+
+        // Eagerly pre-load XQ 4.0 parser when preference is set to "4.0"
+        if (this.preferences.xqueryVersion === "4.0" && typeof parserRegistry !== 'undefined') {
+            parserRegistry.preload40();
         }
 
 		this.editor.resize();

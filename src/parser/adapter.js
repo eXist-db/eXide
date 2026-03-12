@@ -5,12 +5,13 @@
  * Normalizations applied:
  * 1. Quoted terminal names ('declare', 'function', etc.) → "TOKEN"
  * 2. Whitespace events → "WS" nodes
- * 3. FunctionName → renamed to EQName
+ * 3. FunctionName / XQ4.0 UnreservedFunction* → renamed to EQName
  * 4. EQName with single child → flattened (value = child value, children cleared)
  * 5. Single-child wrapper nonterminals in the optimization list → collapsed
  * 6. Nonterminal pos derived from first/last child pos
  * 7. getParent set on all children
  * 8. arity set on FunctionCall/FunctionDecl
+ * 9. XQ4.0 normalization: ParamWithDefault→Param, VarNameAndType→VarName, LetValueBinding unwrap
  */
 
 // Nonterminals eligible for single-child collapse (from JSONParseTreeHandler)
@@ -20,7 +21,9 @@ var COLLAPSE_LIST = [
     "CastExpr", "UnaryExpr", "ValueExpr", "FTContainsExpr", "SimpleMapExpr", "PathExpr",
     "RelativePathExpr", "PostfixExpr", "StepExpr",
     "SourceExpr", "TargetExpr", "NewNameExpr",
-    "FTOr", "FTAnd", "FTMildNot", "FTUnaryNot", "FTPrimaryWithOptions", "FTSelection"
+    "FTOr", "FTAnd", "FTMildNot", "FTUnaryNot", "FTPrimaryWithOptions", "FTSelection",
+    // XQ 4.0 additions (collapse when single-child)
+    "OtherwiseExpr", "PipelineExpr"
 ];
 
 /**
@@ -170,8 +173,108 @@ function convertNonterminal(rexNode, input, lineOffsets) {
     }
 
     // Normalize FunctionName/FunctionEQName → EQName (matching JSONParseTreeHandler)
-    if (node.name === "FunctionName" || node.name === "FunctionEQName") {
+    // XQ 4.0: UnreservedFunctionEQName/UnreservedFunctionQName/UnreservedQName → EQName
+    if (node.name === "FunctionName" || node.name === "FunctionEQName"
+        || node.name === "UnreservedFunctionEQName" || node.name === "UnreservedFunctionQName"
+        || node.name === "UnreservedQName") {
         node.name = "EQName";
+    }
+
+    // XQ 4.0: ParamWithDefault → Param, ParamListWithDefaults → ParamList
+    if (node.name === "ParamWithDefault") {
+        node.name = "Param";
+    } else if (node.name === "ParamListWithDefaults") {
+        node.name = "ParamList";
+    }
+
+    // XQ 4.0: VarNameAndType contains ($ EQName TypeDeclaration?) — restructure to
+    // match 3.1's ($ VarName > EQName TypeDeclaration?) by wrapping EQName in VarName
+    // and renaming this node so it can be unwrapped into the parent
+    if (node.name === "VarNameAndType") {
+        var eqIdx = -1;
+        for (var i = 0; i < node.children.length; i++) {
+            if (node.children[i].name === "EQName") { eqIdx = i; break; }
+        }
+        if (eqIdx !== -1) {
+            var eq = node.children[eqIdx];
+            var varNameNode = {
+                name: "VarName",
+                children: [eq],
+                value: undefined,
+                pos: { sl: eq.pos.sl, sc: eq.pos.sc, el: eq.pos.el, ec: eq.pos.ec },
+                getParent: node
+            };
+            eq.getParent = varNameNode;
+            node.children[eqIdx] = varNameNode;
+        }
+        // Become transparent: rename to _VarNameAndType so parent unwrap finds it
+        node.name = "_VarNameAndType";
+    }
+
+    // XQ 4.0: Unwrap transparent wrapper nodes by promoting their children into this node.
+    // LetValueBinding (inside LetBinding), _VarNameAndType (inside bindings/params)
+    var UNWRAP_NAMES = ["LetValueBinding", "ForItemBinding", "_VarNameAndType", "PositionalArguments"];
+    var needsUnwrap = false;
+    for (var i = 0; i < node.children.length; i++) {
+        if (UNWRAP_NAMES.indexOf(node.children[i].name) !== -1) { needsUnwrap = true; break; }
+    }
+    if (needsUnwrap) {
+        var newChildren = [];
+        for (var i = 0; i < node.children.length; i++) {
+            var child = node.children[i];
+            if (UNWRAP_NAMES.indexOf(child.name) !== -1) {
+                for (var j = 0; j < child.children.length; j++) {
+                    child.children[j].getParent = node;
+                    newChildren.push(child.children[j]);
+                }
+            } else {
+                newChildren.push(child);
+            }
+        }
+        node.children = newChildren;
+    }
+
+    // XQ 4.0: Prolog children FunctionDecl/VarDecl lack AnnotatedDecl wrapper — synthesize it
+    // so static analysis and visitors find Prolog > AnnotatedDecl > FunctionDecl/VarDecl
+    if (node.name === "Prolog") {
+        for (var i = 0; i < node.children.length; i++) {
+            var child = node.children[i];
+            if (child.name === "FunctionDecl" || child.name === "VarDecl") {
+                var wrapper = {
+                    name: "AnnotatedDecl",
+                    children: [child],
+                    value: undefined,
+                    pos: { sl: child.pos.sl, sc: child.pos.sc, el: child.pos.el, ec: child.pos.ec },
+                    getParent: node
+                };
+                child.getParent = wrapper;
+                node.children[i] = wrapper;
+            }
+        }
+    }
+
+    // XQ 4.0: VarRef lacks VarName wrapper — synthesize it so visitors find VarRef > $ VarName > EQName
+    if (node.name === "VarRef") {
+        var eqChild = null;
+        var eqIdx = -1;
+        for (var i = 0; i < node.children.length; i++) {
+            if (node.children[i].name === "EQName") {
+                eqChild = node.children[i];
+                eqIdx = i;
+                break;
+            }
+        }
+        if (eqChild && eqIdx !== -1) {
+            var varNameNode = {
+                name: "VarName",
+                children: [eqChild],
+                value: undefined,
+                pos: { sl: eqChild.pos.sl, sc: eqChild.pos.sc, el: eqChild.pos.el, ec: eqChild.pos.ec },
+                getParent: node
+            };
+            eqChild.getParent = varNameNode;
+            node.children[eqIdx] = varNameNode;
+        }
     }
 
     // Flatten EQName and URILiteral: set value from descendants, clear children

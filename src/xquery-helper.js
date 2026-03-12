@@ -26,7 +26,6 @@ eXide.edit.XQueryModeHelper = (function () {
 	var RE_FUNC_NAME = /^[\$\w:\-_\.]+/;
 	
     // REx parser + adapter loaded as globals from src/parser/ (concatenated before this file)
-    var RExParser = XQueryParser;
     var rexAdapter = rexParserAdapter;
     function semanticHighlight(ast) {
         var tokens = {};
@@ -217,7 +216,23 @@ eXide.edit.XQueryModeHelper = (function () {
             return;
         }
         var value = doc.getText();
-        var result = rexAdapter.parseXQuery(value, RExParser);
+        var self = this;
+        var versionPref = (typeof eXide !== 'undefined' && eXide.app && eXide.app.getPreference)
+            ? eXide.app.getPreference("xqueryVersion") : "auto";
+        var selection = parserRegistry.getParser(value, versionPref);
+        var result = rexAdapter.parseXQuery(value, selection.parser);
+        doc.xqueryVersion = selection.version;
+
+        // If 4.0 parser is still loading, re-parse when it arrives
+        if (selection.pending) {
+            parserRegistry.loadParser40().then(function () {
+                doc.lastValidation = 0; // force re-parse
+                self.parseXQuery(doc);
+            }).catch(function (err) {
+                console.warn("Failed to load XQuery 4.0 parser:", err.message);
+            });
+        }
+
         if (result.error) {
             console.debug("Error while parsing XQuery: %s", result.error);
         }
@@ -520,7 +535,10 @@ eXide.edit.XQueryModeHelper = (function () {
 
         // parse selection code to get list of variables which need to be parameters
         var variables = [];
-        var result = rexAdapter.parseXQuery(value, RExParser);
+        var versionPref2 = (typeof eXide !== 'undefined' && eXide.app && eXide.app.getPreference)
+            ? eXide.app.getPreference("xqueryVersion") : "auto";
+        var selection2 = parserRegistry.getParser(value, versionPref2);
+        var result = rexAdapter.parseXQuery(value, selection2.parser);
         if (result.error) {
             eXide.util.error("Not a valid code block: " + (result.error.message || result.error));
             return;

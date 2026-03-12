@@ -1314,7 +1314,11 @@ eXide.app = (function(util) {
             // Update status bar type segment
             var typeLabels = {text:"Text",xml:"XML",html:"HTML",xquery:"XQuery",javascript:"Javascript",css:"CSS",less:"Less",json:"JSON",markdown:"Markdown"};
             var typeVal = document.getElementById("status-type-value");
-            if (typeVal) typeVal.textContent = typeLabels[syntax] || syntax;
+            var label = typeLabels[syntax] || syntax;
+            if (syntax === "xquery" && doc.xqueryVersion) {
+                label += " " + doc.xqueryVersion;
+            }
+            if (typeVal) typeVal.textContent = label;
             // Update popover active state
             document.querySelectorAll("#type-popover .type-popover-item").forEach(function(el) {
                 el.classList.toggle("active", el.dataset.value === syntax);
