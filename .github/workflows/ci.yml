@@ -48,12 +48,17 @@ jobs:
 
       - name: Wait for eXist-db Startup and Package Deployment
         run: |
-          timeout 120 bash -c '
-            until [ "$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/exist/apps/eXide/)" = "200" ] || \
-                  [ "$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/exist/apps/eXide/)" = "302" ]; do
-              sleep 5
-            done
-          '
+          for i in $(seq 1 24); do
+            HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/exist/apps/eXide/ || true)
+            echo "Attempt $i: HTTP $HTTP_CODE"
+            if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "302" ]; then
+              echo "eXide is ready"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Timed out waiting for eXide"
+          exit 1
 
       - name: Run Cypress Integration Tests
         run: npx cypress run
