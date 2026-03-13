@@ -893,14 +893,52 @@ eXide.edit.XQueryModeHelper = (function () {
     
     Constr.prototype.createOutline = function(doc, onComplete) {
         var code = doc.getText();
-		this.$parseLocalFunctions(code, doc);
-//        if (onComplete)
-//            onComplete(doc);
-		var imports = this.$parseImports(code);
-		if (imports)
-			this.$resolveImports(doc, imports, onComplete);
-        else
-            onComplete(doc);
+        var basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
+        var imports = this.$parseImports(code);
+        var self = this;
+
+        doc.functions = [];
+
+        fetch("api/query/symbols", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: code, base: basePath })
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(symbols) {
+            var localFuncs = [];
+            if (Array.isArray(symbols)) {
+                symbols.forEach(function(sym) {
+                    var isFunc = sym.kind === 12;
+                    // Strip arity suffix from function names ("local:foo#1" → "local:foo")
+                    var name = isFunc ? sym.name.replace(/#\d+$/, "") : sym.name.replace(/^\$/, "");
+                    localFuncs.push({
+                        type: isFunc ? eXide.edit.Document.TYPE_FUNCTION : eXide.edit.Document.TYPE_VARIABLE,
+                        name: name,
+                        signature: sym.detail || name,
+                        row: sym.line,
+                        column: sym.column
+                    });
+                });
+            }
+            // Assign atomically so concurrent calls don't accumulate duplicates
+            doc.functions = localFuncs;
+            if (imports && imports.length > 0) {
+                self.$resolveImports(doc, imports, onComplete);
+            } else {
+                onComplete(doc);
+            }
+        })
+        .catch(function(err) {
+            console.warn("[outline] symbols fetch failed, falling back:", err);
+            // Fall back to regex-based parsing
+            self.$parseLocalFunctions(code, doc);
+            if (imports && imports.length > 0) {
+                self.$resolveImports(doc, imports, onComplete);
+            } else {
+                onComplete(doc);
+            }
+        });
     }
     
     Constr.prototype.$sortFunctions = function(doc) {

@@ -333,6 +333,10 @@ eXide.util.Preferences = (function () {
             btn.setAttribute('aria-pressed', this.preferences.splitPane ? 'true' : 'false');
             btn.textContent = this.preferences.splitPane ? '\u229E' : '\u229F';
         }
+        if (this.preferences.splitPane && this.editor && this.editor.outline) {
+            this.editor.outline.toggle(true);
+            this.editor.directory.toggle(true);
+        }
 
         // Panel visibility
         if (typeof eXide !== 'undefined' && eXide.app && eXide.app.setWestPanel) {

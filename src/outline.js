@@ -135,7 +135,6 @@ eXide.edit.Outline = (function () {
 
             var helper = doc.getModeHelper();
             if (helper != null && this.__activated) {
-                doc.functions = [];
                 helper.createOutline(doc, function() {
                     self.$outlineUpdate(doc);
                 });
@@ -217,7 +216,10 @@ eXide.edit.Outline = (function () {
                             ed.editor.focus();
                         }
                     } else if(d.row !== undefined && d.row !== null) {
-                        eXide.app.locate("function", path == '' ? null: path, parseInt(d.row));
+                        var ed = eXide.app.getEditor();
+                        if (ed && ed.editor) {
+                            editorUtils.gotoLine(ed.editor, d.row + 1, d.column || 0, true);
+                        }
                     } else if(d.type == eXide.edit.Document.TYPE_FUNCTION) {
                         eXide.app.locate("function", path == '' ? null: path, d.name);
                     } else {
