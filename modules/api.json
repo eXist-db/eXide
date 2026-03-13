@@ -486,6 +486,135 @@
                 }
             }
         },
+        "/api/query/symbols": {
+            "post": {
+                "summary": "Document symbol list (functions and variables)",
+                "operationId": "query:symbols",
+                "tags": ["query"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["query"],
+                                "properties": {
+                                    "query": { "type": "string" },
+                                    "base":  { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Array of symbol items",
+                        "content": { "application/json": { "schema": { "type": "array" } } }
+                    }
+                }
+            }
+        },
+        "/api/query/completions": {
+            "post": {
+                "summary": "LSP-aware function completions",
+                "operationId": "query:completions",
+                "tags": ["query"],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["query"],
+                                "properties": {
+                                    "query":  { "type": "string" },
+                                    "prefix": { "type": "string" },
+                                    "base":   { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Array of completion items",
+                        "content": { "application/json": { "schema": { "type": "array" } } }
+                    }
+                }
+            }
+        },
+        "/api/query/hover": {
+            "post": {
+                "summary": "Get hover information for symbol at position",
+                "operationId": "query:hover",
+                "tags": [
+                    "query"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["query", "line", "column"],
+                                "properties": {
+                                    "query": { "type": "string" },
+                                    "line": { "type": "integer" },
+                                    "column": { "type": "integer" },
+                                    "base": { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Hover information",
+                        "content": {
+                            "application/json": {
+                                "schema": { "type": "object" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/query/definition": {
+            "post": {
+                "summary": "Get definition location for symbol at position",
+                "operationId": "query:definition",
+                "tags": [
+                    "query"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["query", "line", "column"],
+                                "properties": {
+                                    "query": { "type": "string" },
+                                    "line": { "type": "integer" },
+                                    "column": { "type": "integer" },
+                                    "base": { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Definition location",
+                        "content": {
+                            "application/json": {
+                                "schema": { "type": "object" }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/query/{id}/results": {
             "get": {
                 "summary": "Retrieve paginated query results",

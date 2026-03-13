@@ -7,6 +7,7 @@ xquery version "3.1";
 module namespace query="http://exist-db.org/apps/eXide/api/query";
 
 import module namespace roaster="http://e-editiones.org/roaster";
+import module namespace lsp="http://exist-db.org/xquery/lsp";
 import module namespace config="http://exist-db.org/xquery/apps/config" at "../config.xqm";
 
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
@@ -76,22 +77,107 @@ declare function query:compile($request as map(*)) {
     let $body := $request?body
     let $xquery := $body?query
     let $base := $body?base
+    let $diagnostics := lsp:diagnostics($xquery, $base)
     return
-        try {
-            let $_ := util:compile-query($xquery, $base)
-            return map { "errors": array {} }
-        } catch * {
-            map {
-                "errors": array {
-                    map {
-                        "line": $err:line-number,
-                        "column": $err:column-number,
-                        "message": $err:description,
-                        "code": string($err:code)
-                    }
+        map {
+            "errors": array {
+                for $d in $diagnostics?*
+                return map {
+                    "line": $d?line + 1,
+                    "column": $d?column,
+                    "message": $d?message,
+                    "code": $d?code
                 }
             }
         }
+};
+
+(:~
+ : POST /api/query/symbols — Document symbol list for Navigate → Symbol.
+ : Returns all declared functions and variables with their positions.
+ :)
+declare function query:symbols($request as map(*)) {
+    let $body := $request?body
+    let $xquery := $body?query
+    let $base := $body?base
+    return lsp:symbols($xquery, $base)
+};
+
+(:~
+ : POST /api/query/completions — LSP-aware function completions.
+ :
+ : Calls lsp:completions() with the full document text so the server
+ : compiler can see user-defined functions and imported modules, then
+ : filters by $prefix and builds CM6 snippet templates.
+ :)
+declare function query:completions($request as map(*)) {
+    let $body := $request?body
+    let $xquery := $body?query
+    let $prefix := ($body?prefix, "")[1]
+    let $base := $body?base
+    let $completions := lsp:completions($xquery, $base)
+    return array {
+        for $item in $completions?*
+        let $name := replace($item?label, "#\d+$", "")
+        where $prefix = "" or starts-with($name, $prefix)
+        return map {
+            "text":        $item?detail,
+            "snippet":     query:make-snippet($item?detail),
+            "description": $item?documentation
+        }
+    }
+};
+
+(:~
+ : Build a CM6 snippet template from an LSP detail string.
+ : E.g. "count($items as item()*) as xs:integer" → "count(${1:$items})"
+ :)
+declare %private function query:make-snippet($detail as xs:string) as xs:string {
+    let $fname := replace($detail, "\(.*$", "")
+    let $params := analyze-string($detail, '\$([a-zA-Z][a-zA-Z0-9\-_\.]*)') //fn:match/fn:group[1]/string()
+    return
+        if (empty($params)) then $fname || "()"
+        else
+            $fname || "(" ||
+            string-join(
+                for $p at $i in $params
+                return "${" || $i || ":$" || $p || "}",
+                ", "
+            ) || ")"
+};
+
+(:~
+ : POST /api/query/hover — Get hover info for symbol at position.
+ :)
+declare function query:hover($request as map(*)) {
+    let $body := $request?body
+    let $xquery := $body?query
+    let $line := xs:integer($body?line)
+    let $column := xs:integer($body?column)
+    let $base := $body?base
+    let $hover := lsp:hover($xquery, $line, $column, $base)
+    return
+        if (exists($hover)) then
+            $hover
+        else
+            map {}
+};
+
+(:~
+ : POST /api/query/definition — Get definition location for symbol at position.
+ :)
+declare function query:definition($request as map(*)) {
+    let $body := $request?body
+    let $xquery := $body?query
+    let $line := xs:integer($body?line)
+    let $column := xs:integer($body?column)
+    let $base := $body?base
+    let $def := lsp:definition($xquery, $line, $column, $base)
+    return
+        if (exists($def)) then
+            $def
+        else
+            map {}
 };
 
 (:~
