@@ -177,47 +177,25 @@ eXide.edit.CompletionSource = (function () {
     // -------------------------------------------------------------------
 
     function fetchFunctionCompletions(doc, helper, prefix, from, to) {
-        var params = new URLSearchParams({ prefix: prefix });
-
-        // Add module import params for imported function lookup
         var code = doc.getText();
-        var imports = helper.$parseImports(code);
-        if (imports) {
-            var basePath = "xmldb:exist://" + doc.getBasePath();
-            params.set("base", basePath);
-            for (var i = 0; i < imports.length; i++) {
-                var matches = helper.moduleRe.exec(imports[i]);
-                if (matches != null && matches.length === 4) {
-                    params.append("mprefix", matches[1]);
-                    params.append("uri", matches[2]);
-                    params.append("source", matches[3]);
-                }
-            }
-        }
+        var basePath = "xmldb:exist://" + doc.getBasePath();
 
-        return fetch("api/editor/completions?" + params.toString())
+        return fetch("api/query/completions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: code, prefix: prefix, base: basePath })
+        })
             .then(function (response) { return response.json(); })
             .then(function (serverFuncs) {
                 var options = [];
-                var regex = new RegExp("^" + prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
 
-                // Local functions from AST
-                doc.functions.forEach(function (func) {
-                    if (func.type !== "variable" && func.name && func.name.match(regex)) {
-                        options.push(makeFunctionOption(func.signature || func.name,
-                            func.template || null, func.help || null, null, null,
-                            func.source || doc.getPath()));
-                    }
-                });
-
-                // Server functions (from /api/editor/completions)
+                // Server functions (from /api/query/completions via lsp:completions())
+                // Includes both built-in/imported functions AND user-defined local functions
                 if (serverFuncs) {
                     for (var i = 0; i < serverFuncs.length; i++) {
                         var f = serverFuncs[i];
                         options.push(makeFunctionOption(
-                            f.text, f.snippet, null,
-                            f.description, f.arguments,
-                            f.path));
+                            f.text, f.snippet, null, f.description, null, null));
                     }
                 }
 

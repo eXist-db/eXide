@@ -289,25 +289,51 @@ eXide.edit.XQueryModeHelper = (function () {
 
     Constr.prototype.gotoSymbol = function(doc) {
         var self = this;
-        var items = [];
-        for (var i = 0; i < doc.functions.length; i++) {
-            var item = {
-                label: doc.functions[i].signature ? doc.functions[i].signature : doc.functions[i].name,
-                name: doc.functions[i].name,
-                type: doc.functions[i].type
-            };
-            if (doc.functions[i].help) {
-                item.tooltip = doc.functions[i].help;
-            }
-            items.push(item);
-        }
-        if (items.length > 0) {
+        var code = this.editor.state.doc.toString();
+        var basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
+
+        fetch("api/query/symbols", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ query: code, base: basePath })
+        })
+        .then(function (response) { return response.json(); })
+        .then(function (symbols) {
+            if (!symbols || !symbols.length) return;
+            var items = symbols.map(function (sym) {
+                return {
+                    // detail has the full signature for functions; name for variables
+                    label: sym.detail || sym.name,
+                    name: sym.name,
+                    line: sym.line,
+                    column: sym.column
+                };
+            });
             eXide.util.QuickPicker.show(items, function (selected) {
                 if (selected) {
-                    self.parent.outline.gotoDefinition(doc, selected.name);
+                    // lsp:symbols() returns 0-based line; gotoLine expects 1-based
+                    editorUtils.gotoLine(self.editor, selected.line + 1, selected.column, true);
                 }
             }, { placeholder: "Go to symbol\u2026", parentEditor: self.editor });
-        }
+        })
+        .catch(function () {
+            // Fall back to AST-based symbol list
+            var items = doc.functions.map(function (f) {
+                return {
+                    label: f.signature || f.name,
+                    name: f.name,
+                    line: f.row,
+                    column: 0
+                };
+            });
+            if (items.length > 0) {
+                eXide.util.QuickPicker.show(items, function (selected) {
+                    if (selected) {
+                        editorUtils.gotoLine(self.editor, selected.line + 1, 0, true);
+                    }
+                }, { placeholder: "Go to symbol\u2026", parentEditor: self.editor });
+            }
+        });
     };
 
 	Constr.prototype.getFunctionAtCursor = function (doc, lead) {
@@ -450,17 +476,48 @@ eXide.edit.XQueryModeHelper = (function () {
     };
     
 	Constr.prototype.gotoDefinition = function (doc) {
-        this.parseXQuery(doc);
-		var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
-		var funcName = this.getFunctionAtCursor(doc, lead);
-		if (funcName) {
-			this.parent.outline.gotoDefinition(doc, funcName);
-		} else {
-		    var varName = this.getVariableAtCursor(doc, lead);
-		    if (varName) {
-		        this.parent.outline.gotoDefinition(doc, varName);
-		    }
-		}
+        var self = this;
+        var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
+        var code = this.editor.state.doc.toString();
+        var basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
+
+        fetch("api/query/definition", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                query: code,
+                line: lead.row,      // 0-based
+                column: lead.column, // 0-based
+                base: basePath
+            })
+        })
+        .then(function (response) { return response.json(); })
+        .then(function (data) {
+            if (data && data.line !== undefined) {
+                // Server returns 0-based line; gotoLine expects 1-based
+                editorUtils.gotoLine(self.editor, data.line + 1, data.column, true);
+            } else {
+                // Fall back to AST-based local definition lookup
+                self.parseXQuery(doc);
+                var funcName = self.getFunctionAtCursor(doc, lead);
+                if (funcName) {
+                    self.parent.outline.gotoDefinition(doc, funcName);
+                } else {
+                    var varName = self.getVariableAtCursor(doc, lead);
+                    if (varName) {
+                        self.parent.outline.gotoDefinition(doc, varName);
+                    }
+                }
+            }
+        })
+        .catch(function () {
+            // Network error: fall back to AST lookup
+            self.parseXQuery(doc);
+            var funcName = self.getFunctionAtCursor(doc, lead);
+            if (funcName) {
+                self.parent.outline.gotoDefinition(doc, funcName);
+            }
+        });
 	}
 	
 	Constr.prototype.locate = function(doc, type, name) {

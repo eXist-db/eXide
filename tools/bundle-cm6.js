@@ -14,7 +14,7 @@ import {EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLin
         highlightSpecialChars, highlightWhitespace, highlightTrailingWhitespace,
         scrollPastEnd,
         Decoration, ViewPlugin, WidgetType, gutter, GutterMarker,
-        showTooltip, tooltips} from "@codemirror/view";
+        showTooltip, tooltips, hoverTooltip} from "@codemirror/view";
 import {syntaxHighlighting, HighlightStyle, indentOnInput, foldGutter, foldKeymap,
         bracketMatching, defaultHighlightStyle, indentUnit, StreamLanguage,
         syntaxTree, foldNodeProp, foldInside, Language, LRLanguage,
@@ -71,6 +71,7 @@ globalThis.CM6 = {
     GutterMarker,
     showTooltip,
     tooltips,
+    hoverTooltip,
 
     // @codemirror/language
     syntaxHighlighting,

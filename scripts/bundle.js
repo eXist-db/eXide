@@ -13,6 +13,7 @@ import '../src/parser/parser-registry.js';
 import '../src/static-analysis.js';
 import '../src/prettier-format.js';
 import '../src/funcdoc-tooltip.js';
+import '../src/lsp-hover.js';
 import '../src/semantic-highlight.js';
 import '../src/xquery-completion.js';
 import '../src/xquery-helper.js';
