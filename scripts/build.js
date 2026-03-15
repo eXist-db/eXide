@@ -113,19 +113,13 @@ async function prepare() {
 	if (!fs.existsSync(buildDir)) {
 		fs.mkdirSync(buildDir);
 	}
-	
-    await mfs.copy("./scripts/xqlint/build.js", "./support/xqlint/build.js");
-	await mfs.copy("./scripts/xqlint/main.js", "./support/xqlint/main.js");
 }
 
 async function clean() {
     console.log(chalk.blue('Cleaning files ...'));
     await mfs.delete([
         'resources/scripts/eXide.min.*',
-        'resources/scripts/jquery/jquery.plugins.min.js', 
-        'resources/scripts/xqlint.min.js', 
-        'resources/scripts/ace/**',
-        'resources/css/ag-grid-community/**',
+'resources/scripts/prettier-bundle.js',
         'index.html',
         'expath-pkg.xml'
     ], { allowEmpty: true, silent: false });
@@ -140,7 +134,7 @@ async function bundle() {
 			bundle: true,
 			minify: !args.dev,
 			sourcemap: !args.dev,
-			external: ["ace/*", "lib/*", "eXide/mode/*"],
+			external: ["lib/*"],
 			logLevel: "info",
 		})
 		.catch((err) => {
@@ -148,19 +142,25 @@ async function bundle() {
 			process.exit(1);
 		});
 
-    console.log(chalk.blue("Bundling jQuery plugins ..."));
-	await esbuild
-		.build({
-			entryPoints: ["./scripts/libs.bundle.js"],
-			outfile: "./resources/scripts/jquery/jquery.plugins.min.js",
-			bundle: true,
-			minify: !args.dev,
-			logLevel: "info",
-		})
-		.catch((err) => {
-			console.error(err);
-			process.exit(1);
-		});
+    // Bundle XQuery 4.0 parser as a separate lazy-loaded file
+    const parser40Path = path.join(__dirname, '..', 'src', 'parser', 'XQueryParser40.js');
+    if (fs.existsSync(parser40Path)) {
+        console.log(chalk.blue('Bundling XQuery 4.0 parser (lazy-loaded) ...'));
+        await esbuild
+            .build({
+                entryPoints: [parser40Path],
+                outfile: "./resources/scripts/xquery-parser-40.js",
+                bundle: true,
+                minify: !args.dev,
+                logLevel: "info",
+                globalName: "XQueryParser40",
+                format: "iife",
+            })
+            .catch((err) => {
+                console.error(err);
+                process.exit(1);
+            });
+    }
 }
 
 function replace(path, outPath, data) {
@@ -180,10 +180,6 @@ function replace(path, outPath, data) {
         return;
     }
 
-    await mfs.copy('./support/ace/build/src-min/**', './resources/scripts/ace');
-    await mfs.copy('./node_modules/@ag-grid-community/core/LICENSE.txt', './resources/css/ag-grid-community');
-    await mfs.copy('./node_modules/@ag-grid-community/core/dist/styles/*.css', './resources/css/ag-grid-community');
-    
     replace('expath-pkg.xml.tmpl', 'expath-pkg.xml', { version });
     replace("index.html.tmpl", "index.html", { version });
 
@@ -196,7 +192,6 @@ function replace(path, outPath, data) {
 			"modules/**/*",
 			"resources/**/*",
 			"templates/**/*",
-			"src/**/*",
 			"docs/**/*",
 			"!.git*",
 			"!*.tmpl",
@@ -205,6 +200,30 @@ function replace(path, outPath, data) {
 			"!node_modules/**",
 			"!package-lock.json",
 			"!cypress/**",
+			"!scripts/**",
+			"!tools/**",
+			"!test/**",
+			"!support/**",
+			"!src/**",
+			"!resources/scripts/*.map",
+			"!resources/images/background.gif",
+			"!resources/images/fullscreen.png",
+			"!resources/images/layouts_split.png",
+			"!resources/images/layouts_split_vertical.png",
+			"!resources/images/header.gif",
+			"!resources/images/exide.png",
+			"!resources/images/exide.svg",
+			"!resources/images/toggle-dn.gif",
+			"!resources/images/toggle-lt.gif",
+			"!resources/images/toggle-up.gif",
+			"!resources/images/toggle-rt.gif",
+			"!resources/css/font-awesome/fonts/fontawesome-webfont.svg",
+			"!resources/css/font-awesome/fonts/fontawesome-webfont.ttf",
+			"!resources/css/font-awesome/fonts/FontAwesome.otf",
+			"!resources/css/font-awesome/fonts/fontawesome-webfont.eot",
+			"!CLAUDE.md",
+			"!grammars/**",
+			"!build.js",
 		],
 		`build/eXide-${version}.xar`,
 		{ base : '.' }

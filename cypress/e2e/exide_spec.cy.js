@@ -11,7 +11,7 @@ describe('eXide', () => {
   })
 
   it('displays the editor with default document', () => {
-    cy.get('.path').should('contain', '__new__1');
+    cy.get('.path').should('contain', 'untitled-1');
   })
 
   // Add more tests here

@@ -28,11 +28,26 @@ Cypress.Commands.add("loginXHR", (user, password) => {
     cy.session(['xhr', user, password], () => {
         cy.request({
             method: 'POST',
-            url: '/eXide/login',
+            url: '/eXide/api/auth/session',
             form: true,
             body: { user, password },
             headers: { 'Accept': 'application/json' }
         })
+    })
+})
+
+// cy.dismissDialog() -- wait for editor to load and login to complete, then dismiss any visible dialog
+Cypress.Commands.add("dismissDialog", () => {
+    // Wait for the editor to be initialized
+    cy.get('#editor .cm-editor', { timeout: 10000 }).should('exist')
+    // Wait for the login check to complete (user text changes from default)
+    cy.get('#user', { timeout: 10000 }).should('not.have.text', 'Login')
+    // Dismiss any startup dialogs
+    cy.get('body').then(($body) => {
+        const btn = $body.find('.eXide-dialog[open] .eXide-dialog-buttons button')
+        if (btn.length) {
+            btn[0].click()
+        }
     })
 })
 
@@ -52,18 +67,15 @@ Cypress.Commands.add("setConf", function (executeQuery, restrictAccess) {
     const body = getConf(executeQuery, restrictAccess);
     const confFilePath = "/apps/eXide/configuration.xml"
     cy.request({
-        method: 'POST',
-        url: `/eXide/store/db${confFilePath}`,
+        method: 'PUT',
+        url: `/eXide/api/storage${confFilePath}`,
         headers: {
-            'Content-Type': 'application/xml',
-            'Content-length': body.length
+            'Content-Type': 'application/xml'
         },
         body
     })
     .then((response) => {
-        const parsed = JSON.parse(response.body)
-        expect(parsed).to.have.property('status', 'ok')
-        expect(parsed).to.have.property('externalLink', `/exist${confFilePath}`)
+        expect(response.body).to.have.property('status', 'ok')
     })
 })
 

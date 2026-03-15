@@ -1,9 +1,12 @@
 .DS_Store
+.env
 build/*
 expath-pkg.xml
 
 resources/scripts/xqlint.min.js
-resources/scripts/ace
+resources/scripts/prettier-bundle.js
+resources/scripts/cm6-bundle.js
+resources/scripts/ag-grid-bundle.js
 resources/scripts/eXide.min.*
 resources/scripts/jquery/jquery.plugins.min.*
 resources/css/ag-grid-community/
@@ -17,6 +20,8 @@ node_modules/
 
 cypress/videos/*.mp4
 cypress/screenshots/**/*.png
+
+CLAUDE.md
 
 .*
 !.gitignore
