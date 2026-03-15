@@ -105,6 +105,14 @@ else if ($local:method = 'get' and $exist:resource = "backdrop.svg") then
         </forward>
     </dispatch>
 
+(: REST API — all /api/* requests are handled by Roaster.
+ : Placed before the unauthorized check so that Roaster can handle
+ : its own auth via OpenAPI security schemes and x-constraints. :)
+else if (starts-with($exist:path, "/api/")) then
+    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
+        <forward url="{$exist:controller}/modules/api/router.xq"/>
+    </dispatch>
+
 (: handle unauthorized request :)
 
 else if (not($user-allowed))
@@ -145,24 +153,6 @@ then (
         <redirect url="index.html"/> <!-- maybe add additional parameters -->
     </dispatch>
 )
-else if (starts-with($exist:path, "/store/")) then
-    let $resource := substring-after($exist:path, "/store")
-    return
-        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-            <forward url="{$exist:controller}/modules/store.xq">
-                <add-parameter name="path" value="{$resource}"/>
-            </forward>
-        </dispatch>
-
-else if (starts-with($exist:path, "/check/")) then
-    let $resource := substring-after($exist:path, "/validate")
-    return
-        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-            <forward url="{$exist:controller}/modules/validate-xml.xq">
-                <add-parameter name="validate" value="no"/>
-            </forward>
-        </dispatch>
-
 else if ($local:method = 'get' and $exist:resource = "index.html") then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <view>
@@ -240,25 +230,20 @@ else if ($local:method = 'get' and starts-with($exist:path, '/results/')) then
         </forward>
     </dispatch>
 
-else if ($local:method = 'post' and $exist:resource eq "outline") then
-    let $query := request:get-parameter("qu", ())
-    let $base := request:get-parameter("base", ())
-    return
-        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-            <!-- Query is executed by XQueryServlet -->
-            <forward url="modules/outline.xq">
-                <set-header name="Cache-Control" value="no-cache"/>
-                <set-attribute name="xquery.module-load-path" value="{$base}"/>
-            </forward>
-    </dispatch>
-
+(: Disabled: debuger.xq is abandoned/non-functional
 else if ($exist:resource eq "debug") then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <!-- Query is executed by XQueryServlet -->
         <forward url="modules/debuger.xq">
             <set-header name="Cache-Control" value="no-cache"/>
         </forward>
     </dispatch>
+:)
+
+(: Block abandoned/non-functional modules :)
+else if ($exist:resource = ("debuger.xq", "git.xq")) then (
+    response:set-status-code(410),
+    <gone>{ $exist:resource } is no longer available.</gone>
+)
 
 else if (ends-with($exist:path, ".xq")) then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
