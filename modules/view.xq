@@ -1,6 +1,6 @@
 (:
  :  eXide - web-based XQuery IDE
- :  
+ :
  :  Copyright (C) 2011 Wolfgang Meier
  :
  :  This program is free software: you can redistribute it and/or modify
