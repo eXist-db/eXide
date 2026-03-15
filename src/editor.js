@@ -256,7 +256,7 @@ eXide.edit.Editor = (function () {
             autoPairCompartment.of([CM6.closeBrackets(), keymap.of(CM6.closeBracketsKeymap)]),
             CM6.indentOnInput(),
             CM6.syntaxHighlighting(CM6.defaultHighlightStyle, { fallback: true }),
-            CM6.syntaxHighlighting(CM6.oneDarkHighlightStyle),
+            CM6.syntaxHighlighting(CM6.classHighlighter),
             CM6.search({ top: true }),
             keymap.of([
                 ...CM6.defaultKeymap,
@@ -267,7 +267,7 @@ eXide.edit.Editor = (function () {
                 CM6.indentWithTab
             ]),
             languageCompartment.of([]),
-            themeCompartment.of([]),
+            themeCompartment.of(CM6.xqueryHighlightStyle ? [CM6.syntaxHighlighting(CM6.xqueryHighlightStyle)] : []),
             readOnlyCompartment.of(EditorState.readOnly.of(false)),
             lineWrappingCompartment.of([]),
             showInvisiblesCompartment.of([]),
@@ -1254,7 +1254,13 @@ eXide.edit.Editor = (function () {
     Constr.prototype.setTheme = function(theme) {
         console.log("Changing theme to %s", theme);
         var isDark = (theme === "dark");
-        var themeExt = isDark ? CM6.oneDarkTheme : [];
+        var themeExt = isDark ? [
+            CM6.oneDarkTheme,
+            CM6.syntaxHighlighting(CM6.oneDarkHighlightStyle),
+            CM6.xqueryDarkHighlightStyle ? CM6.syntaxHighlighting(CM6.xqueryDarkHighlightStyle) : []
+        ] : [
+            CM6.xqueryHighlightStyle ? CM6.syntaxHighlighting(CM6.xqueryHighlightStyle) : []
+        ];
         this.editor.dispatch({
             effects: this._themeCompartment.reconfigure(themeExt)
         });
