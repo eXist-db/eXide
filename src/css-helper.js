@@ -1,6 +1,6 @@
 /*
  *  eXide - web-based XQuery IDE
- *  
+ *
  *  Copyright (C) 2011 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -19,76 +19,93 @@
 eXide.namespace("eXide.edit.CssModeHelper");
 
 /**
- * XML specific helper methods.
+ * CSS specific helper methods.
  */
 eXide.edit.CssModeHelper = (function () {
-    
-    var TokenIterator = require("ace/token_iterator").TokenIterator;
-    
+
     Constr = function(editor) {
-    	this.parent = editor;
-		this.editor = this.parent.editor;
+        this.parent = editor;
+        this.editor = this.parent.editor;
         this.addCommand("locate", this.locate);
         this.addCommand("gotoSymbol", this.gotoSymbol);
-	};
-	
-	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
-    
+        this.addCommand("format", this.format);
+    };
+
+    eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
+
     Constr.prototype.createOutline = function(doc, onComplete) {
-        var iterator = new TokenIterator(doc.getSession(), 0, 0);
-        var next = iterator.stepForward();
-        var lastVar = "";
-        while (next != null) {
-            if (next.type == "variable" || next.type == "keyword") {
-                if (lastVar.length > 0) {
-                    lastVar += " ";
+        var state = this.editor.state;
+        var tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
+        tree.iterate({
+            enter: function(node) {
+                if (node.name === "RuleSet") {
+                    var blockStart = node.to;
+                    var child = node.node.firstChild;
+                    while (child) {
+                        if (child.name === "Block") { blockStart = child.from; break; }
+                        child = child.nextSibling;
+                    }
+                    var selector = state.sliceDoc(node.from, blockStart).trim();
+                    if (selector) {
+                        var line = state.doc.lineAt(node.from);
+                        doc.functions.push({
+                            type: eXide.edit.Document.TYPE_FUNCTION,
+                            name: selector,
+                            source: doc.getPath(),
+                            signature: selector,
+                            sort: selector,
+                            row: line.number - 1,
+                            from: node.from,
+                            to: node.to
+                        });
+                    }
+                    return false;
                 }
-                lastVar += next.value;
-            } else if (next.type == "paren.rparen") {
-                lastVar = "";
-            } else if (next.type == "paren.lparen" && lastVar !== "") {
-                doc.functions.push({
-                	type: eXide.edit.Document.TYPE_FUNCTION,
-    				name: lastVar,
-                    source: doc.getPath(),
-    				signature: lastVar,
-                    sort: lastVar,
-                    row: iterator.getCurrentTokenRow(),
-                    column: iterator.getCurrentTokenColumn()
-    			});
-                lastVar = "";
+                if (node.name === "MediaStatement" || node.name === "KeyframesStatement") {
+                    var text = state.sliceDoc(node.from, node.to);
+                    var braceIdx = text.indexOf("{");
+                    if (braceIdx >= 0) text = text.substring(0, braceIdx).trim();
+                    if (text.length > 60) text = text.substring(0, 60) + "…";
+                    var line = state.doc.lineAt(node.from);
+                    doc.functions.push({
+                        type: eXide.edit.Document.TYPE_FUNCTION,
+                        name: text,
+                        source: doc.getPath(),
+                        signature: text,
+                        sort: text,
+                        row: line.number - 1,
+                        from: node.from,
+                        to: node.to
+                    });
+                }
             }
-            next = iterator.stepForward();
-        }
-        if (onComplete)
-            onComplete(doc);
+        });
+        this.collectErrors(doc);
+        if (onComplete) onComplete(doc);
     };
 
     Constr.prototype.gotoSymbol = function(doc) {
         var self = this;
-        var popupItems = [];
+        var items = [];
         for (var i = 0; i < doc.functions.length; i++) {
             if (doc.functions[i].name !== "") {
-                item = { 
+                items.push({
                     label: doc.functions[i].name,
                     name: doc.functions[i].name,
                     type: doc.functions[i].type,
                     row: doc.functions[i].row
-                };
-                popupItems.push(item);
+                });
             }
-        };
-        if (popupItems.length > 1) {
-            var left = this.parent.getOffset().left;
-            eXide.util.Popup.position({pageX: left, pageY: 40});
-            eXide.util.Popup.show(popupItems, function (selected) {
+        }
+        if (items.length > 0) {
+            eXide.util.QuickPicker.show(items, function (selected) {
                 if (selected) {
                     self.parent.history.push(doc.getPath(), doc.getCurrentLine());
-                    self.editor.gotoLine(selected.row + 1);
+                    editorUtils.gotoLine(self.editor, selected.row + 1);
                 }
-            });
+            }, { placeholder: "Go to symbol\u2026", parentEditor: self.editor });
         }
     };
-    
+
     return Constr;
 }());

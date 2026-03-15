@@ -19,35 +19,34 @@
 eXide.namespace("eXide.edit.LessModeHelper");
 
 /**
- * XML specific helper methods.
+ * Less specific helper methods.
  */
 eXide.edit.LessModeHelper = (function () {
 
     function saveCSS (path, css) {
-        $.ajax({
-            url: "store/" + path,
-            type: "PUT",
-            data: css,
-            dataType: "json",
-            contentType: "text/css",
-            success: function (data) {
-                if (data.status == "error") {
-                    return eXide.util.error(data.message);
-                }
-                eXide.util.message(path + " stored.");
-            },
-            error: function (xhr, status) {
-                eXide.util.error(xhr.responseText);
+        fetch("store/" + path, {
+            method: "PUT",
+            headers: { "Content-Type": "text/css" },
+            body: css
+        })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (data.status == "error") {
+                return eXide.util.error(data.message);
             }
+            eXide.util.message(path + " stored.");
+        })
+        .catch(function(err) {
+            eXide.util.error(String(err));
         });
     }
-
-    var TokenIterator = require("ace/token_iterator").TokenIterator;
 
     var Constr = function(editor) {
         this.parent = editor;
         this.editor = this.parent.editor;
         this.addCommand("locate", this.locate);
+        this.addCommand("format", this.format);
+        this.addCommand("gotoSymbol", this.gotoSymbol);
     };
 
     eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
@@ -57,13 +56,11 @@ eXide.edit.LessModeHelper = (function () {
         var code = doc.getText();
 
         if (/\/_.+\.less$/.test(path)) {
-          // TODO get main file from code
           return eXide.util.error("CSS not compiled for include : " + path);
         }
 
         var options = {
             filename: path
-            // TODO sourcemaps
         };
 
         var header = "/**\n" +
@@ -86,36 +83,54 @@ eXide.edit.LessModeHelper = (function () {
     Constr.prototype.saveCSS = saveCSS;
 
     Constr.prototype.createOutline = function(doc, onComplete) {
-        var iterator = new TokenIterator(doc.getSession(), 0, 0);
-        var next = iterator.stepForward();
-        while (next != null) {
-            if (next.type == "paren.lparen" && next.value == "{") {
-                var selector = [];
-                var row = iterator.getCurrentTokenRow();
-                var backIter = new TokenIterator(doc.getSession(), row, iterator.getCurrentTokenColumn());
-                var prev;
-                while ((prev = backIter.stepBackward()) != null) {
-                    if (backIter.getCurrentTokenRow() < row)
-                        break;
-                    selector.push(prev.value);
+        var state = this.editor.state;
+        var tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
+        tree.iterate({
+            enter: function(node) {
+                if (node.name === "RuleSet") {
+                    var blockStart = node.to;
+                    var child = node.node.firstChild;
+                    while (child) {
+                        if (child.name === "Block") { blockStart = child.from; break; }
+                        child = child.nextSibling;
+                    }
+                    var selector = state.sliceDoc(node.from, blockStart).trim();
+                    if (selector) {
+                        var line = state.doc.lineAt(node.from);
+                        doc.functions.push({
+                            type: eXide.edit.Document.TYPE_FUNCTION,
+                            name: selector,
+                            source: doc.getPath(),
+                            signature: selector,
+                            sort: selector,
+                            row: line.number - 1,
+                            from: node.from,
+                            to: node.to
+                        });
+                    }
+                    return false;
                 }
-                var selectorStr = selector.reverse().join("");
-                doc.functions.push({
-                    type: eXide.edit.Document.TYPE_FUNCTION,
-                    name: selectorStr,
-                    source: doc.getPath(),
-                    signature: selectorStr,
-                    sort: selectorStr,
-                    row: iterator.getCurrentTokenRow(),
-                    column: iterator.getCurrentTokenColumn()
-                });
-                lastVar = "";
+                if (node.name === "MediaStatement" || node.name === "KeyframesStatement") {
+                    var text = state.sliceDoc(node.from, node.to);
+                    var braceIdx = text.indexOf("{");
+                    if (braceIdx >= 0) text = text.substring(0, braceIdx).trim();
+                    if (text.length > 60) text = text.substring(0, 60) + "…";
+                    var line = state.doc.lineAt(node.from);
+                    doc.functions.push({
+                        type: eXide.edit.Document.TYPE_FUNCTION,
+                        name: text,
+                        source: doc.getPath(),
+                        signature: text,
+                        sort: text,
+                        row: line.number - 1,
+                        from: node.from,
+                        to: node.to
+                    });
+                }
             }
-            next = iterator.stepForward();
-        }
-        if (onComplete) {
-            onComplete(doc);
-        }
+        });
+        this.collectErrors(doc);
+        if (onComplete) onComplete(doc);
     }
 
     return Constr;
