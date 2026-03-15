@@ -9,8 +9,8 @@ resources/scripts/jquery/jquery.plugins.min.*
 resources/css/ag-grid-community/
 
 tools/r.js
-
 tools/js.jar
+tools/REx.class
 index.html
 
 node_modules/
