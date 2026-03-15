@@ -11,16 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
        fail-fast: false
-       matrix:  
+       matrix:
          exist-version: [release, latest]
          node-version: ['22']
-    # TODO: see #563 could still be usefull for gulp builds 
-    # services:
-    #   # Label used to access the service container
-    #   exist:
-    #     image: existdb/existdb:${{ matrix.exist-version}}
-    #     ports:
-    #       - 8080:8080
 
     steps:
       - uses: actions/checkout@v6
@@ -36,15 +29,37 @@ jobs:
 
       - name: Run npm CI
         run: npm ci
-      
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Validate OpenAPI schema
+        run: npx --yes @redocly/cli lint modules/api.json
+
       - name: Build frontend Using node.js ${{ matrix.node-version }} and build EXPath Package
         run: npm run build
+
+      - name: Download Roaster dependency
+        run: gh release download v1.12.0 --repo eeditiones/roaster --pattern "roaster-1.12.0.xar" --output build/roaster-1.12.0.xar
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Start eXist-db Docker Container
         run: docker run --rm --name exist --volume $(pwd)/build:/exist/autodeploy:ro --publish 8080:8080 --detach existdb/existdb:${{ matrix.exist-version }}
 
-      - name: Wait for eXist-db Startup
-        run: timeout 90 sh -c 'until nc -z $0 $1; do sleep 3; done' localhost 8080
+      - name: Wait for eXist-db Startup and Package Deployment
+        run: |
+          for i in $(seq 1 24); do
+            HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/exist/apps/eXide/index.html || true)
+            echo "Attempt $i: HTTP $HTTP_CODE"
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "eXide is ready"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Timed out waiting for eXide"
+          exit 1
 
       - name: Run Cypress Integration Tests
         run: npx cypress run
@@ -64,7 +79,7 @@ jobs:
           name: cypress-videos-${{ matrix.exist-version }}-${{ matrix.node-version }}
           path: cypress/videos
 
-  # TODO: Add upload to dockerhub   
+  # TODO: Add upload to dockerhub
   # release:
   #   name: Release
   #   runs-on: ubuntu-latest

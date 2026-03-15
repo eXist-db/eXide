@@ -7,9 +7,9 @@ describe('Navbar', function () {
       cy.get("div.ui-dialog-buttonset button").click()
     })
     cy.wait(500)
-    cy.get("div.ui-dialog div.ui-dialog-buttonset button").filter(':visible').click()
+    cy.dismissDialog()
     cy.get('#editor > div.ace_scroller > div').type("<weeeeeeeeeeeeeeeeee/>")
-    cy.get("#eval").click()
+    cy.get("#run").click()
     cy.wait(1300)
 
     cy.get("#copy-all-clipboard").click({ force: true })
@@ -24,9 +24,9 @@ describe('Navbar', function () {
       cy.get("div.ui-dialog-buttonset button").click()
     })
     cy.wait(500)
-    cy.get("div.ui-dialog div.ui-dialog-buttonset button").filter(':visible').click()
+    cy.dismissDialog()
     cy.get('#editor > div.ace_scroller > div').type("<weeeeeeeeeeeeeeeeee/>")
-    cy.get("#eval").click()
+    cy.get("#run").click()
     cy.wait(1300)
 
     cy.get("#copy-all-clipboard").click({ force: true })

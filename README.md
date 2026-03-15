@@ -4,7 +4,7 @@
 
 # eXide - a web-based XQuery IDE
 
-eXide is a web-based XQuery IDE built around the [ace editor](https://ace.c9.io/). It is tightly integrated with the [eXist-db native XML database](https://exist-db.org). 
+eXide is a web-based XQuery IDE built around [CodeMirror 6](https://codemirror.net/). It is tightly integrated with the [eXist-db native XML database](https://exist-db.org). 
 
 ## Features
 
@@ -52,7 +52,7 @@ To build eXide from scratch:
 ```bash
 git clone git://github.com/eXist-db/eXide.git
 cd eXide
-git submodule update --init --recursive
+
 ```
 
 Next, call `npm install` once:
@@ -73,7 +73,7 @@ You should now find a `.xar` file in the `build/` directory: `build/eXide-*.*.*.
 
 We welcome contributions to help us improve both unit and integration tests. Current tests can be found in the `cypress/integration` folder.
 
-eXide's GitHub repository is configured to run tests automatically on each PR via TravisCI (see `.travis.yml`).
+eXide's GitHub repository is configured to run tests automatically on each PR via GitHub Actions.
 
 To run tests locally, build and install eXide on localhost, and start the tests:
 
@@ -81,7 +81,7 @@ To run tests locally, build and install eXide on localhost, and start the tests:
 # clone the repo
 git clone git://github.com/eXist-db/eXide.git
 cd eXide
-git submodule update --init --recursive
+
 # build exide
 npm install
 # at this point if you are planning to build another branch change it now
