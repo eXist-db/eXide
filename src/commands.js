@@ -1,6 +1,6 @@
 /*
  *  eXide - web-based XQuery IDE
- *  
+ *
  *  Copyright (C) 2011 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -19,381 +19,328 @@
 eXide.namespace("eXide.edit.commands");
 
 /**
- * Register editor commands to be called from keybindings.
+ * Register editor commands via CM6 keymap.
  */
 eXide.edit.commands = (function () {
 
-	var useragent = require("ace/lib/useragent");
-	var SnippetManager = require("ace/snippets").snippetManager;
-	var bindings = {};
-    
-	function bindKey(bindings) {
-		if (bindings) {
-	    return {
-	        win: bindings[0],
-	        mac: bindings[1],
-	        sender: "editor"
-	    };
-		}
-	}
-	
-    function createMap(editor) {
-        var commands = editor.editor.commands;
-        for (key in commands.commands)  {
-            var command = commands.commands[key];
-            if (command.bindKey) {
-    			if (useragent.isMac)
-				    bindings[command.name] = command.bindKey.mac;
-				else
-					bindings[command.name] = command.bindKey.win;
-            }
+    var isMac = /Mac/.test(navigator.platform);
+    var bindings = {};
+    var commandList = [];
+
+    /**
+     * Convert CM6 key string to platform-native display string for menus.
+     */
+    function displayKey(cm6Key) {
+        if (!cm6Key) return "";
+        var str = cm6Key
+            .replace(/ArrowLeft/g, "←")
+            .replace(/ArrowRight/g, "→")
+            .replace(/ArrowUp/g, "↑")
+            .replace(/ArrowDown/g, "↓")
+            .replace(/Backspace/g, "⌫")
+            .replace(/Enter/g, "↩")
+            .replace(/Escape/g, "⎋")
+            .replace(/PageUp/g, "⇞")
+            .replace(/PageDown/g, "⇟")
+            .replace(/Space/g, "␣");
+        if (isMac) {
+            return str
+                .replace(/Mod-/g, "⌘")
+                .replace(/Alt-/g, "⌥")
+                .replace(/Shift-/g, "⇧")
+                .replace(/Ctrl-/g, "⌃")
+                .replace(/-/g, "")
+                .toUpperCase();
+        }
+        return str
+            .replace(/Mod-/g, "Ctrl+")
+            .replace(/Alt-/g, "Alt+")
+            .replace(/Shift-/g, "Shift+")
+            .toUpperCase();
+    }
+
+    function getKeyBinding(bindingsObj, name) {
+        if (!bindingsObj || !bindingsObj[name]) return null;
+        var entry = bindingsObj[name];
+        if (isMac) {
+            return entry.mac || entry.key;
+        }
+        return entry.key;
+    }
+
+    var nameLabels = {
+        undo: "Undo", redo: "Redo", gotoLine: "Go to Line",
+        historyBack: "Go to Last Edit", fold: "Fold", unfold: "Unfold",
+        saveDocument: "Save", runQuery: "Eval", runQueryOrApp: "Run",
+        openDocument: "Open", newDocumentFromTemplate: "New from Template",
+        closeDocument: "Close", closeAll: "Close All",
+        autocomplete: "Autocomplete", nextTab: "Next Tab", previousTab: "Previous Tab",
+        functionDoc: "Function Documentation", gotoDefinition: "Go to Definition",
+        gotoSymbol: "Go to Symbol", searchReplace: "Find/Replace",
+        escape: "Cancel/Escape", dbManager: "DB Manager",
+        toggleComment: "Toggle Comment", synchronize: "Synchronize",
+        preferences: "Preferences", openApp: "Open Application",
+        "xquery-format": "Format Code", quickfix: "Quick Fix",
+        expandSelection: "Expand Selection", renameSymbol: "Rename Symbol",
+        removeTags: "Remove Tags", extractFunction: "Extract Function",
+        extractVariable: "Extract Variable", openTab: "Switch Editor",
+        toggleQueryResults: "Toggle Results", commandPalette: "Command Palette",
+        findFiles: "Find in Files",
+        toggleDiagnostics: "Toggle Diagnostics Panel"
+    };
+
+    function humanName(id) {
+        if (nameLabels[id]) return nameLabels[id];
+        // gotoTab1 → "Go to Tab 1"
+        var tabMatch = id.match(/^gotoTab(\d)$/);
+        if (tabMatch) return "Go to Tab " + tabMatch[1];
+        // fallback: camelCase → "Camel Case"
+        return id.replace(/([a-z])([A-Z])/g, "$1 $2")
+                  .replace(/^./, function(c) { return c.toUpperCase(); });
+    }
+
+    function addCommand(name, key, exec) {
+        var cmd = { name: name, key: key, exec: exec };
+        commandList.push(cmd);
+        if (key) {
+            bindings[name] = key;
         }
     }
-    
-	return {
-		
-		init: function (parent) {
-            var commands = parent.editor.commands;
-            $.ajax({
-                url: "keybindings.js",
-                dataType: 'json',
-                async: false,
-                success: function(bindings) {
-                    commands.addCommand({
-                        name: "gotoLine",
-                        bindKey: bindKey(bindings.gotoLine),
-                        exec: function(editor) {
-                            parent.gotoLine();
-                        }
+
+    return {
+
+        init: function (parent) {
+            // Synchronous load — keybindings must be configured before editor is interactive
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "keybindings.js", false);
+            xhr.send();
+            if (xhr.status === 200) {
+                var kb = JSON.parse(xhr.responseText);
+                (function() {
+                    // Display-only entries for built-in CM6 commands (no exec — handled by CM6)
+                    addCommand("undo", getKeyBinding(kb, "undo"), null);
+                    addCommand("redo", getKeyBinding(kb, "redo"), null);
+
+                    addCommand("gotoLine", getKeyBinding(kb, "gotoLine"), function() {
+                        parent.gotoLine();
+                        return true;
                     });
-                    commands.addCommand({
-                        name: "historyBack",
-                        bindKey: bindKey(bindings.historyBack),
-                        exec: function(editor) {
-                            parent.historyBack();
-                        }
+                    addCommand("historyBack", getKeyBinding(kb, "historyBack"), function() {
+                        parent.historyBack();
+                        return true;
                     });
-                    commands.addCommand({
-            			name: "fold",
-        			    bindKey: bindKey(bindings.fold),
-        			    exec: function(editor) {
-        					editor.session.toggleFold(false);
-        				},
-        			    readOnly: true
-        			});
-                    commands.addCommand({
-                        name: "selectMoreBefore",
-                        exec: function(editor) { editor.selectMore(-1); },
-                        bindKey: {win: "Ctrl-Alt-Left", mac: "Ctrl-Alt-Command-Left"},
-                        readOnly: true
+                    addCommand("toggleDiagnostics", getKeyBinding(kb, "toggleDiagnostics"), function() {
+                        parent.toggleDiagnostics();
+                        return true;
                     });
-                    commands.addCommand({
-                        name: "selectMoreAfter",
-                        exec: function(editor) { editor.selectMore(1); },
-                        bindKey: {win: "Ctrl-Alt-Right", mac: "Ctrl-Alt-Command-Right"},
-                        readOnly: true
+                    addCommand("fold", getKeyBinding(kb, "fold"), function(view) {
+                        // CM6 fold is handled by foldKeymap
+                        return false;
                     });
-        			commands.addCommand({
-        				name: "unfold",
-        			    bindKey: bindKey(bindings.unfold),
-        			    exec: function(editor) { 
-        					editor.session.toggleFold(true);
-        				},
-        			    readOnly: true
-        			});
-        		    commands.addCommand({
-        		    	name: "saveDocument",
-        		    	bindKey: bindKey(bindings.saveDocument),
-        		    	exec: function (editor) {
-        		    		eXide.app.saveDocument();
-        		    	}
-        		    });
-        		    commands.addCommand({
-        		    	name: "runQuery",
-        		    	bindKey: bindKey(bindings.runQuery),
-        		    	exec: function (editor) {
-        		    		eXide.app.runQuery();
-        		    	}
-        		    });
-        		    commands.addCommand({
-        		    	name: "runQueryOrApp",
-        		    	bindKey: bindKey(bindings.runQueryOrApp),
-        		    	exec: function (editor) {
-        		    		eXide.app.runAppOrQuery();
-        		    	}
-        		    });
-        		    commands.addCommand({
-        		    	name: "openDocument",
-        		    	bindKey: bindKey(bindings.openDocument),
-        		    	exec: function (editor) {
-        		    		eXide.app.openDocument();
-        		    	}
-        		    });
-                    commands.addCommand({
-            	    	name: "newDocumentFromTemplate",
-        		    	bindKey: bindKey(bindings.newDocumentFromTemplate),
-        		    	exec: function (editor) {
-        		    		eXide.app.newDocumentFromTemplate();
-        		    	}
-        		    });
-        		    commands.addCommand({
-        		    	name: "closeDocument",
-        		    	bindKey: bindKey(bindings.closeDocument),
-        		    	exec: function (editor) {
-        		    		eXide.app.closeDocument();
-        		    	}
-        		    });
-        		    commands.addCommand({
-        		    	name: "closeAll",
-        		    	bindKey: bindKey(bindings.closeAll),
-        		    	exec: function (editor) {
-        		    		eXide.app.closeAll();
-        		    	}
-        		    });
-        		    commands.addCommand({
-        		    	name: "autocomplete",
-        		    	bindKey: bindKey(bindings.autocomplete),
-        		    	exec: function(editor) {
-        		    		parent.autocomplete();
-        		    	}
-        		    });
-        		    commands.addCommand({
-        		    	name: "nextTab",
-        		    	bindKey: bindKey(bindings.nextTab),
-        		    	exec: function(editor) {
-        		    		parent.nextTab();
-        		    	}
-        		    });
-        		    commands.addCommand({
-        		    	name: "previousTab",
-        		    	bindKey: bindKey(bindings.previousTab),
-        		    	exec: function(editor) {
-        		    		parent.previousTab();
-        		    	}
-        		    });
-                    commands.addCommand({
-                        name: "xquery-format",
-                        bindKey: bindKey(bindings.xqueryFormat),
-                        exec: function(editor) {
-                            parent.exec("format");
-                        }
+                    addCommand("saveDocument", getKeyBinding(kb, "saveDocument"), function() {
+                        eXide.app.saveDocument();
+                        return true;
                     });
-        		    commands.addCommand({
-        		    	name: "functionDoc",
-        		    	bindKey: bindKey(bindings.functionDoc),
-        		    	exec: function(editor) {
-        		    		parent.exec("showFunctionDoc");
-        		    	}
-        		    });
-        		    commands.addCommand({
-        		    	name: "gotoDefinition",
-        		    	bindKey: bindKey(bindings.gotoDefinition),
-        		    	exec: function(editor) {
-        		    		parent.exec("gotoDefinition");
-        		    	}
-        		    });
-                    commands.addCommand({
-                        name: "gotoSymbol",
-                        hint: "Goto symbol",
-                        bindKey: bindKey(bindings.gotoSymbol),
-                        exec: function(editor) {
-                            parent.exec("gotoSymbol");
-                        }
+                    addCommand("runQuery", getKeyBinding(kb, "runQuery"), function() {
+                        eXide.app.runQuery();
+                        return true;
                     });
-              //       commands.addCommand({
-            	 //    	name: "searchIncremental",
-        		    // 	bindKey: bindKey(bindings.searchIncremental),
-        		    // 	exec: function(editor) {
-        		    // 		parent.quicksearch.start();
-        		    // 	}
-        		    // });
-                    commands.addCommand({
-                    	name: "searchReplace",
-        		    	bindKey: bindKey(bindings.searchReplace),
-        		    	exec: function(editor) {
-        		    		parent.search.open();
-        		    	}
-        		    });
-        		    commands.addCommand({
-        		    	name: "escape",
-        		    	bindKey: bindKey(bindings.escape),
-        		    	exec: function(editor) {
-        		    		var doc = parent.getActiveDocument();
-        		    		doc.template = null;
-        		    		editor.clearSelection();
-        		    	}
-        		    });
-        		    commands.addCommand({
-        		    	name: "dbManager",
-        		    	bindKey: bindKey(bindings.dbManager),
-        		    	exec: function (editor) {
-        		    		eXide.app.manage();
-        		    	}
-        		    });
-                    commands.addCommand({
-            	    	name: "toggleComment",
-        		    	bindKey: bindKey(bindings.toggleComment),
-        		    	exec: function (editor) {
-        		    		editor.toggleCommentLines();
-        		    	}
-        		    });
-                    commands.addCommand({
-                        name: "synchronize",
-                        bindKey: bindKey(bindings.synchronize),
-                        exec: function(editor) {
-                            eXide.app.synchronize();
-                        }
+                    addCommand("runQueryOrApp", getKeyBinding(kb, "runQueryOrApp"), function() {
+                        eXide.app.runAppOrQuery();
+                        return true;
                     });
-                    commands.addCommand({
-                        name: "preferences",
-                        bindKey: bindKey(bindings.preferences),
-                        exec: function(editor) {
-                            eXide.app.showPreferences();
-                        }
+                    addCommand("openDocument", getKeyBinding(kb, "openDocument"), function() {
+                        eXide.app.openDocument();
+                        return true;
                     });
-                    commands.addCommand({
-                        name: "openApp",
-                        bindKey: bindKey(bindings.openApp),
-                        exec: function(editor) {
-                            eXide.app.openApp();
-                        }
+                    addCommand("newDocumentFromTemplate", getKeyBinding(kb, "newDocumentFromTemplate"), function() {
+                        eXide.app.newDocumentFromTemplate();
+                        return true;
                     });
-                    commands.addCommand({
-                        name: "quickfix",
-                        bindKey: bindKey(bindings.quickfix),
-                        exec: function(editor) {
-                            parent.exec("quickFix");
-                        }
+                    addCommand("closeDocument", getKeyBinding(kb, "closeDocument"), function() {
+                        eXide.app.closeDocument();
+                        return true;
                     });
-                    commands.addCommand({
-                        name: "expandSelection",
-                        bindKey: bindKey(bindings.expandSelection),
-                        exec: function(editor) {
-                            parent.exec("expandSelection");
-                        }
+                    addCommand("closeAll", getKeyBinding(kb, "closeAll"), function() {
+                        eXide.app.closeAll();
+                        return true;
                     });
-                    commands.addCommand({
-                        name: "renameSymbol",
-                        bindKey: bindKey(bindings.renameSymbol),
-                        exec: function(editor) {
-                            parent.exec("rename");
-                        }
+                    addCommand("autocomplete", getKeyBinding(kb, "autocomplete"), function(view) {
+                        CM6.startCompletion(view);
+                        return true;
                     });
-                    commands.addCommand({
-                        name: "removeTags",
-                        bindKey: bindKey(bindings.removeTags),
-                        exec: function(editor) {
-                            parent.exec("removeTags");
-                        }
+                    addCommand("nextTab", getKeyBinding(kb, "nextTab"), function() {
+                        parent.nextTab();
+                        return true;
                     });
-                    commands.addCommand({
-                        name: "extractFunction",
-                        hint: "Extract Function",
-                        bindKey: bindKey(bindings.extractFunction),
-                        exec: function(editor) {
-                            parent.exec("extractFunction");
-                        }
+                    addCommand("previousTab", getKeyBinding(kb, "previousTab"), function() {
+                        parent.previousTab();
+                        return true;
                     });
-                    commands.addCommand({
-                        name: "extractVariable",
-                        hint: "Extract Variable",
-                        bindKey: bindKey(bindings.extractVariable),
-                        exec: function(editor) {
-                            parent.exec("extractVariable");
-                        }
+                    addCommand("xquery-format", getKeyBinding(kb, "xqueryFormat"), function() {
+                        parent.exec("format");
+                        return true;
                     });
-                    commands.addCommand({
-                        name: "snippet",
-                        hint: "code snippet",
-                        bindKey: {mac: "Tab", win: "Tab"},
-                        exec: function(editor) {
-                            var success = SnippetManager.expandWithTab(editor);
-                            if (!success) {
-                                success = parent.autocomplete(false);
-                            }
-                            if (!success) {
-                                editor.execCommand("indent");
-                            }
-                        }
+                    addCommand("functionDoc", getKeyBinding(kb, "functionDoc"), function() {
+                        parent.exec("showFunctionDoc");
+                        return true;
                     });
-                    commands.addCommand({
-                        name: "openTab",
-                        hint: "select open tab",
-                        bindKey: bindKey(bindings.openTab),
-                        exec: function(editor) {
-                            parent.selectTab();
-                        }
+                    addCommand("gotoDefinition", getKeyBinding(kb, "gotoDefinition"), function() {
+                        parent.exec("gotoDefinition");
+                        return true;
                     });
-                    commands.addCommand({
-                        name: "toggleQueryResults",
-                        hint: "toggle query results panel",
-                        bindKey: bindKey(bindings.toggleQueryResults),
-                        exec: function(editor) {
-                            eXide.app.toggleResultsPanel();
-                        }
+                    addCommand("gotoSymbol", getKeyBinding(kb, "gotoSymbol"), function() {
+                        parent.exec("gotoSymbol");
+                        return true;
                     });
-                    commands.addCommand({
-                        name: "commandPalette",
-                        hint: "Command Palette",
-                        bindKey: bindKey(bindings.commandPalette),
-                        exec: function(editor) {
-                            eXide.app.getMenu().commandPalette();
-                        }
+                    addCommand("searchReplace", getKeyBinding(kb, "searchReplace"), function() {
+                        parent.search.open();
+                        return true;
                     });
-                    commands.addCommand({
-                        name: "findFiles",
-                        hint: "Find in files",
-                        bindKey: bindKey(bindings.findFiles),
-                        exec: function(editor) {
-                            eXide.app.findFiles();
-                        }
+                    addCommand("escape", getKeyBinding(kb, "escape"), function() {
+                        var doc = parent.getActiveDocument();
+                        doc.template = null;
+                        var head = parent.editor.state.selection.main.head;
+                        parent.editor.dispatch({ selection: { anchor: head } });
+                        return true;
                     });
-                    
+                    addCommand("dbManager", getKeyBinding(kb, "dbManager"), function() {
+                        eXide.app.manage();
+                        return true;
+                    });
+                    addCommand("toggleComment", getKeyBinding(kb, "toggleComment"), function(view) {
+                        CM6.toggleComment(view);
+                        return true;
+                    });
+                    addCommand("synchronize", getKeyBinding(kb, "synchronize"), function() {
+                        eXide.app.synchronize();
+                        return true;
+                    });
+                    addCommand("preferences", getKeyBinding(kb, "preferences"), function() {
+                        eXide.app.showPreferences();
+                        return true;
+                    });
+                    addCommand("openApp", getKeyBinding(kb, "openApp"), function() {
+                        eXide.app.openApp();
+                        return true;
+                    });
+                    addCommand("quickfix", getKeyBinding(kb, "quickfix"), function() {
+                        parent.exec("quickFix");
+                        return true;
+                    });
+                    addCommand("expandSelection", getKeyBinding(kb, "expandSelection"), function() {
+                        parent.exec("expandSelection");
+                        return true;
+                    });
+                    addCommand("renameSymbol", getKeyBinding(kb, "renameSymbol"), function() {
+                        parent.exec("rename");
+                        return true;
+                    });
+                    addCommand("removeTags", getKeyBinding(kb, "removeTags"), function() {
+                        parent.exec("removeTags");
+                        return true;
+                    });
+                    addCommand("extractFunction", getKeyBinding(kb, "extractFunction"), function() {
+                        parent.exec("extractFunction");
+                        return true;
+                    });
+                    addCommand("extractVariable", getKeyBinding(kb, "extractVariable"), function() {
+                        parent.exec("extractVariable");
+                        return true;
+                    });
+                    addCommand("openTab", getKeyBinding(kb, "openTab"), function() {
+                        parent.selectTab();
+                        return true;
+                    });
+                    addCommand("toggleQueryResults", getKeyBinding(kb, "toggleQueryResults"), function() {
+                        eXide.app.toggleResultsPanel();
+                        return true;
+                    });
+                    addCommand("commandPalette", getKeyBinding(kb, "commandPalette"), function() {
+                        eXide.app.getMenu().commandPalette();
+                        return true;
+                    });
+                    addCommand("findFiles", getKeyBinding(kb, "findFiles"), function() {
+                        eXide.app.findFiles();
+                        return true;
+                    });
+
                     function createExec(tab) {
-                        return function(editor) {
+                        return function() {
                             parent.selectTab(tab - 1);
+                            return true;
                         };
                     }
-                    
+
                     for (var i = 1; i < 10; i++) {
                         var tab = i;
-                        commands.addCommand({
-                            name: "gotoTab" + tab,
-                            bindKey: bindKey(bindings["gotoTab"  + tab]),
-                            exec: createExec(tab)
-                        });
+                        addCommand("gotoTab" + tab, getKeyBinding(kb, "gotoTab" + tab), createExec(tab));
                     }
-    			    createMap(parent);
-                }
-            });
-		},
-		
-		help: function (container, editor) {
-			$(container).find("table").each(function () {
-				this.innerHTML = "";
-                var commands = editor.editor.commands;
-                for (key in commands.commands)  {
-                    var command = commands.commands[key];
-    				var tr = document.createElement("tr");
-					var td = document.createElement("td");
-					td.appendChild(document.createTextNode(command.name));
-					tr.appendChild(td);
-					td = document.createElement("td");
-                    if (command.bindKey) {
-    					if (useragent.isMac)
-    						td.appendChild(document.createTextNode(command.bindKey.mac));
-    					else
-    						td.appendChild(document.createTextNode(command.bindKey.win));
+
+                    // Build CM6 keymap from collected commands
+                    var keymapEntries = [];
+                    for (var j = 0; j < commandList.length; j++) {
+                        var cmd = commandList[j];
+                        if (cmd.key && cmd.exec) {
+                            keymapEntries.push({
+                                key: cmd.key,
+                                run: cmd.exec,
+                                preventDefault: true
+                            });
+                        }
                     }
-					tr.appendChild(td);
-					this.appendChild(tr);
+
+                    // Add the keymap to the editor view
+                    parent.editor.dispatch({
+                        effects: CM6.StateEffect.appendConfig.of(
+                            CM6.Prec.highest(CM6.keymap.of(keymapEntries))
+                        )
+                    });
+                })();
+            }
+        },
+
+        help: function (container, editor) {
+            var el = typeof container === "string" ? document.querySelector(container) : container;
+            var tbody = el.querySelector("#keybindings tbody");
+            if (!tbody) return;
+            tbody.innerHTML = "";
+            for (var i = 0; i < commandList.length; i++) {
+                var cmd = commandList[i];
+                var tr = document.createElement("tr");
+                var td = document.createElement("td");
+                td.textContent = humanName(cmd.name);
+                tr.appendChild(td);
+                td = document.createElement("td");
+                if (cmd.key) {
+                    var span = document.createElement("span");
+                    span.className = "shortcut";
+                    span.textContent = displayKey(cmd.key);
+                    td.appendChild(span);
                 }
-			});
-		},
-        
+                tr.appendChild(td);
+                tbody.appendChild(tr);
+            }
+            // Wire filter input
+            var filterInput = el.querySelector("#keybindings-filter");
+            if (filterInput) {
+                var newInput = filterInput.cloneNode(true);
+                filterInput.parentNode.replaceChild(newInput, filterInput);
+                newInput.value = "";
+                newInput.addEventListener("input", function() {
+                    var q = this.value.trim().toLowerCase();
+                    var trs = tbody.querySelectorAll("tr");
+                    trs.forEach(function(tr) {
+                        var text = tr.textContent.toLowerCase();
+                        tr.style.display = (!q || text.indexOf(q) >= 0) ? "" : "none";
+                    });
+                });
+            }
+        },
+
         getShortcut: function(key) {
-            return bindings[key];
+            return displayKey(bindings[key]);
         }
-        
-	};
+
+    };
 }());
