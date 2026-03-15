@@ -1,6 +1,6 @@
 /*
  *  eXide - web-based XQuery IDE
- *  
+ *
  *  Copyright (C) 2011 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -18,12 +18,9 @@
  */
 
 // main entry point
-// test 
-$(document).ready(function() {
+document.addEventListener("DOMContentLoaded", function() {
     window.name = "eXide";
-    
-    jQuery.event.props.push( "dataTransfer" );
-    
+
     // parse query parameters passed in by URL:
     var qs = (function(a) {
         if (a == "") return {};
@@ -36,7 +33,7 @@ $(document).ready(function() {
         }
         return b;
     })(window.location.search.substr(1).split('&'));
-    
+
     // check parameters passed in GET request
     eXide.app.init(function (restored) {
         var openDoc = qs["open"];
@@ -58,7 +55,7 @@ eXide.namespace("eXide.app");
  * Static class for the main application. Controls the GUI.
  */
 eXide.app = (function(util) {
-    
+
 	var editor;
 
     var layout;
@@ -74,148 +71,275 @@ eXide.app = (function(util) {
 	var currentOffset = 0;
 	var endOffset = 0;
     var numberOfResults = 10;
-	
+    var activeResultIdx = -1;
+
 	var login = null;
-    
+
     var allowDnd = true;
-    
+
     // used to detect when window looses focus
     var hasFocus = true;
-    
+
     var resultPanel = "south";
-    
+
+    var monitor = null;
+
+    var dialogs = {};
+
+    /**
+     * Apply CM6 syntax highlighting to a result content element.
+     * Detects the language from the serialization mode and uses
+     * highlightTree to produce highlighted spans.
+     */
+    function highlightResultContent(contentEl) {
+        if (!CM6.highlightTree) return;
+        var text = contentEl.textContent;
+        if (!text || text.length === 0) return;
+
+        var serializationMode = document.getElementById("serialization-mode").value;
+        var langSupport;
+        switch (serializationMode) {
+            case "xml":
+            case "xhtml":
+            case "xhtml5":
+            case "microxml":
+                langSupport = CM6.xml();
+                break;
+            case "json":
+                langSupport = CM6.json();
+                break;
+            case "html5":
+                langSupport = CM6.html();
+                break;
+            default:
+                // Sniff content: XML starts with < or whitespace+<
+                if (/^\s*</.test(text)) {
+                    langSupport = CM6.xml();
+                } else if (/^\s*[\[{]/.test(text)) {
+                    langSupport = CM6.json();
+                } else {
+                    return; // plain text, no highlighting
+                }
+        }
+        var lang = langSupport.language;
+        var tree = lang.parser.parse(text);
+        var parts = [];
+        var pos = 0;
+        CM6.highlightTree(tree, CM6.classHighlighter, function(from, to, classes) {
+            if (from > pos) {
+                parts.push(document.createTextNode(text.slice(pos, from)));
+            }
+            var span = document.createElement("span");
+            span.className = classes;
+            span.textContent = text.slice(from, to);
+            parts.push(span);
+            pos = to;
+        });
+        if (pos < text.length) {
+            parts.push(document.createTextNode(text.slice(pos)));
+        }
+        if (parts.length > 0) {
+            contentEl.textContent = "";
+            for (var i = 0; i < parts.length; i++) {
+                contentEl.appendChild(parts[i]);
+            }
+        }
+    }
+
     var webResources = {
         "html": 1,
         "javascript": 1,
         "css": 1,
         "less": 1
     };
-    
+
 	var app = {
-        
+
 		init: function(afterInitCallback) {
-		    if (!Modernizr.flexbox) {
-		        $("#startup-error").show();
+		    if (!("flex" in document.documentElement.style)) {
+		        document.getElementById("startup-error").style.display = "";
 		        return;
             }
-            
+
             projects = new eXide.edit.Projects();
-            menu = new util.Menubar($(".menu"));
+            menu = new util.Menubar(document.querySelector(".menu"));
 			editor = new eXide.edit.Editor(document.getElementById("editor"), menu);
 			deploymentEditor = new eXide.edit.PackageEditor(projects);
-			
+
 			dbBrowser = new eXide.browse.Browser(document.getElementById("open-dialog"));
-			dbBrowser.addEventListener("upload-open", function(isOpen) {
-			    allowDnd = !isOpen;
-			});
-			
+
+
 			preferences = new util.Preferences(editor);
-			
+
             editor.addEventListener("setTheme", app.setTheme);
-            
+
             app.initGUI(menu);
-			
+
 			var dnd = new eXide.util.DnD("body");
 			dnd.addEventListener("drop", app.dropFile);
-			
+
             // save restored paths for later
             app.getLogin(function() {
                 app.initStatus("Restoring state");
                 app.restoreState(function(restored) {
+                    app.updateLayoutTop();
                     editor.init();
+
+                    // Fetch registered module prefixes for static analysis
+                    fetch("api/editor/modules")
+                        .then(function(r) { return r.json(); })
+                        .then(function(modules) {
+                            if (Array.isArray(modules) && typeof staticAnalysis !== "undefined") {
+                                staticAnalysis.setRegisteredModules(modules);
+                            }
+                        })
+                        .catch(function() {});
+
                     if (afterInitCallback) {
                         afterInitCallback(restored);
                     }
-                    // dirty workaround to fix editor height
-                    // var southStatus = localStorage.getItem("eXide.layout.south");
-                    // $("#layout-container").layout().toggle("south");
                     if (eXide.configuration.allowGuest) {
-                        $("#splash").fadeOut(400);
+                        document.getElementById("splash").style.display = "none";
                     } else {
                         app.requireLogin(function() {
-                            $("#splash").fadeOut(400);
+                            document.getElementById("splash").style.display = "none";
                         });
                     }
                 });
             });
-		    
+
 		    editor.addEventListener("outlineChange", app.onOutlineChange);
             editor.validator.addEventListener("documentValid", function(doc) {
-                if (doc.isXQuery() && $("#live-preview").is(":checked")) {
+                if (doc.isXQuery() && document.getElementById("live-preview").checked) {
                     app.runQuery(doc.getPath(), true);
                 }
             });
             editor.addEventListener("saved", function(doc) {
-                if ($("#live-preview").is(":checked") && webResources[doc.getSyntax()]) {
+                if (document.getElementById("live-preview").checked && webResources[doc.getSyntax()]) {
                     document.getElementById("results-iframe").contentDocument.location.reload(true);
                 }
             });
-            
-			$(window).resize(app.resize);
-			
-			$(window).unload(function () {
+
+			window.addEventListener("resize", function() {
+			    app.updateLayoutTop();
+			    app.resize();
+			});
+
+			window.addEventListener("unload", function () {
 				app.saveState();
 			});
 		},
 
         version: function() {
-            return $("#eXide-version").text();
+            return document.getElementById("eXide-version").textContent;
         },
-        
+
         hasFocus: function() {
             return hasFocus;
         },
-        
+
         getEditor: function() {
             return editor;
         },
-        
+
         getMenu: function() {
             return menu;
         },
-        
+
+		updateAuthStatus: function(user) {
+		    var el = document.getElementById("user");
+		    if (user) {
+		        el.innerHTML = '<span class="auth-dot auth-dot-ok"></span>' + user;
+		        el.title = "Click to logout";
+		    } else {
+		        el.textContent = "Login";
+		        el.title = "Click to login";
+		    }
+		    // Start/stop monitor based on auth and panel visibility
+		    var eastEl = document.querySelector(".panel-east");
+		    var eastVisible = eastEl && eastEl.style.display !== "none";
+		    if (app.login && app.login.isAdmin && eastVisible) {
+		        if (!monitor) {
+		            monitor = new eXide.app.Monitor();
+		            monitor.init();
+		        }
+		        monitor.start();
+		    } else if (monitor) {
+		        monitor.stop();
+		    }
+		},
+
+		toggleMonitor: function() {
+		    if (!monitor) {
+		        monitor = new eXide.app.Monitor();
+		        monitor.init();
+		    }
+		    layout.toggle("east");
+		    var eastEl = document.querySelector(".panel-east");
+		    var isVisible = eastEl && eastEl.style.display !== "none";
+		    if (isVisible) {
+		        if (app.login && app.login.isAdmin) {
+		            monitor.start();
+		        } else {
+		            monitor.showMessage("The monitoring panel is only available to the admin user or users in the dba group.");
+		        }
+		    } else {
+		        monitor.stop();
+		    }
+		    app.$savePanelPrefs();
+		},
+
+		updateLayoutTop: function() {
+		    var toolbarBtns = document.querySelector(".toolbar-buttons");
+		    var layoutH = document.querySelector(".layout-horizontal");
+		    if (toolbarBtns && layoutH) {
+		        var fullscreen = document.getElementById("fullscreen");
+		        var top = toolbarBtns.getBoundingClientRect().bottom -
+		                  fullscreen.getBoundingClientRect().top + 2;
+		        layoutH.style.top = top + "px";
+		    }
+		},
+
 		resize: function(resizeIframe) {
-			var panel = $("#editor");
+			var panel = document.getElementById("editor");
             if (resizeIframe) {
-                var resultsContainer = $(".panel-" + resultPanel);
-                var resultsBody = $("#results-body");
-                $("#results-iframe").width(resultsBody.innerWidth());
-                $("#results-iframe").height(resultsContainer.innerHeight() - $(".navbar", resultsContainer).height() - 8);
-                $("#results-body").height(resultsContainer.innerHeight() - $(".navbar", resultsContainer).height() - 8);
+                var resultsContainer = document.querySelector(".panel-" + resultPanel);
+                var resultsBody = document.getElementById("results-body");
+                var navbarEl = resultsContainer.querySelector(".navbar");
+                var navbarHeight = navbarEl ? navbarEl.offsetHeight : 0;
+                document.getElementById("results-iframe").style.width = resultsBody.clientWidth + "px";
+                document.getElementById("results-iframe").style.height = (resultsContainer.clientHeight - navbarHeight - 8) + "px";
+                resultsBody.style.height = (resultsContainer.clientHeight - navbarHeight - 8) + "px";
             }
-//			panel.width($(".ui-layout-center").innerWidth() - 20);
-//			panel.css("width", "100%");
-//			panel.height($(".ui-layout-center").innerHeight() - header.height());
 			editor.resize();
 		},
-        
+
         beforeResize: function() {
-            if ($("#serialization-mode").val() == "html") {
-                $("#results-iframe").css("display", "none");
+            if (document.getElementById("serialization-mode").value == "html") {
+                document.getElementById("results-iframe").style.display = "none";
             }
         },
-        
+
         afterResize: function() {
             editor.resize();
-            if ($("#serialization-mode").val() == "html") {
-                $("#results-iframe").css("display", "");
+            if (document.getElementById("serialization-mode").value == "html") {
+                document.getElementById("results-iframe").style.display = "";
             }
         },
-        
+
 		newDocument: function(data, type) {
 			editor.newDocument(data, type);
 		},
 
         newDocumentFromTemplate: function() {
-            $("#dialog-templates").dialog("open");
-            //editor.newDocumentFromTemplate("collection-config");
+            dialogs["dialog-templates"].open();
         },
 
         dropFile: function(files) {
             if (!allowDnd) {
                 return;
             }
-            if (Modernizr.filereader) {
+            if (typeof FileReader !== "undefined") {
                 var reader = new FileReader();
                 for (var i = 0; i < files.length; i++) {
                     var mime = eXide.util.mimeTypes.getLangFromMime(files[i].type) || "xquery";
@@ -228,7 +352,7 @@ eXide.app = (function(util) {
                 util.message("Your browser does not support drag and drop of files.");
             }
         },
-        
+
 		findDocument: function(path, line) {
 			var doc = editor.getDocument(path);
 			if (doc == null) {
@@ -238,17 +362,17 @@ eXide.app = (function(util) {
 				};
 				app.$doOpenDocument(resource, function() {
 				    if (line) {
-        			    editor.editor.gotoLine(line);
+        			    editorUtils.gotoLine(editor.editor, line);
         			}
 				});
 			} else {
 				editor.switchTo(doc);
 				if (line) {
-    			    editor.editor.gotoLine(line);
+    			    editorUtils.gotoLine(editor.editor, line);
     			}
 			}
 		},
-		
+
 		locate: function(type, path, symbol) {
 			if (path == null) {
 				editor.exec("locate", type, symbol);
@@ -270,15 +394,15 @@ eXide.app = (function(util) {
 				}
 			}
 		},
-		
+
 		openDocument: function() {
 			dbBrowser.reload(["reload"], "open");
-			$("#open-dialog").dialog("option", "title", "Open Document");
-			$("#open-dialog").dialog("option", "buttons", { 
-			    "cancel": function() { $(this).dialog("close"); editor.focus(); },
-			    "open": function(){ app.openSelectedDocument(null, true);}
+			dialogs["open-dialog"].setTitle("Open Document");
+			dialogs["open-dialog"].setButtons({
+			    "Cancel": function() { dialogs["open-dialog"].close(); editor.focus(); },
+			    "Open": function(){ app.openSelectedDocument(null, true);}
 			});
-			$("#open-dialog").dialog("open");
+			dialogs["open-dialog"].open();
 		},
 
 		openSelectedDocument: function(doc, close) {
@@ -287,7 +411,7 @@ eXide.app = (function(util) {
 				app.$doOpenDocument(resource);
 			}
 			if (close == undefined || close)
-				$("#open-dialog").dialog("close");
+				dialogs["open-dialog"].close();
 		},
 
         downloadSelectedResources: function(resources, close) {
@@ -299,14 +423,14 @@ eXide.app = (function(util) {
                 util.Dialog.warning("Invalid selection","The Download Selected command requires that resources be selected. Please select resources for download.")
             }
 			if (close == undefined || close)
-				$("#open-dialog").dialog("close");
+				dialogs["open-dialog"].close();
 		},
 
-		$doOpenDocument: function(resource, callback, reload) {
+		$doOpenDocument: function(resource, callback, reload, forceText) {
 			resource.path = util.normalizePath(resource.path);
-            var indentOnOpen = $("#indent-on-open").is(":checked");
-            var expandXIncludesOnOpen = $("#expand-xincludes-on-open").is(":checked");
-            var omitXMLDeclatarionOnOpen = $("#omit-xml-decl-on-open").is(":checked");
+            var indentOnOpen = document.getElementById("indent-on-open").checked;
+            var expandXIncludesOnOpen = document.getElementById("expand-xincludes-on-open").checked;
+            var omitXMLDeclatarionOnOpen = document.getElementById("omit-xml-decl-on-open").checked;
             var doc = editor.getDocument(resource.path);
             if (doc && !reload) {
                 editor.switchTo(doc);
@@ -315,32 +439,163 @@ eXide.app = (function(util) {
                 }
                 return true;
             }
-			$.ajax({
-				url: "modules/load.xq",
-				dataType: 'text',
-                data: { "path": resource.path, "indent": indentOnOpen, "expand-xincludes": expandXIncludesOnOpen, "omit-xml-decl": omitXMLDeclatarionOnOpen },
-				success: function (data, status, xhr) {
-                    if (reload) {
-                        editor.reload(data);
-                    } else {
-                        var mime = util.mimeTypes.getMime(xhr.getResponseHeader("Content-Type"));
-                        var externalPath = xhr.getResponseHeader("X-Link");
-                        editor.openDocument(data, mime, resource, externalPath);
-                    }
-					if (callback) {
-						callback(resource);
-					}
-                    return true;
-				},
-				error: function (xhr, status) {
-					util.error("Failed to load document " + encodeURI(resource.path) + ": " + 
-							xhr.status + " " + xhr.statusText);
-                    if (callback) {
-                        callback(null);
-                    }
-                    return false;
-				}
+			var encodedPath = resource.path.replace(/^\//, "");
+			var params = new URLSearchParams({
+			    "indent": indentOnOpen,
+			    "expand-xincludes": expandXIncludesOnOpen,
+			    "omit-xml-decl": omitXMLDeclatarionOnOpen
 			});
+			fetch("api/storage/" + encodeURIComponent(encodedPath) + "?" + params.toString())
+			    .then(function(response) {
+			        if (!response.ok) {
+			            throw { status: response.status, statusText: response.statusText };
+			        }
+			        return response.json();
+			    })
+			    .then(function(data) {
+			        var baseMime = data.mime || "";
+			        var externalPath = data.externalPath;
+			        // Show binary files in a preview overlay
+			        if (!reload && !forceText && data.binary &&
+			            /^image\/|^audio\/|^video\/|^application\/pdf|^application\/octet-stream|^application\/zip/.test(baseMime)) {
+			            var fileUrl = externalPath || ("rest" + resource.path);
+			            var fileName = resource.name || resource.path.replace(/^.*\//, "");
+			            app.$showBinaryPreview(fileUrl, fileName, baseMime, resource, callback);
+			            if (callback) { callback(null); }
+			            return true;
+			        }
+			        var content = data.content || "";
+			        if (reload) {
+			            editor.reload(content);
+			        } else {
+			            var mime = forceText ? "text/text" : util.mimeTypes.getMime(baseMime);
+			            editor.openDocument(content, mime, resource, externalPath);
+			        }
+			        if (callback) {
+			            callback(resource);
+			        }
+			        return true;
+			    })
+			    .catch(function(err) {
+			        util.error("Failed to load document " + encodeURI(resource.path) + ": " +
+			            (err.status || "") + " " + (err.statusText || err.message || ""));
+			        if (callback) {
+			            callback(null);
+			        }
+			        return false;
+			    });
+		},
+
+		$showBinaryPreview: function(fileUrl, fileName, mime, resource, callback) {
+		    // Remove existing overlay
+		    var existing = document.getElementById("binary-preview-overlay");
+		    if (existing) existing.remove();
+
+		    var overlay = document.createElement("div");
+		    overlay.id = "binary-preview-overlay";
+		    overlay.className = "binary-preview-overlay";
+
+		    var panel = document.createElement("div");
+		    panel.className = "binary-preview-panel";
+
+		    // Header
+		    var header = document.createElement("div");
+		    header.className = "binary-preview-header";
+		    var title = document.createElement("span");
+		    title.className = "binary-preview-title";
+		    title.textContent = fileName;
+		    title.title = fileName;
+		    header.appendChild(title);
+		    var closeBtn = document.createElement("button");
+		    closeBtn.className = "binary-preview-close";
+		    closeBtn.textContent = "\u2715";
+		    closeBtn.title = "Close";
+		    header.appendChild(closeBtn);
+		    panel.appendChild(header);
+
+		    // Content
+		    var content = document.createElement("div");
+		    content.className = "binary-preview-content";
+		    if (/^image\//.test(mime)) {
+		        var img = document.createElement("img");
+		        img.src = fileUrl;
+		        img.alt = fileName;
+		        content.appendChild(img);
+		    } else if (mime === "application/pdf") {
+		        var embed = document.createElement("embed");
+		        embed.src = fileUrl;
+		        embed.type = "application/pdf";
+		        embed.style.width = "100%";
+		        embed.style.height = "100%";
+		        content.appendChild(embed);
+		    } else if (/^audio\//.test(mime)) {
+		        var audio = document.createElement("audio");
+		        audio.src = fileUrl;
+		        audio.controls = true;
+		        content.appendChild(audio);
+		    } else if (/^video\//.test(mime)) {
+		        var video = document.createElement("video");
+		        video.src = fileUrl;
+		        video.controls = true;
+		        video.style.maxWidth = "100%";
+		        video.style.maxHeight = "100%";
+		        content.appendChild(video);
+		    } else {
+		        var msg = document.createElement("div");
+		        msg.className = "binary-preview-nopreview";
+		        msg.innerHTML = '<i class="fa fa-file-o" style="font-size:48px;margin-bottom:12px;display:block"></i>No preview available<br><small>' + mime + '</small>';
+		        content.appendChild(msg);
+		    }
+		    panel.appendChild(content);
+
+		    // Footer
+		    var footer = document.createElement("div");
+		    footer.className = "binary-preview-footer";
+		    var openBtn = document.createElement("button");
+		    openBtn.textContent = "Open in New Tab";
+		    openBtn.addEventListener("click", function() {
+		        window.open(fileUrl, fileName);
+		    });
+		    var dlBtn = document.createElement("button");
+		    dlBtn.textContent = "Download";
+		    dlBtn.addEventListener("click", function() {
+		        var a = document.createElement("a");
+		        a.href = fileUrl;
+		        a.download = fileName;
+		        a.click();
+		    });
+		    var openTextBtn = document.createElement("button");
+		    openTextBtn.textContent = "Open Anyway";
+		    openTextBtn.title = "Open as plain text in the editor";
+		    openTextBtn.addEventListener("click", function() {
+		        close();
+		        app.$doOpenDocument(resource, callback, false, true);
+		    });
+		    var cancelBtn = document.createElement("button");
+		    cancelBtn.textContent = "Close";
+		    cancelBtn.addEventListener("click", close);
+		    footer.appendChild(openTextBtn);
+		    footer.appendChild(openBtn);
+		    footer.appendChild(dlBtn);
+		    footer.appendChild(cancelBtn);
+		    panel.appendChild(footer);
+
+		    overlay.appendChild(panel);
+		    document.body.appendChild(overlay);
+
+		    function close() {
+		        overlay.remove();
+		    }
+		    closeBtn.addEventListener("click", close);
+		    overlay.addEventListener("click", function(e) {
+		        if (e.target === overlay) close();
+		    });
+		    document.addEventListener("keydown", function onKey(e) {
+		        if (e.key === "Escape") {
+		            close();
+		            document.removeEventListener("keydown", onKey);
+		        }
+		    });
 		},
 
         reloadDocument: function() {
@@ -353,7 +608,7 @@ eXide.app = (function(util) {
                 });
             }
         },
-        
+
         $reloadDocument: function(doc) {
             var resource = {
                 name: doc.getName(),
@@ -361,29 +616,29 @@ eXide.app = (function(util) {
             };
             app.$doOpenDocument(resource, null, true);
         },
-        
+
 		closeDocument: function() {
 			if (!editor.getActiveDocument().isSaved()) {
-				$("#dialog-confirm-close").dialog({
-                    appendTo: "#layout-container",
-					resizable: false,
-					height:140,
-					modal: true,
-					buttons: {
-						"Close": function() {
-							$( this ).dialog( "close" );
-							editor.closeDocument();
-						},
-						Cancel: function() {
-							$( this ).dialog( "close" );
-						}
-					},
-                    open: function() { 
-                        $(this).closest('.ui-dialog').find('.ui-dialog-buttonpane button:eq(0)').focus(); 
-                        $(this).closest('.ui-dialog').find('.ui-dialog-buttonpane button:eq(1)').blur(); 
-                    }
-				});
-                
+				if (!dialogs["dialog-confirm-close"]) {
+				    dialogs["dialog-confirm-close"] = eXide.util.DialogManager.create(
+				        document.getElementById("dialog-confirm-close"), {
+				            appendTo: "#layout-container",
+				            title: "Close Document",
+				            modal: true,
+				            width: 420,
+				            buttons: {
+				                "Close": function() {
+				                    dialogs["dialog-confirm-close"].close();
+				                    editor.closeDocument();
+				                },
+				                "Cancel": function() {
+				                    dialogs["dialog-confirm-close"].close();
+				                }
+				            }
+				        }
+				    );
+				}
+				dialogs["dialog-confirm-close"].open();
 			} else {
 				editor.closeDocument();
 			}
@@ -398,26 +653,25 @@ eXide.app = (function(util) {
                 }
             });
         },
-        
+
 		saveDocument: function() {
             app.requireLogin(function () {
                 if (editor.getActiveDocument().getPath().match('^__new__')) {
                     dbBrowser.changeToCollection("/db");
         			dbBrowser.reload(["reload", "create"], "save");
-    				$("#open-dialog").dialog("option", "title", "Save Document");
-    				$("#open-dialog").dialog("option", "buttons", { 
+    				dialogs["open-dialog"].setTitle("Save Document");
+    				dialogs["open-dialog"].setButtons({
     					"Cancel": function() {
-                            $(this).dialog("close");
+                            dialogs["open-dialog"].close();
         				},
     					"Save": function() {
-                            // force saving XQuery files
                             if(editor.getActiveDocument().isXQuery() && !/([^\s\\])*\.xq.?/.test(dbBrowser.getSelection().name)) {
-                                util.Dialog.warning("Failed to Save Document", "Your current file is an XQuery file, but you are trying to save it with a non-XQuery file extension (.xq, .xqm etc).  If you intended this to be another file type such as XML, copy and paste the content into a New file created using the “New” button.");
+                                util.Dialog.warning("Failed to Save Document", "Your current file is an XQuery file, but you are trying to save it with a non-XQuery file extension (.xq, .xqm etc).  If you intended this to be another file type such as XML, copy and paste the content into a New file created using the \u201cNew\u201d button.");
                                 return;
                             }
-                            
+
     						editor.saveDocument(dbBrowser.getSelection(), function () {
-    							$("#open-dialog").dialog("close");
+    							dialogs["open-dialog"].close();
                                 deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
                                 app.updateStatus(this);
 								app.syncDirectory(this.getBasePath())
@@ -427,7 +681,9 @@ eXide.app = (function(util) {
     						});
     					}
     				});
-    				$("#open-dialog").dialog("open");
+    				dialogs["open-dialog"].open();
+					var nameInput = document.querySelector("#open-dialog input[name='resource']");
+					if (nameInput) nameInput.focus();
     			} else {
     				editor.saveDocument(null, function () {
     					util.message(editor.getActiveDocument().getName() + " stored.");
@@ -448,21 +704,19 @@ eXide.app = (function(util) {
                     dbBrowser.changeToCollection(editor.getActiveDocument().getBasePath());
                 }
                 dbBrowser.reload(["reload", "create"], "save");
-    			$("#open-dialog").dialog("option", "title", "Save Document As ...");
-    			$("#open-dialog").dialog("option", "buttons", { 
+    			dialogs["open-dialog"].setTitle("Save Document As ...");
+    			dialogs["open-dialog"].setButtons({
     				"Cancel": function() {
-                        // restore old path
-                        $(this).dialog("close");
+                        dialogs["open-dialog"].close();
     				},
     				"Save": function() {
-                         // force saving XQuery files
                          if(editor.getActiveDocument().isXQuery() && !/([^\s\\])*\.xq.?/.test(dbBrowser.getSelection().name)) {
-                            util.Dialog.warning("Failed to Save Document", "Your current file is an XQuery file, but you are trying to save it with a non-XQuery file extension (.xq, .xqm etc).  If you intended this to be another file type such as XML, copy and paste the content into a New file created using the “New” button.");
+                            util.Dialog.warning("Failed to Save Document", "Your current file is an XQuery file, but you are trying to save it with a non-XQuery file extension (.xq, .xqm etc).  If you intended this to be another file type such as XML, copy and paste the content into a New file created using the \u201cNew\u201d button.");
                             return;
                         }
-                        
+
     					editor.saveDocument(dbBrowser.getSelection(), function () {
-    						$("#open-dialog").dialog("close");
+    						dialogs["open-dialog"].close();
                             deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
                             app.updateStatus(this);
 							app.syncDirectory(this.getBasePath())
@@ -472,25 +726,34 @@ eXide.app = (function(util) {
     					});
     				}
     			});
-    			$("#open-dialog").dialog("open");
+    			dialogs["open-dialog"].open();
+				var nameInput = document.querySelector("#open-dialog input[name='resource']");
+				if (nameInput) nameInput.focus();
             });
         },
-        
+
         exec: function() {
             editor.exec(arguments);
         },
-        
+
         download: function(path) {
-            var indentOnDownload = $("#indent-on-download").is(":checked");
-            var expandXIncludesOnDownload = $("#expand-xincludes-on-download").is(":checked");
-            var omitXMLDeclatarionOnDownload = $("#omit-xml-decl-on-download").is(":checked");
+            var indentOnDownload = document.getElementById("indent-on-download").checked;
+            var expandXIncludesOnDownload = document.getElementById("expand-xincludes-on-download").checked;
+            var omitXMLDeclatarionOnDownload = document.getElementById("omit-xml-decl-on-download").checked;
 			var doc = editor.getActiveDocument();
 			if (!path && (doc.getPath().match("^__new__") || !doc.isSaved())) {
 				util.error("There are unsaved changes in the document. Please save it first.");
 				return;
 			}
             var path = path || doc.getPath()
-            const url = "modules/load.xq?download=true&path=" + encodeURIComponent(path) + "&indent=" + indentOnDownload + "&expand-xincludes=" + expandXIncludesOnDownload + "&omit-xml-decl=" + omitXMLDeclatarionOnDownload;
+            var encodedPath = path.replace(/^\//, "");
+            var dlParams = new URLSearchParams({
+                "download": "true",
+                "indent": indentOnDownload,
+                "expand-xincludes": expandXIncludesOnDownload,
+                "omit-xml-decl": omitXMLDeclatarionOnDownload
+            });
+            const url = "api/storage/" + encodeURIComponent(encodedPath) + "?" + dlParams.toString();
             fetch(url)
             .then(resp => resp.blob())
             .then(blob => {
@@ -504,15 +767,16 @@ eXide.app = (function(util) {
                 window.URL.revokeObjectURL(url);
             })
 		},
-        
+
 		runQuery: function(path, livePreview) {
             function showResultsPanel() {
                 editor.updateStatus("");
 				editor.clearErrors();
 				app.showResultsPanel();
-				
+
 				startOffset = 1;
 				currentOffset = 1;
+                activeResultIdx = -1;
             }
 
             if (!(eXide.configuration.allowExecution || app.login.isAdmin)) {
@@ -523,89 +787,93 @@ eXide.app = (function(util) {
                 case "html":
                     showResultsPanel();
                     var iframe = document.getElementById("results-iframe");
-                    $(iframe).show();
+                    iframe.style.display = "";
                     if (path) {
                         iframe.src = editor.getActiveDocument().getExternalLink();
                     } else {
-                        $(iframe).contents().find('html').html(editor.getText());
+                        iframe.contentDocument.documentElement.innerHTML = editor.getText();
                     }
-                    $("#serialization-mode").attr("disabled", "disabled").val("html");
+                    document.getElementById("serialization-mode").setAttribute("disabled", "disabled");
+                    document.getElementById("serialization-mode").value = "html";
                     break;
                 case "javascript":
                     showResultsPanel();
                     var iframe = document.getElementById("results-iframe");
-                    $(iframe).show();
+                    iframe.style.display = "";
                     var code = editor.getText();
                     code = "<script type=\"text/javascript\">" + code + "</script>";
-                    $(iframe).contents().find('html').html(code);
-                    $("#serialization-mode").attr("disabled", "disabled").val("html");
+                    iframe.contentDocument.documentElement.innerHTML = code;
+                    document.getElementById("serialization-mode").setAttribute("disabled", "disabled");
+                    document.getElementById("serialization-mode").value = "html";
                     break;
                 default:
                     var code = editor.getText();
                     if (path) {
                         var doc = editor.getDocument(path);
                         if (doc) {
-                            code = doc.$session.getValue();
+                            code = doc.getText();
                         } else {
                             return;
                         }
                     } else {
                         lastQuery = editor.getActiveDocument().getPath();
                     }
-        			editor.updateStatus("Running query ...");
-        
-                    $("#serialization-mode").removeAttr("disabled");
-                    var serializationMode = $("#serialization-mode").val();
+        			eXide.util.message("Running query ...");
+
+                    document.getElementById("serialization-mode").removeAttribute("disabled");
+                    var serializationMode = document.getElementById("serialization-mode").value;
         			var moduleLoadPath = "xmldb:exist://" + editor.getActiveDocument().getBasePath();
-        			$('.results-container .results').empty();
-        			$.ajax({
-        				type: "POST",
-        				url: "execute",
-        				dataType: serializationMode == "adaptive" || serializationMode == "html5" || serializationMode == "xhtml" || serializationMode == "xhtml5" || serializationMode == "json" || serializationMode == "text" || serializationMode == "xml" || serializationMode == "microxml" ? "xml" : "text",
-        				data: { "qu": code, "base": moduleLoadPath, "output": serializationMode },
-        				success: function (data, status, xhr) {
-                            switch (serializationMode) {
-                                case "adaptive":
-                                case "html5":
-                                case "xhtml":
-                                case "xhtml5":
-                                case "json":
-                                case "text":
-                                case "xml":
-                                case "microxml":
-                                    $("#results-iframe").hide();
-                					var elem = data.documentElement;
-                					if (elem.nodeName == 'error') {
-                				        var msg = $(elem).text();
-                				        //util.error(msg, "Compilation Error");
-                				        editor.evalError(msg, !livePreview);
-                					} else {
-                						showResultsPanel();
-                						hitCount = elem.getAttribute("hits");
-                						endOffset = startOffset + numberOfResults - 1;
-                						if (hitCount < endOffset)
-                							endOffset = hitCount;
-                						util.message("Query returned " + hitCount + " item(s) in " + elem.getAttribute("elapsed") + "s");
-                						app.retrieveNext();
-                					}
-                                    break;
-                                default:
-                                    showResultsPanel();
-                                    var iframe = document.getElementById("results-iframe");
-                                    $(iframe).show();
-                                    iframe.contentWindow.document.open('text/html', 'replace');
-                                    iframe.contentWindow.document.write(data);
-                                    iframe.contentWindow.document.close();
-                                    break;
-                            }
-        				},
-        				error: function (xhr, status) {
-        					util.error(xhr.responseText, "Server Error");
-        				}
+        			document.querySelectorAll('.results-container .results').forEach(function(el) { el.innerHTML = ""; });
+        			var formData = new URLSearchParams();
+        			formData.append("qu", code);
+        			formData.append("base", moduleLoadPath);
+        			formData.append("output", serializationMode);
+        			var expectXml = (serializationMode == "adaptive" || serializationMode == "html5" || serializationMode == "xhtml" || serializationMode == "xhtml5" || serializationMode == "json" || serializationMode == "text" || serializationMode == "xml" || serializationMode == "microxml");
+        			fetch("execute", {
+        			    method: "POST",
+        			    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        			    body: formData.toString()
+        			}).then(function(response) {
+        			    if (!response.ok) {
+        			        return response.text().then(function(text) {
+        			            util.error(text, "Server Error");
+        			        });
+        			    }
+        			    if (expectXml) {
+        			        return response.text().then(function(text) {
+        			            var parser = new DOMParser();
+        			            var data = parser.parseFromString(text, "text/xml");
+                                document.getElementById("results-iframe").style.display = "none";
+            					var elem = data.documentElement;
+            					if (elem.nodeName == 'error') {
+            				        var msg = elem.textContent;
+            				        editor.evalError(msg, !livePreview);
+            					} else {
+            						showResultsPanel();
+            						hitCount = elem.getAttribute("hits");
+            						endOffset = startOffset + numberOfResults - 1;
+            						if (hitCount < endOffset)
+            							endOffset = hitCount;
+            						util.message("Query returned " + hitCount + " item(s) in " + elem.getAttribute("elapsed") + "s");
+            						app.retrieveNext();
+            					}
+        			        });
+        			    } else {
+        			        return response.text().then(function(data) {
+                                showResultsPanel();
+                                var iframe = document.getElementById("results-iframe");
+                                iframe.style.display = "";
+                                iframe.contentWindow.document.open('text/html', 'replace');
+                                iframe.contentWindow.document.write(data);
+                                iframe.contentWindow.document.close();
+        			        });
+        			    }
+        			}).catch(function(err) {
+        			    util.error(err.message || String(err), "Server Error");
         			});
                     break;
             }
-                
+
 		},
 
 		checkQuery: function() {
@@ -616,54 +884,68 @@ eXide.app = (function(util) {
 		 *  the next result.
 		 */
 		retrieveNext: function() {
-			$.log("retrieveNext: %d", currentOffset);
+			console.log("retrieveNext: %d", currentOffset);
 		    if (currentOffset > 0 && currentOffset <= endOffset) {
-		        $("#serialization-mode").removeAttr("disabled");
-		        var serializationMode = $("#serialization-mode").val();
-		        var autoExpandMatches = $("#auto-expand-matches").is(":checked");
-		        var indentResults = $("#indent-results").is(":checked");
+		        document.getElementById("serialization-mode").removeAttribute("disabled");
+		        var serializationMode = document.getElementById("serialization-mode").value;
+		        var autoExpandMatches = document.getElementById("auto-expand-matches").checked;
+		        var indentResults = document.getElementById("indent-results").checked;
 		        var url = 'results/' + currentOffset;
 				currentOffset++;
-				$.ajax({
-					url: url,
-					dataType: 'html',
-					data: { "output": serializationMode, "auto-expand-matches": autoExpandMatches, "indent": indentResults },
-					success: function (data) {
-                        var config = require('ace/config');
-                        config.loadModule('ace/mode/jsoniq', function ({ Mode: JSONiqLexer }) {
-                            config.loadModule('ace/mode/xquery', function ({ Mode: XQueryLexer }) {
-                                const el = $(data);
-                                const content = el.find('.content');
-                                let lines = content.text().split('\n');
-                                let lexer = serializationMode === 'json' ? new JSONiqLexer() : new XQueryLexer();
-                                let result = '', lastState;
-                                const getClass = type => type.split('.').map(type => `ace_${type}`).join(' ');
-                                const encodeHTMLEntities = text => text.replace(/[\u00A0-\u9999<>\&]/g, (i) => '&#' + i.charCodeAt(0) + ';');
-                                lines.forEach(function (line) {
-                                    let output = '';
-                                    const { state, tokens} = lexer.getTokenizer().getLineTokens(line, lastState);
-                                    tokens.forEach(function (token) {
-                                        output += `<span class='${getClass(token.type)}'>${encodeHTMLEntities(token.value)}</span>`;
-                                    });
-                                    result += output + '<br/>';
-                                    lastState = state;
-                                });
-                                el.find('> *:first-child').css('width', (Math.ceil(Math.log(endOffset + 1) / Math.LN10)) + 'ch');
-                                content.html(result);
-                                if (!$(".results-container .results").parent().hasClass("ace_gutter")) {
-                                    $(".results-container .results").parent().addClass("ace_gutter").css("position", "initial");
-                                }
-                                $('.results-container .results').append(el[0].outerHTML);
-                                $('.results-container .current').text('Showing results ' + startOffset + ' to ' + (currentOffset - 1) + ' of ' + hitCount);
-                                $(".results-container .pos:last a").click(function () {
-                                    app.findDocument($(this).data("path"));
-                                    return false;
-                                });
-                                app.retrieveNext();
-                            });
-                        });
-					}
+				var params = new URLSearchParams({
+				    "output": serializationMode,
+				    "auto-expand-matches": autoExpandMatches,
+				    "indent": indentResults
 				});
+				fetch(url + "?" + params.toString())
+				    .then(function(response) {
+				        if (!response.ok) throw new Error(response.statusText);
+				        return response.text();
+				    })
+				    .then(function(data) {
+                        var temp = document.createElement("div");
+                        temp.innerHTML = data;
+                        var resultNode = temp.firstElementChild;
+                        if (resultNode) {
+                            var firstChild = resultNode.querySelector(":first-child");
+                            if (firstChild) {
+                                firstChild.style.width = (Math.ceil(Math.log(endOffset + 1) / Math.LN10)) + 'ch';
+                            }
+                            document.querySelectorAll('.results-container .results').forEach(function(el) {
+                                el.appendChild(resultNode);
+                            });
+                            var contentDiv = resultNode.querySelector('.content');
+                            if (contentDiv) {
+                                highlightResultContent(contentDiv);
+                            }
+                            document.querySelectorAll('.results-container .current').forEach(function(el) {
+                                el.textContent = 'Showing results ' + startOffset + ' to ' + (currentOffset - 1) + ' of ' + hitCount;
+                            });
+                            var posLinks = resultNode.querySelectorAll('.pos a');
+                            posLinks.forEach(function(link) {
+                                link.addEventListener("click", function(e) {
+                                    e.preventDefault();
+                                    app.findDocument(this.dataset.path);
+                                });
+                            });
+                            var copyBtns = resultNode.querySelectorAll('.copy-result');
+                            copyBtns.forEach(function(btn) {
+                                btn.addEventListener("click", function() {
+                                    var sibling = btn.parentNode.querySelector('.content');
+                                    var text = sibling ? sibling.textContent : "";
+                                    navigator.clipboard.writeText(text).then(function() {
+                                        btn.classList.remove('fa-clipboard');
+                                        btn.classList.add('fa-check', 'copied');
+                                        setTimeout(function() {
+                                            btn.classList.remove('fa-check', 'copied');
+                                            btn.classList.add('fa-clipboard');
+                                        }, 1200);
+                                    });
+                                });
+                            });
+                            app.retrieveNext();
+                        }
+				    });
 			} else {
 		    }
 		},
@@ -676,12 +958,13 @@ eXide.app = (function(util) {
 		        endOffset = currentOffset + howmany - 1;
 				if (hitCount < endOffset)
 					endOffset = hitCount;
-				$(".results-container .results").empty();
+				activeResultIdx = -1;
+				document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
 				app.retrieveNext();
 			}
 			return false;
 		},
-		
+
 		/** Called if user clicks on "previous" link in query results. */
 		browsePrevious: function() {
 			if (currentOffset > 0 && startOffset > 1) {
@@ -693,34 +976,60 @@ eXide.app = (function(util) {
 				endOffset = currentOffset + (count - 1);
 				if (hitCount < endOffset)
 					endOffset = hitCount;
-				$(".results-container .results").empty();
+				activeResultIdx = -1;
+				document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
 				app.retrieveNext();
 			}
 			return false;
 		},
-		
+
+		browseFirst: function() {
+			if (currentOffset > 0 && startOffset > 1) {
+				startOffset = 1;
+				currentOffset = 1;
+				endOffset = Math.min(numberOfResults, hitCount);
+				activeResultIdx = -1;
+				document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
+				app.retrieveNext();
+			}
+			return false;
+		},
+
+		browseLast: function() {
+			if (currentOffset > 0 && endOffset < hitCount) {
+				startOffset = Math.floor((hitCount - 1) / numberOfResults) * numberOfResults + 1;
+				currentOffset = startOffset;
+				endOffset = hitCount;
+				activeResultIdx = -1;
+				document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
+				app.retrieveNext();
+			}
+			return false;
+		},
+
 		syncDirectory : function(collection) {
 			editor.directory.reload(collection)
 		},
-		
+
 		syncManager : function(collection) {
-			if($("#open-dialog").is(":visible")){
+			var openDialogEl = document.getElementById("open-dialog");
+			if(openDialogEl && openDialogEl.style.display !== "none" && openDialogEl.offsetParent !== null){
 				dbBrowser.resources.collection = collection
 				dbBrowser.resources.reload()
 			}
 		},
-		
+
 		manage: function() {
 			app.requireLogin(function() {
                 dbBrowser.reload(["reload", "create", "upload", "properties", "open", "download", "cut", "copy", "paste"], "manage");
-                $("#open-dialog").dialog("option", "title", "DB Manager");
-                $("#open-dialog").dialog("option", "buttons", { 
-                    "Close": function() { $(this).dialog("close"); }
+                dialogs["open-dialog"].setTitle("DB Manager");
+                dialogs["open-dialog"].setButtons({
+                    "Close": function() { dialogs["open-dialog"].close(); }
                 });
-                $("#open-dialog").dialog("open");
+                dialogs["open-dialog"].open();
 			});
 		},
-		
+
 		deploy: function() {
             app.requireLogin(function() {
     			var path = editor.getActiveDocument().getPath();
@@ -729,12 +1038,12 @@ eXide.app = (function(util) {
     				util.error("The file open in the editor does not belong to an application package!");
     				return false;
     			}
-    			$.log("Deploying application from collection: %s", collection[1]);
+    			console.log("Deploying application from collection: %s", collection[1]);
     			deploymentEditor.deploy(collection[1]);
             });
 			return false;
 		},
-		
+
 		synchronize: function() {
             app.requireLogin(function () {
                 var path = editor.getActiveDocument().getPath();
@@ -746,7 +1055,7 @@ eXide.app = (function(util) {
     			deploymentEditor.synchronize(collection[1]);
             });
 		},
-		
+
         gitCheckout: function() {
             app.requireLogin(function () {
                 var path = editor.getActiveDocument().getPath();
@@ -769,12 +1078,12 @@ eXide.app = (function(util) {
     			deploymentEditor.gitCommit(collection[1]);
             });
 		},
-        
+
         downloadApp: function () {
             app.requireLogin(function() {
                 var path = editor.getActiveDocument().getPath();
             	var collection = /^(.*)\/[^\/]+$/.exec(path);
-                $.log("downloading %s", collection);
+                console.log("downloading %s", collection);
     			if (!collection) {
                     util.error("The file open in the editor does not belong to an application package!");
     				return;
@@ -782,7 +1091,7 @@ eXide.app = (function(util) {
     			deploymentEditor.download(collection[1]);
             });
         },
-        
+
 		openApp: function (firstLoad) {
 			var path = editor.getActiveDocument().getPath();
 			var collection = /^(.*)\/[^\/]+$/.exec(path);
@@ -792,7 +1101,7 @@ eXide.app = (function(util) {
 			}
 			deploymentEditor.runApp(collection[1], firstLoad);
 		},
-        
+
         runAppOrQuery: function() {
             var doc = editor.getActiveDocument();
             var project = projects.getProjectFor(doc.getPath());
@@ -809,16 +1118,16 @@ eXide.app = (function(util) {
                 });
             }
         },
-        
+
         toggleRunStatus: function(doc) {
             var project = projects.getProjectFor(doc.getPath());
-            var enable = (project || (!doc.isNew() && doc.getSyntax() == "xquery"));
-            $("#run").button("option", "disabled", !enable);
-            enable = (doc.getSyntax() == "xquery" || doc.getSyntax() == "html" ||
-                doc.getSyntax() == "javascript");
-            $("#eval").button("option", "disabled", !enable);
+            var syntax = doc.getSyntax();
+            var enable = ((syntax == "xquery" || syntax == "html") && (project || !doc.isNew()));
+            document.getElementById("launch").disabled = !enable;
+            enable = (doc.getSyntax() == "xquery");
+            document.getElementById("run").disabled = !enable;
         },
-        
+
         ensureSaved: function(callback) {
             if (!editor.getActiveDocument().isSaved()) {
                 app.requireLogin(function () {
@@ -835,20 +1144,21 @@ eXide.app = (function(util) {
                 callback();
             }
         },
-        
+
 		restoreState: function(callback) {
 			if (!util.supportsHtml5Storage)
 				return false;
 			var sameVersion = preferences.read();
+			app.updateDarkModeIcon(preferences.get("theme"));
 			if (!sameVersion) {
 			    util.Dialog.message("Version Note", "It seems another version of eXide has been " +
 			        "used from this browser before. If you experience any display issues, please clear your browser's cache " +
                     "(holding shift while clicking on the reload icon should usually be sufficient).");
 			}
 			layout.restoreState(sameVersion);
-			
+
             var restoring = {};
-            
+
 			var docCount = localStorage["eXide.documents"];
 			if (!docCount)
 				docCount = 0;
@@ -861,10 +1171,14 @@ eXide.app = (function(util) {
 						writable: (localStorage["eXide." + i + ".writable"] == "true"),
 						line: parseInt(localStorage["eXide." + i + ".last-line"])
 				};
+				// New documents always editable (writable not stored for __new__ docs)
+				if (doc.path && doc.path.match(/^__new__/)) {
+					doc.writable = true;
+				}
                 if (!doc.name) {
                     continue;
                 }
-				$.log("Restoring doc %s, going to line = %i", doc.path, doc.line);
+				console.log("Restoring doc %s, going to line = %i", doc.path, doc.line);
 				var data = localStorage["eXide." + i + ".data"];
 				if (data) {
 					editor.newDocumentWithText(data, localStorage["eXide." + i + ".mime"], doc);
@@ -886,10 +1200,10 @@ eXide.app = (function(util) {
                 if (callback) callback(restoring);
             });
 			deploymentEditor.restoreState();
-            
+
 			return restoring;
 		},
-		
+
         restoreDocs: function(docs, callback) {
             if (docs.length == 0) {
                 callback();
@@ -899,50 +1213,50 @@ eXide.app = (function(util) {
             var doc = docs.pop();
             app.$doOpenDocument(doc, function() {
                 if (doc.line) {
-                    editor.editor.gotoLine(doc.line + 1);
+                    editorUtils.gotoLine(editor.editor, doc.line + 1);
                 }
                 self.restoreDocs(docs, callback);
             });
         },
-        
+
 		saveState: function() {
-			if (!util.supportsHtml5Storage)
+			if (!util.supportsHtml5Storage || app._skipSaveState)
 				return;
 			localStorage.clear();
 			preferences.save();
 			layout.saveState();
-			
-            localStorage["eXide.layout.resultPanel"] = resultPanel;
+
             if (editor.getActiveDocument()) {
                 localStorage["eXide.activeTab"] = editor.getActiveDocument().path;
             }
 			editor.saveState();
 			deploymentEditor.saveState();
 		},
-		
+
         getLogin: function(callback) {
-            $.ajax({
-                url: "login",
-                type: "POST",
-                dataType: "json",
-                success: function(data) {
-                    if (data && data.user) {
-                        app.login = data;
-                        $("#user").text("Logged in as " + app.login.user + ". ");
-                        if (callback) callback(app.login.user);
-                    } else {
-                        app.login = null;
-                        if (callback) callback(null);
-                    }
-                },
-                error: function (xhr, textStatus) {
+            fetch("api/auth/whoami")
+            .then(function(response) {
+                if (!response.ok) throw new Error(response.statusText);
+                return response.json();
+            })
+            .then(function(data) {
+                if (data && data.isLoggedIn) {
+                    app.login = data;
+                    app.updateAuthStatus(app.login.user);
+                    if (callback) callback(app.login.user);
+                } else {
                     app.login = null;
-                    $("#user").text("Login");
+                    app.updateAuthStatus(null);
                     if (callback) callback(null);
                 }
             })
+            .catch(function(err) {
+                app.login = null;
+                app.updateAuthStatus(null);
+                if (callback) callback(null);
+            });
         },
-        
+
         enforceLogin: function() {
             app.requireLogin(function() {
                 if (!app.login || app.login.user === "guest") {
@@ -950,51 +1264,40 @@ eXide.app = (function(util) {
                 }
             });
         },
-        
+
 		$checkLogin: function () {
 			if (app.login)
 				return true;
 			util.error("Warning: you are not logged in.");
 			return false;
 		},
-		
+
         requireLogin: function(callback) {
             if (!app.login) {
-                $("#login-dialog").dialog("option", "close", function () {
+                dialogs["login-dialog"]._onClose = function () {
                     if (app.login) {
                         callback();
                     } else {
                         util.error("Warning: you are not logged in!");
                     }
-                });
-                $("#login-dialog").dialog("open");
-                // Why doesn't this set focus when login dialog is opened?
-                $("#login-dialog input:first").focus();
+                };
+                dialogs["login-dialog"].open();
+                var firstInput = document.querySelector("#login-dialog input:first-of-type");
+                if (firstInput) firstInput.focus();
             } else
                 callback();
         },
-        
+
         showPreferences: function() {
             preferences.show();
         },
-        
+
         getPreference: function(key) {
             return preferences.get(key);
         },
 
         startDebug: function() {
-            var _class1 = "ui-icon-stop";
-            var _class2 = "ui-icon-play";
-            var _icon = $("#debug span.ui-icon");
-            if (_icon.hasClass(_class1)){
-                _icon.removeClass(_class1);
-                _icon.addClass(_class2);
-            } else {
-                _icon.removeClass(_class2);
-                _icon.addClass(_class1);
-            }
             editor.exec("debug");
-            $.log("start debugging click");
         },
 
         stepOver: function() {
@@ -1004,133 +1307,179 @@ eXide.app = (function(util) {
         stepInto: function() {
             editor.exec("stepInto");
         },
-        
+
         setTheme: function(theme) {
-            $("#outline-body,#directory-body,#results-body ").removeClass().addClass(theme.cssClass);
+            document.body.classList.toggle("dark", theme.isDark);
         },
-        
+
+        updateDarkModeIcon: function(themeOrResolved) {
+            var icon = document.querySelector("#toggle-dark-mode i");
+            if (!icon) return;
+            // Show sun when dark (click to go light), moon when light (click to go dark)
+            var isDark = themeOrResolved === "dark" || document.body.classList.contains("dark");
+            icon.className = isDark ? "fa fa-sun-o" : "fa fa-moon-o";
+        },
+
         updateStatus: function(doc) {
-            $("#syntax").val(doc.getSyntax());
-            $("#status .path").text(decodeURI(util.normalizePath(doc.getPath())));
-            if (!doc.isNew() && (doc.getSyntax() == "xquery" || doc.getSyntax() == "html" || doc.getSyntax() == "xml")) {
-                $("#status a").attr("href", doc.getExternalLink());
-                $("#status a").css("visibility", "visible");
+            var syntax = doc.getSyntax();
+            // Update status bar type segment
+            var typeLabels = {text:"Text",xml:"XML",html:"HTML",xquery:"XQuery",javascript:"Javascript",css:"CSS",less:"Less",json:"JSON",markdown:"Markdown"};
+            var typeVal = document.getElementById("status-type-value");
+            var label = typeLabels[syntax] || syntax;
+            if (syntax === "xquery" && doc.xqueryVersion) {
+                label += " " + doc.xqueryVersion;
+            }
+            if (typeVal) typeVal.textContent = label;
+            // Update popover active state
+            document.querySelectorAll("#type-popover .type-popover-item").forEach(function(el) {
+                el.classList.toggle("active", el.dataset.value === syntax);
+            });
+            var pathEl = document.querySelector("#status .path");
+            var pathText = doc.isNew() ? doc.getName() : decodeURI(util.normalizePath(doc.getPath()));
+            var copyBtn = document.getElementById("status-copy-url");
+            var extLink = doc.getExternalLink();
+            if (!extLink && !doc.isNew()) {
+                // Compute fallback external link from path
+                var ctx = eXide.configuration.context || "";
+                extLink = ctx + "/rest" + doc.getPath();
+            }
+            if (!doc.isNew() && extLink) {
+                if (pathEl.tagName !== "A") {
+                    var a = document.createElement("a");
+                    a.className = "path";
+                    a.target = "_blank";
+                    a.rel = "noopener";
+                    pathEl.replaceWith(a);
+                    pathEl = a;
+                }
+                pathEl.href = extLink;
+                pathEl.textContent = pathText;
+                pathEl.title = "Launch this saved resource in a new browser tab";
+                copyBtn.style.display = "";
             } else {
-                $("#status a").css("visibility", "hidden");
+                if (pathEl.tagName !== "SPAN") {
+                    var span = document.createElement("span");
+                    span.className = "path";
+                    pathEl.replaceWith(span);
+                    pathEl = span;
+                }
+                pathEl.textContent = pathText;
+                copyBtn.style.display = "none";
             }
         },
-       
+
         showResultsPanel: function() {
 			layout.show(resultPanel, true);
 			app.resize(true);
         },
-        
+
+        toggleCollectionsPanel: function() {
+            layout.toggle("west");
+            app.$savePanelPrefs();
+            app.resize(true);
+        },
+
         toggleResultsPanel: function() {
             layout.toggle(resultPanel);
 			app.resize(true);
         },
-        
-        prepareResultsPanel: function(target, switchPanels) {
-            var iframe = document.getElementById("results-iframe");
-            var contents = $("#results-body").parent().children(":not(.resize-handle)").detach();
-            contents.appendTo(".panel-" + target);
-            if ($("#serialization-mode").val() == "html") {
-                $(iframe).show();
-                $("#serialization-mode").attr("disabled", "disabled").val("html");
-                if (switchPanels) {
-                    app.runQuery();
-                }
-            } else {
-                $("#results-iframe").hide();
-            }
-        },
-        
-        switchResultsPanel: function() {
-            var target = resultPanel === "south" ? "east" : "south";
-            app.prepareResultsPanel(target, true);
-            layout.hide(resultPanel);
 
-            resultPanel = target;
-            if (resultPanel === "south") {
-                $(".layout-switcher").attr("src", "resources/images/layouts_split.png");
+        setWestPanel: function(visible) {
+            if (visible) {
+                layout.show("west", true);
             } else {
-                $(".layout-switcher").attr("src", "resources/images/layouts_split_vertical.png");
+                layout.hide("west");
             }
-            app.showResultsPanel();
+            app.resize(true);
         },
-        
+
+        isWestPanelVisible: function() {
+            var el = document.querySelector(".panel-west");
+            return el && el.style.display !== "none" && el.offsetParent !== null;
+        },
+
+        setSouthPanel: function(visible) {
+            if (visible) {
+                layout.show(resultPanel, true);
+            } else {
+                layout.hide(resultPanel);
+            }
+            app.resize(true);
+        },
+
+        isSouthPanelVisible: function() {
+            var el = document.querySelector(".panel-" + resultPanel);
+            return el && el.style.display !== "none" && el.offsetParent !== null;
+        },
+
+        setEastPanel: function(visible) {
+            var eastEl = document.querySelector(".panel-east");
+            var isVisible = eastEl && eastEl.style.display !== "none";
+            if (visible && !isVisible) {
+                layout.show("east");
+                if (!monitor) {
+                    monitor = new eXide.app.Monitor();
+                    monitor.init();
+                }
+                if (app.login && app.login.isAdmin) {
+                    monitor.start();
+                }
+            } else if (!visible && isVisible) {
+                layout.hide("east");
+                if (monitor) monitor.stop();
+            }
+            app.resize(true);
+        },
+
+        isEastPanelVisible: function() {
+            var el = document.querySelector(".panel-east");
+            return !!(el && el.style.display !== "none");
+        },
+
+        setCollectionsView: function(view) {
+            var treeView = document.getElementById("dir-tree-view");
+            var flatView = document.getElementById("dir-flat-view");
+            var toggleBtn = document.getElementById("toggle-dir-view");
+            var isFolder = (view === "folder");
+            if (treeView) treeView.style.display = isFolder ? "none" : "";
+            if (flatView) flatView.style.display = isFolder ? "" : "none";
+            if (toggleBtn) {
+                toggleBtn.title = isFolder ? "Switch to tree view" : "Switch to folder view";
+                var icon = toggleBtn.querySelector("i");
+                if (icon) icon.className = isFolder ? "fa fa-sitemap" : "fa fa-folder-open-o";
+            }
+            if (editor && editor.directory && editor.directory.setFlatViewActive) {
+                editor.directory.setFlatViewActive(isFolder);
+            }
+        },
+
+        $savePanelPrefs: function() {
+            try {
+                var eastEl = document.querySelector(".panel-east");
+                var eastVisible = !!(eastEl && eastEl.style.display !== "none");
+                // Update both localStorage and the live preferences object
+                // so saveState's localStorage.clear() + preferences.save() preserves the value
+                preferences.preferences.showWestPanel = app.isWestPanelVisible();
+                preferences.preferences.showSouthPanel = app.isSouthPanelVisible();
+                preferences.preferences.showEastPanel = eastVisible;
+                preferences.save();
+            } catch(e) {}
+        },
+
         initStatus: function(msg) {
-            $("#splash-status").text(msg);
+            document.getElementById("splash-status").textContent = msg;
         },
-       
+
         git: function() {
-            var gitUrl ="modules/git.xq",
-                gitError = function(xhr, status) {
-                           util.error("Failed to apply configuration: " + xhr.responseText);
-                       },
-                showResultsPanel = function() {
-                    editor.updateStatus("");
-				    editor.clearErrors();
-				    app.showResultsPanel();
-				    startOffset = 1;
-				    currentOffset = 1;
-                },       
-                gitShow = function (data, status, xhr) {
-                                showResultsPanel();
-                                var iframe = document.getElementById("results-iframe");
-                                $(iframe).show();
-                                iframe.contentWindow.document.open('text/html', 'replace');
-                                iframe.contentWindow.document.write(JSON.stringify(data));
-                                iframe.contentWindow.document.close();
-                             };       
-            
+            var unavailable = function() {
+                util.message("Git integration is not available in this version of eXide.");
+            };
             return {
-                 branch: function(gitApp)   {
-                     console.info('git.branch');
-                     if(!app.login.isAdmin) {return}   
-                     $.ajax({ 
-                        type: "GET",
-                        url: gitUrl,
-                        data: { target: gitApp.root, "git-command": "branch" },
-                        dataType: "json",
-                        success: function (data) {
-                            var lines = data.stdout
-                                    ? $.isArray(data.stdout.line)
-                                        ? data.stdout.line 
-                                        : [data.stdout.line]
-                                            : [];
-                            gitApp.gitBranch = $.map(lines,function(l, index){
-                                var current = l.split(' ').pop()
-                                if(/^\*/.test(l)) {
-                                   gitApp.gitCurrentBranch = current ;
-                                   gitApp.gitCurrentBranchIndex = index;
-                                   }
-                                 return current  
-                                });
-                            $("#toolbar-current-branch").text(gitApp.gitCurrentBranch);
-                            $("#menu-git-active").text(gitApp.gitCurrentBranch);
-                            $("#menu-git-working-dir").text(gitApp.workingDir);
-                        },
-                        error : gitError 
-                     });   
-                 },
-                 command : function(gitApp, command,option, success){
-                      if(!app.login.isAdmin) {return}
-                     $.ajax({
-                        type: "GET",
-                        url: gitUrl,
-                        data: { target: gitApp.root, "git-command": command, "git-option" : option },
-                        dataType: "json",
-                        success: function (data) {
-                            if(typeof success =='function'){success(data)}
-                            gitShow(data)
-                        },
-                        error : gitError 
-                     });   
-                 }
+                 branch: unavailable,
+                 command: unavailable
              }
         }(),
-        
+
         findFiles: function() {
             var doc = editor.getActiveDocument();
             projects.findProject(doc.getBasePath(), function(app) {
@@ -1139,27 +1488,79 @@ eXide.app = (function(util) {
 				    editor.clearErrors();
 				    startOffset = 1;
 				    currentOffset = 1;
-				    
+
                     var iframe = document.getElementById("results-iframe");
-                    $(iframe).show();
+                    iframe.style.display = "";
 				    eXide.app.showResultsPanel();
-                    
+
                     iframe.contentWindow.document.open('text/html', 'replace');
                     iframe.contentWindow.document.write("<html><body><p>Searching ...</p></body></html>");
                     iframe.contentWindow.document.close();
-                    
-                    iframe.src = "modules/search.xq?" + searchParams;
+
+                    // Parse form params into JSON body for POST /api/search
+                    var formParams = new URLSearchParams(searchParams);
+                    var target = formParams.get("target");
+                    var collection = target === "all" ? "/db" :
+                        target === "collection" ? formParams.get("collection") :
+                        (target || "/db");
+                    var body = {
+                        query: formParams.get("search"),
+                        collection: collection,
+                        type: formParams.get("type") || "all",
+                        regex: formParams.has("regex"),
+                        caseSensitive: formParams.has("case")
+                    };
+
+                    fetch("api/search", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(body)
+                    })
+                    .then(function(response) { return response.json(); })
+                    .then(function(data) {
+                        if (data.error) {
+                            iframe.contentWindow.document.open('text/html', 'replace');
+                            iframe.contentWindow.document.write("<html><body><p>" + data.error + "</p></body></html>");
+                            iframe.contentWindow.document.close();
+                            return;
+                        }
+                        var hits = data.hits || [];
+                        var html = '<html><head><link rel="stylesheet" type="text/css" href="resources/css/search.css"/></head><body>';
+                        html += '<div><h3>Search Results for ' + data.query + ' in ' + data.collection + '</h3><ul>';
+                        if (hits.length === 0) {
+                            html += '<li>No matches found.</li>';
+                        }
+                        for (var i = 0; i < hits.length; i++) {
+                            var hit = hits[i];
+                            html += '<li class="sourceinfo"><a class="resource" href="#" data-src="' +
+                                hit.resource + '" data-line="' + hit.line + '">' +
+                                hit.name + '</a><span class="line">line ' + hit.line + '</span></li>';
+                            html += '<li class="code">' + hit.text.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</li>';
+                        }
+                        html += '</ul></div></body></html>';
+                        iframe.contentWindow.document.open('text/html', 'replace');
+                        iframe.contentWindow.document.write(html);
+                        iframe.contentWindow.document.close();
+                        // Bind click handlers
+                        var links = iframe.contentDocument.querySelectorAll(".resource");
+                        for (var j = 0; j < links.length; j++) {
+                            links[j].addEventListener("click", function(ev) {
+                                ev.preventDefault();
+                                eXide.app.findDocument(this.dataset.src, parseInt(this.dataset.line));
+                            });
+                        }
+                    });
                 });
             });
         },
-       
+
         liveReload: function() {
             var doc = editor.getActiveDocument();
             projects.findProject(doc.getBasePath(), function(project) {
                 if (project == null) {
                     return;
                 }
-                $.log("live reload: %s %s", project.liveReload, project.abbrev);
+                console.log("live reload: %s %s", project.liveReload, project.abbrev);
                 if (project.liveReload) {
                     var url = project.url.replace(/\/{2,}/, "/");
                     var link = eXide.configuration.context + url + "/";
@@ -1167,12 +1568,12 @@ eXide.app = (function(util) {
                     if (project.win && !project.win.closed) {
                         project.win.location.reload();
                     } else {
-                        $.log("app window not found: %s", project.abbrev);
+                        console.log("app window not found: %s", project.abbrev);
                     }
                 }
             });
         },
-        
+
         toggleLiveReload: function() {
             var doc = editor.getActiveDocument();
             projects.findProject(doc.getBasePath(), function(project) {
@@ -1180,203 +1581,218 @@ eXide.app = (function(util) {
                     return;
                 }
                 project.liveReload = !project.liveReload;
-                $("#menu-deploy-live span").attr("class", project.liveReload ? "fa fa-check-square-o" : "fa fa-square-o");
+                document.querySelector("#menu-deploy-live span").setAttribute("class", project.liveReload ? "fa fa-check-square-o" : "fa fa-square-o");
                 if (project.liveReload && (!project.win || project.win.closed)) {
                     app.openApp(true);
                 }
             });
         },
-        
+
 		initGUI: function(menu) {
-            if (util.supportsHtml5Storage && localStorage.getItem("eXide.firstTime")) {
-                resultPanel = localStorage["eXide.layout.resultPanel"] || "south";
-            }
+            resultPanel = "south";
             layout = new app.Layout(editor);
-            if (resultPanel == "south") {
-                layout.hide("east");
-            } else {
-                layout.hide("south");
-            }
-            
-            app.prepareResultsPanel(resultPanel);
-			$("#open-dialog").dialog({
-                appendTo: "#layout-container",
-				title: "Open file",
-				modal: false,
-		        autoOpen: false,
-		        height: 480,
-		        width: 640,
-				open: function() { dbBrowser.init(); },
-				resize: function() { dbBrowser.resize(); }
+            layout.hide("east");
+
+			dialogs["open-dialog"] = eXide.util.DialogManager.create(
+			    document.getElementById("open-dialog"), {
+                    appendTo: "#layout-container",
+    				title: "Open file",
+    				modal: false,
+    		        height: 480,
+    		        width: 640
+			    }
+			);
+			var openDialogEl = document.getElementById("open-dialog");
+			dialogs["open-dialog"].dialog.addEventListener("close", function() {});
+			var origOpenDialogOpen = dialogs["open-dialog"].open;
+			dialogs["open-dialog"].open = function() {
+			    origOpenDialogOpen.call(dialogs["open-dialog"]);
+			    dbBrowser.init();
+			};
+
+			dialogs["login-dialog"] = eXide.util.DialogManager.create(
+			    document.getElementById("login-dialog"), {
+                    appendTo: "#layout-container",
+    				title: "Login",
+    				modal: true,
+    				width: 360
+			    }
+			);
+			dialogs["login-dialog"]._onClose = null;
+			dialogs["login-dialog"].dialog.addEventListener("close", function() {
+			    if (dialogs["login-dialog"]._onClose) {
+			        dialogs["login-dialog"]._onClose();
+			        dialogs["login-dialog"]._onClose = null;
+			    }
 			});
-			$("#login-dialog").dialog({
-                appendTo: "#layout-container",
-				title: "Login",
-				modal: true,
-				autoOpen: false,
-				buttons: [
-					{
-					    text: "Login",
-					    click: function() {
-                            var user = $("#login-form input[name=\"user\"]").val();
-                            var password = $("#login-form input[name=\"password\"]").val();
-                            var params = {
-                                user: user, password: password
-                            }
-                            if ($("#login-form input[name=\"duration\"]").is(":checked")) {
-                                params.duration = "P14D";
-                            }
-    						$.ajax({
-    							url: "login",
-                            	type: "POST",
-    							data: params,
-                                dataType: "json",
-    							success: function (data) {
-    							    if (!data.user) {
-    							        $("#login-error").text("Login failed.");
-    								    $("#login-dialog input:first").focus();
-    							    } else {
-        								app.login = data;
-        								$.log("Logged in as %o. Is dba: %s", data, app.login.isAdmin);
-        								$("#login-dialog").dialog("close");
-        								$("#user").text("Logged in as " + app.login.user + ". ");
-        								editor.focus();
-    							    }
-    							},
-    							error: function (xhr, status, data) {
-    								$("#login-error").text("Login failed. " + data);
-    								$("#login-dialog input:first").focus();
-    							}
-					        });
+			dialogs["login-dialog"].setButtons({
+			    "Login": function() {
+                    var user = document.querySelector("#login-form input[name=\"user\"]").value;
+                    var password = document.querySelector("#login-form input[name=\"password\"]").value;
+                    var formData = new URLSearchParams();
+                    formData.append("user", user);
+                    formData.append("password", password);
+                    var durationEl = document.querySelector("#login-form input[name=\"duration\"]");
+                    if (durationEl && durationEl.checked) {
+                        formData.append("duration", "P14D");
+                    }
+					fetch("api/auth/session", {
+					    method: "POST",
+					    headers: {
+					        "Content-Type": "application/x-www-form-urlencoded"
 					    },
-					    icons: { primary: "fa fa-sign-in" }
-					},
-					{
-					    text: "Cancel",
-					    icons: { primary: "fa fa-times" },
-					    click: function () { $(this).dialog("close"); editor.focus(); }
-					}
-				],
-				open: function() {
-					// clear form fields
-					$(this).find("input").val("");
-					$(this).find("input:first").focus();
-					$("#login-error").empty();
-					
-					var dialog = $(this);
-					dialog.find("input").keyup(function (e) {
-						if (e.keyCode == 13) {
-				           dialog.parent().find(".ui-dialog-buttonpane button:first").trigger("click");
-				        }
+					    body: formData.toString()
+					})
+					.then(function(response) {
+					    return response.json();
+					})
+					.then(function(data) {
+					    if (!data.user) {
+					        document.getElementById("login-error").textContent = "Login failed.";
+					        var firstInput = document.querySelector("#login-dialog input:first-of-type");
+					        if (firstInput) firstInput.focus();
+					    } else {
+						    app.login = data;
+						    console.log("Logged in as %o. Is dba: %s", data, app.login.isAdmin);
+						    dialogs["login-dialog"].close();
+						    app.updateAuthStatus(app.login.user);
+						    editor.focus();
+					    }
+					})
+					.catch(function(err) {
+					    document.getElementById("login-error").textContent = "Login failed. " + (err.message || "");
+					    var firstInput = document.querySelector("#login-dialog input:first-of-type");
+					    if (firstInput) firstInput.focus();
 					});
-				}
+			    },
+			    "Cancel": function() {
+			        dialogs["login-dialog"].close();
+			        editor.focus();
+			    }
 			});
-			$("#keyboard-help").dialog({
-                appendTo: "#layout-container",
-				title: "Keyboard Shortcuts",
-				modal: false,
-				autoOpen: false,
-				height: 400,
-                width: 350,
-				buttons: {
-					"Close": function () { $(this).dialog("close"); }
-				},
-				open: function () {
-					eXide.edit.commands.help($("#keyboard-help"), editor);
-				}
-			});
-            $("#about-dialog").dialog({
-                appendTo: "#layout-container",
-                title: "About",
-                modal: false,
-                autoOpen: false,
-                height: 300,
-                width: 450,
-                buttons: {
-    				"Close": function () { $(this).dialog("close"); }
-				}
-            });
-            $("#version-warning").dialog({
-                appendTo: "#layout-container",
-                modal: false,
-                autoOpen: false,
-                height: 300,
-                width: 450,
-                buttons: {
-    				"Close": function () { $(this).dialog("close"); }
-				}
-            });
-            $("#dialog-templates").dialog({
-                appendTo: "#layout-container",
-    			title: "New document",
-				modal: false,
-		        autoOpen: false,
-		        height: 280,
-		        width: 550,
-                dataType: "json",
-                open: function() {
-                    $.ajax({
-                	    url: "modules/get-template.xq",
-            			type: "POST",
-            			success: function(data) {
-                		    templates = data;
-                            $("#dialog-templates .templates").hide();
-                            $("#dialog-templates .type-select").val("");
-            			}
-                    });
-                },
-                buttons: {
-				    "Cancel": function () { $(this).dialog("close"); editor.focus(); },
-                    "Create": function() {
-                        var mode = $(this).find(".type-select").val();
-                        var template = $(this).find(".templates select").val();
-                        $.log("creating new doc with mode: %s and template: %s", mode, template);
-                        editor.newDocumentFromTemplate(mode, template);
-                        $(this).dialog("close");
-                        editor.focus();
+			var origLoginOpen = dialogs["login-dialog"].open;
+			dialogs["login-dialog"].open = function() {
+			    origLoginOpen.call(dialogs["login-dialog"]);
+			    var loginDialogEl = document.getElementById("login-dialog");
+			    var inputs = loginDialogEl.querySelectorAll("input");
+			    inputs.forEach(function(input) { input.value = ""; });
+			    var firstInput = loginDialogEl.querySelector("input:first-of-type");
+			    if (firstInput) firstInput.focus();
+			    document.getElementById("login-error").textContent = "";
+			    inputs.forEach(function(input) {
+			        input.addEventListener("keyup", function(e) {
+			            if (e.keyCode == 13) {
+			                var loginBtn = dialogs["login-dialog"].dialog.querySelector(".eXide-dialog-buttons button:first-of-type");
+			                if (loginBtn) loginBtn.click();
+			            }
+			        });
+			    });
+			};
+
+			dialogs["keyboard-help"] = eXide.util.DialogManager.create(
+			    document.getElementById("keyboard-help"), {
+                    appendTo: "#layout-container",
+    				title: "Keyboard Shortcuts",
+    				modal: false,
+    				height: 520,
+                    width: 460,
+    				buttons: {
+    					"Close": function () { dialogs["keyboard-help"].close(); }
+    				}
+			    }
+			);
+			var origKbHelpOpen = dialogs["keyboard-help"].open;
+			dialogs["keyboard-help"].open = function() {
+			    origKbHelpOpen.call(dialogs["keyboard-help"]);
+			    eXide.edit.commands.help(document.getElementById("keyboard-help"), editor);
+			};
+
+            dialogs["about-dialog"] = eXide.util.DialogManager.create(
+                document.getElementById("about-dialog"), {
+                    appendTo: "#layout-container",
+                    title: "About",
+                    modal: false,
+                    height: 300,
+                    width: 450,
+                    buttons: {
+    				    "Close": function () { dialogs["about-dialog"].close(); }
+				    }
+                }
+            );
+            dialogs["dialog-templates"] = eXide.util.DialogManager.create(
+                document.getElementById("dialog-templates"), {
+                    appendTo: "#layout-container",
+    			    title: "New Document",
+    				modal: false,
+    		        height: 280,
+    		        width: 550,
+                    buttons: {
+				        "Cancel": function () { dialogs["dialog-templates"].close(); editor.focus(); },
+                        "Create": function() {
+                            var templEl = document.getElementById("dialog-templates");
+                            var mode = templEl.querySelector(".type-select").value;
+                            var template = templEl.querySelector(".templates select").value;
+                            console.log("creating new doc with mode: %s and template: %s", mode, template);
+                            editor.newDocumentFromTemplate(mode, template);
+                            dialogs["dialog-templates"].close();
+                            editor.focus();
+                        }
                     }
                 }
-			});
-            $("#dialog-templates .type-select").change(function() {
-                var templ = $("#dialog-templates .templates");
-                var templSel = $("select", templ);
-                var type = $(this).val();
-                templSel.empty();
+            );
+            var origTemplOpen = dialogs["dialog-templates"].open;
+            dialogs["dialog-templates"].open = function() {
+                origTemplOpen.call(dialogs["dialog-templates"]);
+                fetch("api/templates")
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    templates = data;
+                    var templatesDiv = document.querySelector("#dialog-templates .templates");
+                    if (templatesDiv) templatesDiv.style.display = "none";
+                    var typeSelect = document.querySelector("#dialog-templates .type-select");
+                    if (typeSelect) {
+                        typeSelect.value = "xquery";
+                        typeSelect.dispatchEvent(new Event("change"));
+                        typeSelect.focus();
+                    }
+                });
+            };
+            document.querySelector("#dialog-templates .type-select").addEventListener("change", function() {
+                var templ = document.querySelector("#dialog-templates .templates");
+                var templSel = templ.querySelector("select");
+                var type = this.value;
+                templSel.innerHTML = "";
                 var mode = templates[type];
                 if (mode) {
                     var options = "<option value=''>None</option>";
                     for (var i = 0; i < mode.length; i++) {
                         options += "<option value='" + mode[i].name + "'>" + mode[i].description + "</option>";
                     }
-                    templSel.html(options);
-                    templ.show();
+                    templSel.innerHTML = options;
+                    templ.style.display = "";
                 } else {
-                    templ.hide();
+                    templ.style.display = "none";
                 }
             });
-            
-            util.Popup.init("#autocomplete-box", editor);
-            
-            $(".toolbar-buttons").buttonset();
-            
+
 			// initialize buttons and menu events
-            var button = $("#open").button("option", "icons", { primary: "fa fa-folder-open-o" });
-			button.click(app.openDocument);
+            var btnOpen = document.getElementById("open");
+			btnOpen.addEventListener("click", app.openDocument);
             menu.click("#menu-file-open", app.openDocument);
-			
-            button = $("#close").button("option", "icons", { primary: "fa fa-times" });
-			button.click(app.closeDocument);
+
+            var btnClose = document.getElementById("close");
+			btnClose.addEventListener("click", app.closeDocument);
 			menu.click("#menu-file-close", app.closeDocument);
-			
+
 			menu.click("#menu-file-close-all", app.closeAll);
-			
-            button = $("#new").button("option", "icons", { primary: "fa fa-file-o" });
-			button.click(function() {
+
+            var btnNew = document.getElementById("new");
+			btnNew.addEventListener("click", function() {
                 app.newDocumentFromTemplate();
 			});
-            
-            button = $("#new-xquery").button("option", "icons", { primary: "fa fa-file-code-o" });
-			button.click(function() {
+
+            var btnNewXquery = document.getElementById("new-xquery");
+			btnNewXquery.addEventListener("click", function() {
                 app.newDocument(null, "xquery");
 			});
 			menu.click("#menu-file-new", app.newDocumentFromTemplate);
@@ -1384,37 +1800,120 @@ eXide.app = (function(util) {
                 app.newDocument(null, "xquery");
     		});
 
-            button = $("#eval").button("option", "icons", { primary: "fa fa-cogs" });
-            button.button("option", "disabled", true);
-			button.click(function(ev) { app.runQuery() });
+            var btnRun = document.getElementById("run");
+            btnRun.disabled = true;
+			btnRun.addEventListener("click", function(ev) { app.runQuery() });
 
-            button = $("#run").button("option", "icons", { primary: "fa fa-play" });
-			button.click(function(ev) { app.runAppOrQuery() });
-			
-            button = $("#debug").button("option", "icons", { primary: "fa fa-fast-forward" });
-            button.click(app.startDebug);
+            var btnLaunch = document.getElementById("launch");
+			btnLaunch.addEventListener("click", function(ev) { app.runAppOrQuery() });
 
-            
-            button = $("#debug-actions #step-over").button("option", "icons", { primary: "fa fa-fast-forward" });
-            button.click(app.stepOver);
+            var statusCursor = document.getElementById("status-cursor");
+            if (statusCursor) {
+                statusCursor.style.cursor = "pointer";
+                statusCursor.title = "Go to Line";
+                statusCursor.addEventListener("click", function() {
+                    editor.gotoLine();
+                });
+            }
 
-            button = $("#debug-actions #step-into").button("option", "icons", { primary: "fa fa-fast-forward" });
-            button.click(app.stepInto);
+            document.getElementById("status-copy-url").addEventListener("click", function() {
+                var pathEl = document.querySelector("#status .path");
+                var path = pathEl ? pathEl.textContent : null;
+                if (path) {
+                    navigator.clipboard.writeText(path).then(function() {
+                        app.showMessage("Path copied to clipboard");
+                    });
+                }
+            });
 
-            button = $("#debug-actions #step-out").button("option", "icons", { primary: "fa fa-fast-forward" });
-            button.click(app.startDebug);
+            var btnToggleSplitPane = document.getElementById("toggle-split-pane");
+            if (btnToggleSplitPane) {
+                btnToggleSplitPane.addEventListener("click", function() {
+                    var prefs = preferences.preferences;
+                    prefs.splitPane = !prefs.splitPane;
+                    var pw = document.querySelector('.panel-west');
+                    if (pw) {
+                        pw.classList.toggle('split-pane', prefs.splitPane);
+                    }
+                    btnToggleSplitPane.setAttribute('aria-pressed', prefs.splitPane ? 'true' : 'false');
+                    btnToggleSplitPane.textContent = prefs.splitPane ? '\u229E' : '\u229F';
+                    if (prefs.splitPane) {
+                        editor.outline.toggle(true);
+                        editor.directory.toggle(true);
+                    } else {
+                        // Restore tabbed mode: activate whichever tab is marked active
+                        var tabs = document.querySelectorAll('#tabs-outline a.tab');
+                        var activeIndex = 0;
+                        tabs.forEach(function(t, i) { if (t.classList.contains('active')) activeIndex = i; });
+                        editor.directory.toggle(activeIndex === 0);
+                        editor.outline.toggle(activeIndex === 1);
+                    }
+                    preferences.save();
+                });
+            }
 
-            button = $("#validate").button("option", "icons", { primary: "fa fa-check" });
+            var btnToggleOutline = document.getElementById("toggle-outline");
+            if (btnToggleOutline) {
+                btnToggleOutline.addEventListener("click", function() {
+                    layout.toggle("west");
+                    app.$savePanelPrefs();
+                });
+            }
+            var btnToggleResults = document.getElementById("toggle-results");
+            if (btnToggleResults) {
+                btnToggleResults.addEventListener("click", function() {
+                    layout.toggle(resultPanel);
+                    app.$savePanelPrefs();
+                });
+            }
 
-			button.click(app.checkQuery);
-            
-            button = $("#save").button("option", "icons", { primary: "fa fa-save" });
-			button.click(app.saveDocument);
+            var btnToggleMonitor = document.getElementById("toggle-monitor");
+            if (btnToggleMonitor) {
+                btnToggleMonitor.addEventListener("click", function() {
+                    app.toggleMonitor();
+                });
+            }
+
+            var btnMonitorClose = document.getElementById("monitor-close");
+            if (btnMonitorClose) {
+                btnMonitorClose.addEventListener("click", function() {
+                    app.toggleMonitor();
+                });
+            }
+
+            // delegate kill buttons in monitor
+            var monRunning = document.getElementById("mon-running-body");
+            if (monRunning) {
+                monRunning.addEventListener("click", function(ev) {
+                    var btn = ev.target.closest(".mon-kill");
+                    if (btn && monitor) {
+                        monitor.killQuery(btn.dataset.id);
+                    }
+                });
+            }
+
+            var btnDebug = document.getElementById("debug");
+            if (btnDebug) btnDebug.addEventListener("click", app.startDebug);
+
+            var btnStepOver = document.querySelector("#debug-actions #step-over");
+            if (btnStepOver) btnStepOver.addEventListener("click", app.stepOver);
+
+            var btnStepInto = document.querySelector("#debug-actions #step-into");
+            if (btnStepInto) btnStepInto.addEventListener("click", app.stepInto);
+
+            var btnStepOut = document.querySelector("#debug-actions #step-out");
+            if (btnStepOut) btnStepOut.addEventListener("click", app.startDebug);
+
+            var btnValidate = document.getElementById("validate");
+			if (btnValidate) btnValidate.addEventListener("click", app.checkQuery);
+
+            var btnSave = document.getElementById("save");
+			btnSave.addEventListener("click", app.saveDocument);
 			menu.click("#menu-file-save", app.saveDocument);
             menu.click("#menu-file-save-as", app.saveDocumentAs);
-			
+
             menu.click("#menu-file-reload", app.reloadDocument);
-            
+
 			menu.click("#menu-file-download", app.download);
 			menu.click("#menu-file-manager", app.manage);
 			// menu-only events
@@ -1423,33 +1922,42 @@ eXide.app = (function(util) {
 			menu.click("#menu-deploy-live", app.toggleLiveReload);
 			menu.click("#menu-deploy-sync", app.synchronize);
             menu.click("#menu-deploy-download", app.downloadApp);
-            
+
             menu.click("#menu-git-checkout", app.gitCheckout);
             menu.click("#menu-git-commit", app.gitCommit);
-            
+
 			menu.click("#menu-edit-undo", function () {
-				editor.editor.undo();
+				CM6.undo(editor.editor);
 			});
 			menu.click("#menu-edit-redo", function () {
-				editor.editor.redo();
+				CM6.redo(editor.editor);
 			});
             menu.click("#menu-edit-find", function() {
-                var config = require("ace/config");
-                config.loadModule("ace/ext/searchbox", function(e) {e.Search(editor.editor)});
+                CM6.openSearchPanel(editor.editor);
+                setTimeout(function() {
+                    var searchInput = document.querySelector(".cm-search input[main-field]");
+                    if (searchInput) searchInput.focus();
+                }, 0);
             });
             menu.click("#menu-edit-find-replace", function() {
-                var config = require("ace/config");
-                config.loadModule("ace/ext/searchbox", function(e) {e.Search(editor.editor, true)});
+                CM6.openSearchPanel(editor.editor);
+                setTimeout(function() {
+                    var searchInput = document.querySelector(".cm-search input[main-field]");
+                    if (searchInput) searchInput.focus();
+                }, 0);
             });
             menu.click("#menu-edit-find-files", function() {
                 app.findFiles();
             });
             menu.click("#menu-edit-toggle-comment", function () {
-                editor.editor.toggleCommentLines();
+                CM6.toggleComment(editor.editor);
             });
 			menu.click("#menu-edit-preferences", function() {
-                preferences.show(); 		
+                preferences.show();
 			});
+            menu.click("#menu-edit-format", function() {
+                editor.exec("format");
+            });
             menu.click("#menu-navigate-definition", function () {
                 editor.exec("gotoDefinition");
             });
@@ -1471,144 +1979,261 @@ eXide.app = (function(util) {
             menu.click("#menu-navigate-history", function() {
                 editor.historyBack();
             });
-            menu.click("#menu-navigate-toggle-results", function() {
+            menu.click("#menu-navigate-diagnostics", function() {
+                editor.toggleDiagnostics();
+            });
+            menu.click("#menu-view-toggle-collections", function() {
+                app.toggleCollectionsPanel();
+            });
+            menu.click("#menu-view-toggle-results", function() {
                 app.toggleResultsPanel();
             });
-            menu.click("#menu-navigate-reset", function() {
-                if (resultPanel !== "south") {
-                    app.switchResultsPanel();
-                }
+            menu.click("#menu-view-toggle-monitor", function() {
+                app.toggleMonitor();
+            });
+            menu.click("#menu-view-reset", function() {
                 layout.reset();
             });
+            menu.click("#menu-view-reset-workspace", function() {
+                if (confirm("This will clear all saved tabs, preferences, and layout state, then reload. Continue?")) {
+                    app._skipSaveState = true;
+                    Object.keys(localStorage).filter(function(k) { return k.startsWith("eXide."); }).forEach(function(k) { localStorage.removeItem(k); });
+                    location.reload();
+                }
+            });
+            menu.click("#menu-view-toggle-dark-mode", function() {
+                document.getElementById("toggle-dark-mode").click();
+            });
+            menu.click("#menu-view-toggle-fullscreen", function() {
+                util.requestFullScreen(document.getElementById("fullscreen"));
+            });
 			menu.click("#menu-deploy-run", app.runAppOrQuery);
-			
+
             menu.click("#menu-help-keyboard", function (ev) {
-				$("#keyboard-help").dialog("open");
+				dialogs["keyboard-help"].open();
 			});
             menu.click("#menu-help-about", function (ev) {
-				$("#about-dialog").dialog("open");
+				dialogs["about-dialog"].open();
 			});
-            // menu.click("#menu-help-documentation", function(ev) {
-            //     util.Help.show();
-            // });
             menu.click("#menu-help-documentation", function(ev) {
                 window.open("https://github.com/eXist-db/eXide#readme");
             });
-			// syntax drop down
-			$("#syntax").change(function () {
-				editor.setMode($(this).val());
-			});
-			// register listener to update syntax drop down
+			// type popover in status bar
+			(function() {
+				var typeBtn = document.getElementById("status-type");
+				var popover = document.getElementById("type-popover");
+				var arrow = typeBtn ? typeBtn.querySelector(".status-segment-arrow") : null;
+				if (typeBtn && popover) {
+					typeBtn.addEventListener("click", function(ev) {
+						ev.stopPropagation();
+						var isOpen = popover.classList.toggle("open");
+						if (arrow) arrow.innerHTML = isOpen ? "&#x25BC;" : "&#x25B2;";
+					});
+					popover.addEventListener("click", function(ev) {
+						var item = ev.target.closest(".type-popover-item");
+						if (!item) return;
+						editor.setMode(item.dataset.value);
+						var doc = editor.getActiveDocument();
+						if (doc) app.updateStatus(doc);
+						popover.classList.remove("open");
+						if (arrow) arrow.innerHTML = "&#x25B2;";
+					});
+					document.addEventListener("click", function() {
+						popover.classList.remove("open");
+						if (arrow) arrow.innerHTML = "&#x25B2;";
+					});
+				}
+			})();
+			// register listener to update status bar segments
 			editor.addEventListener("activate", null, function (doc) {
                 app.updateStatus(doc);
                 projects.findProject(doc.getBasePath(), function(app) {
                     if (app) {
-                        $("#toolbar-current-app").text(app.abbrev);
-                        $("#menu-deploy-active").text(app.abbrev);
-                        $("#menu-deploy-live span").attr("class", app.liveReload ? "fa fa-check-square-o" : "fa fa-square-o");
+                        var appEl = document.getElementById("toolbar-current-app");
+                        appEl.textContent = app.abbrev;
+                        var appLink = document.getElementById("toolbar-current-app-link");
+                        appLink.classList.remove("unknown");
+                        var appUrl = app.url ? (eXide.configuration.context + app.url.replace(/\/{2,}/, "/") + "/") : "#";
+                        appLink.href = appUrl;
+                        var appIcon = document.getElementById("toolbar-current-app-icon");
+                        appIcon.src = eXide.configuration.context + "/apps/" + app.abbrev + "/icon.png";
+                        appIcon.style.display = "";
+                        appIcon.onerror = function() {
+                            this.style.display = "none";
+                            this.onerror = null;
+                        };
+                        document.getElementById("menu-deploy-active").textContent = app.abbrev;
+                        document.querySelector("#menu-deploy-live span").setAttribute("class", app.liveReload ? "fa fa-check-square-o" : "fa fa-square-o");
                         // update show/hide git stuff
                         if(app.git == "true" || app.git == true) {
-                            $(".current-branch").show();
-                            $("#menu-git").show();
+                            document.querySelectorAll(".current-branch").forEach(function(el) { el.style.display = ""; });
+                            document.getElementById("menu-git").style.display = "";
                             // update git-status
                             eXide.app.git.branch(app);
                         } else {
-                            $(".current-branch").hide();
-                            $("#menu-git").hide();
+                            document.querySelectorAll(".current-branch").forEach(function(el) { el.style.display = "none"; });
+                            document.getElementById("menu-git").style.display = "none";
                         }
-                        
+
                     } else {
-                        $("#toolbar-current-app").text("unknown");
-                        $("#menu-deploy-active").text("unknown");
-                        $(".current-branch").hide();
-                        $("#menu-git").hide();
+                        var appEl2 = document.getElementById("toolbar-current-app");
+                        appEl2.textContent = "unknown";
+                        var appLink2 = document.getElementById("toolbar-current-app-link");
+                        appLink2.classList.add("unknown");
+                        appLink2.removeAttribute("href");
+                        var appIcon2 = document.getElementById("toolbar-current-app-icon");
+                        appIcon2.style.display = "none";
+                        document.getElementById("menu-deploy-active").textContent = "unknown";
+                        document.querySelectorAll(".current-branch").forEach(function(el) { el.style.display = "none"; });
+                        document.getElementById("menu-git").style.display = "none";
                     }
                 });
 			});
-			
-            
-			$("#user").click(function (ev) {
+
+
+			document.getElementById("user").addEventListener("click", function (ev) {
 				ev.preventDefault();
 				if (app.login) {
 					// logout
-					$.get("login?logout=logout");
-					$("#user").text("Login");
+					fetch("api/auth/session?logout=true", { method: "DELETE" });
+					app.updateAuthStatus(null);
 					app.login = null;
 				} else {
-					$("#login-dialog").dialog("open");
+					dialogs["login-dialog"].open();
 				}
 			});
             if (!util.supportsFullScreen()) {
-                $("#toggle-fullscreen").hide();
+                document.getElementById("toggle-fullscreen").style.display = "none";
             }
-            $("#toggle-fullscreen").click(function(ev) {
+            document.getElementById("toggle-fullscreen").addEventListener("click", function(ev) {
                 ev.preventDefault();
                 util.requestFullScreen(document.getElementById("fullscreen"));
             });
-            $(".results-container .layout-switcher").click(app.switchResultsPanel);
-			$('.results-container #copy-all-clipboard').click(() => {
-                let res = '';
-                document.querySelectorAll("#results-body > div > div > div > div.item").forEach(item => res += item.innerText)
-                navigator.clipboard.writeText(res).then(function() {
-                    console.log('Async: Copying to clipboard was successful!');
-                    eXide.util.message("Copied results to clipboard");
-                  }, function(err) {
-                    console.error('Async: Could not copy text: ', err);
-                  });
+            document.getElementById("toggle-dark-mode").addEventListener("click", function(ev) {
+                ev.preventDefault();
+                // Toggle between light/dark for the current session only (does not save to preferences)
+                var isDark = document.body.classList.contains("dark");
+                var newTheme = isDark ? "light" : "dark";
+                app.setTheme({ isDark: newTheme === "dark" });
+                app.updateDarkModeIcon(newTheme);
             });
-			$('.results-container .next').click(app.browseNext);
-			$('.results-container .previous').click(app.browsePrevious);
-            $("#number-of-results").change(function(ev) {
+            document.querySelectorAll('.navbar .toggle-btn[id$="-btn"]').forEach(function(btn) {
+                btn.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    var cb = btn.querySelector('input[type="checkbox"]');
+                    var checked = !cb.checked;
+                    cb.checked = checked;
+                    btn.classList.toggle('active', checked);
+                });
+            });
+
+			document.querySelectorAll('.results-container #copy-all-clipboard').forEach(function(btnEl) {
+			    btnEl.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    var icon = btnEl.querySelector('.fa');
+                    var res = '';
+                    document.querySelectorAll("#results-body > div > div > div > div.item").forEach(function (item) { res += item.innerText; });
+                    navigator.clipboard.writeText(res).then(function() {
+                        icon.classList.remove('fa-clipboard');
+                        icon.classList.add('fa-check');
+                        btnEl.classList.add('copied');
+                        eXide.util.message("Copied results to clipboard");
+                        setTimeout(function () {
+                            icon.classList.remove('fa-check');
+                            icon.classList.add('fa-clipboard');
+                            btnEl.classList.remove('copied');
+                        }, 1200);
+                    }, function(err) {
+                        console.error('Could not copy text: ', err);
+                    });
+                });
+			});
+			document.querySelectorAll('.results-container .next').forEach(function(el) { el.addEventListener("click", app.browseNext); });
+			document.querySelectorAll('.results-container .previous').forEach(function(el) { el.addEventListener("click", app.browsePrevious); });
+			document.querySelectorAll('.results-container .first-page').forEach(function(el) { el.addEventListener("click", app.browseFirst); });
+			document.querySelectorAll('.results-container .last-page').forEach(function(el) { el.addEventListener("click", app.browseLast); });
+
+            function scrollToResult(idx) {
+                var items = document.querySelectorAll('.results-container .results > .even, .results-container .results > .uneven');
+                if (items.length === 0) return;
+                idx = Math.max(0, Math.min(idx, items.length - 1));
+                activeResultIdx = idx;
+                items.forEach(function(el) { el.classList.remove('result-active'); });
+                var target = items[idx];
+                target.classList.add('result-active');
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            document.querySelectorAll('.results-container .result-prev').forEach(function(el) {
+                el.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    scrollToResult(activeResultIdx <= 0 ? 0 : activeResultIdx - 1);
+                });
+            });
+            document.querySelectorAll('.results-container .result-next').forEach(function(el) {
+                el.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    scrollToResult(activeResultIdx < 0 ? 1 : activeResultIdx + 1);
+                });
+            });
+            document.getElementById("number-of-results").addEventListener("change", function(ev) {
                 numberOfResults = +document.getElementById("number-of-results").value;
             });
-            $("#serialization-mode").change(function(ev) {
+            document.getElementById("serialization-mode").addEventListener("change", function(ev) {
                 if (lastQuery) {
                     app.runQuery(lastQuery);
                 }
             });
-            $("#error-status").mouseover(function(ev) {
+            document.getElementById("error-status").addEventListener("mouseover", function(ev) {
                 var error = this;
-                $("#ext-status-bar").each(function() {
-                    this.innerHTML = error.innerHTML;
-                    $(this).css("display", "block");
+                var extBar = document.getElementById("ext-status-bar");
+                if (extBar) {
+                    extBar.innerHTML = error.innerHTML;
+                    extBar.style.display = "block";
+                }
+            });
+            var errorStatus = document.getElementById("error-status");
+            var extStatusBar = document.getElementById("ext-status-bar");
+            if (extStatusBar) {
+                extStatusBar.addEventListener("mouseout", function(ev) {
+                    extStatusBar.style.display = "none";
                 });
-            });
-            $("#ext-status-bar,#error-status").mouseout(function(ev) {
-               $("#ext-status-bar").css("display", "none");
-            });
-            $(window).blur(function() {
+            }
+            if (errorStatus) {
+                errorStatus.addEventListener("mouseout", function(ev) {
+                    if (extStatusBar) extStatusBar.style.display = "none";
+                });
+            }
+            window.addEventListener("blur", function() {
                 hasFocus = false;
             });
-            $(window).focus(function() {
+            window.addEventListener("focus", function() {
                 var checkLogin = !hasFocus;
                 hasFocus = true;
                 if (checkLogin) {
                    app.getLogin();
-                } 
+                }
             });
-            
-            // first time startup dialog
-            $("#dialog-startup").dialog({
-                appendTo: "#layout-container",
-        		modal: false,
-                title: "Quick Start",
-    			autoOpen: false,
-                width: 400,
-                height: 300,
-    			buttons: {
-                    "OK" : function() { $(this).dialog("close"); }
-    			}
-    		});
+
+            dialogs["dialog-startup"] = eXide.util.DialogManager.create(
+                document.getElementById("dialog-startup"), {
+                    appendTo: "#layout-container",
+        		    modal: false,
+                    title: "Quick Start",
+                    width: 400,
+                    height: 300,
+    			    buttons: {
+                        "OK" : function() { dialogs["dialog-startup"].close(); }
+    			    }
+    		    }
+    		);
             if (!util.supportsHtml5Storage)
     		    return;
-            // if local storage contains eXide properties, the app has already
-            // been started before and we do not show the welcome dialog
             var showHints = localStorage.getItem("eXide.firstTime");
             if (!showHints || showHints == 1) {
-                $("#dialog-startup").dialog("open");
+                dialogs["dialog-startup"].open();
             }
 		}
 	};
-	
+
 	return app;
 }(eXide.util));

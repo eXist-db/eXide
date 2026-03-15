@@ -40,7 +40,20 @@
         { tag: tags.function(tags.definition(tags.variableName)), color: "#0000ff" },
         { tag: tags.typeName, color: "#008855" },
         { tag: tags.processingInstruction, color: "#999999" },
-    ]);
+    ], {themeType: "light"});
+
+    var xqueryDarkHighlightStyle = HighlightStyle.define([
+        { tag: tags.keyword, color: "#c678dd" },
+        { tag: tags.atom, color: "#d19a66" },
+        { tag: tags.string, color: "#98c379" },
+        { tag: tags.variableName, color: "#e06c75" },
+        { tag: tags.comment, color: "#7d8799", fontStyle: "italic" },
+        { tag: tags.tagName, color: "#e06c75" },
+        { tag: tags.attributeName, color: "#61afef" },
+        { tag: tags.function(tags.definition(tags.variableName)), color: "#61afef" },
+        { tag: tags.typeName, color: "#e5c07b" },
+        { tag: tags.processingInstruction, color: "#abb2bf" },
+    ], {themeType: "dark"});
 
     /**
      * Create an XQuery LanguageSupport instance with indentation,
@@ -50,7 +63,6 @@
         return new LanguageSupport(xqueryStreamLanguage, [
             indentUnit.of("    "),
             bracketMatching(),
-            syntaxHighlighting(xqueryHighlightStyle),
         ]);
     }
 
@@ -58,4 +70,5 @@
     CM6.xquery = xquery;
     CM6.xqueryStreamLanguage = xqueryStreamLanguage;
     CM6.xqueryHighlightStyle = xqueryHighlightStyle;
+    CM6.xqueryDarkHighlightStyle = xqueryDarkHighlightStyle;
 })();
