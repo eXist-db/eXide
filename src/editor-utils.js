@@ -65,12 +65,18 @@
         view.dispatch({
             effects: CM6.EditorView.scrollIntoView(offset, { y: "center" })
         });
-        // Flash the target line
+        flashLine(view, offset);
+        view.focus();
+    }
+
+    /**
+     * Briefly flash the line at the given offset to draw the eye.
+     */
+    function flashLine(view, offset) {
         view.dispatch({ effects: flashEffect.of(offset) });
         setTimeout(function () {
             view.dispatch({ effects: flashClear.of(null) });
         }, 1200);
-        view.focus();
     }
 
     /**
@@ -159,6 +165,7 @@
         setAnnotations: setAnnotations,
         getAnnotations: getAnnotations,
         clearAnnotations: clearAnnotations,
-        flashField: flashField
+        flashField: flashField,
+        flashLine: flashLine
     };
 })();

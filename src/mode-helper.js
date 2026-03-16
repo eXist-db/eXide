@@ -167,6 +167,7 @@ eXide.edit.ModeHelper = (function () {
                         self.editor.dispatch({
                             effects: CM6.EditorView.scrollIntoView(selected.from, { y: "center" })
                         });
+                        editorUtils.flashLine(self.editor, selected.from);
                         self.editor.focus();
                     } else if (selected.row !== undefined) {
                         editorUtils.gotoLine(self.editor, selected.row + 1, 0, true);

@@ -13,7 +13,7 @@ import module namespace config="http://exist-db.org/xquery/apps/config" at "../c
 declare variable $auth:LOGIN_DOMAIN := "org.exist.login";
 
 declare function auth:get-user() as xs:string? {
-    let $_ := login:set-user($auth:LOGIN_DOMAIN, "P7D", false())
+    let $_ := login:set-user($auth:LOGIN_DOMAIN, xs:dayTimeDuration("P7D"), false())
     return request:get-attribute($auth:LOGIN_DOMAIN || ".user")
 };
 

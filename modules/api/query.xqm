@@ -7,10 +7,16 @@ xquery version "3.1";
 module namespace query="http://exist-db.org/apps/eXide/api/query";
 
 import module namespace roaster="http://e-editiones.org/roaster";
-import module namespace lsp="http://exist-db.org/xquery/lsp";
 import module namespace config="http://exist-db.org/xquery/apps/config" at "../config.xqm";
 
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
+
+(: Dynamic lookup for lsp:* functions — gracefully degrades when the
+   lsp module is not available (e.g., eXist-db < 7.0 without PR #6130) :)
+declare variable $query:lsp-ns := "http://exist-db.org/xquery/lsp";
+declare variable $query:lsp-available := exists(
+    function-lookup(QName($query:lsp-ns, "diagnostics"), 2)
+);
 
 (:~
  : POST /api/query — Execute XQuery and return results.
@@ -77,7 +83,10 @@ declare function query:compile($request as map(*)) {
     let $body := $request?body
     let $xquery := $body?query
     let $base := $body?base
-    let $diagnostics := lsp:diagnostics($xquery, $base)
+    let $diagnostics :=
+        if ($query:lsp-available) then
+            function-lookup(QName($query:lsp-ns, "diagnostics"), 2)($xquery, $base)
+        else ()
     return
         map {
             "errors": array {
@@ -100,7 +109,10 @@ declare function query:symbols($request as map(*)) {
     let $body := $request?body
     let $xquery := $body?query
     let $base := $body?base
-    return lsp:symbols($xquery, $base)
+    return
+        if ($query:lsp-available) then
+            function-lookup(QName($query:lsp-ns, "symbols"), 2)($xquery, $base)
+        else array {}
 };
 
 (:~
@@ -115,7 +127,10 @@ declare function query:completions($request as map(*)) {
     let $xquery := $body?query
     let $prefix := ($body?prefix, "")[1]
     let $base := $body?base
-    let $completions := lsp:completions($xquery, $base)
+    let $completions :=
+        if ($query:lsp-available) then
+            function-lookup(QName($query:lsp-ns, "completions"), 2)($xquery, $base)
+        else array {}
     return array {
         for $item in $completions?*
         let $name := replace($item?label, "#\d+$", "")
@@ -155,7 +170,10 @@ declare function query:hover($request as map(*)) {
     let $line := xs:integer($body?line)
     let $column := xs:integer($body?column)
     let $base := $body?base
-    let $hover := lsp:hover($xquery, $line, $column, $base)
+    let $hover :=
+        if ($query:lsp-available) then
+            function-lookup(QName($query:lsp-ns, "hover"), 4)($xquery, $line, $column, $base)
+        else ()
     return
         if (exists($hover)) then
             $hover
@@ -172,7 +190,10 @@ declare function query:definition($request as map(*)) {
     let $line := xs:integer($body?line)
     let $column := xs:integer($body?column)
     let $base := $body?base
-    let $def := lsp:definition($xquery, $line, $column, $base)
+    let $def :=
+        if ($query:lsp-available) then
+            function-lookup(QName($query:lsp-ns, "definition"), 4)($xquery, $line, $column, $base)
+        else ()
     return
         if (exists($def)) then
             $def

@@ -7,8 +7,6 @@ xquery version "3.1";
 module namespace sync="http://exist-db.org/apps/eXide/api/sync";
 
 import module namespace roaster="http://e-editiones.org/roaster";
-import module namespace file="http://exist-db.org/xquery/file"
-    at "java:org.exist.xquery.modules.file.FileModule";
 
 declare namespace expath="http://expath.org/ns/pkg";
 declare namespace repo="http://exist-db.org/xquery/repo";
@@ -16,6 +14,9 @@ declare namespace git="http://exist-db.org/eXide/git";
 
 (:~
  : POST /api/sync — Synchronize filesystem directory with database collection.
+ :
+ : Uses the eXist-specific file:sync() function if available. On systems where
+ : only the EXPath File module is registered, returns an error.
  :)
 declare function sync:sync($request as map(*)) {
     let $body := $request?body
@@ -33,27 +34,28 @@ declare function sync:sync($request as map(*)) {
         if (empty($dir) or $dir = "") then
             roaster:response(400, "application/json",
                 map { "error": "No working directory specified and none found in git.xml descriptor" })
+        else if (not(sync:has-legacy-file-module())) then
+            roaster:response(501, "application/json",
+                map { "error": "Filesystem sync requires eXist-db's file:sync() function, which is not available on this server." })
         else
             try {
-                let $sync-params := map {
-                    "after": $after,
-                    "indent": $indent,
-                    "expand-xincludes": $expand-xincludes,
-                    "omit-xml-declaration": $omit-xml-declaration
-                }
-                let $output := file:sync($collection, $dir, $sync-params)
-                let $updates := $output//file:update
+                (: Call file:sync() dynamically since it may not be in the
+                   statically imported EXPath file module :)
+                let $output := util:eval(``[
+                    import module namespace file="http://exist-db.org/xquery/file"
+                        at "java:org.exist.xquery.modules.file.FileModule";
+                    file:sync("`{$collection}`", "`{$dir}`",
+                        `{if (exists($after)) then '"' || $after || '"' else '()'}`)]``)
                 return map {
                     "status": "ok",
                     "collection": $collection,
                     "dir": $dir,
-                    "updated": count($updates),
+                    "updated": count($output//*[local-name() = 'update']),
                     "files": array {
-                        for $update in $updates
+                        for $update in $output//*[local-name() = 'update']
                         return map {
                             "collection": string($update/@collection),
-                            "name": string($update/@name),
-                            "error": string($update/file:error)
+                            "name": string($update/@name)
                         }
                     }
                 }
@@ -61,6 +63,13 @@ declare function sync:sync($request as map(*)) {
                 roaster:response(400, "application/json",
                     map { "error": $err:description })
             }
+};
+
+(:~
+ : Check whether the legacy eXist-specific file module is available.
+ :)
+declare %private function sync:has-legacy-file-module() as xs:boolean {
+    "http://exist-db.org/xquery/file" = util:registered-modules()
 };
 
 (: ── Internal helpers ─────────────────────────────────────── :)

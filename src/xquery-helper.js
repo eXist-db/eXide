@@ -193,6 +193,15 @@ eXide.edit.XQueryModeHelper = (function () {
 			var line = (err.line || 0) - 1;
 			var column = err.column || 0;
 			var msg = err.message || err.code || "Unknown error";
+			// lsp:diagnostics() may return line 0 for all errors;
+			// fall back to parsing the location from the message text
+			if (line <= 0 && msg) {
+				var locMatch = msg.match(/\[at line (\d+), column (\d+)/);
+				if (locMatch) {
+					line = parseInt(locMatch[1], 10) - 1;
+					column = parseInt(locMatch[2], 10);
+				}
+			}
 			var annotation = {
 				row: line,
                 column: column,

@@ -198,6 +198,7 @@ eXide.app = (function(util) {
                     if (afterInitCallback) {
                         afterInitCallback(restored);
                     }
+                    if (window._splashTimer) clearTimeout(window._splashTimer);
                     if (eXide.configuration.allowGuest) {
                         document.getElementById("splash").style.display = "none";
                     } else {

@@ -105,6 +105,7 @@ eXide.edit.Outline = (function () {
                     ed.editor.dispatch({
                         effects: CM6.EditorView.scrollIntoView(d.from, { y: "center" })
                     });
+                    editorUtils.flashLine(ed.editor, d.from);
                     ed.editor.focus();
                 }
             } else if(d.row !== undefined && d.row !== null) {

@@ -16,16 +16,30 @@ declare function admin:status($request as map(*)) {
         try { system:get-running-xqueries() } catch * { () }
     let $token :=
         try {
-            let $raw := file:read(system:get-exist-home() || "/data/jmxservlet.token")
-            let $line := tokenize($raw, "\n")[starts-with(., "token=")]
-            return substring-after($line, "token=")
+            (: Use util:eval to read the JMX token file — the file module
+               may be registered under different namespaces depending on
+               the eXist-db version, so we try both dynamically. :)
+            util:eval(``[
+                let $path := system:get-exist-home() || "/data/jmxservlet.token"
+                return
+                    if ("http://expath.org/ns/file" = util:registered-modules()) then
+                        util:eval("import module namespace f='http://expath.org/ns/file'; f:read-text('" || $path || "')")
+                    else if ("http://exist-db.org/xquery/file" = util:registered-modules()) then
+                        util:eval("import module namespace f='http://exist-db.org/xquery/file' at 'java:org.exist.xquery.modules.file.FileModule'; f:read('" || $path || "')")
+                    else ()
+            ]``)
         } catch * { () }
+    let $token-line :=
+        if (exists($token)) then
+            let $line := tokenize($token, "\n")[starts-with(., "token=")]
+            return substring-after($line, "token=")
+        else ()
     return map {
         "version": system:get-version(),
         "revision": system:get-revision(),
         "build": system:get-build(),
         "uptime": system:get-uptime(),
-        "jmxToken": ($token, "")[1],
+        "jmxToken": ($token-line, "")[1],
         "runningQueries": count($jmx//system:query)
     }
 };

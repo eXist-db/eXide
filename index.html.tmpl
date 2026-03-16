@@ -28,6 +28,13 @@
                 with support for CSS3 flexbox.</p>
             </div>
         </div>
+        <script>
+            // Only show splash if loading takes longer than 2 seconds
+            window._splashTimer = setTimeout(function() {
+                var s = document.getElementById("splash");
+                if (s) s.style.display = "";
+            }, 2000);
+        </script>
         <div id="fullscreen">
             <div class="header"/>
             <div class="editor-header">

@@ -155,8 +155,15 @@ eXide.edit.CompletionSource = (function () {
                     } else if (astNode.name === "EQName") {
                         mode = "functions";
                         token = astNode.value;
-                        from = editorUtils.rowColToOffset(state, astNode.pos.sl, astNode.pos.sc);
-                        to = editorUtils.rowColToOffset(state, astNode.pos.sl, astNode.pos.ec);
+                        // Use cursor-relative scan for from/to instead of AST position,
+                        // which can be unreliable for incomplete expressions
+                        var lineNum2 = lead.row + 1;
+                        var line2 = (lineNum2 >= 1 && lineNum2 <= state.doc.lines) ? state.doc.line(lineNum2).text : "";
+                        var start2 = lead.column - 1;
+                        while (start2 >= 0 && /[\w:\-_\.]/.test(line2.charAt(start2))) start2--;
+                        start2++;
+                        from = editorUtils.rowColToOffset(state, lead.row, start2);
+                        to = editorUtils.rowColToOffset(state, lead.row, lead.column);
                     } else {
                         if (!context.explicit) return null;
                     }
@@ -190,22 +197,47 @@ eXide.edit.CompletionSource = (function () {
         var code = doc.getText();
         var basePath = "xmldb:exist://" + doc.getBasePath();
 
-        return fetch("api/query/completions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: code, prefix: prefix, base: basePath })
-        })
-            .then(function (response) { return response.json(); })
-            .then(function (serverFuncs) {
+        // When prefix has no ":", also search default function namespace (fn:)
+        var prefixes = [prefix];
+        if (prefix && prefix.indexOf(":") === -1) {
+            prefixes.push("fn:" + prefix);
+        }
+
+        return Promise.all(prefixes.map(function (p) {
+            return fetch("api/query/completions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query: code, prefix: p, base: basePath })
+            }).then(function (response) { return response.json(); });
+        }))
+            .then(function (results) {
+                var serverFuncs = [];
+                for (var r = 0; r < results.length; r++) {
+                    if (Array.isArray(results[r])) {
+                        serverFuncs = serverFuncs.concat(results[r]);
+                    }
+                }
                 var options = [];
 
                 // Server functions (from /api/query/completions via lsp:completions())
                 // Includes both built-in/imported functions AND user-defined local functions
                 if (serverFuncs) {
+                    // Determine if we need to add a namespace prefix to server results.
+                    // The server returns unprefixed names; if the user typed "fn:conc"
+                    // we need to prefix the label, snippet, and filterText with "fn:".
+                    var nsPart = "";
+                    if (prefix.indexOf(":") !== -1) {
+                        nsPart = prefix.substring(0, prefix.indexOf(":") + 1);
+                    }
                     for (var i = 0; i < serverFuncs.length; i++) {
                         var f = serverFuncs[i];
-                        options.push(makeFunctionOption(
-                            f.text, f.snippet, null, f.description, null, null));
+                        var label = nsPart ? nsPart + f.text : f.text;
+                        var snip = f.snippet && nsPart ? nsPart + f.snippet : f.snippet;
+                        var opt = makeFunctionOption(
+                            label, snip, null, f.description, null, null);
+                        var funcName = f.text ? f.text.replace(/\(.*$/, "") : "";
+                        opt.filterText = nsPart + funcName;
+                        options.push(opt);
                     }
                 }
 
@@ -221,7 +253,7 @@ eXide.edit.CompletionSource = (function () {
                 }
 
                 if (options.length === 0) return null;
-                return { from: from, to: to, options: options, filter: true, validFor: /^[\w:.\-$]*$/ };
+                return { from: from, to: to, options: options, filter: false };
             })
             .catch(function () { return null; });
     }
