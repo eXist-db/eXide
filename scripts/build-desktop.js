@@ -81,4 +81,7 @@ if (fs.existsSync(path.join(ROOT, "templates"))) {
     copyRecursive(path.join(ROOT, "templates"), path.join(DIST, "templates"));
 }
 
+// Copy connect page as the entry point for desktop release builds
+fs.copyFileSync(path.join(ROOT, "src-tauri", "connect.html"), path.join(DIST, "connect.html"));
+
 console.log("Desktop assets copied to dist-desktop/");

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>eXide Desktop — Connect</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+            background: linear-gradient(135deg, #1a365d 0%, #2b4a7a 50%, #1a365d 100%);
+            color: #e2e8f0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .connect-card {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 16px;
+            padding: 40px;
+            width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #fff;
+        }
+        .subtitle {
+            font-size: 13px;
+            color: #90cdf4;
+            margin-bottom: 28px;
+        }
+        label {
+            display: block;
+            font-size: 12px;
+            font-weight: 500;
+            color: #a0aec0;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 8px;
+            background: rgba(0,0,0,0.2);
+            color: #fff;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input[type="text"]:focus {
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66,153,225,0.2);
+        }
+        input[type="text"]::placeholder { color: #4a5568; }
+        .field { margin-bottom: 16px; }
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 8px;
+        }
+        .btn-primary {
+            background: #2b6cb0;
+            color: #fff;
+        }
+        .btn-primary:hover { background: #3182ce; }
+        .btn-primary:disabled {
+            background: #2d3748;
+            color: #4a5568;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 12px;
+            font-size: 12px;
+            text-align: center;
+            min-height: 18px;
+        }
+        .status.error { color: #fc8181; }
+        .status.success { color: #68d391; }
+        .recent {
+            margin-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            padding-top: 16px;
+        }
+        .recent h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #718096;
+            margin-bottom: 8px;
+        }
+        .recent-item {
+            display: block;
+            padding: 8px 12px;
+            border-radius: 6px;
+            color: #90cdf4;
+            font-size: 13px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.15s;
+        }
+        .recent-item:hover {
+            background: rgba(255,255,255,0.06);
+        }
+    </style>
+</head>
+<body>
+    <div class="connect-card">
+        <h1>eXide Desktop</h1>
+        <p class="subtitle">Connect to an eXist-db server</p>
+
+        <div class="field">
+            <label for="server-url">Server URL</label>
+            <input type="text" id="server-url" placeholder="http://localhost:8080"
+                   value="http://localhost:8080">
+        </div>
+        <div class="field">
+            <label for="app-path">eXide Path</label>
+            <input type="text" id="app-path" placeholder="/exist/apps/eXide"
+                   value="/exist/apps/eXide">
+        </div>
+
+        <button class="btn btn-primary" id="connect-btn">Connect</button>
+        <div class="status" id="status"></div>
+
+        <div class="recent" id="recent-section" style="display:none">
+            <h3>Recent Servers</h3>
+            <div id="recent-list"></div>
+        </div>
+    </div>
+
+    <script>
+        var serverInput = document.getElementById("server-url");
+        var pathInput = document.getElementById("app-path");
+        var connectBtn = document.getElementById("connect-btn");
+        var statusEl = document.getElementById("status");
+        var recentSection = document.getElementById("recent-section");
+        var recentList = document.getElementById("recent-list");
+
+        // Load recent servers from localStorage
+        var recentServers = JSON.parse(localStorage.getItem("exide-recent-servers") || "[]");
+        if (recentServers.length > 0) {
+            recentSection.style.display = "";
+            recentServers.forEach(function(s) {
+                var a = document.createElement("a");
+                a.className = "recent-item";
+                a.textContent = s;
+                a.href = "#";
+                a.addEventListener("click", function(e) {
+                    e.preventDefault();
+                    try {
+                        var url = new URL(s);
+                        serverInput.value = url.origin;
+                        pathInput.value = url.pathname;
+                    } catch(err) {
+                        serverInput.value = s;
+                    }
+                    doConnect();
+                });
+                recentList.appendChild(a);
+            });
+        }
+
+        connectBtn.addEventListener("click", doConnect);
+        serverInput.addEventListener("keydown", function(e) { if (e.key === "Enter") doConnect(); });
+        pathInput.addEventListener("keydown", function(e) { if (e.key === "Enter") doConnect(); });
+
+        function doConnect() {
+            var server = serverInput.value.replace(/\/+$/, "");
+            var path = pathInput.value;
+            if (!path.startsWith("/")) path = "/" + path;
+            var fullUrl = server + path;
+
+            statusEl.className = "status";
+            statusEl.textContent = "Connecting\u2026";
+            connectBtn.disabled = true;
+
+            // Save to recent servers
+            if (recentServers.indexOf(fullUrl) === -1) {
+                recentServers.unshift(fullUrl);
+                if (recentServers.length > 5) recentServers.pop();
+                localStorage.setItem("exide-recent-servers", JSON.stringify(recentServers));
+            }
+
+            statusEl.className = "status success";
+            statusEl.textContent = "Connecting\u2026";
+
+            // Navigate directly — the server will handle auth
+            window.location.href = fullUrl;
+        }
+
+        // Auto-focus
+        serverInput.select();
+    </script>
+</body>
+</html>

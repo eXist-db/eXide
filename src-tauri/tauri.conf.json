@@ -12,6 +12,7 @@
     "windows": [
       {
         "title": "eXide Desktop",
+        "url": "connect.html",
         "width": 1280,
         "height": 860,
         "minWidth": 800,
