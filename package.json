@@ -16,7 +16,9 @@
 		"generate-parser": "node tools/generate-parser.js",
 		"generate-parser-40": "node tools/generate-parser.js --grammar grammars/XQuery-40-Family-XQUFEL.ebnf --name XQueryParser40 --output src/parser/XQueryParser40.js",
 		"generate-parsers": "npm run generate-parser && npm run generate-parser-40",
-		"cypress": "cypress run"
+		"cypress": "cypress run",
+		"dev:desktop": "npx @tauri-apps/cli dev",
+		"build:desktop": "npx @tauri-apps/cli build"
 	},
 	"repository": {
 		"type": "git",
@@ -34,6 +36,8 @@
 	},
 	"homepage": "https://github.com/eXist-db/eXide#readme",
 	"devDependencies": {
+		"@tauri-apps/api": "^2.10.1",
+		"@tauri-apps/cli": "^2.10.1",
 		"chalk": "^4.1.2",
 		"command-line-args": "^6.0.1",
 		"cypress": "^15.11.0",
