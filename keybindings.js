@@ -47,5 +47,6 @@
     "gotoTab7": {"key": "Alt-7", "mac": "Ctrl-7"},
     "gotoTab8": {"key": "Alt-8", "mac": "Ctrl-8"},
     "gotoTab9": {"key": "Alt-9", "mac": "Ctrl-9"},
-    "toggleDiagnostics": {"key": "Ctrl-Shift-d", "mac": "Mod-Shift-d"}
+    "toggleDiagnostics": {"key": "Ctrl-Shift-d", "mac": "Mod-Shift-d"},
+    "findReferences": {"key": "Shift-F3", "mac": "Shift-F3"}
 }

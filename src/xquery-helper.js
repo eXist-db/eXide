@@ -73,6 +73,7 @@ eXide.edit.XQueryModeHelper = (function () {
         this.addCommand("extractVariable", this.extractVariable);
 		this.addCommand("showFunctionDoc", this.showFunctionDoc);
 		this.addCommand("gotoDefinition", this.gotoDefinition);
+        this.addCommand("findReferences", this.findReferences);
         this.addCommand("gotoSymbol", this.gotoSymbol);
 		this.addCommand("locate", this.locate);
         this.addCommand("format", this.format);
@@ -541,6 +542,79 @@ eXide.edit.XQueryModeHelper = (function () {
         });
 	}
 	
+    Constr.prototype.findReferences = function (doc) {
+        var self = this;
+        var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
+        var code = this.editor.state.doc.toString();
+        var basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
+
+        fetch("api/query/references", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                query: code,
+                line: lead.row,
+                column: lead.column,
+                base: basePath
+            })
+        })
+        .then(function (response) { return response.json(); })
+        .then(function (refs) {
+            if (!Array.isArray(refs) || refs.length === 0) {
+                // Fall back to AST-based references
+                self.parseXQuery(doc);
+                refs = [];
+                var funcName = self.getFunctionAtCursor(doc, lead);
+                if (funcName) {
+                    // Find arity from the FunctionCall node
+                    var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+                    var fcall = astNode ? eXide.edit.XQueryUtils.findAncestor(astNode, "FunctionCall") : null;
+                    var arity = fcall ? (fcall.arity || 0) : 0;
+                    var visitor = new eXide.edit.FunctionCalls(funcName, arity, doc.ast);
+                    refs = visitor.getReferences().map(function (ref) {
+                        return { line: ref.pos.sl, column: ref.pos.sc, name: funcName, kind: "function" };
+                    });
+                    if (visitor.declaration) {
+                        refs.unshift({ line: visitor.declaration.pos.sl, column: visitor.declaration.pos.sc, name: funcName, kind: "function" });
+                    }
+                } else {
+                    var varName = self.getVariableAtCursor(doc, lead);
+                    if (varName) {
+                        var name = varName.replace(/^\$/, "");
+                        var varVisitor = new eXide.edit.VariableReferences(name, doc.ast);
+                        refs = varVisitor.getReferences().map(function (ref) {
+                            return { line: ref.pos.sl, column: ref.pos.sc, name: "$" + name, kind: "variable" };
+                        });
+                    }
+                }
+            }
+
+            if (!refs || refs.length === 0) {
+                eXide.util.message("No references found.");
+                return;
+            }
+
+            var items = refs.map(function (ref) {
+                return {
+                    label: (ref.kind === "variable" ? ref.name : ref.name) +
+                           " \u2014 line " + (ref.line + 1),
+                    line: ref.line,
+                    column: ref.column
+                };
+            });
+
+            eXide.util.QuickPicker.show(items, function (selected) {
+                if (selected) {
+                    editorUtils.gotoLine(self.editor, selected.line + 1, selected.column, true);
+                }
+            }, { placeholder: "References (" + items.length + " found)\u2026", parentEditor: self.editor });
+        })
+        .catch(function (err) {
+            console.error("[findReferences] error:", err);
+            eXide.util.message("Failed to find references.");
+        });
+    };
+
 	Constr.prototype.locate = function(doc, type, name) {
 		switch (type) {
 		case "function":
