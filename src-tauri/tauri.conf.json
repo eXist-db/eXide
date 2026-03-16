@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "org.exist-db.eXide-desktop",
   "build": {
-    "frontendDist": "../build",
+    "frontendDist": "../dist-desktop",
     "devUrl": "http://localhost:8080/exist/apps/eXide",
-    "beforeBuildCommand": "npm run build"
+    "beforeBuildCommand": "npm run build:desktop-assets"
   },
   "app": {
     "windows": [

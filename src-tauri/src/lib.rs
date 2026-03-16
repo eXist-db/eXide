@@ -13,6 +13,20 @@ pub fn run() {
                         .build(),
                 )?;
             }
+
+            // In release mode, load eXide from the configured eXist-db server
+            // instead of bundled assets (eXide requires a server backend).
+            #[cfg(not(debug_assertions))]
+            {
+                let server_url = std::env::var("EXIDE_SERVER")
+                    .unwrap_or_else(|_| "http://localhost:8080/exist/apps/eXide".to_string());
+
+                if let Some(window) = app.get_webview_window("main") {
+                    let url: tauri::Url = server_url.parse().expect("Invalid server URL");
+                    let _ = window.navigate(url);
+                }
+            }
+
             Ok(())
         })
         .run(tauri::generate_context!())

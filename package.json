@@ -18,6 +18,7 @@
 		"generate-parsers": "npm run generate-parser && npm run generate-parser-40",
 		"cypress": "cypress run",
 		"dev:desktop": "npx @tauri-apps/cli dev",
+		"build:desktop-assets": "npm run bundle-cm6 && npm run bundle-prettier && node scripts/build.js prepare && node scripts/build-desktop.js",
 		"build:desktop": "npx @tauri-apps/cli build"
 	},
 	"repository": {
