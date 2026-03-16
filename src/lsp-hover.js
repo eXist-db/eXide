@@ -54,7 +54,10 @@ eXide.edit.LspHover = (function () {
                 base: basePath
             })
         })
-        .then(function (response) { return response.json(); })
+        .then(function (response) {
+            if (!response.ok) return null;
+            return response.json();
+        })
         .then(function (data) {
             if (!data || !data.contents) {
                 // Fallback: look up local function signature from AST

@@ -202,6 +202,25 @@ declare function query:definition($request as map(*)) {
 };
 
 (:~
+ : POST /api/query/references — Find all references to symbol at position.
+ :)
+declare function query:references($request as map(*)) {
+    let $body := $request?body
+    let $xquery := $body?query
+    let $line := xs:integer($body?line)
+    let $column := xs:integer($body?column)
+    let $base := ($body?base, "xmldb:exist:///db")[1]
+    return
+        if ($query:lsp-available) then
+            let $refs-fn := function-lookup(QName($query:lsp-ns, "references"), 4)
+            return
+                if (exists($refs-fn)) then
+                    $refs-fn($xquery, $line, $column, $base)
+                else array {}
+        else array {}
+};
+
+(:~
  : GET /api/query/{id}/results — Paginated result items.
  : Replaces session.xq result retrieval.
  :)

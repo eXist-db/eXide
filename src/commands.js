@@ -86,7 +86,8 @@ eXide.edit.commands = (function () {
         extractVariable: "Extract Variable", openTab: "Switch Editor",
         toggleQueryResults: "Toggle Results", commandPalette: "Command Palette",
         findFiles: "Find in Files",
-        toggleDiagnostics: "Toggle Diagnostics Panel"
+        toggleDiagnostics: "Toggle Diagnostics Panel",
+        findReferences: "Find All References"
     };
 
     function humanName(id) {
@@ -187,6 +188,10 @@ eXide.edit.commands = (function () {
                     });
                     addCommand("gotoDefinition", getKeyBinding(kb, "gotoDefinition"), function() {
                         parent.exec("gotoDefinition");
+                        return true;
+                    });
+                    addCommand("findReferences", getKeyBinding(kb, "findReferences"), function() {
+                        parent.exec("findReferences");
                         return true;
                     });
                     addCommand("gotoSymbol", getKeyBinding(kb, "gotoSymbol"), function() {

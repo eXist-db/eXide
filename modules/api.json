@@ -615,6 +615,45 @@
                 }
             }
         },
+        "/api/query/references": {
+            "post": {
+                "summary": "Find all references to symbol at position",
+                "operationId": "query:references",
+                "tags": [
+                    "query"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["query", "line", "column"],
+                                "properties": {
+                                    "query": { "type": "string" },
+                                    "line": { "type": "integer" },
+                                    "column": { "type": "integer" },
+                                    "base": { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Array of reference locations",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": { "type": "object" }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/query/{id}/results": {
             "get": {
                 "summary": "Retrieve paginated query results",

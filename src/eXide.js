@@ -1962,6 +1962,9 @@ eXide.app = (function(util) {
             menu.click("#menu-navigate-definition", function () {
                 editor.exec("gotoDefinition");
             });
+            menu.click("#menu-navigate-references", function () {
+                editor.exec("findReferences");
+            });
             menu.click("#menu-navigate-info", function() {
                 editor.exec("showFunctionDoc");
             });
