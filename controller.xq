@@ -20,7 +20,7 @@ declare variable $local:forwarded-for := request:get-header("X-Forwarded-URI");
 declare variable $local:wants-json := tokenize(request:get-header('Accept'), ', ?') = 'application/json';
 
 declare function local:get-user () as xs:string? {
-    let $login := login:set-user($local:login-domain, "P7D", false())
+    let $login := login:set-user($local:login-domain, xs:dayTimeDuration("P7D"), false())
     let $user-id := request:get-attribute($local:login-domain || ".user")
     return $user-id
 };

@@ -61,7 +61,7 @@ jobs:
           exit 1
 
       - name: Run Cypress Integration Tests
-        run: npx cypress run
+        run: npx cypress run --spec 'cypress/e2e/*.cy.js'
 
       - name: Upload Cypress Screenshots (on failure)
         uses: actions/upload-artifact@v7

@@ -376,9 +376,7 @@ declare %private function packages:abbrev-for-collection($path as xs:string) as 
         (for $app in xmldb:get-child-collections($root)
          let $col := $root || $app
          let $expath := doc($col || "/expath-pkg.xml")/expath:package
-         let $repo-meta := doc($col || "/repo.xml")/repo:meta
-         let $target := "/db/" || string($repo-meta/repo:target)
-         where exists($expath) and starts-with($path, $target)
+         where exists($expath) and starts-with($path, $col)
          return string($expath/@abbrev)
         )[1]
 };

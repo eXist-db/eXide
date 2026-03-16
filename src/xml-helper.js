@@ -81,6 +81,10 @@ eXide.edit.XMLModeHelper = (function () {
         var siblingStack = [{}]; // stack of { tagName: count } maps per depth
         tree.iterate({
             enter: function(node) {
+                // Skip SelfClosingTag when it's a child of Element (already handled)
+                if (node.name === "SelfClosingTag" && node.node.parent && node.node.parent.name === "Element") {
+                    return false;
+                }
                 if (node.name === "Element" || node.name === "SelfClosingTag") {
                     var tagNameNode = null;
                     var attrs = [];
@@ -316,7 +320,18 @@ eXide.edit.XMLModeHelper = (function () {
             var isSelfClose = match[0].charAt(match[0].length - 2) === "/";
             var tagName = match[1];
 
-            if (isSelfClose) continue;
+            if (isSelfClose) {
+                if (cursorOffset >= tagStart && cursorOffset <= tagEnd) {
+                    var nameStart = tagStart + 1;
+                    startTag = {
+                        name: tagName,
+                        nameOffset: nameStart,
+                        offset: tagStart
+                    };
+                    break;
+                }
+                continue;
+            }
 
             if (!isClose) {
                 var nameStart = tagStart + 1; // after '<'
@@ -369,14 +384,38 @@ eXide.edit.XMLModeHelper = (function () {
     };
 
     Constr.prototype.rename = function(doc) {
-        var tags = this.findStartEndTags(doc, true);
-        if (!tags.start) return;
+        var tags = this.findStartEndTags(doc);
+        if (!tags.start) {
+            eXide.util.message("Place cursor inside an element tag first.");
+            return;
+        }
 
-        var from = tags.start.nameOffset;
-        var to = from + tags.start.name.length;
-        this.editor.dispatch({
-            selection: { anchor: from, head: to }
-        });
+        var startFrom = tags.start.nameOffset;
+        var startTo = startFrom + tags.start.name.length;
+
+        if (tags.end) {
+            // Multi-cursor: select both open and close tag names
+            var endFrom = tags.end.nameOffset;
+            var endTo = endFrom + tags.end.name.length;
+            var ranges = [
+                CM6.EditorSelection.range(startFrom, startTo),
+                CM6.EditorSelection.range(endFrom, endTo)
+            ];
+            ranges.sort(function(a, b) { return a.from - b.from; });
+            this.editor.dispatch({
+                selection: CM6.EditorSelection.create(ranges)
+            });
+            this.editor.dispatch({
+                effects: CM6.EditorView.scrollIntoView(startFrom, { y: "center" })
+            });
+            editorUtils.flashLine(this.editor, startFrom);
+        } else {
+            // Self-closing or unmatched: select just the open tag name
+            this.editor.dispatch({
+                selection: { anchor: startFrom, head: startTo }
+            });
+            editorUtils.flashLine(this.editor, startFrom);
+        }
         this.editor.focus();
     };
 

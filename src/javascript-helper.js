@@ -92,23 +92,46 @@ eXide.edit.JavascriptModeHelper = (function () {
 
     Constr.prototype.gotoSymbol = function(doc) {
         var self = this;
-        var items = [];
-        for (var i = 0; i < doc.functions.length; i++) {
-            items.push({
-                label: doc.functions[i].name,
-                name: doc.functions[i].name,
-                type: doc.functions[i].type,
-                row: doc.functions[i].row
+        // Ensure outline is populated
+        if (!doc.functions || doc.functions.length === 0) {
+            doc.functions = [];
+            this.createOutline(doc, function() {
+                self._showSymbolPicker(doc);
             });
+        } else {
+            this._showSymbolPicker(doc);
         }
-        if (items.length > 0) {
-            eXide.util.QuickPicker.show(items, function (selected) {
-                if (selected) {
-                    self.parent.history.push(doc.getPath(), doc.getCurrentLine());
+    };
+
+    Constr.prototype._showSymbolPicker = function(doc) {
+        var self = this;
+        if (!doc.functions || doc.functions.length === 0) {
+            eXide.util.message("No symbols found.");
+            return;
+        }
+        var items = doc.functions.map(function(f) {
+            return {
+                label: f.signature || f.name,
+                name: f.name,
+                row: f.row,
+                from: f.from
+            };
+        });
+        eXide.util.QuickPicker.show(items, function (selected) {
+            if (selected) {
+                self.parent.history.push(doc.getPath(), doc.getCurrentLine());
+                if (selected.from !== undefined) {
+                    self.editor.dispatch({ selection: { anchor: selected.from } });
+                    self.editor.dispatch({
+                        effects: CM6.EditorView.scrollIntoView(selected.from, { y: "center" })
+                    });
+                    editorUtils.flashLine(self.editor, selected.from);
+                    self.editor.focus();
+                } else {
                     editorUtils.gotoLine(self.editor, selected.row + 1);
                 }
-            }, { placeholder: "Go to symbol\u2026", parentEditor: self.editor });
-        }
+            }
+        }, { placeholder: "Go to symbol\u2026", parentEditor: self.editor });
     };
 
     Constr.prototype.gotoDefinition = function (doc) {

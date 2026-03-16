@@ -375,15 +375,13 @@ body {
 }
 
 #splash {
+    display: none;
     position: absolute;
     top: 0;
     left: 0;
     bottom: 0;
     right: 0;
     background: #F3F3F3;
-    /*background-image: url(../images/logo.png);
-    background-position: center center;
-    background-repeat: no-repeat;*/
     z-index: 10000;
 }
 
@@ -583,17 +581,6 @@ a:link, a:visited {
     font-style: italic;
     line-height: 12px !important;
     background: #3182ce;
-}
-
-/* Override CM6's default green bracket matching for a subtler look */
-.cm-matchingBracket {
-    background: rgba(43, 108, 176, 0.12) !important;
-    outline: 1px solid rgba(43, 108, 176, 0.3);
-}
-
-body.dark .cm-matchingBracket {
-    background: rgba(99, 179, 237, 0.12) !important;
-    outline-color: rgba(99, 179, 237, 0.3);
 }
 
 /* Matching tag highlight for XML/HTML */

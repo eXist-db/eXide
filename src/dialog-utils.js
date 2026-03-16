@@ -154,6 +154,9 @@ eXide.util.DialogManager = (function() {
                 if (isModal) {
                     dialog.showModal();
                     if (options.height) dialog.style.display = "flex";
+                    // Focus the first action button, not the title bar close ×
+                    var primaryBtn = buttonBar.querySelector("button");
+                    if (primaryBtn) primaryBtn.focus();
                 } else {
                     dialog.style.display = "flex";
                     dialog.setAttribute("open", "");

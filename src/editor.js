@@ -251,8 +251,18 @@ eXide.edit.Editor = (function () {
             CM6.highlightSpecialChars(),
             CM6.history(),
             CM6.foldGutter(),
+            EditorState.allowMultipleSelections.of(true),
             CM6.bracketMatching(),
-            CM6.highlightSelectionMatches({ highlightWordAroundCursor: true }),
+            EditorView.theme({
+                "&.cm-focused .cm-matchingBracket": {
+                    backgroundColor: "rgba(43, 108, 176, 0.15)",
+                    outline: "1px solid rgba(43, 108, 176, 0.3)"
+                },
+                "&.cm-focused .cm-nonmatchingBracket": {
+                    backgroundColor: "rgba(220, 38, 38, 0.15)"
+                }
+            }),
+            CM6.highlightSelectionMatches(),
             autoPairCompartment.of([CM6.closeBrackets(), keymap.of(CM6.closeBracketsKeymap)]),
             CM6.indentOnInput(),
             CM6.syntaxHighlighting(CM6.defaultHighlightStyle, { fallback: true }),
@@ -349,6 +359,11 @@ eXide.edit.Editor = (function () {
                             var steps = [];
                             var cur = treeNode;
                             while (cur) {
+                                // Skip SelfClosingTag when parent is Element (avoid double-counting)
+                                if (cur.name === "SelfClosingTag" && cur.parent && cur.parent.name === "Element") {
+                                    cur = cur.parent;
+                                    continue;
+                                }
                                 if (cur.name === "Element" || cur.name === "SelfClosingTag") {
                                     // Find TagName child
                                     var child = cur.firstChild;
