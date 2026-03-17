@@ -2,6 +2,7 @@ use tauri::Manager;
 use tauri::menu::{Menu, MenuItemBuilder, SubmenuBuilder, PredefinedMenuItem};
 use std::fs;
 use std::path::Path;
+use http::Response;
 
 #[derive(serde::Serialize, Clone)]
 struct DirEntry {
@@ -42,6 +43,47 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_store::Builder::default().build())
+        .register_asynchronous_uri_scheme_protocol("localfs", |_ctx, request, responder| {
+            // Custom protocol: localfs://read/<absolute-path>
+            // Allows the webview to fetch local file contents
+            let uri = request.uri().to_string();
+            let path = uri.strip_prefix("localfs://read").unwrap_or("").to_string();
+            let path = urlencoding::decode(&path).unwrap_or_else(|_| path.clone().into()).to_string();
+
+            std::thread::spawn(move || {
+                match fs::read(&path) {
+                    Ok(content) => {
+                        let mime = if path.ends_with(".xml") || path.ends_with(".xsl") || path.ends_with(".xsd") || path.ends_with(".xconf") {
+                            "application/xml"
+                        } else if path.ends_with(".html") || path.ends_with(".htm") {
+                            "text/html"
+                        } else if path.ends_with(".json") {
+                            "application/json"
+                        } else if path.ends_with(".css") {
+                            "text/css"
+                        } else if path.ends_with(".js") {
+                            "application/javascript"
+                        } else {
+                            "text/plain"
+                        };
+                        let response = http::Response::builder()
+                            .status(200)
+                            .header("Content-Type", mime)
+                            .header("Access-Control-Allow-Origin", "*")
+                            .body(content)
+                            .unwrap();
+                        responder.respond(response);
+                    }
+                    Err(e) => {
+                        let response = http::Response::builder()
+                            .status(404)
+                            .body(format!("Error: {}", e).into_bytes())
+                            .unwrap();
+                        responder.respond(response);
+                    }
+                }
+            });
+        })
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(

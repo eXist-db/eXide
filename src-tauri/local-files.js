@@ -124,11 +124,9 @@
                     }
                 });
             } else {
-                li.addEventListener("dblclick", function (e) {
+                li.addEventListener("click", function (e) {
                     e.stopPropagation();
-                    // Store pending file for Rust to read via File > Open Local File
-                    window.__exideLocalFiles._pendingFile = { path: entry.path, name: entry.name };
-                    eXide.util.message("Opening " + entry.name + "\u2026");
+                    openLocalFile(entry.path, entry.name);
                 });
             }
 
@@ -161,6 +159,33 @@
         doc.saved = true;
         doc._localFile = true;
         editor.updateTabStatus(doc.path, doc);
+    }
+
+    // ── Open a local file via the localfs:// custom protocol ──
+    function openLocalFile(path, name) {
+        var url = "localfs://read" + encodeURI(path);
+        fetch(url)
+            .then(function (resp) {
+                if (!resp.ok) throw new Error("HTTP " + resp.status);
+                return resp.text();
+            })
+            .then(function (content) {
+                var editor = eXide.app.getEditor();
+                editor.newDocument(null, guessMode(name));
+                var view = editor.editor;
+                view.dispatch({
+                    changes: { from: 0, to: view.state.doc.length, insert: content }
+                });
+                var doc = editor.getActiveDocument();
+                doc.name = name;
+                doc.path = path;
+                doc.saved = true;
+                doc._localFile = true;
+                editor.updateTabStatus(doc.path, doc);
+            })
+            .catch(function (err) {
+                try { eXide.util.error("Could not open file: " + err.message); } catch(e) {}
+            });
     }
 
     function guessMode(filename) {
