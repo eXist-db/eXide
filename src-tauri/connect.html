@@ -173,9 +173,23 @@
             });
         }
 
-        connectBtn.addEventListener("click", doConnect);
+        connectBtn.addEventListener("click", function () {
+            if (connectAbort) {
+                // Cancel in progress
+                connectAbort.abort();
+                connectAbort = null;
+                statusEl.className = "status";
+                statusEl.textContent = "Cancelled.";
+                connectBtn.textContent = "Connect";
+                connectBtn.disabled = false;
+            } else {
+                doConnect();
+            }
+        });
         serverInput.addEventListener("keydown", function(e) { if (e.key === "Enter") doConnect(); });
         pathInput.addEventListener("keydown", function(e) { if (e.key === "Enter") doConnect(); });
+
+        var connectAbort = null;
 
         function doConnect() {
             var server = serverInput.value.replace(/\/+$/, "");
@@ -185,20 +199,45 @@
 
             statusEl.className = "status";
             statusEl.textContent = "Connecting\u2026";
-            connectBtn.disabled = true;
+            connectBtn.textContent = "Cancel";
+            connectBtn.disabled = false;
 
-            // Save to recent servers
-            if (recentServers.indexOf(fullUrl) === -1) {
-                recentServers.unshift(fullUrl);
-                if (recentServers.length > 5) recentServers.pop();
-                localStorage.setItem("exide-recent-servers", JSON.stringify(recentServers));
-            }
+            // Abort any previous attempt
+            if (connectAbort) connectAbort.abort();
+            connectAbort = new AbortController();
 
-            statusEl.className = "status success";
-            statusEl.textContent = "Connecting\u2026";
+            // Test if the server is reachable before navigating
+            var timeout = setTimeout(function () {
+                connectAbort.abort();
+                statusEl.className = "status error";
+                statusEl.textContent = "Connection timed out after 8 seconds.";
+                connectBtn.textContent = "Retry";
+                connectBtn.disabled = false;
+                connectAbort = null;
+            }, 8000);
 
-            // Navigate directly — the server will handle auth
-            window.location.href = fullUrl;
+            fetch(fullUrl, { mode: "no-cors", signal: connectAbort.signal })
+                .then(function () {
+                    clearTimeout(timeout);
+                    // Reachable — save and navigate
+                    if (recentServers.indexOf(fullUrl) === -1) {
+                        recentServers.unshift(fullUrl);
+                        if (recentServers.length > 5) recentServers.pop();
+                        localStorage.setItem("exide-recent-servers", JSON.stringify(recentServers));
+                    }
+                    statusEl.className = "status success";
+                    statusEl.textContent = "Connected!";
+                    window.location.href = fullUrl;
+                })
+                .catch(function (err) {
+                    clearTimeout(timeout);
+                    if (err.name === "AbortError") return; // user cancelled or timeout
+                    statusEl.className = "status error";
+                    statusEl.textContent = "Could not reach server. Check the URL and try again.";
+                    connectBtn.textContent = "Retry";
+                    connectBtn.disabled = false;
+                    connectAbort = null;
+                });
         }
 
         // Auto-focus

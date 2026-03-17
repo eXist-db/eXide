@@ -177,11 +177,17 @@
                     changes: { from: 0, to: view.state.doc.length, insert: content }
                 });
                 var doc = editor.getActiveDocument();
+                var oldPath = doc.path;
                 doc.name = name;
                 doc.path = path;
                 doc.saved = true;
                 doc._localFile = true;
-                editor.updateTabStatus(doc.path, doc);
+                // Update the tab label — find tab by old path and update
+                var tabLink = document.querySelector('#tabs a[title="' + oldPath + '"]');
+                if (tabLink) {
+                    tabLink.textContent = name;
+                    tabLink.title = path;
+                }
             })
             .catch(function (err) {
                 try { eXide.util.error("Could not open file: " + err.message); } catch(e) {}
