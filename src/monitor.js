@@ -130,25 +130,102 @@ eXide.app.Monitor = (function () {
         if (this.polling) return;
         this.polling = true;
 
-        // Try WebSocket first for real-time streaming
+        // Try WebSocket-assisted monitoring
         if (typeof eXide.ws !== "undefined" && eXide.ws.isConnected()) {
             var self = this;
             eXide.ws.on("exist/metrics", function (data) {
-                if (data && self.polling) self.update(data);
+                if (data && self.polling) self.updateFromWs(data);
             });
-            eXide.ws.on("exist/queryStarted", function (data) {
-                if (self.polling) self.addRunningQuery(data);
-            });
-            eXide.ws.on("exist/queryEnded", function (data) {
-                if (self.polling) self.removeRunningQuery(data);
-            });
-            eXide.ws.notify("exist/subscribe", { channels: ["metrics", "queries"] });
             console.log("[monitor] Using WebSocket for real-time updates");
+            // Start polling via the WS push endpoint instead of JMX
+            this.pollWs();
             return;
         }
 
-        // Fallback to HTTP polling
+        // Fallback to HTTP polling via JMX
         this.fetchToken();
+    };
+
+    /**
+     * Poll via the WebSocket push endpoint. Triggers a server-side ws:send()
+     * which pushes metrics to all WebSocket subscribers including this client.
+     */
+    Constr.prototype.pollWs = function () {
+        var self = this;
+        if (!self.polling) return;
+
+        fetch("api/ws/monitor", { method: "POST", headers: { "Content-Type": "application/json" } })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                // The data also arrives via WebSocket, but use HTTP response as fallback
+                if (!self._wsReceived && data) self.updateFromWs(data);
+                self._wsReceived = false;
+                if (self.polling) {
+                    self.timer = setTimeout(function () { self.pollWs(); }, self.pollInterval);
+                }
+            })
+            .catch(function () {
+                if (self.polling) {
+                    self.timer = setTimeout(function () { self.pollWs(); }, 5000);
+                }
+            });
+    };
+
+    /**
+     * Update the monitor UI from WebSocket-pushed metrics data.
+     */
+    Constr.prototype.updateFromWs = function (data) {
+        this._wsReceived = true;
+
+        // Memory
+        if (data.memory) {
+            var used = formatMB(data.memory.used);
+            var max = formatMB(data.memory.max);
+            var usedPct = Math.round((data.memory.used / data.memory.max) * 100);
+            var totalPct = Math.round((data.memory.total / data.memory.max) * 100);
+
+            var memNums = document.getElementById("mon-mem-nums");
+            if (memNums) memNums.textContent = used + " / " + max + " MB";
+
+            var memUsed = document.getElementById("mon-mem-used");
+            if (memUsed) memUsed.style.width = usedPct + "%";
+
+            var memCommitted = document.getElementById("mon-mem-committed");
+            if (memCommitted) memCommitted.style.width = totalPct + "%";
+        }
+
+        // Running queries
+        var queries = data.queries || [];
+        var runBody = document.getElementById("mon-running-body");
+        if (runBody) {
+            if (queries.length === 0) {
+                runBody.innerHTML = '<tr><td colspan="3" class="mon-empty">none</td></tr>';
+            } else {
+                runBody.innerHTML = queries.map(function (q) {
+                    var elapsed = q.elapsed ? (parseInt(q.elapsed) / 1000).toFixed(1) + "s" : "";
+                    return '<tr class="mon-running">' +
+                        '<td><button class="mon-kill" data-id="' + escapeHtml(q.id) + '" title="Kill query">x</button></td>' +
+                        '<td>' + escapeHtml(elapsed) + '</td>' +
+                        '<td class="mon-source">' + escapeHtml(q.sourceKey || "") + '</td>' +
+                        '</tr>';
+                }).join("");
+            }
+
+            var runCount = document.getElementById("mon-running-count");
+            if (runCount) runCount.textContent = queries.length;
+        }
+
+        // Uptime
+        var upChip = document.getElementById("mon-chip-uptime");
+        if (upChip && data.uptime) {
+            // Parse ISO duration PT...
+            var match = String(data.uptime).match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+            if (match) {
+                var h = parseInt(match[1] || 0);
+                var m = parseInt(match[2] || 0);
+                upChip.innerHTML = "Up <b>" + h + "h " + m + "m</b>";
+            }
+        }
     };
 
     Constr.prototype.stop = function () {

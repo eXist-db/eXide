@@ -24,10 +24,19 @@ declare namespace ws="http://exist-db.org/xquery/websocket";
 declare function wsmon:push-status($request as map(*)) {
     let $running-queries :=
         try { system:get-running-xqueries() } catch * { () }
+    let $mem := system:get-memory-max()
+    let $mem-free := system:get-memory-free()
+    let $mem-total := system:get-memory-total()
     let $data := map {
         "type": "exist/metrics",
         "version": system:get-version(),
         "uptime": system:get-uptime(),
+        "memory": map {
+            "max": $mem,
+            "total": $mem-total,
+            "free": $mem-free,
+            "used": $mem-total - $mem-free
+        },
         "runningQueries": count($running-queries//system:query),
         "queries": array {
             for $query in $running-queries//system:query
@@ -36,7 +45,13 @@ declare function wsmon:push-status($request as map(*)) {
                 "sourceType": string($query/@sourceType),
                 "started": string($query/@started),
                 "terminating": string($query/@terminating),
-                "sourceKey": string($query/system:sourceKey)
+                "sourceKey": string($query/system:sourceKey),
+                "elapsed": string(
+                    if ($query/@started castable as xs:dateTime) then
+                        let $started := xs:dateTime($query/@started)
+                        return round((current-dateTime() - $started) div xs:dayTimeDuration("PT0.001S"))
+                    else 0
+                )
             }
         }
     }
