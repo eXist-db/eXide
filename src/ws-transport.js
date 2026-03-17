@@ -53,6 +53,9 @@ eXide.ws = (function () {
         };
 
         socket.onmessage = function (event) {
+            // Ignore keepalive pings from eXist-db WebSocket
+            if (event.data === "ping") return;
+
             try {
                 var msg = JSON.parse(event.data);
 
