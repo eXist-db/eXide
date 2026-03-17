@@ -130,19 +130,37 @@ eXide.app.Monitor = (function () {
         if (this.polling) return;
         this.polling = true;
 
-        // Try WebSocket-assisted monitoring
-        if (typeof eXide.ws !== "undefined" && eXide.ws.isConnected()) {
-            var self = this;
+        var self = this;
+        this._useWs = false;
+
+        // Register WebSocket listener regardless of current connection state
+        if (typeof eXide.ws !== "undefined") {
             eXide.ws.on("exist/metrics", function (data) {
                 if (data && self.polling) self.updateFromWs(data);
             });
-            console.log("[monitor] Using WebSocket for real-time updates");
-            // Start polling via the WS push endpoint instead of JMX
-            this.pollWs();
-            return;
+
+            if (eXide.ws.isConnected()) {
+                console.log("[monitor] Using WebSocket for real-time updates");
+                this._useWs = true;
+                this.pollWs();
+                return;
+            }
+
+            // WebSocket not yet connected — listen for connection and switch
+            eXide.ws.on("connected", function () {
+                if (self.polling && !self._useWs) {
+                    console.log("[monitor] Switching to WebSocket");
+                    self._useWs = true;
+                    if (self.timer) {
+                        clearTimeout(self.timer);
+                        self.timer = null;
+                    }
+                    self.pollWs();
+                }
+            });
         }
 
-        // Fallback to HTTP polling via JMX
+        // Start with HTTP polling; will switch to WebSocket when connected
         this.fetchToken();
     };
 
@@ -238,6 +256,7 @@ eXide.app.Monitor = (function () {
 
     Constr.prototype.fetchToken = function () {
         var self = this;
+        if (self._useWs) return; // WebSocket took over
         fetch("api/admin/status")
             .then(function (r) { return r.json(); })
             .then(function (data) {
@@ -256,7 +275,7 @@ eXide.app.Monitor = (function () {
 
     Constr.prototype.poll = function () {
         var self = this;
-        if (!self.polling) return;
+        if (!self.polling || self._useWs) return;
 
         var context = eXide.configuration.context || "";
         var url = context + "/status?" + CATEGORIES + "&token=" + self.token;
