@@ -72,6 +72,35 @@ describe('Monitor panel', () => {
     })
   })
 
+  it('shows running query and allows killing it', () => {
+    cy.get('#toggle-monitor').click()
+    cy.get('.panel-east').should('be.visible')
+    cy.wait(3000)
+
+    // Run a slow query in the background via the editor
+    cy.window().then((win) => {
+      var editor = win.eXide.app.getEditor()
+      var view = editor.editor
+      view.dispatch({
+        changes: { from: 0, to: view.state.doc.length, insert: 'util:wait(10000)' }
+      })
+    })
+
+    // Click Run to start the query
+    cy.get('#run').click()
+
+    // Wait for the running query to appear in the monitor
+    cy.get('#mon-running-body .mon-running', { timeout: 5000 })
+      .should('have.length.at.least', 1)
+
+    // Click the kill button
+    cy.get('#mon-running-body .mon-kill').first().click()
+
+    // The query should be removed from running queries shortly
+    cy.get('#mon-running-body .mon-running', { timeout: 10000 })
+      .should('have.length', 0)
+  })
+
   it('restores monitor on reload if it was open', () => {
     cy.get('#toggle-monitor').click()
     cy.wait(3000)

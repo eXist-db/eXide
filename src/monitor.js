@@ -233,10 +233,33 @@ eXide.app.Monitor = (function () {
             if (runCount) runCount.textContent = queries.length;
         }
 
+        // Recent queries
+        var recentQueries = data.recentQueries || [];
+        var recentBody = document.getElementById("mon-recent-body");
+        if (recentBody) {
+            if (recentQueries.length === 0) {
+                recentBody.innerHTML = '<tr><td colspan="2" class="mon-empty">none</td></tr>';
+            } else {
+                recentBody.innerHTML = recentQueries.map(function (q) {
+                    var ms = parseInt(q.mostRecentExecutionDuration || 0);
+                    var color = ms > 100 ? "#c0392b" : "#27ae60";
+                    return '<tr>' +
+                        '<td style="color:' + color + ';font-weight:700">' + ms + '</td>' +
+                        '<td class="mon-source">' + escapeHtml(q.sourceKey || "") + '</td>' +
+                        '</tr>';
+                }).join("");
+            }
+        }
+
+        // DB brokers
+        if (data.db) {
+            var dbChip = document.getElementById("mon-chip-db");
+            if (dbChip) dbChip.innerHTML = "DB <b>" + (data.db.activeBrokers || "--") + "/" + (data.db.maxBrokers || "--") + "</b>";
+        }
+
         // Uptime
         var upChip = document.getElementById("mon-chip-uptime");
         if (upChip && data.uptime) {
-            // Parse ISO duration PT...
             var match = String(data.uptime).match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
             if (match) {
                 var h = parseInt(match[1] || 0);
