@@ -1629,6 +1629,33 @@
                     }
                 }
             }
+        },
+        "/api/ws/monitor": {
+            "post": {
+                "operationId": "wsmon:push-status",
+                "summary": "Push monitoring snapshot to WebSocket subscribers",
+                "responses": {
+                    "200": {
+                        "description": "Monitoring data (also pushed via WebSocket)",
+                        "content": { "application/json": { "schema": { "type": "object" } } }
+                    }
+                }
+            }
+        },
+        "/api/ws/diagnostics": {
+            "post": {
+                "operationId": "wsmon:push-diagnostics",
+                "summary": "Push diagnostics to WebSocket subscribers",
+                "requestBody": {
+                    "content": { "application/json": { "schema": { "type": "object" } } }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Diagnostics data (also pushed via WebSocket)",
+                        "content": { "application/json": { "schema": { "type": "object" } } }
+                    }
+                }
+            }
         }
     }
 }

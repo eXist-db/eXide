@@ -49,6 +49,8 @@ eXide.ws = (function () {
             connected = true;
             reconnectDelay = 1000;
             console.log("[ws] Connected");
+            // Subscribe to the eXide channel for monitoring and LSP push events
+            socket.send(JSON.stringify({ channel: "eXide" }));
             emit("connected", {});
         };
 
@@ -58,6 +60,13 @@ eXide.ws = (function () {
 
             try {
                 var msg = JSON.parse(event.data);
+                // console:log format: { timestamp, source, line, column, message }
+                // ws:send format: direct JSON object with "type" field
+                // Handle both formats
+                if (msg.type) {
+                    // Structured message with type — emit as notification
+                    emit(msg.type, msg);
+                }
 
                 // Response to a request
                 if (msg.id !== undefined && pendingRequests[msg.id]) {

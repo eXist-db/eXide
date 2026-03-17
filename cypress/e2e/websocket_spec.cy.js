@@ -47,6 +47,36 @@ describe('WebSocket transport', () => {
     })
   })
 
+  it('receives monitoring data via WebSocket push', function () {
+    cy.wait(2000)
+    cy.window().then((win) => {
+      if (!win.eXide.ws.isConnected()) {
+        this.skip()
+      }
+
+      // Set up a listener for monitoring events
+      var received = null
+      win.eXide.ws.on("exist/metrics", function (data) {
+        received = data
+      })
+
+      // Trigger the monitoring push via HTTP (which pushes to WebSocket)
+      cy.request({
+        method: 'POST',
+        url: '/eXide/api/ws/monitor',
+        headers: { 'Content-Type': 'application/json' },
+        failOnStatusCode: false
+      }).then(() => {
+        // Give WebSocket a moment to deliver
+        cy.wait(500).then(() => {
+          expect(received).to.not.be.null
+          expect(received.type).to.eq("exist/metrics")
+          expect(received.version).to.be.a("string")
+        })
+      })
+    })
+  })
+
   it('falls back gracefully when WebSocket unavailable', () => {
     // Even if WS isn't connected, eXide should still function
     cy.get('.cm-editor').should('exist')
