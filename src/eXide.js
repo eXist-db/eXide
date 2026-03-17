@@ -185,6 +185,34 @@ eXide.app = (function(util) {
                     app.updateLayoutTop();
                     editor.init();
 
+                    // Connect WebSocket for real-time LSP and monitoring
+                    if (typeof eXide.ws !== "undefined" && eXide.ws.autoConnect) {
+                        eXide.ws.autoConnect();
+
+                        // Listen for pushed diagnostics from the server
+                        eXide.ws.on("textDocument/publishDiagnostics", function (data) {
+                            if (!data || !data.uri) return;
+                            var doc = editor.getDocument(data.uri);
+                            if (!doc) return;
+                            var diagnostics = data.diagnostics;
+                            if (!diagnostics || !Array.isArray(diagnostics) || diagnostics.length === 0) {
+                                // Clear errors for this document
+                                if (doc === editor.getActiveDocument()) {
+                                    editor.updateStatus("");
+                                    editor.clearErrors();
+                                }
+                                return;
+                            }
+                            // Apply first error to the active document
+                            if (doc === editor.getActiveDocument()) {
+                                var err = diagnostics[0];
+                                if (err && err.message) {
+                                    editor.updateStatus(err.message, doc.getPath() + "#" + err.line);
+                                }
+                            }
+                        });
+                    }
+
                     // Fetch registered module prefixes for static analysis
                     fetch("api/editor/modules")
                         .then(function(r) { return r.json(); })

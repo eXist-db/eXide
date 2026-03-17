@@ -21,6 +21,7 @@ import module namespace search="http://exist-db.org/apps/eXide/api/search" at "s
 import module namespace admin="http://exist-db.org/apps/eXide/api/admin" at "admin.xqm";
 import module namespace test="http://exist-db.org/apps/eXide/api/test" at "test.xqm";
 import module namespace sync="http://exist-db.org/apps/eXide/api/sync" at "sync.xqm";
+import module namespace wsmon="http://exist-db.org/apps/eXide/api/ws-monitor" at "ws-monitor.xqm";
 
 declare variable $local:definitions := "modules/api.json";
 

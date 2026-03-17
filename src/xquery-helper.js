@@ -168,7 +168,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		fetch("api/query/compile", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ query: code, base: basePath })
+			body: JSON.stringify({ query: code, base: basePath, uri: doc.getPath() || "untitled" })
 		})
 		.then(function(response) { return response.json(); })
 		.then(function(data) {

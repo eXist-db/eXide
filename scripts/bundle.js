@@ -46,3 +46,4 @@ import '../src/layout.js';
 import '../src/dnd.js';
 import '../src/error-status-ui.js';
 import '../src/tag-matching.js';
+import '../src/ws-transport.js';

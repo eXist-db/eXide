@@ -122,6 +122,15 @@ eXide.app.Monitor = (function () {
                         eXide.app.openDocument({ path: path });
                     }
                 }
+                var killBtn = e.target.closest(".mon-kill");
+                if (killBtn) {
+                    e.preventDefault();
+                    var id = killBtn.getAttribute("data-id");
+                    if (id) {
+                        self.killQuery(id);
+                        eXide.util.message("Killing query " + id + "...");
+                    }
+                }
             });
         }
     };
@@ -129,7 +138,144 @@ eXide.app.Monitor = (function () {
     Constr.prototype.start = function () {
         if (this.polling) return;
         this.polling = true;
+
+        var self = this;
+        this._useWs = false;
+
+        // Register WebSocket listener regardless of current connection state
+        if (typeof eXide.ws !== "undefined") {
+            eXide.ws.on("exist/metrics", function (data) {
+                if (data && self.polling) self.updateFromWs(data);
+            });
+
+            if (eXide.ws.isConnected()) {
+                console.log("[monitor] Using WebSocket for real-time updates");
+                this._useWs = true;
+                this.pollWs();
+                return;
+            }
+
+            // WebSocket not yet connected — listen for connection and switch
+            eXide.ws.on("connected", function () {
+                if (self.polling && !self._useWs) {
+                    console.log("[monitor] Switching to WebSocket");
+                    self._useWs = true;
+                    if (self.timer) {
+                        clearTimeout(self.timer);
+                        self.timer = null;
+                    }
+                    self.pollWs();
+                }
+            });
+        }
+
+        // Start with HTTP polling; will switch to WebSocket when connected
         this.fetchToken();
+    };
+
+    /**
+     * Poll via the WebSocket push endpoint. Triggers a server-side ws:send()
+     * which pushes metrics to all WebSocket subscribers including this client.
+     */
+    Constr.prototype.pollWs = function () {
+        var self = this;
+        if (!self.polling) return;
+
+        fetch("api/ws/monitor", { method: "POST", headers: { "Content-Type": "application/json" } })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                // The data also arrives via WebSocket, but use HTTP response as fallback
+                if (!self._wsReceived && data) self.updateFromWs(data);
+                self._wsReceived = false;
+                if (self.polling) {
+                    self.timer = setTimeout(function () { self.pollWs(); }, self.pollInterval);
+                }
+            })
+            .catch(function () {
+                if (self.polling) {
+                    self.timer = setTimeout(function () { self.pollWs(); }, 5000);
+                }
+            });
+    };
+
+    /**
+     * Update the monitor UI from WebSocket-pushed metrics data.
+     */
+    Constr.prototype.updateFromWs = function (data) {
+        this._wsReceived = true;
+
+        // Memory
+        if (data.memory) {
+            var used = formatMB(data.memory.used);
+            var max = formatMB(data.memory.max);
+            var usedPct = Math.round((data.memory.used / data.memory.max) * 100);
+            var totalPct = Math.round((data.memory.total / data.memory.max) * 100);
+
+            var memNums = document.getElementById("mon-mem-nums");
+            if (memNums) memNums.textContent = used + " / " + max + " MB";
+
+            var memUsed = document.getElementById("mon-mem-used");
+            if (memUsed) memUsed.style.width = usedPct + "%";
+
+            var memCommitted = document.getElementById("mon-mem-committed");
+            if (memCommitted) memCommitted.style.width = totalPct + "%";
+        }
+
+        // Running queries
+        var queries = data.queries || [];
+        var runBody = document.getElementById("mon-running-body");
+        if (runBody) {
+            if (queries.length === 0) {
+                runBody.innerHTML = '<tr><td colspan="3" class="mon-empty">none</td></tr>';
+            } else {
+                runBody.innerHTML = queries.map(function (q) {
+                    var elapsed = q.elapsed ? (parseInt(q.elapsed) / 1000).toFixed(1) + "s" : "";
+                    return '<tr class="mon-running">' +
+                        '<td><button class="mon-kill" data-id="' + escapeHtml(q.id) + '" title="Kill query">x</button></td>' +
+                        '<td>' + escapeHtml(elapsed) + '</td>' +
+                        '<td class="mon-source">' + escapeHtml(q.sourceKey || "") + '</td>' +
+                        '</tr>';
+                }).join("");
+            }
+
+            var runCount = document.getElementById("mon-running-count");
+            if (runCount) runCount.textContent = queries.length;
+        }
+
+        // Recent queries
+        var recentQueries = data.recentQueries || [];
+        var recentBody = document.getElementById("mon-recent-body");
+        if (recentBody) {
+            if (recentQueries.length === 0) {
+                recentBody.innerHTML = '<tr><td colspan="2" class="mon-empty">none</td></tr>';
+            } else {
+                recentBody.innerHTML = recentQueries.map(function (q) {
+                    var ms = parseInt(q.mostRecentExecutionDuration || 0);
+                    var color = ms > 100 ? "#c0392b" : "#27ae60";
+                    return '<tr>' +
+                        '<td style="color:' + color + ';font-weight:700">' + ms + '</td>' +
+                        '<td class="mon-source">' + escapeHtml(q.sourceKey || "") + '</td>' +
+                        '</tr>';
+                }).join("");
+            }
+        }
+
+        // DB brokers
+        if (data.db) {
+            var dbChip = document.getElementById("mon-chip-db");
+            if (dbChip) dbChip.innerHTML = "DB <b>" + (data.db.activeBrokers || "--") + "/" + (data.db.maxBrokers || "--") + "</b>";
+        }
+
+        // Uptime
+        var upChip = document.getElementById("mon-chip-uptime");
+        if (upChip && data.uptime) {
+            var match = String(data.uptime).match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+            if (match) {
+                var h = parseInt(match[1] || 0);
+                var m = parseInt(match[2] || 0);
+                upChip.innerHTML = "Up <b>" + h + "h " + m + "m</b>";
+            }
+        }
     };
 
     Constr.prototype.stop = function () {
@@ -142,6 +288,7 @@ eXide.app.Monitor = (function () {
 
     Constr.prototype.fetchToken = function () {
         var self = this;
+        if (self._useWs) return; // WebSocket took over
         fetch("api/admin/status")
             .then(function (r) { return r.json(); })
             .then(function (data) {
@@ -160,7 +307,7 @@ eXide.app.Monitor = (function () {
 
     Constr.prototype.poll = function () {
         var self = this;
-        if (!self.polling) return;
+        if (!self.polling || self._useWs) return;
 
         var context = eXide.configuration.context || "";
         var url = context + "/status?" + CATEGORIES + "&token=" + self.token;

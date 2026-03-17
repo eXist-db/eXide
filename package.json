@@ -40,7 +40,8 @@
 		"esbuild": "^0.28.0",
 		"glob-stream": "^7.0.0",
 		"micro-fs": "^1.0.3",
-		"request": "^2.88.2"
+		"request": "^2.88.2",
+		"ws": "^8.20.0"
 	},
 	"dependencies": {
 		"@codemirror/autocomplete": "^6.20.1",
