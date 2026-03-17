@@ -44,20 +44,34 @@ eXide.edit.LspHover = (function () {
         var code = view.state.doc.toString();
         var basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
 
-        return fetch("api/query/hover", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                query: code,
-                line: lineNumber,
-                column: column,
-                base: basePath
+        // Use WebSocket if available, otherwise HTTP
+        var dataPromise;
+        if (typeof eXide.ws !== "undefined" && eXide.ws.isConnected()) {
+            dataPromise = new Promise(function (resolve) {
+                eXide.ws.send("textDocument/hover", {
+                    textDocument: { uri: doc.getPath() || "untitled" },
+                    position: { line: lineNumber, character: column },
+                    // eXist-specific: send full query for stateless hover
+                    query: code, base: basePath
+                }, function (result, err) {
+                    resolve(err ? null : result);
+                });
+            });
+        } else {
+            dataPromise = fetch("api/query/hover", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    query: code, line: lineNumber, column: column, base: basePath
+                })
             })
-        })
-        .then(function (response) {
-            if (!response.ok) return null;
-            return response.json();
-        })
+            .then(function (response) {
+                if (!response.ok) return null;
+                return response.json();
+            });
+        }
+
+        return dataPromise
         .then(function (data) {
             if (!data || !data.contents) {
                 // Fallback: look up local function signature from AST

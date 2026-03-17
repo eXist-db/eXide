@@ -192,11 +192,13 @@ eXide.ws = (function () {
 
     /**
      * Auto-connect: derive WebSocket URL from the current page URL.
+     * Uses the same /exist/ws endpoint as monex's console module.
      */
     function autoConnect() {
         var loc = window.location;
+        var rootContext = loc.pathname.replace(/^(.*?)\/apps\/.*$/, "$1");
         var wsProtocol = loc.protocol === "https:" ? "wss:" : "ws:";
-        var wsUrl = wsProtocol + "//" + loc.host + "/exist/ws";
+        var wsUrl = wsProtocol + "//" + loc.host + rootContext + "/ws";
         connect(wsUrl);
     }
 

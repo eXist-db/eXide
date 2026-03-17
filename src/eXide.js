@@ -185,6 +185,11 @@ eXide.app = (function(util) {
                     app.updateLayoutTop();
                     editor.init();
 
+                    // Connect WebSocket for real-time LSP and monitoring
+                    if (typeof eXide.ws !== "undefined" && eXide.ws.autoConnect) {
+                        eXide.ws.autoConnect();
+                    }
+
                     // Fetch registered module prefixes for static analysis
                     fetch("api/editor/modules")
                         .then(function(r) { return r.json(); })

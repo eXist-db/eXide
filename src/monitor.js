@@ -129,6 +129,25 @@ eXide.app.Monitor = (function () {
     Constr.prototype.start = function () {
         if (this.polling) return;
         this.polling = true;
+
+        // Try WebSocket first for real-time streaming
+        if (typeof eXide.ws !== "undefined" && eXide.ws.isConnected()) {
+            var self = this;
+            eXide.ws.on("exist/metrics", function (data) {
+                if (data && self.polling) self.update(data);
+            });
+            eXide.ws.on("exist/queryStarted", function (data) {
+                if (self.polling) self.addRunningQuery(data);
+            });
+            eXide.ws.on("exist/queryEnded", function (data) {
+                if (self.polling) self.removeRunningQuery(data);
+            });
+            eXide.ws.notify("exist/subscribe", { channels: ["metrics", "queries"] });
+            console.log("[monitor] Using WebSocket for real-time updates");
+            return;
+        }
+
+        // Fallback to HTTP polling
         this.fetchToken();
     };
 
