@@ -1,8 +1,7 @@
 /**
  * Local Files pane for eXide Desktop.
  * Injected via Tauri window.eval(). All filesystem I/O is done Rust-side;
- * this script only handles the UI. Data is passed in via function calls
- * from Rust's window.eval().
+ * this script only handles the UI. Data is passed in via function calls.
  */
 (function () {
     "use strict";
@@ -10,66 +9,169 @@
 
     var currentFolder = null;
 
-    // ── Create the LOCAL tab ──
-    var tabsContainer = document.getElementById("tabs-outline-container");
-    if (!tabsContainer) return;
-    var tabBar = tabsContainer.querySelector("ul");
+    // ── Add LOCAL tab to the outline tab bar ──
+    var tabBar = document.getElementById("tabs-outline");
     if (!tabBar) return;
 
     var localTab = document.createElement("li");
-    localTab.innerHTML = '<a href="#">local</a>';
-    localTab.style.cursor = "pointer";
+    var localTabLink = document.createElement("a");
+    localTabLink.className = "tab";
+    localTabLink.href = "#";
+    localTabLink.textContent = "local";
+    localTab.appendChild(localTabLink);
     tabBar.appendChild(localTab);
 
-    // ── Create the LOCAL pane body ──
-    var westPanel = document.querySelector(".panel-west");
+    // ── Create the LOCAL pane body (same structure as directory-body) ──
+    var westPanel = document.getElementById("outline-container");
+    if (!westPanel) westPanel = document.querySelector(".panel-west");
     if (!westPanel) return;
 
     var localBody = document.createElement("div");
     localBody.id = "local-files-body";
-    localBody.style.cssText = "display:none; flex:1; flex-direction:column; overflow:hidden; min-height:0;";
+    // Match #directory-body / #outline-body styling
+    localBody.style.cssText = "position:absolute; visibility:hidden; flex:1; min-height:0; width:100%; display:flex; flex-direction:column; overflow:hidden;";
 
+    // Toolbar (matches #dir-toolbar)
     var toolbar = document.createElement("div");
-    toolbar.style.cssText = "padding:4px 6px; display:flex; gap:4px; border-bottom:1px solid #e2e8f0; flex-shrink:0;";
+    toolbar.id = "local-toolbar";
+    toolbar.style.cssText = "display:flex; gap:4px; padding:3px 6px; border-bottom:1px solid #e2e8f0; flex-shrink:0; align-items:center;";
+
+    var openBtn = document.createElement("button");
+    openBtn.title = "Open Folder (use File menu)";
+    openBtn.style.cssText = "background:none; border:1px solid transparent; border-radius:3px; padding:1px 4px; cursor:default; color:#64748b; font-size:13px; line-height:1;";
+    openBtn.innerHTML = '<i class="fa fa-folder-open-o"></i>';
+    toolbar.appendChild(openBtn);
 
     var pathLabel = document.createElement("span");
-    pathLabel.style.cssText = "font-size:10px; color:#718096; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:22px; flex:1;";
-    pathLabel.textContent = "Use File \u203a Open Local Folder";
+    pathLabel.style.cssText = "font-size:10px; color:#718096; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;";
+    pathLabel.textContent = "File \u203a Open Local Folder\u2026";
     toolbar.appendChild(pathLabel);
+
     localBody.appendChild(toolbar);
 
+    // Tree view (matches #dir-tree-view > .panel-scroller > .tree > ul)
+    var treeViewWrap = document.createElement("div");
+    treeViewWrap.style.cssText = "flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; min-width:0;";
+
     var scroller = document.createElement("div");
-    scroller.style.cssText = "flex:1; overflow-y:auto; overflow-x:auto; min-height:0;";
+    scroller.className = "panel-scroller";
+
     var tree = document.createElement("div");
     tree.className = "tree";
-    tree.style.cssText = "min-width:min-content; width:max-content; min-width:100%;";
+
     var treeUl = document.createElement("ul");
-    treeUl.style.cssText = "padding:0; margin:0;";
+    treeUl.id = "local-directory";
     tree.appendChild(treeUl);
     scroller.appendChild(tree);
-    localBody.appendChild(scroller);
+    treeViewWrap.appendChild(scroller);
+    localBody.appendChild(treeViewWrap);
 
-    var outlineBody = document.getElementById("outline-body");
-    if (outlineBody && outlineBody.parentNode) {
-        outlineBody.parentNode.insertBefore(localBody, outlineBody.nextSibling);
+    // Filter input (matches .panel-filter)
+    var filterWrap = document.createElement("div");
+    filterWrap.className = "panel-filter";
+    var filterInput = document.createElement("input");
+    filterInput.type = "search";
+    filterInput.id = "local-filter";
+    filterInput.placeholder = "Filter local files...";
+    filterWrap.appendChild(filterInput);
+    localBody.appendChild(filterWrap);
+
+    // Insert after outline-body and directory-body
+    var dirBody = document.getElementById("directory-body");
+    if (dirBody && dirBody.parentNode) {
+        dirBody.parentNode.insertBefore(localBody, dirBody.nextSibling);
     } else {
         westPanel.appendChild(localBody);
     }
 
+    // ── Filter logic ──
+    filterInput.addEventListener("keyup", function () {
+        var regex = new RegExp(this.value, "i");
+        var items = treeUl.querySelectorAll("li");
+        items.forEach(function (li) {
+            var span = li.querySelector("span:last-child");
+            if (span) {
+                li.style.display = regex.test(span.textContent) ? "" : "none";
+            }
+        });
+    });
+
     // ── Tab switching ──
-    localTab.querySelector("a").addEventListener("click", function (e) {
-        e.preventDefault();
-        showLocalPane();
+    // eXide's original handler (editor.js line 570) uses querySelectorAll("a.tab")
+    // and toggles active by index (0=collections, 1=outline). It doesn't know about
+    // LOCAL (index 2). We need to completely replace the tab click behavior.
+
+    // Gather all tabs. Clone existing ones to remove eXide's old click handlers
+    // (eXide's handler toggles active by index, not aware of LOCAL).
+    var allTabs = tabBar.querySelectorAll("a.tab");
+    var tabData = [];
+    var editor = typeof eXide !== "undefined" && eXide.app ? eXide.app.getEditor() : null;
+
+    allTabs.forEach(function (a, i) {
+        // Only clone if eXide's handlers are attached (i.e., editor is initialized)
+        var link = a;
+        if (editor && i < 2) {
+            var clone = a.cloneNode(true);
+            a.parentNode.replaceChild(clone, a);
+            link = clone;
+        }
+        if (i === 0) tabData.push({ link: link, name: "collections" });
+        else if (i === 1) tabData.push({ link: link, name: "outline" });
+    });
+    tabData.push({ link: localTabLink, name: "local" });
+
+    tabData.forEach(function (tab) {
+        tab.link.addEventListener("click", function (e) {
+            e.preventDefault();
+
+            // Set active on clicked tab, remove from others
+            tabData.forEach(function (t) { t.link.classList.remove("active"); });
+            tab.link.classList.add("active");
+
+            // Show/hide panes
+            if (tab.name === "collections") {
+                if (editor && editor.directory) editor.directory.toggle(true);
+                if (editor && editor.outline) editor.outline.toggle(false);
+                hideLocalPane();
+                clearLocalActive();
+            } else if (tab.name === "outline") {
+                if (editor && editor.directory) editor.directory.toggle(false);
+                if (editor && editor.outline) editor.outline.toggle(true);
+                hideLocalPane();
+                clearLocalActive();
+            } else if (tab.name === "local") {
+                if (editor && editor.directory) editor.directory.toggle(false);
+                if (editor && editor.outline) editor.outline.toggle(false);
+                localBody.style.position = "relative";
+                localBody.style.visibility = "visible";
+                // Force active style inline
+                localTabLink.style.color = "#2b6cb0";
+                localTabLink.style.borderBottomColor = "#2b6cb0";
+            }
+        });
     });
 
     function showLocalPane() {
-        var dirBody = document.getElementById("directory-body");
-        var outBody = document.getElementById("outline-body");
-        if (dirBody) dirBody.style.display = "none";
-        if (outBody) { outBody.style.position = "absolute"; outBody.style.visibility = "hidden"; }
-        localBody.style.display = "flex";
-        tabBar.querySelectorAll("li").forEach(function (li) { li.classList.remove("active"); });
-        localTab.classList.add("active");
+        if (editor && editor.directory) editor.directory.toggle(false);
+        if (editor && editor.outline) editor.outline.toggle(false);
+        localBody.style.position = "relative";
+        localBody.style.visibility = "visible";
+        tabData.forEach(function (t) { t.link.classList.remove("active"); });
+        localTabLink.classList.add("active");
+        // Force the active style directly in case CSS class doesn't take effect
+        localTabLink.style.color = "#2b6cb0";
+        localTabLink.style.borderBottomColor = "#2b6cb0";
+    }
+
+    function clearLocalActive() {
+        localTabLink.style.color = "";
+        localTabLink.style.borderBottomColor = "";
+    }
+
+    function hideLocalPane() {
+        localBody.style.position = "absolute";
+        localBody.style.visibility = "hidden";
+        clearLocalActive();
     }
 
     // ── Open folder with pre-loaded data (called from Rust) ──
@@ -81,31 +183,26 @@
         renderEntries(entries, treeUl, 0);
     }
 
-    // ── Render entries from data ──
+    // ── Render entries using the same .tree markup as Collections ──
     function renderEntries(entries, parentUl, depth) {
         parentUl.innerHTML = "";
         entries.forEach(function (entry) {
             var li = document.createElement("li");
             li.className = entry.is_dir ? "collection" : "resource";
-            li.style.cssText = "list-style:none; display:grid; grid-template-columns:auto 1fr; grid-template-rows:19px; align-items:center; gap:0 4px; cursor:pointer; border-radius:3px; padding:0 3px 0 " + (10 + depth * 12) + "px;";
 
-            var icon = document.createElement("span");
+            var icon = document.createElement("i");
             icon.className = entry.is_dir ? "fa fa-folder" : "fa fa-file-o";
-            icon.style.cssText = "font-size:12px; color:" + (entry.is_dir ? "#2b6cb0" : "#718096") + "; width:14px; text-align:center;";
 
             var label = document.createElement("span");
             label.textContent = entry.name;
-            label.style.cssText = "display:block; white-space:nowrap; color:#2d3748;";
 
             li.appendChild(icon);
             li.appendChild(label);
 
             if (entry.is_dir) {
                 var childUl = document.createElement("ul");
-                childUl.style.cssText = "grid-column:1/-1; grid-row:2; display:none; padding:0; margin:0;";
                 li.appendChild(childUl);
 
-                // Pre-render children if available
                 if (entry.children && entry.children.length > 0) {
                     renderEntries(entry.children, childUl, depth + 1);
                 }
@@ -123,6 +220,9 @@
                         expanded = false;
                     }
                 });
+
+                // Start collapsed
+                childUl.style.display = "none";
             } else {
                 li.addEventListener("click", function (e) {
                     e.stopPropagation();
@@ -130,35 +230,8 @@
                 });
             }
 
-            li.addEventListener("mouseenter", function () { li.style.background = "rgba(0,0,0,0.06)"; });
-            li.addEventListener("mouseleave", function () { li.style.background = ""; });
             parentUl.appendChild(li);
         });
-    }
-
-    // ── Called from Rust when subdirectory data is ready ──
-    function renderSubdir(entries) {
-        var pending = window.__exideLocalFiles._pendingSubdir;
-        if (pending) {
-            renderEntries(entries, pending.ul, pending.depth);
-            window.__exideLocalFiles._pendingSubdir = null;
-        }
-    }
-
-    // ── Called from Rust when file content is ready ──
-    function openFileContent(name, path, content) {
-        var editor = eXide.app.getEditor();
-        editor.newDocument(null, guessMode(name));
-        var view = editor.editor;
-        view.dispatch({
-            changes: { from: 0, to: view.state.doc.length, insert: content }
-        });
-        var doc = editor.getActiveDocument();
-        doc.name = name;
-        doc.path = path;
-        doc.saved = true;
-        doc._localFile = true;
-        editor.updateTabStatus(doc.path, doc);
     }
 
     // ── Open a local file via the localfs:// custom protocol ──
@@ -182,7 +255,6 @@
                 doc.path = path;
                 doc.saved = true;
                 doc._localFile = true;
-                // Update the tab label — find tab by old path and update
                 var tabLink = document.querySelector('#tabs a[title="' + oldPath + '"]');
                 if (tabLink) {
                     tabLink.textContent = name;
@@ -190,7 +262,7 @@
                 }
             })
             .catch(function (err) {
-                try { eXide.util.error("Could not open file: " + err.message); } catch(e) {}
+                try { eXide.util.error("Could not open file: " + err.message); } catch(ex) {}
             });
     }
 
@@ -209,9 +281,6 @@
 
     window.__exideLocalFiles = {
         openFolderWithData: openFolderWithData,
-        renderSubdir: renderSubdir,
-        openFileContent: openFileContent,
-        showPane: showLocalPane,
-        _pendingSubdir: null
+        showPane: showLocalPane
     };
 })();
