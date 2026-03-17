@@ -83,22 +83,32 @@ declare function query:compile($request as map(*)) {
     let $body := $request?body
     let $xquery := $body?query
     let $base := $body?base
+    let $uri := ($body?uri, "untitled")[1]
     let $diagnostics :=
         if ($query:lsp-available) then
             function-lookup(QName($query:lsp-ns, "diagnostics"), 2)($xquery, $base)
         else ()
-    return
-        map {
-            "errors": array {
-                for $d in $diagnostics?*
-                return map {
-                    "line": $d?line + 1,
-                    "column": $d?column,
-                    "message": $d?message,
-                    "code": $d?code
-                }
-            }
+    let $errors := array {
+        for $d in $diagnostics?*
+        return map {
+            "line": $d?line + 1,
+            "column": $d?column,
+            "message": $d?message,
+            "code": $d?code
         }
+    }
+    (: Push diagnostics via WebSocket to subscribed eXide clients :)
+    let $ws-send := function-lookup(QName("http://exist-db.org/xquery/websocket", "send"), 2)
+    let $_ :=
+        if (exists($ws-send)) then
+            $ws-send("eXide", map {
+                "type": "textDocument/publishDiagnostics",
+                "uri": $uri,
+                "diagnostics": $errors
+            })
+        else ()
+    return
+        map { "errors": $errors }
 };
 
 (:~

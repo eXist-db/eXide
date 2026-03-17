@@ -77,6 +77,37 @@ describe('WebSocket transport', () => {
     })
   })
 
+  it('receives diagnostics push after compilation', function () {
+    cy.wait(2000)
+    cy.window().then((win) => {
+      if (!win.eXide.ws.isConnected()) {
+        this.skip()
+      }
+
+      var received = null
+      win.eXide.ws.on("textDocument/publishDiagnostics", function (data) {
+        received = data
+      })
+
+      // Trigger compilation with invalid code
+      cy.request({
+        method: 'POST',
+        url: '/eXide/api/query/compile',
+        headers: { 'Content-Type': 'application/json' },
+        body: { query: 'let $x := retrun $x', base: 'xmldb:exist:///db', uri: 'test.xq' },
+        failOnStatusCode: false
+      }).then(() => {
+        cy.wait(500).then(() => {
+          expect(received).to.not.be.null
+          expect(received.type).to.eq("textDocument/publishDiagnostics")
+          expect(received.uri).to.eq("test.xq")
+          expect(received.diagnostics).to.be.an("array")
+          expect(received.diagnostics.length).to.be.greaterThan(0)
+        })
+      })
+    })
+  })
+
   it('falls back gracefully when WebSocket unavailable', () => {
     // Even if WS isn't connected, eXide should still function
     cy.get('.cm-editor').should('exist')
