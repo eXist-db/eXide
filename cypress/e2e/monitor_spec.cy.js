@@ -96,9 +96,9 @@ describe('Monitor panel', () => {
     // Click the kill button
     cy.get('#mon-running-body .mon-kill').first().click()
 
-    // The query should be removed from running queries shortly
-    cy.get('#mon-running-body .mon-running', { timeout: 10000 })
-      .should('have.length', 0)
+    // Wait for the query to disappear after the next poll cycle
+    cy.get('#mon-running-body .mon-empty', { timeout: 15000 })
+      .should('exist')
   })
 
   it('restores monitor on reload if it was open', () => {

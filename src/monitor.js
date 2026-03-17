@@ -122,6 +122,15 @@ eXide.app.Monitor = (function () {
                         eXide.app.openDocument({ path: path });
                     }
                 }
+                var killBtn = e.target.closest(".mon-kill");
+                if (killBtn) {
+                    e.preventDefault();
+                    var id = killBtn.getAttribute("data-id");
+                    if (id) {
+                        self.killQuery(id);
+                        eXide.util.message("Killing query " + id + "...");
+                    }
+                }
             });
         }
     };
