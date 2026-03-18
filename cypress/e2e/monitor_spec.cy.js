@@ -24,49 +24,39 @@ describe('Monitor panel', () => {
   })
 
   it('starts polling when toggled open by admin', () => {
-    // Intercept both WebSocket and HTTP polling paths
-    cy.intercept('POST', '**/api/ws/monitor').as('wsPoll')
-    cy.intercept('GET', '**/api/admin/status').as('fetchToken')
-    cy.intercept('GET', /\/status\?/).as('jmxPoll')
-
     cy.get('#toggle-monitor').click()
     cy.get('.panel-east').should('be.visible')
     cy.get('.mon-title').should('contain', 'MONITOR')
 
-    // Wait for either WebSocket or JMX polling to fire
-    cy.wait(5000)
-    cy.get('#mon-mem-nums', { timeout: 10000 }).invoke('text').should('match', /\d+ \/ \d+ MB/)
+    cy.get('#mon-mem-nums', { timeout: 15000 }).invoke('text').should('match', /\d+ \/ \d+ MB/)
   })
 
   it('updates memory bar on poll', () => {
-    cy.intercept('POST', '**/api/ws/monitor').as('wsPoll')
-    cy.intercept('GET', /\/status\?/).as('jmxPoll')
-
     cy.get('#toggle-monitor').click()
     cy.get('.panel-east').should('be.visible')
 
-    cy.wait(5000)
-    cy.get('#mon-mem-used').invoke('css', 'width').should('not.eq', '0px')
+    cy.get('#mon-mem-used', { timeout: 15000 }).invoke('css', 'width').should('not.eq', '0px')
   })
 
   it('shows uptime after polling', () => {
     cy.get('#toggle-monitor').click()
-    cy.wait(5000)
 
-    cy.get('#mon-chip-uptime', { timeout: 5000 }).invoke('text').should('match', /Up .+/)
+    cy.get('#mon-chip-uptime', { timeout: 15000 }).invoke('text').should('match', /Up .+/)
   })
 
   it('stops polling when toggled closed', () => {
     cy.intercept('POST', '**/api/ws/monitor').as('wsPoll')
 
     cy.get('#toggle-monitor').click()
-    cy.wait(3000)
+    // Wait until at least one poll has fired (data is visible)
+    cy.get('#mon-mem-nums', { timeout: 15000 }).invoke('text').should('match', /\d+ \/ \d+ MB/)
 
     cy.get('#toggle-monitor').click()
     cy.get('.panel-east').should('not.be.visible')
 
     cy.get('@wsPoll.all').then((interceptions) => {
       var count = interceptions.length
+      // Need a real wait here — we're asserting nothing NEW happens
       cy.wait(3000)
       cy.get('@wsPoll.all').should('have.length', count)
     })
@@ -75,7 +65,8 @@ describe('Monitor panel', () => {
   it('shows running query and allows killing it', () => {
     cy.get('#toggle-monitor').click()
     cy.get('.panel-east').should('be.visible')
-    cy.wait(3000)
+    // Wait for first poll to complete before running query
+    cy.get('#mon-mem-nums', { timeout: 15000 }).invoke('text').should('match', /\d+ \/ \d+ MB/)
 
     // Run a slow query in the background via the editor
     cy.window().then((win) => {
@@ -103,15 +94,15 @@ describe('Monitor panel', () => {
 
   it('restores monitor on reload if it was open', () => {
     cy.get('#toggle-monitor').click()
-    cy.wait(3000)
+    // Ensure monitor is actually running before reload
+    cy.get('#mon-mem-nums', { timeout: 15000 }).invoke('text').should('match', /\d+ \/ \d+ MB/)
 
     cy.reload(true)
     cy.get('.path', { timeout: 10000 }).should('contain', 'untitled-1')
     cy.get('#user', { timeout: 10000 }).should('not.have.text', 'Login')
 
-    // Monitor panel should be visible again
+    // Monitor panel should be visible again with data
     cy.get('.panel-east', { timeout: 5000 }).should('be.visible')
-    cy.wait(5000)
-    cy.get('#mon-mem-nums', { timeout: 10000 }).invoke('text').should('match', /\d+ \/ \d+ MB/)
+    cy.get('#mon-mem-nums', { timeout: 15000 }).invoke('text').should('match', /\d+ \/ \d+ MB/)
   })
 })
