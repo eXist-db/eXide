@@ -116,8 +116,8 @@ eXide.edit.Directory = (function () {
 			}
 			return fn(d)
 		}
-		var path = (sel.datum().key || "/db").replace(/^\//, "");
-		fetch("api/storage/" + encodeURIComponent(path)).then(function(r) { return r.json(); }).then(function(data) {
+		var path = sel.datum().key || "/db";
+		fetch(apiPath(path)).then(function(r) { return r.json(); }).then(function(data) {
 			var d = sel.datum()
 			d.isOpen = true;
 			d.isLoaded = true;

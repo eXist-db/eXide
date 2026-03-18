@@ -231,12 +231,15 @@ eXide.edit.CompletionSource = (function () {
                     }
                     for (var i = 0; i < serverFuncs.length; i++) {
                         var f = serverFuncs[i];
-                        var label = nsPart ? nsPart + f.text : f.text;
-                        var snip = f.snippet && nsPart ? nsPart + f.snippet : f.snippet;
+                        // Only add nsPart when the server result doesn't already
+                        // start with it (e.g. fn: fallback for unprefixed input)
+                        var needsPrefix = nsPart && f.text && !f.text.startsWith(nsPart);
+                        var label = needsPrefix ? nsPart + f.text : f.text;
+                        var snip = f.snippet && needsPrefix ? nsPart + f.snippet : f.snippet;
                         var opt = makeFunctionOption(
                             label, snip, null, f.description, null, null);
                         var funcName = f.text ? f.text.replace(/\(.*$/, "") : "";
-                        opt.filterText = nsPart + funcName;
+                        opt.filterText = needsPrefix ? nsPart + funcName : funcName;
                         options.push(opt);
                     }
                 }

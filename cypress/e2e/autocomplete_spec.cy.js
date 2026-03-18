@@ -203,6 +203,27 @@ describe('Autocomplete', () => {
     })
   })
 
+  it('shows prefixed completions without duplicating namespace for repo:', function () {
+    if (!lspAvailable) this.skip()
+    setContentAndComplete('repo:')
+
+    cy.get('.cm-tooltip-autocomplete', { timeout: 5000 })
+      .should('be.visible')
+      .invoke('text')
+      .should('contain', 'repo:deploy')
+      .and('not.contain', 'repo:repo:')
+  })
+
+  it('shows repo: completions when typing repo without colon', function () {
+    if (!lspAvailable) this.skip()
+    setContentAndComplete('repo')
+
+    cy.get('.cm-tooltip-autocomplete', { timeout: 5000 })
+      .should('be.visible')
+      .invoke('text')
+      .should('contain', 'repo:')
+  })
+
   it('shows function documentation tooltip via Navigate menu', () => {
     setEditorContent('util:wait()', 7)
 

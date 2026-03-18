@@ -7,8 +7,21 @@ describe('WebSocket transport', () => {
     cy.get('#user', { timeout: 15000 }).should('not.have.text', 'Login')
   })
 
+  /** Retry until ws.isConnected() returns true, or skip the test. */
+  function waitForWs(skipCtx) {
+    return cy.window().should((win) => {
+      if (!win.eXide.ws || !win.eXide.ws.isConnected()) {
+        throw new Error('WebSocket not yet connected')
+      }
+    }).then(() => {
+      return cy.window()
+    }, () => {
+      // If it never connected, skip
+      skipCtx.skip()
+    })
+  }
+
   it('auto-connects to WebSocket on startup', () => {
-    // eXide.ws should exist and attempt auto-connect
     cy.window().then((win) => {
       expect(win.eXide.ws).to.exist
       expect(win.eXide.ws.isConnected).to.be.a('function')
@@ -16,24 +29,15 @@ describe('WebSocket transport', () => {
   })
 
   it('connects to /exist/ws endpoint', function () {
-    // Give WebSocket time to connect (may already be connected)
-    cy.wait(2000)
+    waitForWs(this)
     cy.window().then((win) => {
-      if (!win.eXide.ws.isConnected()) {
-        this.skip() // WebSocket not available on this server
-      }
       expect(win.eXide.ws.isConnected()).to.be.true
     })
   })
 
   it('handles ping messages without errors', function () {
-    cy.wait(2000)
+    waitForWs(this)
     cy.window().then((win) => {
-      if (!win.eXide.ws.isConnected()) {
-        this.skip()
-      }
-      // If connected, the ping handler should not throw errors
-      // (we'd see console errors if it failed)
       expect(win.eXide.ws.isConnected()).to.be.true
     })
   })
@@ -48,13 +52,8 @@ describe('WebSocket transport', () => {
   })
 
   it('receives monitoring data via WebSocket push', function () {
-    cy.wait(2000)
+    waitForWs(this)
     cy.window().then((win) => {
-      if (!win.eXide.ws.isConnected()) {
-        this.skip()
-      }
-
-      // Set up a listener for monitoring events
       var received = null
       win.eXide.ws.on("exist/metrics", function (data) {
         received = data
@@ -67,8 +66,8 @@ describe('WebSocket transport', () => {
         headers: { 'Content-Type': 'application/json' },
         failOnStatusCode: false
       }).then(() => {
-        // Give WebSocket a moment to deliver
-        cy.wait(500).then(() => {
+        // Retry until WebSocket delivers the message
+        cy.wrap(null, { timeout: 5000 }).should(() => {
           expect(received).to.not.be.null
           expect(received.type).to.eq("exist/metrics")
           expect(received.version).to.be.a("string")
@@ -78,12 +77,8 @@ describe('WebSocket transport', () => {
   })
 
   it('receives diagnostics push after compilation', function () {
-    cy.wait(2000)
+    waitForWs(this)
     cy.window().then((win) => {
-      if (!win.eXide.ws.isConnected()) {
-        this.skip()
-      }
-
       var received = null
       win.eXide.ws.on("textDocument/publishDiagnostics", function (data) {
         received = data
@@ -97,7 +92,7 @@ describe('WebSocket transport', () => {
         body: { query: 'let $x := retrun $x', base: 'xmldb:exist:///db', uri: 'test.xq' },
         failOnStatusCode: false
       }).then(() => {
-        cy.wait(500).then(() => {
+        cy.wrap(null, { timeout: 5000 }).should(() => {
           expect(received).to.not.be.null
           expect(received.type).to.eq("textDocument/publishDiagnostics")
           expect(received.uri).to.eq("test.xq")
@@ -109,10 +104,8 @@ describe('WebSocket transport', () => {
   })
 
   it('falls back gracefully when WebSocket unavailable', () => {
-    // Even if WS isn't connected, eXide should still function
     cy.get('.cm-editor').should('exist')
     cy.get('#status-bar').should('exist')
-    // Editor should be usable
     cy.window().then((win) => {
       var editor = win.eXide.app.getEditor()
       expect(editor).to.exist

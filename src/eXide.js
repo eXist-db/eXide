@@ -17,6 +17,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+function apiPath(dbPath) {
+	return "api/storage/" + dbPath.replace(/^\//, "").split("/").map(encodeURIComponent).join("/");
+}
+
 // main entry point
 document.addEventListener("DOMContentLoaded", function() {
     window.name = "eXide";
@@ -468,13 +472,12 @@ eXide.app = (function(util) {
                 }
                 return true;
             }
-			var encodedPath = resource.path.replace(/^\//, "");
 			var params = new URLSearchParams({
 			    "indent": indentOnOpen,
 			    "expand-xincludes": expandXIncludesOnOpen,
 			    "omit-xml-decl": omitXMLDeclatarionOnOpen
 			});
-			fetch("api/storage/" + encodeURIComponent(encodedPath) + "?" + params.toString())
+			fetch(apiPath(resource.path) + "?" + params.toString())
 			    .then(function(response) {
 			        if (!response.ok) {
 			            throw { status: response.status, statusText: response.statusText };
@@ -775,14 +778,13 @@ eXide.app = (function(util) {
 				return;
 			}
             var path = path || doc.getPath()
-            var encodedPath = path.replace(/^\//, "");
             var dlParams = new URLSearchParams({
                 "download": "true",
                 "indent": indentOnDownload,
                 "expand-xincludes": expandXIncludesOnDownload,
                 "omit-xml-decl": omitXMLDeclatarionOnDownload
             });
-            const url = "api/storage/" + encodeURIComponent(encodedPath) + "?" + dlParams.toString();
+            const url = apiPath(path) + "?" + dlParams.toString();
             fetch(url)
             .then(resp => resp.blob())
             .then(blob => {
