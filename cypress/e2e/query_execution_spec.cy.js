@@ -92,8 +92,9 @@ describe('Query execution', () => {
     cy.get('#query-timing', { timeout: 10000 })
       .should('be.visible')
       .invoke('text')
-      .should('contain', 'Elapsed:')
-      .and('contain', 'Items:')
+      .should('contain', 'Items:')
+      // Timing bar shows either detailed (Compile/Eval/Total) or simple (Elapsed)
+      .and('match', /Compile:|Elapsed:/)
   })
 
   it('shows cancel button during execution and hides after', () => {

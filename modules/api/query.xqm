@@ -45,7 +45,8 @@ declare function query:execute($request as map(*)) {
                 return map {
                     "id": $cursor?cursor,
                     "count": $cursor?items,
-                    "elapsed": $cursor?elapsed
+                    "elapsed": $cursor?elapsed,
+                    "timing": if (exists($cursor?timing)) then $cursor?timing else ()
                 }
             } catch * {
                 roaster:response(400, "application/json", map {

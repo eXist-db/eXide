@@ -946,11 +946,20 @@ eXide.app = (function(util) {
 		            var elapsed = (data.elapsed / 1000).toFixed(3);
 		            util.message("Query returned " + hitCount.toLocaleString() + " item(s) in " + elapsed + "s");
 
-		            // Show elapsed time
+		            // Show timing breakdown
 		            if (timingEl) {
-		                timingEl.innerHTML =
-		                    '<span><span class="timing-label">Elapsed:</span> ' + data.elapsed + 'ms</span>' +
-		                    '<span><span class="timing-label">Items:</span> ' + hitCount.toLocaleString() + '</span>';
+		                var t = data.timing;
+		                if (t) {
+		                    timingEl.innerHTML =
+		                        '<span><span class="timing-label">Compile:</span> ' + t.compile + 'ms</span>' +
+		                        '<span><span class="timing-label">Eval:</span> ' + t.evaluate.toLocaleString() + 'ms</span>' +
+		                        '<span><span class="timing-label">Total:</span> ' + t.total.toLocaleString() + 'ms</span>' +
+		                        '<span><span class="timing-label">Items:</span> ' + hitCount.toLocaleString() + '</span>';
+		                } else {
+		                    timingEl.innerHTML =
+		                        '<span><span class="timing-label">Elapsed:</span> ' + data.elapsed + 'ms</span>' +
+		                        '<span><span class="timing-label">Items:</span> ' + hitCount.toLocaleString() + '</span>';
+		                }
 		                timingEl.style.display = "";
 		            }
 
