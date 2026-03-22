@@ -972,12 +972,22 @@ eXide.app = (function(util) {
 		/**
 		 * Fetch a page of results from the server-side cursor.
 		 * Each item includes value, type, documentURI, and nodeId.
+		 * Passes current serialization settings from the results toolbar.
 		 */
 		fetchCursorPage: function(start, end) {
 		    if (!app._cursorId) return;
 
 		    var count = end - start + 1;
-		    var params = new URLSearchParams({ start: start, count: count });
+		    var serializationMode = document.getElementById("serialization-mode").value;
+		    var indent = document.getElementById("indent-results").checked ? "yes" : "no";
+		    var autoExpand = document.getElementById("auto-expand-matches").checked ? "both" : "no";
+		    var params = new URLSearchParams({
+		        start: start,
+		        count: count,
+		        method: serializationMode,
+		        indent: indent,
+		        "highlight-matches": autoExpand
+		    });
 
 		    fetch("api/query/" + app._cursorId + "/results?" + params.toString())
 		    .then(function(response) {
@@ -2438,9 +2448,19 @@ eXide.app = (function(util) {
                 numberOfResults = +document.getElementById("number-of-results").value;
             });
             document.getElementById("serialization-mode").addEventListener("change", function(ev) {
-                if (lastQuery) {
+                if (app._cursorId) {
+                    // Re-fetch current page with new serialization settings
+                    app.fetchCursorPage(startOffset, endOffset);
+                } else if (lastQuery) {
                     app.runQuery(lastQuery);
                 }
+            });
+            // Re-fetch on indent/highlight toggle changes too
+            document.getElementById("indent-results").addEventListener("change", function() {
+                if (app._cursorId) app.fetchCursorPage(startOffset, endOffset);
+            });
+            document.getElementById("auto-expand-matches").addEventListener("change", function() {
+                if (app._cursorId) app.fetchCursorPage(startOffset, endOffset);
             });
             document.getElementById("error-status").addEventListener("mouseover", function(ev) {
                 var error = this;

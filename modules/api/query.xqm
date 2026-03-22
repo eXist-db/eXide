@@ -197,14 +197,46 @@ declare function query:references($request as map(*)) {
  : Uses lsp:fetch() to retrieve a page of items from the server-side cursor.
  : Only the requested items are serialized; the rest remain as live references.
  : Each item includes: value (serialized), type, documentURI, nodeId.
+ :
+ : Accepts serialization parameters as query string params:
+ :   method (adaptive|xml|json|text|html5|xhtml|xhtml5|microxml)
+ :   indent (yes|no)
+ :   highlight-matches (yes|no — eXist-specific, expands index match markers)
+ :   omit-xml-declaration, encoding, media-type, item-separator, etc.
  :)
 declare function query:results($request as map(*)) {
     let $id := $request?parameters?id
     let $start := xs:integer(($request?parameters?start, 1)[1])
     let $count := xs:integer(($request?parameters?count, 10)[1])
+
+    (: Build serialization options from query parameters :)
+    let $method := ($request?parameters?method, "adaptive")[1]
+    let $indent := ($request?parameters?indent, "yes")[1]
+    let $ser-params := map:merge((
+        map { "method": $method, "indent": $indent },
+        (: Pass through any additional W3C serialization params :)
+        if (exists($request?parameters?("omit-xml-declaration")))
+            then map { "omit-xml-declaration": $request?parameters?("omit-xml-declaration") } else (),
+        if (exists($request?parameters?encoding))
+            then map { "encoding": $request?parameters?encoding } else (),
+        if (exists($request?parameters?("media-type")))
+            then map { "media-type": $request?parameters?("media-type") } else (),
+        if (exists($request?parameters?("item-separator")))
+            then map { "item-separator": $request?parameters?("item-separator") } else (),
+        (: eXist-specific: highlight index matches :)
+        if (exists($request?parameters?("highlight-matches")))
+            then map { "highlight-matches": $request?parameters?("highlight-matches") } else ()
+    ))
+    (: Use 4-arity fetch with serialization params if available,
+       fall back to 3-arity (default serialization) if not :)
+    let $fetch4 := function-lookup(QName("http://exist-db.org/xquery/lsp", "fetch"), 4)
     return
         try {
-            let $page := lsp:fetch($id, $start, $count)
+            let $page :=
+                if (exists($fetch4)) then
+                    $fetch4($id, $start, $count, $ser-params)
+                else
+                    lsp:fetch($id, $start, $count)
             return map {
                 "start": $start,
                 "count": array:size($page),
