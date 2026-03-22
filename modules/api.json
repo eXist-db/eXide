@@ -654,9 +654,40 @@
                 }
             }
         },
+        "/api/query/{id}": {
+            "delete": {
+                "summary": "Close a query cursor and release server resources",
+                "operationId": "query:close",
+                "tags": [
+                    "query"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cursor closed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/query/{id}/results": {
             "get": {
-                "summary": "Retrieve paginated query results",
+                "summary": "Retrieve paginated query results from cursor",
                 "operationId": "query:results",
                 "tags": [
                     "query"

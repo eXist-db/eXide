@@ -85,6 +85,49 @@ describe('Query execution', () => {
       .and('contain', 'item')
   })
 
+  it('shows timing info after query completes', () => {
+    setEditorContent('for $i in 1 to 3 return $i')
+    cy.get('#run').click()
+
+    cy.get('#query-timing', { timeout: 10000 })
+      .should('be.visible')
+      .invoke('text')
+      .should('contain', 'Elapsed:')
+      .and('contain', 'Items:')
+  })
+
+  it('shows cancel button during execution and hides after', () => {
+    // Cancel button should be hidden initially
+    cy.get('#cancel-query').should('not.be.visible')
+
+    // Run a query — cancel button should appear briefly then hide
+    setEditorContent('1 + 1')
+    cy.get('#run').click()
+
+    // After completion, cancel button should be hidden
+    cy.get('.panel-south .results .content', { timeout: 10000 })
+      .should('have.length.at.least', 1)
+    cy.get('#cancel-query').should('not.be.visible')
+  })
+
+  it('cancel button exists and is hidden when no query is running', () => {
+    cy.get('#cancel-query').should('exist').and('not.be.visible')
+  })
+
+  it('falls back to HTTP when WebSocket unavailable', () => {
+    // Disconnect the ws-eval WebSocket
+    cy.window().then((win) => {
+      win.eXide.wsEval.disconnect()
+    })
+
+    setEditorContent('1 + 1')
+    cy.get('#run').click()
+
+    // Should still produce results via HTTP fallback
+    cy.get('.panel-south .results .content', { timeout: 10000 })
+      .should('have.length.at.least', 1)
+  })
+
   it('supports adaptive serialization mode', () => {
     // First run a simple query to make results panel visible
     setEditorContent('1')

@@ -217,6 +217,11 @@ eXide.app = (function(util) {
                         });
                     }
 
+                    // Connect eval WebSocket for streaming query execution
+                    if (typeof eXide.wsEval !== "undefined" && eXide.wsEval.autoConnect) {
+                        eXide.wsEval.autoConnect();
+                    }
+
                     // Fetch registered module prefixes for static analysis
                     fetch("api/editor/modules")
                         .then(function(r) { return r.json(); })
@@ -855,56 +860,191 @@ eXide.app = (function(util) {
                     var serializationMode = document.getElementById("serialization-mode").value;
         			var moduleLoadPath = "xmldb:exist://" + editor.getActiveDocument().getBasePath();
         			document.querySelectorAll('.results-container .results').forEach(function(el) { el.innerHTML = ""; });
-        			var formData = new URLSearchParams();
-        			formData.append("qu", code);
-        			formData.append("base", moduleLoadPath);
-        			formData.append("output", serializationMode);
-        			var expectXml = (serializationMode == "adaptive" || serializationMode == "html5" || serializationMode == "xhtml" || serializationMode == "xhtml5" || serializationMode == "json" || serializationMode == "text" || serializationMode == "xml" || serializationMode == "microxml");
-        			fetch("execute", {
-        			    method: "POST",
-        			    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        			    body: formData.toString()
-        			}).then(function(response) {
-        			    if (!response.ok) {
-        			        return response.text().then(function(text) {
-        			            util.error(text, "Server Error");
-        			        });
-        			    }
-        			    if (expectXml) {
-        			        return response.text().then(function(text) {
-        			            var parser = new DOMParser();
-        			            var data = parser.parseFromString(text, "text/xml");
-                                document.getElementById("results-iframe").style.display = "none";
-            					var elem = data.documentElement;
-            					if (elem.nodeName == 'error') {
-            				        var msg = elem.textContent;
-            				        editor.evalError(msg, !livePreview);
-            					} else {
-            						showResultsPanel();
-            						hitCount = elem.getAttribute("hits");
-            						endOffset = startOffset + numberOfResults - 1;
-            						if (hitCount < endOffset)
-            							endOffset = hitCount;
-            						util.message("Query returned " + hitCount + " item(s) in " + elem.getAttribute("elapsed") + "s");
-            						app.retrieveNext();
-            					}
-        			        });
-        			    } else {
-        			        return response.text().then(function(data) {
-                                showResultsPanel();
-                                var iframe = document.getElementById("results-iframe");
-                                iframe.style.display = "";
-                                iframe.contentWindow.document.open('text/html', 'replace');
-                                iframe.contentWindow.document.write(data);
-                                iframe.contentWindow.document.close();
-        			        });
-        			    }
-        			}).catch(function(err) {
-        			    util.error(err.message || String(err), "Server Error");
-        			});
+
+                    app.runQueryCursor(code, moduleLoadPath, serializationMode, livePreview);
                     break;
             }
 
+		},
+
+		/** Active cursor ID for pagination. */
+		_cursorId: null,
+
+		/**
+		 * Execute query via server-side cursor (lsp:eval → lsp:fetch).
+		 *
+		 * POST /api/query → get cursor ID + item count
+		 * GET /api/query/{id}/results?start=N&count=M → fetch a page
+		 *
+		 * Results stay on the server as live node references. Only the
+		 * requested page is serialized — same pattern as the old
+		 * XQueryServlet + session.xq flow, but using Caffeine-backed
+		 * cursors instead of HTTP sessions.
+		 */
+		runQueryCursor: function(code, moduleLoadPath, serializationMode, livePreview) {
+		    var btnCancel = document.getElementById("cancel-query");
+		    var timingEl = document.getElementById("query-timing");
+
+		    function showCancel() { if (btnCancel) btnCancel.style.display = ""; }
+		    function hideCancel() { if (btnCancel) btnCancel.style.display = "none"; }
+
+		    function hideTiming() {
+		        if (timingEl) timingEl.style.display = "none";
+		    }
+
+		    showCancel();
+		    hideTiming();
+
+		    // Close previous cursor if any
+		    if (app._cursorId) {
+		        fetch("api/query/" + app._cursorId, { method: "DELETE" }).catch(function() {});
+		        app._cursorId = null;
+		    }
+
+		    fetch("api/query", {
+		        method: "POST",
+		        headers: { "Content-Type": "application/json" },
+		        body: JSON.stringify({ query: code, base: moduleLoadPath })
+		    })
+		    .then(function(response) {
+		        hideCancel();
+		        if (!response.ok) {
+		            return response.json().then(function(err) {
+		                var msg = err.error || "Unknown error";
+		                if (err.line > 0) {
+		                    msg = "line " + err.line + ": " + msg;
+		                }
+		                editor.evalError(msg, !livePreview);
+		            });
+		        }
+		        return response.json().then(function(data) {
+		            app._cursorId = data.id;
+		            hitCount = data.count;
+		            endOffset = Math.min(numberOfResults, hitCount);
+
+		            editor.updateStatus("");
+		            editor.clearErrors();
+		            app.showResultsPanel();
+		            document.getElementById("results-iframe").style.display = "none";
+		            startOffset = 1;
+		            currentOffset = 1;
+		            activeResultIdx = -1;
+
+		            var elapsed = (data.elapsed / 1000).toFixed(3);
+		            util.message("Query returned " + hitCount.toLocaleString() + " item(s) in " + elapsed + "s");
+
+		            // Show elapsed time
+		            if (timingEl) {
+		                timingEl.innerHTML =
+		                    '<span><span class="timing-label">Elapsed:</span> ' + data.elapsed + 'ms</span>' +
+		                    '<span><span class="timing-label">Items:</span> ' + hitCount.toLocaleString() + '</span>';
+		                timingEl.style.display = "";
+		            }
+
+		            // Fetch first page
+		            app.fetchCursorPage(startOffset, endOffset);
+		        });
+		    })
+		    .catch(function(err) {
+		        hideCancel();
+		        util.error(err.message || String(err), "Server Error");
+		    });
+		},
+
+		/**
+		 * Fetch a page of results from the server-side cursor.
+		 * Each item includes value, type, documentURI, and nodeId.
+		 */
+		fetchCursorPage: function(start, end) {
+		    if (!app._cursorId) return;
+
+		    var count = end - start + 1;
+		    var params = new URLSearchParams({ start: start, count: count });
+
+		    fetch("api/query/" + app._cursorId + "/results?" + params.toString())
+		    .then(function(response) {
+		        if (!response.ok) throw new Error("Cursor expired");
+		        return response.json();
+		    })
+		    .then(function(data) {
+		        var resultsDiv = document.querySelector('.results-container .results');
+		        if (!resultsDiv) return;
+		        resultsDiv.innerHTML = "";
+
+		        var items = data.items;
+		        if (!items || items.length === 0) return;
+
+		        var numWidth = Math.ceil(Math.log(hitCount + 1) / Math.LN10);
+		        for (var i = 0; i < items.length; i++) {
+		            var item = items[i];
+		            var idx = start + i;
+		            var div = document.createElement("div");
+		            div.className = (idx % 2 === 0) ? "even" : "uneven";
+
+		            // Build badge — clickable link if documentURI is available
+		            var badge;
+		            if (item.documentURI) {
+		                badge = '<a class="badge" href="#" data-path="' + item.documentURI +
+		                    '" title="Click to open source document" style="width:' + numWidth + 'ch">' + idx + '</a>';
+		            } else {
+		                badge = '<span class="badge" style="width:' + numWidth + 'ch">' + idx + '</span>';
+		            }
+
+		            div.innerHTML =
+		                '<div class="pos">' + badge + '</div>' +
+		                '<div class="item"><i class="fa fa-clipboard copy-result" title="Copy this item to clipboard"></i>' +
+		                '<div class="content" style="white-space: pre-wrap"></div></div>';
+
+		            var contentDiv = div.querySelector('.content');
+		            contentDiv.textContent = item.value;
+		            highlightResultContent(contentDiv);
+
+		            // Document link click handler
+		            var posLink = div.querySelector('.pos a');
+		            if (posLink) {
+		                posLink.addEventListener("click", function(e) {
+		                    e.preventDefault();
+		                    app.findDocument(this.dataset.path);
+		                });
+		            }
+
+		            // Copy button
+		            div.querySelector('.copy-result').addEventListener("click", function() {
+		                var sibling = this.parentNode.querySelector('.content');
+		                var text = sibling ? sibling.textContent : "";
+		                var btn = this;
+		                navigator.clipboard.writeText(text).then(function() {
+		                    btn.classList.remove('fa-clipboard');
+		                    btn.classList.add('fa-check', 'copied');
+		                    setTimeout(function() {
+		                        btn.classList.remove('fa-check', 'copied');
+		                        btn.classList.add('fa-clipboard');
+		                    }, 1200);
+		                });
+		            });
+
+		            resultsDiv.appendChild(div);
+		        }
+
+		        // Update status
+		        var actualEnd = start + items.length - 1;
+		        document.querySelectorAll('.results-container .current').forEach(function(el) {
+		            el.textContent = "Showing results " + start + " to " + actualEnd + " of " + hitCount;
+		        });
+
+		        // Update pagination state
+		        startOffset = start;
+		        currentOffset = actualEnd + 1;
+		        endOffset = actualEnd;
+		    })
+		    .catch(function(err) {
+		        util.error("Failed to fetch results: " + err.message);
+		    });
+		},
+
+		/** Cancel the active query. */
+		cancelQuery: function() {
+		    eXide.wsEval.cancel();
 		},
 
 		checkQuery: function() {
@@ -990,8 +1130,12 @@ eXide.app = (function(util) {
 				if (hitCount < endOffset)
 					endOffset = hitCount;
 				activeResultIdx = -1;
-				document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
-				app.retrieveNext();
+				if (app._cursorId) {
+					app.fetchCursorPage(startOffset, endOffset);
+				} else {
+					document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
+					app.retrieveNext();
+				}
 			}
 			return false;
 		},
@@ -1008,8 +1152,12 @@ eXide.app = (function(util) {
 				if (hitCount < endOffset)
 					endOffset = hitCount;
 				activeResultIdx = -1;
-				document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
-				app.retrieveNext();
+				if (app._cursorId) {
+					app.fetchCursorPage(startOffset, endOffset);
+				} else {
+					document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
+					app.retrieveNext();
+				}
 			}
 			return false;
 		},
@@ -1020,8 +1168,12 @@ eXide.app = (function(util) {
 				currentOffset = 1;
 				endOffset = Math.min(numberOfResults, hitCount);
 				activeResultIdx = -1;
-				document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
-				app.retrieveNext();
+				if (app._cursorId) {
+					app.fetchCursorPage(startOffset, endOffset);
+				} else {
+					document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
+					app.retrieveNext();
+				}
 			}
 			return false;
 		},
@@ -1032,8 +1184,12 @@ eXide.app = (function(util) {
 				currentOffset = startOffset;
 				endOffset = hitCount;
 				activeResultIdx = -1;
-				document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
-				app.retrieveNext();
+				if (app._cursorId) {
+					app.fetchCursorPage(startOffset, endOffset);
+				} else {
+					document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
+					app.retrieveNext();
+				}
 			}
 			return false;
 		},
@@ -1834,6 +1990,11 @@ eXide.app = (function(util) {
             var btnRun = document.getElementById("run");
             btnRun.disabled = true;
 			btnRun.addEventListener("click", function(ev) { app.runQuery() });
+
+            var btnCancel = document.getElementById("cancel-query");
+            if (btnCancel) {
+                btnCancel.addEventListener("click", function() { app.cancelQuery(); });
+            }
 
             var btnLaunch = document.getElementById("launch");
 			btnLaunch.addEventListener("click", function(ev) { app.runAppOrQuery() });

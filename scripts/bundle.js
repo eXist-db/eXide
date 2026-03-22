@@ -48,3 +48,4 @@ import '../src/error-status-ui.js';
 import '../src/tag-matching.js';
 import '../src/desktop-bridge.js';
 import '../src/ws-transport.js';
+import '../src/ws-eval.js';

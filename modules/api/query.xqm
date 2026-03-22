@@ -8,24 +8,24 @@ module namespace query="http://exist-db.org/apps/eXide/api/query";
 
 import module namespace roaster="http://e-editiones.org/roaster";
 import module namespace config="http://exist-db.org/xquery/apps/config" at "../config.xqm";
+import module namespace lsp="http://exist-db.org/xquery/lsp";
 
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
 
-(: Dynamic lookup for lsp:* functions — gracefully degrades when the
-   lsp module is not available (e.g., eXist-db < 7.0 without PR #6130) :)
-declare variable $query:lsp-ns := "http://exist-db.org/xquery/lsp";
-declare variable $query:lsp-available := exists(
-    function-lookup(QName($query:lsp-ns, "diagnostics"), 2)
-);
-
 (:~
- : POST /api/query — Execute XQuery and return results.
+ : POST /api/query — Execute XQuery and return a cursor for paginated retrieval.
+ :
+ : Uses lsp:eval() to execute the query and store the result sequence in a
+ : server-side cursor (Caffeine cache). The cursor holds live node references,
+ : enabling lazy serialization and document-URI lookup on fetch.
+ :
+ : Returns: { id (cursor ID), count (total items), elapsed (ms) }
+ : Clients then call GET /api/query/{id}/results?start=1&count=10 to fetch pages.
  :)
 declare function query:execute($request as map(*)) {
     let $body := $request?body
     let $xquery := $body?query
-    let $base := $body?base
-    let $serialization := ($body?serialization, "adaptive")[1]
+    let $base := ($body?base, "xmldb:exist:///db")[1]
 
     (: Check execution permission :)
     let $user := (request:get-attribute("org.exist.login.user"), "guest")[1]
@@ -40,39 +40,22 @@ declare function query:execute($request as map(*)) {
             roaster:response(403, "application/json",
                 map { "error": "Query execution not allowed" })
         else
-            let $start-time := util:system-time()
-            return
-                try {
-                    let $result := util:eval($xquery, false(), (), false())
-                    let $elapsed := seconds-from-duration(util:system-time() - $start-time)
-                    let $count := count($result)
-
-                    (: Store results in session for pagination :)
-                    let $session-id := util:uuid()
-                    let $_ := session:set-attribute("results_" || $session-id, $result)
-                    let $_ := session:set-attribute("results_" || $session-id || "_count", $count)
-                    let $_ := session:set-attribute("results_" || $session-id || "_serialization", $serialization)
-
-                    return map {
-                        "id": $session-id,
-                        "count": $count,
-                        "elapsed": $elapsed,
-                        "items": array {
-                            for $item at $i in subsequence($result, 1, 20)
-                            return query:serialize-item($item, $serialization)
-                        }
-                    }
-                } catch * {
-                    let $elapsed := seconds-from-duration(util:system-time() - $start-time)
-                    return roaster:response(400, "application/json", map {
-                        "error": $err:description,
-                        "code": $err:code,
-                        "line": $err:line-number,
-                        "column": $err:column-number,
-                        "module": $err:module,
-                        "elapsed": $elapsed
-                    })
+            try {
+                let $cursor := lsp:eval($xquery, $base)
+                return map {
+                    "id": $cursor?cursor,
+                    "count": $cursor?items,
+                    "elapsed": $cursor?elapsed
                 }
+            } catch * {
+                roaster:response(400, "application/json", map {
+                    "error": $err:description,
+                    "code": $err:code,
+                    "line": $err:line-number,
+                    "column": $err:column-number,
+                    "module": $err:module
+                })
+            }
 };
 
 (:~
@@ -84,10 +67,7 @@ declare function query:compile($request as map(*)) {
     let $xquery := $body?query
     let $base := $body?base
     let $uri := ($body?uri, "untitled")[1]
-    let $diagnostics :=
-        if ($query:lsp-available) then
-            function-lookup(QName($query:lsp-ns, "diagnostics"), 2)($xquery, $base)
-        else ()
+    let $diagnostics := lsp:diagnostics($xquery, $base)
     let $errors := array {
         for $d in $diagnostics?*
         return map {
@@ -119,10 +99,7 @@ declare function query:symbols($request as map(*)) {
     let $body := $request?body
     let $xquery := $body?query
     let $base := $body?base
-    return
-        if ($query:lsp-available) then
-            function-lookup(QName($query:lsp-ns, "symbols"), 2)($xquery, $base)
-        else array {}
+    return lsp:symbols($xquery, $base)
 };
 
 (:~
@@ -137,10 +114,7 @@ declare function query:completions($request as map(*)) {
     let $xquery := $body?query
     let $prefix := ($body?prefix, "")[1]
     let $base := $body?base
-    let $completions :=
-        if ($query:lsp-available) then
-            function-lookup(QName($query:lsp-ns, "completions"), 2)($xquery, $base)
-        else array {}
+    let $completions := lsp:completions($xquery, $base)
     return array {
         for $item in $completions?*
         let $name := replace($item?label, "#\d+$", "")
@@ -180,10 +154,7 @@ declare function query:hover($request as map(*)) {
     let $line := xs:integer($body?line)
     let $column := xs:integer($body?column)
     let $base := $body?base
-    let $hover :=
-        if ($query:lsp-available) then
-            function-lookup(QName($query:lsp-ns, "hover"), 4)($xquery, $line, $column, $base)
-        else ()
+    let $hover := lsp:hover($xquery, $line, $column, $base)
     return
         if (exists($hover)) then
             $hover
@@ -200,10 +171,7 @@ declare function query:definition($request as map(*)) {
     let $line := xs:integer($body?line)
     let $column := xs:integer($body?column)
     let $base := $body?base
-    let $def :=
-        if ($query:lsp-available) then
-            function-lookup(QName($query:lsp-ns, "definition"), 4)($xquery, $line, $column, $base)
-        else ()
+    let $def := lsp:definition($xquery, $line, $column, $base)
     return
         if (exists($def)) then
             $def
@@ -220,56 +188,40 @@ declare function query:references($request as map(*)) {
     let $line := xs:integer($body?line)
     let $column := xs:integer($body?column)
     let $base := ($body?base, "xmldb:exist:///db")[1]
-    return
-        if ($query:lsp-available) then
-            let $refs-fn := function-lookup(QName($query:lsp-ns, "references"), 4)
-            return
-                if (exists($refs-fn)) then
-                    $refs-fn($xquery, $line, $column, $base)
-                else array {}
-        else array {}
+    return lsp:references($xquery, $line, $column, $base)
 };
 
 (:~
- : GET /api/query/{id}/results — Paginated result items.
- : Replaces session.xq result retrieval.
+ : GET /api/query/{id}/results — Paginated result items from cursor.
+ :
+ : Uses lsp:fetch() to retrieve a page of items from the server-side cursor.
+ : Only the requested items are serialized; the rest remain as live references.
+ : Each item includes: value (serialized), type, documentURI, nodeId.
  :)
 declare function query:results($request as map(*)) {
     let $id := $request?parameters?id
-    let $start := ($request?parameters?start, 1)[1]
-    let $count := ($request?parameters?count, 20)[1]
-    let $result := session:get-attribute("results_" || $id)
-    let $total := session:get-attribute("results_" || $id || "_count")
-    let $serialization := (session:get-attribute("results_" || $id || "_serialization"), "adaptive")[1]
+    let $start := xs:integer(($request?parameters?start, 1)[1])
+    let $count := xs:integer(($request?parameters?count, 10)[1])
     return
-        if (empty($result) and empty($total)) then
-            roaster:response(404, "application/json",
-                map { "error": "Session expired or invalid query ID" })
-        else map {
-            "total": ($total, 0)[1],
-            "start": $start,
-            "count": $count,
-            "items": array {
-                for $item in subsequence($result, $start, $count)
-                return query:serialize-item($item, $serialization)
+        try {
+            let $page := lsp:fetch($id, $start, $count)
+            return map {
+                "start": $start,
+                "count": array:size($page),
+                "items": $page
             }
+        } catch * {
+            roaster:response(404, "application/json",
+                map { "error": "Cursor expired or invalid: " || $id })
         }
 };
 
 (:~
- : Serialize a single result item to string for JSON transport.
+ : DELETE /api/query/{id} — Close a cursor and release server resources.
  :)
-declare %private function query:serialize-item($item, $serialization as xs:string) as xs:string {
-    if ($item instance of node()) then
-        serialize($item, <output:serialization-parameters>
-            <output:method>{
-                if ($serialization = ("html5", "xhtml", "xhtml5")) then $serialization
-                else if ($serialization = "json") then "json"
-                else if ($serialization = "text") then "text"
-                else "xml"
-            }</output:method>
-            <output:indent>yes</output:indent>
-        </output:serialization-parameters>)
-    else
-        string($item)
+declare function query:close($request as map(*)) {
+    let $id := $request?parameters?id
+    return map {
+        "closed": lsp:close($id)
+    }
 };
