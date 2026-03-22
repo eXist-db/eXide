@@ -654,9 +654,40 @@
                 }
             }
         },
+        "/api/query/{id}": {
+            "delete": {
+                "summary": "Close a query cursor and release server resources",
+                "operationId": "query:close",
+                "tags": [
+                    "query"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Cursor closed",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/query/{id}/results": {
             "get": {
-                "summary": "Retrieve paginated query results",
+                "summary": "Retrieve paginated query results from cursor",
                 "operationId": "query:results",
                 "tags": [
                     "query"
@@ -683,7 +714,36 @@
                         "in": "query",
                         "schema": {
                             "type": "integer",
-                            "default": 20
+                            "default": 10
+                        }
+                    },
+                    {
+                        "name": "method",
+                        "in": "query",
+                        "description": "Serialization method (W3C spec)",
+                        "schema": {
+                            "type": "string",
+                            "default": "adaptive",
+                            "enum": ["adaptive", "xml", "json", "text", "html", "xhtml", "html5", "xhtml5", "microxml"]
+                        }
+                    },
+                    {
+                        "name": "indent",
+                        "in": "query",
+                        "description": "Indent output",
+                        "schema": {
+                            "type": "string",
+                            "default": "yes",
+                            "enum": ["yes", "no"]
+                        }
+                    },
+                    {
+                        "name": "highlight-matches",
+                        "in": "query",
+                        "description": "Expand index match markers (eXist-specific)",
+                        "schema": {
+                            "type": "string",
+                            "enum": ["yes", "no", "both"]
                         }
                     }
                 ],

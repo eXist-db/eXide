@@ -217,6 +217,11 @@ eXide.app = (function(util) {
                         });
                     }
 
+                    // Connect eval WebSocket for streaming query execution
+                    if (typeof eXide.wsEval !== "undefined" && eXide.wsEval.autoConnect) {
+                        eXide.wsEval.autoConnect();
+                    }
+
                     // Fetch registered module prefixes for static analysis
                     fetch("api/editor/modules")
                         .then(function(r) { return r.json(); })
@@ -855,56 +860,272 @@ eXide.app = (function(util) {
                     var serializationMode = document.getElementById("serialization-mode").value;
         			var moduleLoadPath = "xmldb:exist://" + editor.getActiveDocument().getBasePath();
         			document.querySelectorAll('.results-container .results').forEach(function(el) { el.innerHTML = ""; });
-        			var formData = new URLSearchParams();
-        			formData.append("qu", code);
-        			formData.append("base", moduleLoadPath);
-        			formData.append("output", serializationMode);
-        			var expectXml = (serializationMode == "adaptive" || serializationMode == "html5" || serializationMode == "xhtml" || serializationMode == "xhtml5" || serializationMode == "json" || serializationMode == "text" || serializationMode == "xml" || serializationMode == "microxml");
-        			fetch("execute", {
-        			    method: "POST",
-        			    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        			    body: formData.toString()
-        			}).then(function(response) {
-        			    if (!response.ok) {
-        			        return response.text().then(function(text) {
-        			            util.error(text, "Server Error");
-        			        });
-        			    }
-        			    if (expectXml) {
-        			        return response.text().then(function(text) {
-        			            var parser = new DOMParser();
-        			            var data = parser.parseFromString(text, "text/xml");
-                                document.getElementById("results-iframe").style.display = "none";
-            					var elem = data.documentElement;
-            					if (elem.nodeName == 'error') {
-            				        var msg = elem.textContent;
-            				        editor.evalError(msg, !livePreview);
-            					} else {
-            						showResultsPanel();
-            						hitCount = elem.getAttribute("hits");
-            						endOffset = startOffset + numberOfResults - 1;
-            						if (hitCount < endOffset)
-            							endOffset = hitCount;
-            						util.message("Query returned " + hitCount + " item(s) in " + elem.getAttribute("elapsed") + "s");
-            						app.retrieveNext();
-            					}
-        			        });
-        			    } else {
-        			        return response.text().then(function(data) {
-                                showResultsPanel();
-                                var iframe = document.getElementById("results-iframe");
-                                iframe.style.display = "";
-                                iframe.contentWindow.document.open('text/html', 'replace');
-                                iframe.contentWindow.document.write(data);
-                                iframe.contentWindow.document.close();
-        			        });
-        			    }
-        			}).catch(function(err) {
-        			    util.error(err.message || String(err), "Server Error");
-        			});
+
+                    app.runQueryCursor(code, moduleLoadPath, serializationMode, livePreview);
                     break;
             }
 
+		},
+
+		/** Active cursor ID for pagination. */
+		_cursorId: null,
+
+		/** AbortController for the in-flight query request. */
+		_queryAbort: null,
+
+		/**
+		 * Execute query via server-side cursor (lsp:eval → lsp:fetch).
+		 *
+		 * POST ../exist-api/api/query → { cursor, items, elapsed, timing }
+		 * GET  ../exist-api/api/query/{id}/results?start=N&count=M → array of item maps
+		 *
+		 * Calls exist-api directly (not eXide's own /api/query routes).
+		 * Cookie auth works because both apps share the org.exist.login domain.
+		 */
+		runQueryCursor: function(code, moduleLoadPath, serializationMode, livePreview) {
+		    var btnCancel = document.getElementById("cancel-query");
+		    var timingEl = document.getElementById("query-timing");
+
+		    function showCancel() { if (btnCancel) btnCancel.style.display = ""; }
+		    function hideCancel() { if (btnCancel) btnCancel.style.display = "none"; }
+
+		    function hideTiming() {
+		        if (timingEl) timingEl.style.display = "none";
+		    }
+
+		    // Close previous cursor if any
+		    if (app._cursorId) {
+		        fetch("../exist-api/api/query/" + app._cursorId, { method: "DELETE" }).catch(function() {});
+		        app._cursorId = null;
+		    }
+
+		    // Abort any in-flight query
+		    if (app._queryAbort) {
+		        app._queryAbort.abort();
+		    }
+
+		    var abortController = new AbortController();
+		    app._queryAbort = abortController;
+
+		    showCancel();
+		    hideTiming();
+
+		    fetch("../exist-api/api/query", {
+		        method: "POST",
+		        headers: { "Content-Type": "application/json" },
+		        body: JSON.stringify({ query: code, "module-load-path": moduleLoadPath }),
+		        signal: abortController.signal
+		    })
+		    .then(function(response) {
+		        app._queryAbort = null;
+		        hideCancel();
+		        if (!response.ok) {
+		            return response.json().then(function(err) {
+		                var msg = err.error || "Unknown error";
+		                if (err.line > 0) {
+		                    msg = "line " + err.line + ": " + msg;
+		                }
+		                editor.evalError(msg, !livePreview);
+		            });
+		        }
+		        return response.json().then(function(data) {
+		            app._cursorId = data.cursor;
+		            hitCount = data.items;
+		            endOffset = Math.min(numberOfResults, hitCount);
+
+		            editor.updateStatus("");
+		            editor.clearErrors();
+		            app.showResultsPanel();
+		            document.getElementById("results-iframe").style.display = "none";
+		            startOffset = 1;
+		            currentOffset = 1;
+		            activeResultIdx = -1;
+
+		            var elapsed = (data.elapsed / 1000).toFixed(3);
+		            util.message("Query returned " + hitCount.toLocaleString() + " item(s) in " + elapsed + "s");
+
+		            // Show timing breakdown
+		            if (timingEl) {
+		                var t = data.timing;
+		                if (t) {
+		                    timingEl.innerHTML =
+		                        '<span><span class="timing-label">Compile:</span> ' + t.compile + 'ms</span>' +
+		                        '<span><span class="timing-label">Eval:</span> ' + t.evaluate.toLocaleString() + 'ms</span>' +
+		                        '<span><span class="timing-label">Total:</span> ' + t.total.toLocaleString() + 'ms</span>' +
+		                        '<span><span class="timing-label">Items:</span> ' + hitCount.toLocaleString() + '</span>';
+		                } else {
+		                    timingEl.innerHTML =
+		                        '<span><span class="timing-label">Elapsed:</span> ' + data.elapsed + 'ms</span>' +
+		                        '<span><span class="timing-label">Items:</span> ' + hitCount.toLocaleString() + '</span>';
+		                }
+		                timingEl.style.display = "";
+		            }
+
+		            // Fetch first page
+		            app.fetchCursorPage(startOffset, endOffset);
+		        });
+		    })
+		    .catch(function(err) {
+		        app._queryAbort = null;
+		        hideCancel();
+		        if (err.name === "AbortError") {
+		            util.message("Query cancelled.");
+		            return;
+		        }
+		        util.error(err.message || String(err), "Server Error");
+		    });
+		},
+
+		/**
+		 * Fetch a page of results from the server-side cursor.
+		 * Each item includes value, type, documentURI, and nodeId.
+		 * Passes current serialization settings from the results toolbar.
+		 */
+		fetchCursorPage: function(start, end) {
+		    if (!app._cursorId) return;
+
+		    var count = end - start + 1;
+		    var serializationMode = document.getElementById("serialization-mode").value;
+		    var indent = document.getElementById("indent-results").checked ? "yes" : "no";
+		    var autoExpand = document.getElementById("auto-expand-matches").checked ? "both" : "no";
+		    var params = new URLSearchParams({
+		        start: start,
+		        count: count,
+		        method: serializationMode,
+		        indent: indent,
+		        "highlight-matches": autoExpand
+		    });
+
+		    fetch("../exist-api/api/query/" + app._cursorId + "/results?" + params.toString())
+		    .then(function(response) {
+		        if (!response.ok) throw new Error("Cursor expired");
+		        return response.json();
+		    })
+		    .then(function(data) {
+		        var resultsDiv = document.querySelector('.results-container .results');
+		        if (!resultsDiv) return;
+		        resultsDiv.innerHTML = "";
+
+		        var items = data; // exist-api returns a plain array
+		        if (!items || items.length === 0) return;
+
+		        var numWidth = Math.ceil(Math.log(hitCount + 1) / Math.LN10);
+		        for (var i = 0; i < items.length; i++) {
+		            var item = items[i];
+		            var idx = start + i;
+		            var div = document.createElement("div");
+		            div.className = (idx % 2 === 0) ? "even" : "uneven";
+
+		            // Build badge — clickable link if documentURI is available
+		            var badge;
+		            if (item.documentURI) {
+		                badge = '<a class="badge" href="#" data-path="' + item.documentURI +
+		                    '" title="Click to open source document" style="width:' + numWidth + 'ch">' + idx + '</a>';
+		            } else {
+		                badge = '<span class="badge" style="width:' + numWidth + 'ch">' + idx + '</span>';
+		            }
+
+		            div.innerHTML =
+		                '<div class="pos">' + badge + '</div>' +
+		                '<div class="item"><i class="fa fa-clipboard copy-result" title="Copy this item to clipboard"></i>' +
+		                '<div class="content" style="white-space: pre-wrap"></div></div>';
+
+		            var contentDiv = div.querySelector('.content');
+		            contentDiv.textContent = item.value;
+		            highlightResultContent(contentDiv);
+
+		            // Document link click handler
+		            var posLink = div.querySelector('.pos a');
+		            if (posLink) {
+		                posLink.addEventListener("click", function(e) {
+		                    e.preventDefault();
+		                    app.findDocument(this.dataset.path);
+		                });
+		            }
+
+		            // Copy button
+		            div.querySelector('.copy-result').addEventListener("click", function() {
+		                var sibling = this.parentNode.querySelector('.content');
+		                var text = sibling ? sibling.textContent : "";
+		                var btn = this;
+		                navigator.clipboard.writeText(text).then(function() {
+		                    btn.classList.remove('fa-clipboard');
+		                    btn.classList.add('fa-check', 'copied');
+		                    setTimeout(function() {
+		                        btn.classList.remove('fa-check', 'copied');
+		                        btn.classList.add('fa-clipboard');
+		                    }, 1200);
+		                });
+		            });
+
+		            resultsDiv.appendChild(div);
+		        }
+
+		        // Update status
+		        var actualEnd = start + items.length - 1;
+		        document.querySelectorAll('.results-container .current').forEach(function(el) {
+		            el.textContent = "Showing results " + start + " to " + actualEnd + " of " + hitCount;
+		        });
+
+		        // Update pagination state
+		        startOffset = start;
+		        currentOffset = actualEnd + 1;
+		        endOffset = actualEnd;
+		    })
+		    .catch(function(err) {
+		        util.error("Failed to fetch results: " + err.message);
+		    });
+		},
+
+		/** Cancel the active query. */
+		cancelQuery: function() {
+		    var code = editor.getText();
+		    // Detect queries that modify state: XQUF expressions, legacy update syntax,
+		    // xmldb store/remove/create, security manager changes, file system writes
+		    var hasSideEffects = /\b(update|insert|delete|replace|rename)\b/i.test(code) ||
+		        /\b(xmldb:(store|remove|create-collection|copy|move|rename))\b/.test(code) ||
+		        /\b(sm:(chmod|chown|chgrp|add-account|remove-account))\b/.test(code) ||
+		        /\b(file:(write|delete|move|mkdirs|serialize))\b/.test(code);
+
+		    function doCancel() {
+		        // 1. Abort the in-flight HTTP request (client-side only —
+		        //    drops the connection but the server query continues)
+		        if (app._queryAbort) {
+		            app._queryAbort.abort();
+		            app._queryAbort = null;
+		        }
+		        // 2. Try to kill the server-side query via admin endpoint.
+		        //    Only admins can call this; guest users just abort the HTTP connection.
+		        //    Fetch running queries and kill any that are user-submitted
+		        //    (exclude eXide's own internal API queries).
+		        fetch("api/admin/queries").then(function(r) { return r.json(); }).then(function(data) {
+		            var running = data.queries || [];
+		            for (var i = 0; i < running.length; i++) {
+		                var q = running[i];
+		                if (q.sourceKey && !q.sourceKey.includes("/apps/eXide/modules/")) {
+		                    fetch("api/admin/queries/" + encodeURIComponent(q.id), { method: "DELETE" });
+		                }
+		            }
+		        }).catch(function() {});
+
+		        var btnCancel = document.getElementById("cancel-query");
+		        if (btnCancel) btnCancel.style.display = "none";
+		        util.message("Query cancelled.");
+		    }
+
+		    if (hasSideEffects) {
+		        if (confirm(
+		            "This query contains expressions that modify the database " +
+		            "(update, store, delete, permissions, etc.).\n\n" +
+		            "Cancelling may leave the database in an inconsistent state " +
+		            "because partially applied changes cannot be rolled back.\n\n" +
+		            "Cancel anyway?"
+		        )) {
+		            doCancel();
+		        }
+		    } else {
+		        doCancel();
+		    }
 		},
 
 		checkQuery: function() {
@@ -990,8 +1211,12 @@ eXide.app = (function(util) {
 				if (hitCount < endOffset)
 					endOffset = hitCount;
 				activeResultIdx = -1;
-				document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
-				app.retrieveNext();
+				if (app._cursorId) {
+					app.fetchCursorPage(startOffset, endOffset);
+				} else {
+					document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
+					app.retrieveNext();
+				}
 			}
 			return false;
 		},
@@ -1008,8 +1233,12 @@ eXide.app = (function(util) {
 				if (hitCount < endOffset)
 					endOffset = hitCount;
 				activeResultIdx = -1;
-				document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
-				app.retrieveNext();
+				if (app._cursorId) {
+					app.fetchCursorPage(startOffset, endOffset);
+				} else {
+					document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
+					app.retrieveNext();
+				}
 			}
 			return false;
 		},
@@ -1020,8 +1249,12 @@ eXide.app = (function(util) {
 				currentOffset = 1;
 				endOffset = Math.min(numberOfResults, hitCount);
 				activeResultIdx = -1;
-				document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
-				app.retrieveNext();
+				if (app._cursorId) {
+					app.fetchCursorPage(startOffset, endOffset);
+				} else {
+					document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
+					app.retrieveNext();
+				}
 			}
 			return false;
 		},
@@ -1032,8 +1265,12 @@ eXide.app = (function(util) {
 				currentOffset = startOffset;
 				endOffset = hitCount;
 				activeResultIdx = -1;
-				document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
-				app.retrieveNext();
+				if (app._cursorId) {
+					app.fetchCursorPage(startOffset, endOffset);
+				} else {
+					document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
+					app.retrieveNext();
+				}
 			}
 			return false;
 		},
@@ -1835,6 +2072,11 @@ eXide.app = (function(util) {
             btnRun.disabled = true;
 			btnRun.addEventListener("click", function(ev) { app.runQuery() });
 
+            var btnCancel = document.getElementById("cancel-query");
+            if (btnCancel) {
+                btnCancel.addEventListener("click", function() { app.cancelQuery(); });
+            }
+
             var btnLaunch = document.getElementById("launch");
 			btnLaunch.addEventListener("click", function(ev) { app.runAppOrQuery() });
 
@@ -2158,6 +2400,8 @@ eXide.app = (function(util) {
                     var checked = !cb.checked;
                     cb.checked = checked;
                     btn.classList.toggle('active', checked);
+                    // Dispatch change event so listeners (e.g., cursor re-fetch) fire
+                    cb.dispatchEvent(new Event("change", { bubbles: true }));
                 });
             });
 
@@ -2213,9 +2457,19 @@ eXide.app = (function(util) {
                 numberOfResults = +document.getElementById("number-of-results").value;
             });
             document.getElementById("serialization-mode").addEventListener("change", function(ev) {
-                if (lastQuery) {
+                if (app._cursorId) {
+                    // Re-fetch current page with new serialization settings
+                    app.fetchCursorPage(startOffset, endOffset);
+                } else if (lastQuery) {
                     app.runQuery(lastQuery);
                 }
+            });
+            // Re-fetch on indent/highlight toggle changes too
+            document.getElementById("indent-results").addEventListener("change", function() {
+                if (app._cursorId) app.fetchCursorPage(startOffset, endOffset);
+            });
+            document.getElementById("auto-expand-matches").addEventListener("change", function() {
+                if (app._cursorId) app.fetchCursorPage(startOffset, endOffset);
             });
             document.getElementById("error-status").addEventListener("mouseover", function(ev) {
                 var error = this;

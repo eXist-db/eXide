@@ -303,6 +303,7 @@
                         <button id="save" title="Save the active editor tab to eXist-db"><i class="fa fa-floppy-o"></i> Save</button>
                         <button id="close" title="Close the active editor tab"><i class="fa fa-times"></i> Close</button>
                         <button id="run" title="Evaluate this query in eXide"><i class="fa fa-play"></i> Run</button>
+                        <button id="cancel-query" title="Cancel running query" style="display:none"><i class="fa fa-stop"></i> Cancel</button>
                         <button id="launch" title="Launch this saved query in a new browser tab"><i class="fa fa-external-link"></i> Launch</button>
                     </span>
                     <span class="toolbar-buttons toolbar-buttons-right">
@@ -500,6 +501,7 @@
                                         </a>
                                     </div>
                                 </div>
+                                <div id="query-timing" class="query-timing" style="display:none"></div>
                                 <div id="results-body">
                                     <div class="marker-layer">
                                         <div class="results"/>
