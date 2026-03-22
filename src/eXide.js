@@ -2393,6 +2393,8 @@ eXide.app = (function(util) {
                     var checked = !cb.checked;
                     cb.checked = checked;
                     btn.classList.toggle('active', checked);
+                    // Dispatch change event so listeners (e.g., cursor re-fetch) fire
+                    cb.dispatchEvent(new Event("change", { bubbles: true }));
                 });
             });
 

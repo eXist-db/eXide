@@ -143,4 +143,90 @@ describe('Query execution', () => {
     cy.get('.panel-south .results .content', { timeout: 10000 })
       .should('have.length.at.least', 1)
   })
+
+  it('paginates results with next/previous buttons', () => {
+    // Query with 25 results, default page size 10
+    setEditorContent('for $i in 1 to 25 return $i')
+    cy.get('#run').click()
+
+    // First page: 1 to 10
+    cy.get('.panel-south .current', { timeout: 10000 })
+      .invoke('text')
+      .should('contain', '1 to 10 of 25')
+    cy.get('.panel-south .results .content')
+      .should('have.length', 10)
+
+    // Click next page
+    cy.get('.panel-south .next').click()
+    cy.get('.panel-south .current')
+      .invoke('text')
+      .should('contain', '11 to 20 of 25')
+
+    // Click next again — partial page
+    cy.get('.panel-south .next').click()
+    cy.get('.panel-south .current')
+      .invoke('text')
+      .should('contain', '21 to 25 of 25')
+
+    // Click previous
+    cy.get('.panel-south .previous').click()
+    cy.get('.panel-south .current')
+      .invoke('text')
+      .should('contain', '11 to 20 of 25')
+
+    // Click first
+    cy.get('.panel-south .first-page').click()
+    cy.get('.panel-south .current')
+      .invoke('text')
+      .should('contain', '1 to 10 of 25')
+
+    // Click last
+    cy.get('.panel-south .last-page').click()
+    cy.get('.panel-south .current')
+      .invoke('text')
+      .should('contain', '21 to 25 of 25')
+  })
+
+  it('handles large result sets without browser memory issues', () => {
+    // 10,000 items — should return quickly with cursor, only first page rendered
+    setEditorContent('for $i in 1 to 10000 return $i')
+    cy.get('#run').click()
+
+    cy.get('.panel-south .current', { timeout: 30000 })
+      .invoke('text')
+      .should('contain', '10000')
+    // Only 10 items rendered in DOM (not 10,000)
+    cy.get('.panel-south .results .content')
+      .should('have.length', 10)
+  })
+
+  it('re-fetches page when serialization mode changes without re-executing', () => {
+    setEditorContent('<root><child/></root>')
+    cy.get('#run').click()
+    cy.get('.panel-south .results .content', { timeout: 10000 })
+      .should('have.length.at.least', 1)
+
+    // Switch to XML mode — should re-fetch current page, not re-run query
+    cy.intercept('GET', '**/api/query/*/results*').as('fetchPage')
+    cy.intercept('POST', '**/api/query').as('execQuery')
+
+    cy.get('.panel-south #serialization-mode').select('xml')
+
+    // Should fetch results but NOT post a new query
+    cy.wait('@fetchPage')
+    cy.get('@execQuery.all').should('have.length', 0)
+  })
+
+  it('re-fetches page when indent toggle changes', () => {
+    setEditorContent('<root><child/></root>')
+    cy.get('#run').click()
+    cy.get('.panel-south .results .content', { timeout: 10000 })
+      .should('have.length.at.least', 1)
+
+    // Toggle indent off
+    cy.intercept('GET', '**/api/query/*/results*').as('fetchPage')
+    cy.get('#indent-results-btn').click()
+
+    cy.wait('@fetchPage')
+  })
 })
