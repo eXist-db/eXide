@@ -870,6 +870,9 @@ eXide.app = (function(util) {
 		/** Active cursor ID for pagination. */
 		_cursorId: null,
 
+		/** AbortController for the in-flight query request. */
+		_queryAbort: null,
+
 		/**
 		 * Execute query via server-side cursor (lsp:eval → lsp:fetch).
 		 *
@@ -892,21 +895,31 @@ eXide.app = (function(util) {
 		        if (timingEl) timingEl.style.display = "none";
 		    }
 
-		    showCancel();
-		    hideTiming();
-
 		    // Close previous cursor if any
 		    if (app._cursorId) {
 		        fetch("api/query/" + app._cursorId, { method: "DELETE" }).catch(function() {});
 		        app._cursorId = null;
 		    }
 
+		    // Abort any in-flight query
+		    if (app._queryAbort) {
+		        app._queryAbort.abort();
+		    }
+
+		    var abortController = new AbortController();
+		    app._queryAbort = abortController;
+
+		    showCancel();
+		    hideTiming();
+
 		    fetch("api/query", {
 		        method: "POST",
 		        headers: { "Content-Type": "application/json" },
-		        body: JSON.stringify({ query: code, base: moduleLoadPath })
+		        body: JSON.stringify({ query: code, base: moduleLoadPath }),
+		        signal: abortController.signal
 		    })
 		    .then(function(response) {
+		        app._queryAbort = null;
 		        hideCancel();
 		        if (!response.ok) {
 		            return response.json().then(function(err) {
@@ -946,7 +959,12 @@ eXide.app = (function(util) {
 		        });
 		    })
 		    .catch(function(err) {
+		        app._queryAbort = null;
 		        hideCancel();
+		        if (err.name === "AbortError") {
+		            util.message("Query cancelled.");
+		            return;
+		        }
 		        util.error(err.message || String(err), "Server Error");
 		    });
 		},
@@ -1044,7 +1062,36 @@ eXide.app = (function(util) {
 
 		/** Cancel the active query. */
 		cancelQuery: function() {
-		    eXide.wsEval.cancel();
+		    var code = editor.getText();
+		    var hasUpdate = /\b(update|insert|delete|replace|rename)\b/i.test(code);
+
+		    function doCancel() {
+		        // 1. Abort the in-flight HTTP request
+		        if (app._queryAbort) {
+		            app._queryAbort.abort();
+		            app._queryAbort = null;
+		        }
+		        // 2. Try to kill the server-side query via admin endpoint.
+		        //    Fetch running queries and kill any that look like ours.
+		        fetch("api/admin/queries").then(function(r) { return r.json(); }).then(function(data) {
+		            var running = data.queries || [];
+		            for (var i = 0; i < running.length; i++) {
+		                var q = running[i];
+		                // Kill queries from eXide that aren't our own API calls
+		                if (q.sourceKey && !q.sourceKey.includes("/apps/eXide/modules/")) {
+		                    fetch("api/admin/queries/" + encodeURIComponent(q.id), { method: "DELETE" });
+		                }
+		            }
+		        }).catch(function() {});
+		    }
+
+		    if (hasUpdate) {
+		        if (confirm("This query contains update expressions. Cancelling may leave the database in an inconsistent state.\n\nCancel anyway?")) {
+		            doCancel();
+		        }
+		    } else {
+		        doCancel();
+		    }
 		},
 
 		checkQuery: function() {
