@@ -1063,30 +1063,47 @@ eXide.app = (function(util) {
 		/** Cancel the active query. */
 		cancelQuery: function() {
 		    var code = editor.getText();
-		    var hasUpdate = /\b(update|insert|delete|replace|rename)\b/i.test(code);
+		    // Detect queries that modify state: XQUF expressions, legacy update syntax,
+		    // xmldb store/remove/create, security manager changes, file system writes
+		    var hasSideEffects = /\b(update|insert|delete|replace|rename)\b/i.test(code) ||
+		        /\b(xmldb:(store|remove|create-collection|copy|move|rename))\b/.test(code) ||
+		        /\b(sm:(chmod|chown|chgrp|add-account|remove-account))\b/.test(code) ||
+		        /\b(file:(write|delete|move|mkdirs|serialize))\b/.test(code);
 
 		    function doCancel() {
-		        // 1. Abort the in-flight HTTP request
+		        // 1. Abort the in-flight HTTP request (client-side only —
+		        //    drops the connection but the server query continues)
 		        if (app._queryAbort) {
 		            app._queryAbort.abort();
 		            app._queryAbort = null;
 		        }
 		        // 2. Try to kill the server-side query via admin endpoint.
-		        //    Fetch running queries and kill any that look like ours.
+		        //    Only admins can call this; guest users just abort the HTTP connection.
+		        //    Fetch running queries and kill any that are user-submitted
+		        //    (exclude eXide's own internal API queries).
 		        fetch("api/admin/queries").then(function(r) { return r.json(); }).then(function(data) {
 		            var running = data.queries || [];
 		            for (var i = 0; i < running.length; i++) {
 		                var q = running[i];
-		                // Kill queries from eXide that aren't our own API calls
 		                if (q.sourceKey && !q.sourceKey.includes("/apps/eXide/modules/")) {
 		                    fetch("api/admin/queries/" + encodeURIComponent(q.id), { method: "DELETE" });
 		                }
 		            }
 		        }).catch(function() {});
+
+		        var btnCancel = document.getElementById("cancel-query");
+		        if (btnCancel) btnCancel.style.display = "none";
+		        util.message("Query cancelled.");
 		    }
 
-		    if (hasUpdate) {
-		        if (confirm("This query contains update expressions. Cancelling may leave the database in an inconsistent state.\n\nCancel anyway?")) {
+		    if (hasSideEffects) {
+		        if (confirm(
+		            "This query contains expressions that modify the database " +
+		            "(update, store, delete, permissions, etc.).\n\n" +
+		            "Cancelling may leave the database in an inconsistent state " +
+		            "because partially applied changes cannot be rolled back.\n\n" +
+		            "Cancel anyway?"
+		        )) {
 		            doCancel();
 		        }
 		    } else {
