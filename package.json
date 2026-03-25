@@ -30,7 +30,7 @@
 	"homepage": "https://github.com/eXist-db/eXide#readme",
 	"devDependencies": {
 		"chalk": "^4.1.2",
-		"command-line-args": "^6.0.1",
+		"command-line-args": "^6.0.2",
 		"cypress": "^15.13.0",
 		"esbuild": "^0.27.4",
 		"glob-stream": "^7.0.0",
