@@ -1,27 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-
-    eXist-db Open Source Native XML Database
-    Copyright (C) 2001 The eXist-db Authors
-
-    info@exist-db.org
-    http://www.exist-db.org
-
-    This library is free software; you can redistribute it and/or
-    modify it under the terms of the GNU Lesser General Public
-    License as published by the Free Software Foundation; either
-    version 2.1 of the License, or (at your option) any later version.
-
-    This library is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-    Lesser General Public License for more details.
-
-    You should have received a copy of the GNU Lesser General Public
-    License along with this library; if not, write to the Free Software
-    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
-
--->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
            xmlns:vc="http://www.w3.org/2007/XMLSchema-versioning" vc:minVersion="1.1"
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -79,15 +56,15 @@
     </xs:complexType>
 
     <xs:element name="range" type="cc:newRangeIndexType"/>
-    
+
     <xs:complexType name="newRangeIndexType">
         <xs:sequence>
             <xs:element ref="cc:create" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
     </xs:complexType>
-    
+
     <xs:element name="create" type="cc:rangeIndexCreateType"/>
-    
+
     <xs:complexType name="rangeIndexCreateType">
         <xs:group ref="cc:fieldDefinitions"/>
         <xs:attributeGroup ref="cc:qnameOpt"/>
@@ -98,14 +75,14 @@
         <xs:attributeGroup ref="cc:caseOpt"/>
         <xs:attributeGroup ref="cc:collationOpt"/>
     </xs:complexType>
-    
+
     <xs:group name="fieldDefinitions">
         <xs:all>
             <xs:element name="condition" type="cc:newRangeIndexConditionType" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="field" type="cc:newRangeIndexFieldType" minOccurs="0" maxOccurs="unbounded"/>
         </xs:all>
     </xs:group>
-    
+
     <xs:complexType name="newRangeIndexConditionType">
         <xs:attributeGroup ref="cc:attributeReq"/>
         <xs:attributeGroup ref="cc:operatorOpt"/>
@@ -113,16 +90,16 @@
         <xs:attributeGroup ref="cc:caseOpt"/>
         <xs:attributeGroup ref="cc:numericOpt"/>
     </xs:complexType>
-    
+
     <xs:complexType name="newRangeIndexFieldType">
         <xs:attributeGroup ref="cc:nameReq"/>
         <xs:attributeGroup ref="cc:matchOpt"/>
         <xs:attributeGroup ref="cc:caseOpt"/>
         <xs:attributeGroup ref="cc:nestedOpt"/>
         <xs:attributeGroup ref="cc:whitespaceOpt"/>
-        <xs:attributeGroup ref="cc:typeReq"/>
+        <xs:attributeGroup ref="cc:typeOpt"/>
     </xs:complexType>
-    
+
     <xs:element name="lucene" type="cc:luceneType"/>
 
     <xs:complexType name="luceneType">
@@ -133,6 +110,17 @@
             <xs:group ref="cc:textInstruction"/>
         </xs:all>
         <xs:attributeGroup ref="cc:diacriticsOpt"/>
+        <xs:attribute name="vector-store" use="optional" default="db">
+            <xs:annotation>
+                <xs:documentation>Where to store vectors for embedding=local: 'db' = Lucene + vector.dbx (default, reindex reads from db); 'lucene' = Lucene only (US-I6, reindex recomputes from source text).</xs:documentation>
+            </xs:annotation>
+            <xs:simpleType>
+                <xs:restriction base="xs:token">
+                    <xs:enumeration value="lucene"/>
+                    <xs:enumeration value="db"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
     </xs:complexType>
 
     <xs:element name="analyzer" type="cc:analyzerType"/>
@@ -155,9 +143,9 @@
         <xs:attribute name="type" type="xs:string" use="optional" default="java.lang.String"/>
         <xs:attributeGroup ref="cc:valueOpt"/>
     </xs:complexType>
-    
+
     <xs:element name="module" type="cc:moduleType"/>
-    
+
     <xs:complexType name="moduleType">
         <xs:attributeGroup ref="cc:uriReq"/>
         <xs:attributeGroup ref="cc:prefixReq"/>
@@ -174,8 +162,48 @@
             <xs:element name="match-sibling-attribute" minOccurs="0" maxOccurs="unbounded" type="cc:matchAttrBoostType"/>
             <xs:element name="has-attribute" minOccurs="0" maxOccurs="unbounded" type="cc:hasAttrBoostType"/>
             <xs:element name="has-sibling-attribute" minOccurs="0" maxOccurs="unbounded" type="cc:hasAttrBoostType"/>
+            <xs:element name="vector-field" minOccurs="0" maxOccurs="unbounded" type="cc:vectorFieldAttrType"/>
         </xs:all>
     </xs:group>
+
+    <xs:complexType name="vectorFieldAttrType">
+        <xs:annotation>
+            <xs:documentation>Vector field for KNN/semantic search. Dense float vectors; dimension fixed per field.</xs:documentation>
+        </xs:annotation>
+        <xs:attributeGroup ref="cc:nameReq"/>
+        <xs:attributeGroup ref="cc:expressionReq"/>
+        <xs:attribute name="dimension" type="xs:positiveInteger" use="required"/>
+        <xs:attribute name="similarity" use="optional" default="cosine">
+            <xs:simpleType>
+                <xs:restriction base="xs:token">
+                    <xs:enumeration value="cosine"/>
+                    <xs:enumeration value="euclidean"/>
+                    <xs:enumeration value="dot_product"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="encoding" use="optional" default="base64">
+            <xs:simpleType>
+                <xs:restriction base="xs:token">
+                    <xs:enumeration value="base64"/>
+                    <xs:enumeration value="text"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="embedding" use="optional">
+            <xs:annotation>
+                <xs:documentation>local = ONNX or HTTP (model-path determines); http = external API (model-path required, e.g. https://api.openai.com/v1). Set OPENAI_API_KEY or COHERE_API_KEY env var.</xs:documentation>
+            </xs:annotation>
+            <xs:simpleType>
+                <xs:restriction base="xs:token">
+                    <xs:enumeration value="local"/>
+                    <xs:enumeration value="http"/>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
+        <xs:attribute name="model" use="optional" type="xs:token"/>
+        <xs:attribute name="model-path" use="optional" type="xs:token"/>
+    </xs:complexType>
 
     <xs:element name="text" type="cc:textType"/>
 
@@ -198,7 +226,7 @@
         <xs:attributeGroup ref="cc:expressionReq"/>
         <xs:attributeGroup ref="cc:hierarchicalOpt"/>
     </xs:complexType>
-    
+
     <xs:complexType name="fieldAttrType">
         <xs:attributeGroup ref="cc:nameReq"/>
         <xs:attributeGroup ref="cc:ifOpt"/>
@@ -206,6 +234,7 @@
         <xs:attributeGroup ref="cc:typeOpt"/>
         <xs:attributeGroup ref="cc:analyzerOpt"/>
         <xs:attributeGroup ref="cc:storeOpt"/>
+        <xs:attributeGroup ref="cc:binaryOpt"/>
     </xs:complexType>
 
     <xs:complexType name="matchAttrBoostType">
@@ -290,14 +319,14 @@
     </xs:complexType>
 
     <!--
-        We are hiding attributes in attributeGroup to manage their namespaces as 
+        We are hiding attributes in attributeGroup to manage their namespaces as
         described here: http://docstore.mik.ua/orelly/xml/schema/ch10_04.htm.
-        A side benefit of this is centralized definitions attributes that may be 
+        A side benefit of this is centralized definitions attributes that may be
         used by different elements.
         Please keep the entries arranged in alphabetical order for easy lookup.
-        Note that there are -Opt and -Req pairs of many attributes. 
-        Ideally we could have just one definition of each attribute, but this 
-        is not possible because of form restrictions in XML Schema, so 
+        Note that there are -Opt and -Req pairs of many attributes.
+        Ideally we could have just one definition of each attribute, but this
+        is not possible because of form restrictions in XML Schema, so
         @use=required|optional has to be hardcoded in the xs:attributeGroup
         definition.
     -->
@@ -309,7 +338,25 @@
         <xs:attribute name="at" type="xs:anyURI" use="required" form="unqualified"/>
     </xs:attributeGroup>
     <xs:attributeGroup name="attributeReq">
-        <xs:attribute name="attribute" type="xs:QName" use="required"/>
+        <xs:attribute name="attribute" type="xs:NCName" use="required"/>
+    </xs:attributeGroup>
+    <xs:attributeGroup name="binaryOpt">
+        <xs:attribute name="binary" use="optional">
+            <xs:simpleType>
+                <xs:restriction base="xs:token">
+                    <xs:enumeration value="yes">
+                        <xs:annotation>
+                            <xs:documentation>Index as a binary field</xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                    <xs:enumeration value="no">
+                        <xs:annotation>
+                            <xs:documentation>Do not index as a binary field</xs:documentation>
+                        </xs:annotation>
+                    </xs:enumeration>
+                </xs:restriction>
+            </xs:simpleType>
+        </xs:attribute>
     </xs:attributeGroup>
     <xs:attributeGroup name="boostOpt">
         <xs:attribute name="boost" type="xs:double" use="optional" form="unqualified"/>
@@ -441,7 +488,7 @@
                     </xs:enumeration>
                 </xs:restriction>
             </xs:simpleType>
-        </xs:attribute>    
+        </xs:attribute>
     </xs:attributeGroup>
     <xs:attributeGroup name="ifOpt">
         <xs:attribute name="if" type="xs:string" use="optional" form="unqualified"/>
@@ -462,7 +509,7 @@
                     </xs:enumeration>
                 </xs:restriction>
             </xs:simpleType>
-        </xs:attribute>    
+        </xs:attribute>
     </xs:attributeGroup>
     <xs:attributeGroup name="numericOpt">
         <xs:attribute name="numeric" use="optional" default="no">
@@ -571,7 +618,7 @@
                     </xs:enumeration>
                 </xs:restriction>
             </xs:simpleType>
-        </xs:attribute>    
+        </xs:attribute>
     </xs:attributeGroup>
     <xs:attributeGroup name="typeOpt">
         <xs:attribute name="type" type="xs:QName" use="optional" form="unqualified"/>
