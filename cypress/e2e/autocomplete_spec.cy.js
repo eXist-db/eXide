@@ -84,20 +84,16 @@ describe('Autocomplete', () => {
 
   it('inserts snippet without backslash on selection', function () {
     if (!lspAvailable) this.skip()
+    cy.intercept('POST', '**/api/query/completions').as('completions')
     setContentAndComplete('util:wai')
 
-    // Wait for async function completions to load
+    cy.wait('@completions', { timeout: 10000 })
     cy.get('.cm-tooltip-autocomplete', { timeout: 5000 })
       .should('be.visible')
       .invoke('text')
       .should('contain', 'util:wait')
+    cy.get('.cm-tooltip-autocomplete li[aria-selected="true"]', { timeout: 3000 }).click()
 
-    cy.wait(300)
-    cy.window().then((win) => {
-      win.CM6.acceptCompletion(win.eXide.app.getEditor().editor)
-    })
-
-    cy.wait(200)
     getEditorContent().then((text) => {
       expect(text).to.contain('util:wait(')
       expect(text).to.not.contain('\\$')
@@ -117,8 +113,10 @@ describe('Autocomplete', () => {
 
   it('filters completions as user types', function () {
     if (!lspAvailable) this.skip()
+    cy.intercept('POST', '**/api/query/completions').as('completions')
     setContentAndComplete('util:')
 
+    cy.wait('@completions', { timeout: 10000 })
     cy.get('.cm-tooltip-autocomplete', { timeout: 5000 })
       .should('be.visible')
       .invoke('text')
@@ -127,14 +125,13 @@ describe('Autocomplete', () => {
     cy.get('.cm-tooltip-autocomplete li[role="option"]')
       .should('have.length.greaterThan', 5)
       .then(($items) => {
-        var initialCount = $items.length
+        const initialCount = $items.length
 
+        cy.intercept('POST', '**/api/query/completions').as('completions2')
         // Type via DOM to trigger CM6 input handling
         cy.get('.cm-content').type('w', { force: true, delay: 0 })
 
-        cy.wait(500)
-        cy.get('.cm-tooltip-autocomplete', { timeout: 3000 })
-          .should('be.visible')
+        cy.wait('@completions2', { timeout: 10000 })
         cy.get('.cm-tooltip-autocomplete li[role="option"]')
           .should('have.length.lessThan', initialCount)
       })
@@ -153,19 +150,16 @@ describe('Autocomplete', () => {
 
   it('inserts unprefixed function without namespace prefix', function () {
     if (!lspAvailable) this.skip()
+    cy.intercept('POST', '**/api/query/completions').as('completions')
     setContentAndComplete('conc')
 
+    cy.wait('@completions', { timeout: 10000 })
     cy.get('.cm-tooltip-autocomplete', { timeout: 5000 })
       .should('be.visible')
       .invoke('text')
       .should('contain', 'concat')
+    cy.get('.cm-tooltip-autocomplete li[aria-selected="true"]', { timeout: 3000 }).click()
 
-    cy.wait(300)
-    cy.window().then((win) => {
-      win.CM6.acceptCompletion(win.eXide.app.getEditor().editor)
-    })
-
-    cy.wait(200)
     getEditorContent().then((text) => {
       expect(text).to.contain('concat(')
       // Should NOT have fn: prefix since user typed without prefix
@@ -185,19 +179,16 @@ describe('Autocomplete', () => {
 
   it('preserves fn: prefix when accepting prefixed completion', function () {
     if (!lspAvailable) this.skip()
+    cy.intercept('POST', '**/api/query/completions').as('completions')
     setContentAndComplete('fn:conc')
 
+    cy.wait('@completions', { timeout: 10000 })
     cy.get('.cm-tooltip-autocomplete', { timeout: 5000 })
       .should('be.visible')
       .invoke('text')
       .should('contain', 'fn:concat')
+    cy.get('.cm-tooltip-autocomplete li[aria-selected="true"]', { timeout: 3000 }).click()
 
-    cy.wait(300)
-    cy.window().then((win) => {
-      win.CM6.acceptCompletion(win.eXide.app.getEditor().editor)
-    })
-
-    cy.wait(200)
     getEditorContent().then((text) => {
       expect(text).to.contain('fn:concat(')
     })
