@@ -4,15 +4,7 @@ describe('File save', () => {
   var testFile = 'cypress-test-' + Date.now() + '.xq'
 
   before(() => {
-    // Clean up stale test files from previous interrupted runs
-    cy.loginXHR('admin', '')
-    cy.request({
-      method: 'POST',
-      url: '/exist/rest/db',
-      headers: { 'Content-Type': 'application/xquery' },
-      body: 'for $r in xmldb:get-child-resources("/db") where starts-with($r, "cypress-test-") return xmldb:remove("/db", $r)',
-      failOnStatusCode: false
-    })
+    cy.cleanupTestFiles()
   })
 
   beforeEach(() => {
@@ -57,15 +49,7 @@ describe('File save', () => {
   }
 
   after(() => {
-    // Clean up all cypress-test-* files (including from interrupted runs)
-    cy.loginXHR('admin', '')
-    cy.request({
-      method: 'POST',
-      url: '/exist/rest/db',
-      headers: { 'Content-Type': 'application/xquery' },
-      body: 'for $r in xmldb:get-child-resources("/db") where starts-with($r, "cypress-test-") return xmldb:remove("/db", $r)',
-      failOnStatusCode: false
-    })
+    cy.cleanupTestFiles()
   })
 
   it('opens the save dialog for a new document', () => {

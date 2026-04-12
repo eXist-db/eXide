@@ -51,6 +51,18 @@ Cypress.Commands.add("dismissDialog", () => {
     })
 })
 
+// cy.cleanupTestFiles() -- removes cypress-test-* files from /db
+Cypress.Commands.add("cleanupTestFiles", () => {
+    cy.loginXHR('admin', '')
+    cy.request({
+        method: 'POST',
+        url: '/exist/rest/db',
+        headers: { 'Content-Type': 'application/xquery' },
+        body: 'for $r in xmldb:get-child-resources("/db") where starts-with($r, "cypress-test-") return xmldb:remove("/db", $r)',
+        failOnStatusCode: false
+    })
+})
+
 // cy.logout() -- does not work reliably
 Cypress.Commands.add("logout", () => cy.request('/eXide/index.html', {logout: true}))
 
