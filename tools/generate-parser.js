@@ -61,6 +61,23 @@ if (!fs.existsSync(grammarPath)) {
     process.exit(1);
 }
 
+// Compile REx.java if REx.class is not present (class is gitignored; source is committed)
+const rexClass = path.join(root, CONFIG.rexClasspath, 'REx.class');
+const rexJava  = path.join(root, CONFIG.rexClasspath, 'REx.java');
+if (!fs.existsSync(rexClass)) {
+    if (!fs.existsSync(rexJava)) {
+        console.error('REx.java not found — cannot compile REx parser generator');
+        process.exit(1);
+    }
+    console.log('Compiling REx.java...');
+    try {
+        execSync(`javac ${rexJava}`, { cwd: root, stdio: 'inherit' });
+    } catch (e) {
+        console.error('javac failed — ensure a JDK is installed');
+        process.exit(1);
+    }
+}
+
 const cmd = [
     'java', '-cp', CONFIG.rexClasspath,
     'REx', grammar,
