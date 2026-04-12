@@ -1,6 +1,6 @@
 {
 	"name": "exide",
-	"version": "3.5.5",
+	"version": "3.6.0",
 	"description": "a web-based XQuery IDE",
 	"main": "main.js",
 	"directories": {
