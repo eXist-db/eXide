@@ -2264,10 +2264,9 @@ body.dark .query-timing {
 }
 
 .navbar .toggle-btn.active {
-    color: #2b6cb0;
-    background: #ebf8ff;
-    border-color: #4299e1;
-    font-weight: 700;
+    color: #fff;
+    background: #3182ce;
+    border-color: #2b6cb0;
 }
 
 .navbar .toggle-btn.first-page,
@@ -3829,9 +3828,9 @@ body.dark .navbar .toggle-btn:hover {
     border-color: #777;
 }
 body.dark .navbar .toggle-btn.active {
-    color: #7af;
-    background-color: rgba(100,160,255,0.15);
-    border-color: rgba(100,160,255,0.3);
+    color: #fff;
+    background-color: rgba(100,160,255,0.45);
+    border-color: rgba(100,160,255,0.6);
 }
 body.dark .navbar .toggle-btn.first-page,
 body.dark .navbar .toggle-btn.previous,
