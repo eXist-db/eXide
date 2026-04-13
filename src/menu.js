@@ -38,18 +38,21 @@ eXide.util.Menubar = (function() {
                 ev.preventDefault();
                 ev.stopPropagation();
                 var link = this;
+                var wasOpen = link.classList.contains("open");
                 var openMenus = $this.container.querySelectorAll("ul li > a.open");
-                if (openMenus.length > 0) {
-                    for (var j = 0; j < openMenus.length; j++) {
-                        openMenus[j].classList.remove("open");
-                        var sub = openMenus[j].nextElementSibling;
-                        if (sub && sub.tagName === "UL") sub.style.display = "none";
-                    }
+                for (var j = 0; j < openMenus.length; j++) {
+                    openMenus[j].classList.remove("open");
+                    var sub = openMenus[j].nextElementSibling;
+                    if (sub && sub.tagName === "UL") sub.style.display = "none";
                 }
-                link.classList.add("open");
-                var nextUl = link.nextElementSibling;
-                if (nextUl && nextUl.tagName === "UL") nextUl.style.display = "block";
-                menuVisible = true;
+                if (!wasOpen) {
+                    link.classList.add("open");
+                    var nextUl = link.nextElementSibling;
+                    if (nextUl && nextUl.tagName === "UL") nextUl.style.display = "block";
+                    menuVisible = true;
+                } else {
+                    menuVisible = false;
+                }
             });
         }
         document.body.addEventListener("click", function() {
