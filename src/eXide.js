@@ -2411,8 +2411,9 @@ eXide.app = (function(util) {
 			    btnEl.addEventListener("click", function(e) {
                     e.preventDefault();
                     var icon = btnEl.querySelector('.fa');
-                    var res = '';
-                    document.querySelectorAll("#results-body > div > div > div > div.item").forEach(function (item) { res += item.innerText; });
+                    var texts = [];
+                    document.querySelectorAll("#results-body > div > div > div > div.item").forEach(function (item) { texts.push(item.innerText); });
+                    var res = texts.join('\n');
                     navigator.clipboard.writeText(res).then(function() {
                         icon.classList.remove('fa-clipboard');
                         icon.classList.add('fa-check');
