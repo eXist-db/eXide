@@ -2409,8 +2409,9 @@ eXide.app = (function(util) {
 			    btnEl.addEventListener("click", function(e) {
                     e.preventDefault();
                     var icon = btnEl.querySelector('.fa');
-                    var res = '';
-                    document.querySelectorAll("#results-body > div > div > div > div.item").forEach(function (item) { res += item.innerText; });
+                    var texts = [];
+                    document.querySelectorAll("#results-body > div > div > div > div.item").forEach(function (item) { texts.push(item.innerText); });
+                    var res = texts.join('\n');
                     navigator.clipboard.writeText(res).then(function() {
                         icon.classList.remove('fa-clipboard');
                         icon.classList.add('fa-check');
@@ -2455,6 +2456,12 @@ eXide.app = (function(util) {
             });
             document.getElementById("number-of-results").addEventListener("change", function(ev) {
                 numberOfResults = +document.getElementById("number-of-results").value;
+                if (app._cursorId) {
+                    startOffset = 1;
+                    currentOffset = 1;
+                    endOffset = Math.min(numberOfResults, hitCount);
+                    app.fetchCursorPage(startOffset, endOffset);
+                }
             });
             document.getElementById("serialization-mode").addEventListener("change", function(ev) {
                 if (app._cursorId) {
