@@ -2458,6 +2458,12 @@ eXide.app = (function(util) {
             });
             document.getElementById("number-of-results").addEventListener("change", function(ev) {
                 numberOfResults = +document.getElementById("number-of-results").value;
+                if (app._cursorId) {
+                    startOffset = 1;
+                    currentOffset = 1;
+                    endOffset = Math.min(numberOfResults, hitCount);
+                    app.fetchCursorPage(startOffset, endOffset);
+                }
             });
             document.getElementById("serialization-mode").addEventListener("change", function(ev) {
                 if (app._cursorId) {
