@@ -92,10 +92,7 @@ describe('Autocomplete', () => {
       .should('be.visible')
       .invoke('text')
       .should('contain', 'util:wait')
-
-    cy.window().then((win) => {
-      win.CM6.acceptCompletion(win.eXide.app.getEditor().editor)
-    })
+    cy.get('.cm-tooltip-autocomplete li[aria-selected="true"]', { timeout: 3000 }).click()
 
     getEditorContent().then((text) => {
       expect(text).to.contain('util:wait(')
@@ -161,10 +158,7 @@ describe('Autocomplete', () => {
       .should('be.visible')
       .invoke('text')
       .should('contain', 'concat')
-
-    cy.window().then((win) => {
-      win.CM6.acceptCompletion(win.eXide.app.getEditor().editor)
-    })
+    cy.get('.cm-tooltip-autocomplete li[aria-selected="true"]', { timeout: 3000 }).click()
 
     getEditorContent().then((text) => {
       expect(text).to.contain('concat(')
@@ -193,10 +187,7 @@ describe('Autocomplete', () => {
       .should('be.visible')
       .invoke('text')
       .should('contain', 'fn:concat')
-
-    cy.window().then((win) => {
-      win.CM6.acceptCompletion(win.eXide.app.getEditor().editor)
-    })
+    cy.get('.cm-tooltip-autocomplete li[aria-selected="true"]', { timeout: 3000 }).click()
 
     getEditorContent().then((text) => {
       expect(text).to.contain('fn:concat(')
