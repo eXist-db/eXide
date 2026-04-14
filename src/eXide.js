@@ -876,13 +876,11 @@ eXide.app = (function(util) {
 		/**
 		 * Execute query via server-side cursor (lsp:eval → lsp:fetch).
 		 *
-		 * POST /api/query → get cursor ID + item count
-		 * GET /api/query/{id}/results?start=N&count=M → fetch a page
+		 * POST ../exist-api/api/query → { cursor, items, elapsed, timing }
+		 * GET  ../exist-api/api/query/{id}/results?start=N&count=M → array of item maps
 		 *
-		 * Results stay on the server as live node references. Only the
-		 * requested page is serialized — same pattern as the old
-		 * XQueryServlet + session.xq flow, but using Caffeine-backed
-		 * cursors instead of HTTP sessions.
+		 * Calls exist-api directly (not eXide's own /api/query routes).
+		 * Cookie auth works because both apps share the org.exist.login domain.
 		 */
 		runQueryCursor: function(code, moduleLoadPath, serializationMode, livePreview) {
 		    var btnCancel = document.getElementById("cancel-query");
@@ -897,7 +895,7 @@ eXide.app = (function(util) {
 
 		    // Close previous cursor if any
 		    if (app._cursorId) {
-		        fetch("api/query/" + app._cursorId, { method: "DELETE" }).catch(function() {});
+		        fetch("../exist-api/api/query/" + app._cursorId, { method: "DELETE" }).catch(function() {});
 		        app._cursorId = null;
 		    }
 
@@ -912,10 +910,10 @@ eXide.app = (function(util) {
 		    showCancel();
 		    hideTiming();
 
-		    fetch("api/query", {
+		    fetch("../exist-api/api/query", {
 		        method: "POST",
 		        headers: { "Content-Type": "application/json" },
-		        body: JSON.stringify({ query: code, base: moduleLoadPath }),
+		        body: JSON.stringify({ query: code, "module-load-path": moduleLoadPath }),
 		        signal: abortController.signal
 		    })
 		    .then(function(response) {
@@ -931,8 +929,8 @@ eXide.app = (function(util) {
 		            });
 		        }
 		        return response.json().then(function(data) {
-		            app._cursorId = data.id;
-		            hitCount = data.count;
+		            app._cursorId = data.cursor;
+		            hitCount = data.items;
 		            endOffset = Math.min(numberOfResults, hitCount);
 
 		            editor.updateStatus("");
@@ -998,7 +996,7 @@ eXide.app = (function(util) {
 		        "highlight-matches": autoExpand
 		    });
 
-		    fetch("api/query/" + app._cursorId + "/results?" + params.toString())
+		    fetch("../exist-api/api/query/" + app._cursorId + "/results?" + params.toString())
 		    .then(function(response) {
 		        if (!response.ok) throw new Error("Cursor expired");
 		        return response.json();
@@ -1008,7 +1006,7 @@ eXide.app = (function(util) {
 		        if (!resultsDiv) return;
 		        resultsDiv.innerHTML = "";
 
-		        var items = data.items;
+		        var items = data; // exist-api returns a plain array
 		        if (!items || items.length === 0) return;
 
 		        var numWidth = Math.ceil(Math.log(hitCount + 1) / Math.LN10);
