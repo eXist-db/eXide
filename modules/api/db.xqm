@@ -93,17 +93,17 @@ declare function db:post($request as map(*)) {
             case "copy" return
                 try {
                     let $sources := $body?sources?*
-                    for $source in $sources
-                    let $enc-source := db:encode-path($source)
-                    return
-                        if (xmldb:collection-available($enc-source)) then
-                            $db:copy-collection($enc-source, $path)
-                        else
-                            let $name := replace($enc-source, "^.*/", "")
-                            let $src-col := replace($enc-source, "/[^/]+$", "")
-                            return $db:copy-resource($src-col, $name, $path, $name)
-                    ,
-                    map { "status": "ok" }
+                    let $_ :=
+                        for $source in $sources
+                        let $enc-source := db:encode-path($source)
+                        return
+                            if (xmldb:collection-available($enc-source)) then
+                                $db:copy-collection($enc-source, $path)
+                            else
+                                let $name := replace($enc-source, "^.*/", "")
+                                let $src-col := replace($enc-source, "/[^/]+$", "")
+                                return $db:copy-resource($src-col, $name, $path, $name)
+                    return map { "status": "ok" }
                 } catch * {
                     roaster:response(400, "application/json",
                         map { "error": $err:description })
