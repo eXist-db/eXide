@@ -218,6 +218,37 @@ describe('Query execution', () => {
     cy.get('@execQuery.all').should('have.length', 0)
   })
 
+  it('adaptive serialization quotes xs:string values', () => {
+    // Run any query first so the results panel becomes visible
+    setEditorContent('1')
+    cy.get('#run').click()
+    cy.get('.panel-south .results .content', { timeout: 10000 }).should('have.length.at.least', 1)
+
+    cy.get('.panel-south #serialization-mode').select('adaptive')
+    setEditorContent('"hello"')
+    cy.get('#run').click()
+
+    cy.get('.panel-south .results .content', { timeout: 10000 })
+      .first()
+      .invoke('text')
+      .should('eq', '"hello"')
+  })
+
+  it('adaptive serialization does not quote xs:integer values', () => {
+    setEditorContent('1')
+    cy.get('#run').click()
+    cy.get('.panel-south .results .content', { timeout: 10000 }).should('have.length.at.least', 1)
+
+    cy.get('.panel-south #serialization-mode').select('adaptive')
+    setEditorContent('42')
+    cy.get('#run').click()
+
+    cy.get('.panel-south .results .content', { timeout: 10000 })
+      .first()
+      .invoke('text')
+      .should('eq', '42')
+  })
+
   it('re-fetches page when indent toggle changes', () => {
     setEditorContent('<root><child/></root>')
     cy.get('#run').click()
