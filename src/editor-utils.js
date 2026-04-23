@@ -122,12 +122,16 @@
             if (from > to) from = line.from;
             var severity = ann.type === "error" ? "error" :
                            ann.type === "warning" ? "warning" : "info";
-            diagnostics.push({
+            var diag = {
                 from: from,
                 to: to,
                 severity: severity,
                 message: ann.text || ""
-            });
+            };
+            if (ann.actions) {
+                diag.actions = ann.actions;
+            }
+            diagnostics.push(diag);
         }
         view.dispatch(setDiagnostics(view.state, diagnostics));
     }

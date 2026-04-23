@@ -223,14 +223,7 @@ eXide.app = (function(util) {
                     }
 
                     // Fetch registered module prefixes for static analysis
-                    fetch("api/editor/modules")
-                        .then(function(r) { return r.json(); })
-                        .then(function(modules) {
-                            if (Array.isArray(modules) && typeof staticAnalysis !== "undefined") {
-                                staticAnalysis.setRegisteredModules(modules);
-                            }
-                        })
-                        .catch(function() {});
+                    app.refreshModuleCache();
 
                     if (afterInitCallback) {
                         afterInitCallback(restored);
@@ -282,6 +275,17 @@ eXide.app = (function(util) {
 
         getMenu: function() {
             return menu;
+        },
+
+        refreshModuleCache: function() {
+            return fetch("api/editor/modules")
+                .then(function(r) { return r.json(); })
+                .then(function(modules) {
+                    if (Array.isArray(modules) && typeof staticAnalysis !== "undefined") {
+                        staticAnalysis.setRegisteredModules(modules);
+                    }
+                })
+                .catch(function() {});
         },
 
 		updateAuthStatus: function(user) {

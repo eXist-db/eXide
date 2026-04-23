@@ -635,6 +635,31 @@ body.dark .cm-goto-flash {
     100% { background: transparent; }
 }
 
+/* Diagnostic action buttons on their own line, styled as links */
+.cm-diagnostic .cm-diagnosticAction {
+    display: block;
+    margin: 4px 0 0;
+    padding: 0;
+    font: inherit;
+    color: #3182ce;
+    text-decoration: underline;
+    cursor: pointer;
+    background: none;
+    border: none;
+}
+
+.cm-diagnostic .cm-diagnosticAction:hover {
+    color: #2b6cb0;
+}
+
+body.dark .cm-diagnostic .cm-diagnosticAction {
+    color: #63b3ed;
+}
+
+body.dark .cm-diagnostic .cm-diagnosticAction:hover {
+    color: #90cdf4;
+}
+
 .cm-panel-lint {
     max-height: 150px;
     font-size: 12px;

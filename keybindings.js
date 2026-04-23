@@ -25,7 +25,7 @@
     "preferences": {"key": "Alt-Shift-p", "mac": "Ctrl-Mod-p"},
     "openApp": {"key": "Ctrl-Alt-r", "mac": "Mod-Alt-r"},
     "xqueryFormat": {"key": "Ctrl-Shift-p", "mac": "Mod-Shift-p"},
-    "quickfix": {"key": "Ctrl-Shift-q", "mac": "Mod-Ctrl-q"},
+    "quickfix": {"key": "Ctrl-.", "mac": "Ctrl-."},
     "expandSelection": {"key": "Ctrl-Shift-ArrowUp", "mac": "Ctrl-Mod-ArrowUp"},
     "renameSymbol": {"key": "Ctrl-Alt-r", "mac": "Mod-Ctrl-r"},
     "removeTags": {"key": "Ctrl-Alt-Backspace", "mac": "Mod-Alt-Backspace"},

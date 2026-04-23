@@ -67,18 +67,38 @@ eXide.edit.XQueryQuickFix = (function () {
             }
         },
         {
-            regex: /No namespace defined/,
+            regex: /No namespace defined|XPST0081/,
             getResolutions: function(helper, editor, doc, annotation, ast) {
-                var matches = /for prefix (\w+)/.exec(annotation.text);
-                if (matches.length === 2) {
+                var matches = /for prefix (\w+)/.exec(annotation.text) ||
+                              /\[XPST0081\] "(\w+)"/.exec(annotation.text);
+                if (matches && matches.length === 2) {
                     if (ast && ast.getParent.name === "FunctionCall") {
                         return [{
                             resolve: function(helper, editor, doc, annotation) {
+                                var prefix = matches[1];
                                 helper.parent.validator.setEnabled(false);
-                                var adder = new eXide.edit.PrologAdder(editor, doc);
-                                adder.importModule(matches[1]);
-                                helper.parseXQuery(doc);
-                                helper.parent.validator.setEnabled(true);
+
+                                function doImport(mod) {
+                                    var adder = new eXide.edit.PrologAdder(editor, doc);
+                                    if (mod) {
+                                        var at = mod.at;
+                                        if (at && at.indexOf("java:") === 0) at = null;
+                                        adder.importModule(prefix, mod.uri, at);
+                                    } else {
+                                        adder.importModule(prefix);
+                                    }
+                                    helper.parseXQuery(doc);
+                                    helper.parent.validator.setEnabled(true);
+                                }
+
+                                var mod = staticAnalysis.getModuleByPrefix(prefix);
+                                if (mod) {
+                                    doImport(mod);
+                                } else {
+                                    eXide.app.refreshModuleCache().then(function () {
+                                        doImport(staticAnalysis.getModuleByPrefix(prefix));
+                                    });
+                                }
                             },
                             action: "Import module \"" + matches[1] + "\""
                         }];
@@ -99,7 +119,7 @@ eXide.edit.XQueryQuickFix = (function () {
             }
         },
         {
-            regex: /variable.*not set/,
+            regex: /variable.*not set|undeclared variable/,
             getResolutions: function(helper, editor, doc, annotation, ast) {
                 if (ast.getParent.name === "VarName") {
                     return [

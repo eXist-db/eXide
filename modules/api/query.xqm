@@ -116,7 +116,7 @@ declare function query:completions($request as map(*)) {
     let $prefix := ($body?prefix, "")[1]
     let $base := $body?base
     let $completions := lsp:completions($xquery, $base)
-    return array {
+    let $lsp-results :=
         for $item in $completions?*
         let $name := replace($item?label, "#\d+$", "")
         where $prefix = "" or starts-with($name, $prefix)
@@ -125,7 +125,77 @@ declare function query:completions($request as map(*)) {
             "snippet":     query:make-snippet($item?detail),
             "description": $item?documentation
         }
-    }
+
+    (: Supplement with inspect:inspect-module-uri() for imported XQuery modules
+       that lsp:completions() doesn't cover (e.g. kwic, templating) :)
+    let $ns-prefix := if (contains($prefix, ":")) then substring-before($prefix, ":") else $prefix
+    let $inspect-results :=
+        if ($ns-prefix = "" or exists($lsp-results)) then ()
+        else
+            (: Extract the namespace URI for this prefix from the query's import statements :)
+            let $import-pattern := "import\s+module\s+namespace\s+" || $ns-prefix || "\s*=\s*[""']([^""']+)[""']"
+            let $match := analyze-string($xquery, $import-pattern)//fn:match/fn:group[1]/string()
+            let $ns-uri := if (exists($match)) then $match[1]
+                           (: Also check registered/mapped modules by prefix :)
+                           else query:uri-for-prefix($ns-prefix)
+            return
+                if (empty($ns-uri)) then ()
+                else
+                    try {
+                        let $module := inspect:inspect-module-uri(xs:anyURI($ns-uri))
+                        for $func in $module//function[(@visibility = "public" or not(@visibility))
+                                                        and (argument or @arity = "0")]
+                        let $name := $func/@name/string()
+                        let $sig := query:build-signature($func)
+                        where starts-with($name, $prefix)
+                        return map {
+                            "text":        $sig,
+                            "snippet":     query:make-snippet($sig),
+                            "description": normalize-space($func/description/string())
+                        }
+                    } catch * { () }
+
+    return array { $lsp-results, $inspect-results }
+};
+
+(:~
+ : Look up a namespace URI for a given module prefix from registered/mapped modules.
+ :)
+declare %private function query:uri-for-prefix($prefix as xs:string) as xs:string? {
+    (
+        for $uri in distinct-values((util:registered-modules(), util:mapped-modules()))
+        let $module := try { inspect:inspect-module-uri(xs:anyURI($uri)) } catch * { () }
+        where $module/@prefix = $prefix
+        return $uri
+    )[1]
+};
+
+(:~
+ : Build a function signature string from inspect XML.
+ : E.g. "kwic:summarize($hit as element(), $config as element()?) as element()"
+ :)
+declare %private function query:build-signature($func as element()) as xs:string {
+    let $name := $func/@name/string()
+    let $params :=
+        for $arg in $func/argument
+        return "$" || $arg/@var/string() ||
+               (if ($arg/@type) then " as " || $arg/@type/string() || query:cardinality-symbol($arg/@cardinality) else "")
+    let $return := $func/returns
+    return
+        $name || "(" || string-join($params, ", ") || ")" ||
+        (if ($return/@type) then " as " || $return/@type/string() || query:cardinality-symbol($return/@cardinality) else "")
+};
+
+(:~
+ : Convert inspect cardinality words to XQuery symbols.
+ :)
+declare %private function query:cardinality-symbol($cardinality as xs:string?) as xs:string {
+    switch ($cardinality)
+        case "zero or one"  return "?"
+        case "zero or more" return "*"
+        case "one or more"  return "+"
+        case "exactly one"  return ""
+        default return ""
 };
 
 (:~
