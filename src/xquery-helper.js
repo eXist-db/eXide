@@ -27,6 +27,75 @@ eXide.edit.XQueryModeHelper = (function () {
 	
     // REx parser + adapter loaded as globals from src/parser/ (concatenated before this file)
     var rexAdapter = rexParserAdapter;
+
+    /**
+     * Build CM6 diagnostic actions for annotations that have quick fixes.
+     * For namespace prefix errors, creates a direct "Import module" action
+     * using cached module data (fetched at startup).
+     */
+    function addQuickFixActions(annotation) {
+        // Namespace prefix errors — offer direct import
+        var prefixMatch = /for prefix (\w+)/.exec(annotation.text) ||
+                          /\[XPST0081\] "(\w+)"/.exec(annotation.text);
+        if (prefixMatch) {
+            var prefix = prefixMatch[1];
+            annotation.actions = [{
+                name: "Import module \u2018" + prefix + "\u2019",
+                apply: function () {
+                    if (typeof eXide === "undefined" || !eXide.app) return;
+                    var ed = eXide.app.getEditor();
+                    var doc = ed.getActiveDocument();
+                    var helper = doc.getModeHelper();
+                    if (!helper) return;
+                    helper.parent.validator.setEnabled(false);
+
+                    function doImport(mod) {
+                        var adder = new eXide.edit.PrologAdder(ed, doc);
+                        if (mod) {
+                            var at = mod.at;
+                            if (at && at.indexOf("java:") === 0) at = null;
+                            adder.importModule(prefix, mod.uri, at);
+                        } else {
+                            adder.importModule(prefix);
+                        }
+                        helper.parseXQuery(doc);
+                        helper.parent.validator.setEnabled(true);
+                    }
+
+                    var mod = staticAnalysis.getModuleByPrefix(prefix);
+                    if (mod) {
+                        doImport(mod);
+                    } else {
+                        // Cache miss — refresh cache then retry
+                        eXide.app.refreshModuleCache().then(function () {
+                            doImport(staticAnalysis.getModuleByPrefix(prefix));
+                        });
+                    }
+                }
+            }];
+            return;
+        }
+
+        // Other quickfix-eligible patterns — generic "Quick Fix" action
+        var otherPatterns = [
+            /Call to undeclared function/,
+            /unused namespace prefix/,
+            /undeclared variable|variable.*not set/
+        ];
+        for (var i = 0; i < otherPatterns.length; i++) {
+            if (otherPatterns[i].test(annotation.text)) {
+                annotation.actions = [{
+                    name: "Quick Fix",
+                    apply: function () {
+                        if (typeof eXide !== "undefined" && eXide.app && eXide.app.getEditor) {
+                            eXide.app.getEditor().exec("quickFix");
+                        }
+                    }
+                }];
+                return;
+            }
+        }
+    }
     function semanticHighlight(ast) {
         var tokens = {};
         function visit(node) {
@@ -98,6 +167,9 @@ eXide.edit.XQueryModeHelper = (function () {
         });
         menubar.click("#menu-xquery-extract-variable", function() {
             self.extractVariable(editor.getActiveDocument());
+        });
+        menubar.click("#menu-xquery-quickfix", function() {
+            self.quickFix(editor.getActiveDocument());
         });
         menubar.click("#menu-xquery-run-test", function() {
             self.runTest(editor.getActiveDocument());
@@ -209,6 +281,7 @@ eXide.edit.XQueryModeHelper = (function () {
 				text: msg,
 				type: "error"
 			};
+			addQuickFixActions(annotation);
 			this.parent.updateStatus(msg, doc.getPath() + "#" + (line + 1));
             var annotations = this.clearAnnotations(doc, "error");
             annotations.push(annotation);
@@ -271,13 +344,15 @@ eXide.edit.XQueryModeHelper = (function () {
                 // but keep any server-side compile errors that are still relevant
                 var annotations = [];
                 for (var i = 0; i < markers.length; i++) {
-                    annotations.push({
+                    var ann = {
                         row: markers[i].pos.sl,
                         column: markers[i].pos.sc,
                         text: markers[i].message,
                         type: markers[i].type,
                         pos: markers[i].pos
-                    });
+                    };
+                    addQuickFixActions(ann);
+                    annotations.push(ann);
                 }
                 editorUtils.setAnnotations(this.editor, annotations);
             }

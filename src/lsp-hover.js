@@ -139,12 +139,14 @@ eXide.edit.LspHover = (function () {
 
         // Check if we're on a FunctionCall
         var fcall = eXide.edit.XQueryUtils.findAncestor(astNode, "FunctionCall");
+        var funcName = null;
+        var arity = 0;
         var signature = null;
         if (fcall) {
             var nameNode = eXide.edit.XQueryUtils.findChild(fcall, "EQName");
             if (nameNode) {
-                var funcName = eXide.edit.XQueryUtils.getValue(nameNode);
-                var arity = fcall.arity || 0;
+                funcName = eXide.edit.XQueryUtils.getValue(nameNode);
+                arity = fcall.arity || 0;
                 // Search outline for matching function
                 for (var i = 0; i < doc.functions.length; i++) {
                     var f = doc.functions[i];
@@ -157,7 +159,7 @@ eXide.edit.LspHover = (function () {
         }
 
         // Check if we're on a VarRef
-        if (!signature) {
+        if (!funcName && !signature) {
             var varRef = eXide.edit.XQueryUtils.findAncestor(astNode, ["VarRef", "VarName"]);
             if (varRef) {
                 var varEQName = eXide.edit.XQueryUtils.findChild(
@@ -169,7 +171,7 @@ eXide.edit.LspHover = (function () {
             }
         }
 
-        if (!signature) return null;
+        if (!funcName && !signature) return null;
 
         // Build word boundaries for tooltip positioning
         var wordStart = pos;
@@ -180,6 +182,51 @@ eXide.edit.LspHover = (function () {
         col = column;
         while (col < text.length && /[\w:\-]/.test(text[col])) { col++; wordEnd++; }
 
+        // For prefixed function calls, fetch full docs from the server
+        if (funcName && funcName.indexOf(":") !== -1) {
+            return fetch("api/editor/completions?" + new URLSearchParams({
+                prefix: funcName,
+                signature: funcName + "#" + arity
+            }))
+            .then(function (r) { return r.json(); })
+            .then(function (items) {
+                var match = null;
+                if (items && items.length > 0) {
+                    // Prefer exact arity match
+                    for (var j = 0; j < items.length; j++) {
+                        if (items[j].name === funcName + "#" + arity) {
+                            match = items[j];
+                            break;
+                        }
+                    }
+                    if (!match) match = items[0];
+                }
+                if (!match) return null;
+
+                return {
+                    pos: wordStart,
+                    end: wordEnd,
+                    above: true,
+                    create: function () {
+                        var dom = document.createElement("div");
+                        dom.className = "cm-lsp-hover";
+                        var sig = document.createElement("code");
+                        sig.className = "cm-lsp-hover-signature";
+                        sig.textContent = match.text || funcName;
+                        dom.appendChild(sig);
+                        if (match.description) {
+                            var desc = document.createElement("p");
+                            desc.className = "cm-lsp-hover-description";
+                            desc.textContent = match.description;
+                            dom.appendChild(desc);
+                        }
+                        return { dom: dom };
+                    }
+                };
+            })
+            .catch(function () { return null; });
+        }
+
         return {
             pos: wordStart,
             end: wordEnd,
@@ -189,7 +236,7 @@ eXide.edit.LspHover = (function () {
                 dom.className = "cm-lsp-hover";
                 var sig = document.createElement("code");
                 sig.className = "cm-lsp-hover-signature";
-                sig.textContent = signature;
+                sig.textContent = signature || funcName;
                 dom.appendChild(sig);
                 return { dom: dom };
             }

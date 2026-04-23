@@ -703,15 +703,27 @@ var staticAnalysis = (function () {
         return { markers: markers };
     }
 
+    // Full module records from startup fetch (prefix, uri, at)
+    var registeredModules = [];
+
     return {
         analyze: analyze,
         setRegisteredModules: function (modules) {
             registeredModulePrefixes = {};
+            registeredModules = modules || [];
             for (var i = 0; i < modules.length; i++) {
                 if (modules[i].prefix && modules[i].uri) {
                     registeredModulePrefixes[modules[i].prefix] = modules[i].uri;
                 }
             }
+        },
+        getModuleByPrefix: function (prefix) {
+            for (var i = 0; i < registeredModules.length; i++) {
+                if (registeredModules[i].prefix === prefix) {
+                    return registeredModules[i];
+                }
+            }
+            return null;
         }
     };
 })();
