@@ -14,6 +14,7 @@
     <changelog>
         <change version="3.5.5">
             <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: update collection.xconf schema to support Lucene 10 settings - <a href="https://github.com/eXist-db/eXide/pull/784">#784</a></li>
                 <li>Fixed: login:set-user parameter type - <a href="https://github.com/eXist-db/eXide/pull/792">#792</a></li>
                 <li>Fixed: XML attribute names in collection.xconf and update collection.xconf.xsd - <a href="https://github.com/eXist-db/eXide/pull/712">#712</a></li>
             </ul>
