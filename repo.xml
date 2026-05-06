@@ -12,6 +12,17 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="3.5.5">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: login:set-user parameter type - <a href="https://github.com/eXist-db/eXide/pull/792">#792</a></li>
+                <li>Fixed: XML attribute names in collection.xconf and update collection.xconf.xsd - <a href="https://github.com/eXist-db/eXide/pull/712">#712</a></li>
+            </ul>
+        </change>
+        <change version="3.5.4">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>Fixed: Outline in sidebar - <a href="https://github.com/eXist-db/eXide/pull/711">#711</a></li>
+            </ul>
+        </change>
         <change version="3.5.3">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fixed: Detection of Javascript and Markdown files opened in editor - <a href="https://github.com/eXist-db/eXide/pull/695">#695</a></li>
