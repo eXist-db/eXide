@@ -284,17 +284,17 @@ eXide.namespace("eXide.util.mimeTypes");
 eXide.util.mimeTypes = (function () {
 	
     var TYPES = {
-        'xml': ['text/xml', 'application/xml', 'application/xhtml+xml', 'application/atom+xml', 'application/xslt+xml'],
-        'xquery': ['application/xquery'],
-        'css': ['text/css'],
-        'html': ['text/html'],
-        'javascript': ['application/javascript'],
-        'text': ['text/text'],
-        'less': ['application/less'],
-        'tmsnippet': ['application/tmsnippet'],
-        'json': ['application/json'],
-        'markdown': ['text/markdown']
-    };
+		'xml': [/^text\/xml$/, /^application\/.*\+xml$/, /^application\/xml$/],
+		'xquery': [/^application\/xquery$/],
+		'css': [/^text\/css$/],
+		'html': [/^text\/html$/],
+		'javascript': [/^application\/javascript$/],
+		'text': [/^text\/text$/],
+		'less': [/^application\/less$/],
+		'tmsnippet': [/^application\/tmsnippet$/],
+		'json': [/^application\/json$/],
+		'markdown': [/^text\/markdown$/]
+	};
 
     return {
     
@@ -305,23 +305,16 @@ eXide.util.mimeTypes = (function () {
 	    	return mimeType;
 	    },
     
-	    getLangFromMime: function(mimeType) {
+		getLangFromMime: function (mimeType) {
 	        for (var lang in TYPES) {
-	            var syn = TYPES[lang];
-	            for (var i = 0; i < syn.length; i++) {
-	                if (mimeType == syn[i])
+				var info = TYPES[lang];
+				for (var i = 0; i < info.length; i++) {
+					if (info[i].test(mimeType))
 	                    return lang;
 	            }
 	        }
+			// default to xquery
 	        return 'xquery';
-	    },
-
-	    getMimeFromLang: function (lang) {
-	        var types = TYPES[lang];
-	        if (types)
-	            return types[0];
-	        else
-	            return 'application/xquery';
 	    }
     }
 }());
