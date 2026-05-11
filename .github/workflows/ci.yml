@@ -12,7 +12,9 @@ jobs:
     strategy:
        fail-fast: false
        matrix:
-         exist-version: [release, latest]
+         # eXide 4.0 requires eXist 7.0+ (lsp:* module from exist-api),
+         # so we test only against the 'latest' (develop) Docker tag.
+         exist-version: [latest]
          node-version: ['22']
 
     steps:
@@ -41,6 +43,11 @@ jobs:
 
       - name: Download Roaster dependency
         run: gh release download v1.12.0 --repo eeditiones/roaster --pattern "roaster-1.12.0.xar" --output build/roaster-1.12.0.xar
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Download exist-api dependency
+        run: gh release download v0.9.0-pre.1 --repo joewiz/exist-api --pattern "exist-api-*.xar" --dir build/
         env:
           GH_TOKEN: ${{ github.token }}
 
