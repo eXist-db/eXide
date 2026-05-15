@@ -111,7 +111,8 @@ else if (not($user-allowed))
 then (
     if ($local:wants-json)
     then (
-        util:declare-option("output:method", "json"),
+        util:declare-option("exist:serialize", "method=json media-type=application/json"),
+        response:set-header("Content-Type", "application/json; charset=UTF-8"),
         response:set-status-code(401),
         <status>
             <error>unauthorized</error>
@@ -128,12 +129,12 @@ then (
  : Login a user via AJAX. Just returns a 401 if login fails.
  :)
 else if (
-    $local:wants-json and
     $local:method = 'post' and
     $exist:resource = 'login'
 )
 then (
-    util:declare-option("output:method", "json"),
+    util:declare-option("exist:serialize", "method=json media-type=application/json"),
+    response:set-header("Content-Type", "application/json; charset=UTF-8"),
     <status>
         <user>{$user}</user>
         <isAdmin json:literal="true">{$user-is-dba}</isAdmin>
