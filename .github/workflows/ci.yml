@@ -12,7 +12,7 @@ jobs:
     strategy:
        fail-fast: false
        matrix:
-         # eXide 4.0 requires eXist 7.0+ (lsp:* module from exist-api),
+         # eXide 4.0 requires eXist 7.0+ (lang/cursor modules from existdb-openapi),
          # so we test only against the 'latest' (develop) Docker tag.
          exist-version: [latest]
          node-version: ['22']
@@ -46,8 +46,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: Download exist-api dependency
-        run: gh release download v0.9.0-pre.1 --repo joewiz/exist-api --pattern "exist-api-*.xar" --dir build/
+      - name: Download existdb-openapi dependency
+        run: gh release download v0.9.0-pre.2 --repo joewiz/existdb-openapi --pattern "existdb-openapi-*.xar" --dir build/
         env:
           GH_TOKEN: ${{ github.token }}
 

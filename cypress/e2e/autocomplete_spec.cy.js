@@ -1,5 +1,5 @@
 describe('Autocomplete', () => {
-  // TODO: remove this skip once lsp:* module is available on CI's eXist-db
+  // TODO: remove this skip once lang/cursor modules are available on CI's eXist-db
   var lspAvailable = false
 
   before(() => {

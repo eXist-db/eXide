@@ -4,7 +4,7 @@
  * additional escaping or decoding by the client.
  *
  * The rendering path is:
- *   lsp:fetch() → AdaptiveWriter → eXide /api/query/{id}/results (items[].value)
+ *   cursor:fetch() → AdaptiveWriter → eXide /api/query/{id}/results (items[].value)
  *   → contentDiv.textContent = item.value  (eXide.js fetchCursorPage)
  *
  * Test values are drawn from the XQTS ser/method-adaptive.xml test cases.

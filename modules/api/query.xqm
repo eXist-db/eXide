@@ -8,14 +8,15 @@ module namespace query="http://exist-db.org/apps/eXide/api/query";
 
 import module namespace roaster="http://e-editiones.org/roaster";
 import module namespace config="http://exist-db.org/xquery/apps/config" at "../config.xqm";
-import module namespace lsp="http://exist-db.org/xquery/lsp";
+import module namespace lang="http://exist-db.org/xquery/langservice";
+import module namespace cursor="http://exist-db.org/xquery/cursor";
 
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
 
 (:~
  : POST /api/query — Execute XQuery and return a cursor for paginated retrieval.
  :
- : Uses lsp:eval() to execute the query and store the result sequence in a
+ : Uses cursor:eval() to execute the query and store the result sequence in a
  : server-side cursor (Caffeine cache). The cursor holds live node references,
  : enabling lazy serialization and document-URI lookup on fetch.
  :
@@ -41,7 +42,7 @@ declare function query:execute($request as map(*)) {
                 map { "error": "Query execution not allowed" })
         else
             try {
-                let $cursor := lsp:eval($xquery, $base)
+                let $cursor := cursor:eval($xquery, $base)
                 return map {
                     "id": $cursor?cursor,
                     "count": $cursor?items,
@@ -68,7 +69,7 @@ declare function query:compile($request as map(*)) {
     let $xquery := $body?query
     let $base := $body?base
     let $uri := ($body?uri, "untitled")[1]
-    let $diagnostics := lsp:diagnostics($xquery, $base)
+    let $diagnostics := lang:diagnostics($xquery, $base)
     let $errors := array {
         for $d in $diagnostics?*
         return map {
@@ -100,13 +101,13 @@ declare function query:symbols($request as map(*)) {
     let $body := $request?body
     let $xquery := $body?query
     let $base := $body?base
-    return lsp:symbols($xquery, $base)
+    return lang:symbols($xquery, $base)
 };
 
 (:~
  : POST /api/query/completions — LSP-aware function completions.
  :
- : Calls lsp:completions() with the full document text so the server
+ : Calls lang:completions() with the full document text so the server
  : compiler can see user-defined functions and imported modules, then
  : filters by $prefix and builds CM6 snippet templates.
  :)
@@ -115,8 +116,8 @@ declare function query:completions($request as map(*)) {
     let $xquery := $body?query
     let $prefix := ($body?prefix, "")[1]
     let $base := $body?base
-    let $completions := lsp:completions($xquery, $base)
-    let $lsp-results :=
+    let $completions := lang:completions($xquery, $base)
+    let $lang-results :=
         for $item in $completions?*
         let $name := replace($item?label, "#\d+$", "")
         where $prefix = "" or starts-with($name, $prefix)
@@ -127,10 +128,10 @@ declare function query:completions($request as map(*)) {
         }
 
     (: Supplement with inspect:inspect-module-uri() for imported XQuery modules
-       that lsp:completions() doesn't cover (e.g. kwic, templating) :)
+       that lang:completions() doesn't cover (e.g. kwic, templating) :)
     let $ns-prefix := if (contains($prefix, ":")) then substring-before($prefix, ":") else $prefix
     let $inspect-results :=
-        if ($ns-prefix = "" or exists($lsp-results)) then ()
+        if ($ns-prefix = "" or exists($lang-results)) then ()
         else
             (: Extract the namespace URI for this prefix from the query's import statements :)
             let $import-pattern := "import\s+module\s+namespace\s+" || $ns-prefix || "\s*=\s*[""']([^""']+)[""']"
@@ -155,7 +156,7 @@ declare function query:completions($request as map(*)) {
                         }
                     } catch * { () }
 
-    return array { $lsp-results, $inspect-results }
+    return array { $lang-results, $inspect-results }
 };
 
 (:~
@@ -225,7 +226,7 @@ declare function query:hover($request as map(*)) {
     let $line := xs:integer($body?line)
     let $column := xs:integer($body?column)
     let $base := $body?base
-    let $hover := lsp:hover($xquery, $line, $column, $base)
+    let $hover := lang:hover($xquery, $line, $column, $base)
     return
         if (exists($hover)) then
             $hover
@@ -242,7 +243,7 @@ declare function query:definition($request as map(*)) {
     let $line := xs:integer($body?line)
     let $column := xs:integer($body?column)
     let $base := $body?base
-    let $def := lsp:definition($xquery, $line, $column, $base)
+    let $def := lang:definition($xquery, $line, $column, $base)
     return
         if (exists($def)) then
             $def
@@ -259,13 +260,13 @@ declare function query:references($request as map(*)) {
     let $line := xs:integer($body?line)
     let $column := xs:integer($body?column)
     let $base := ($body?base, "xmldb:exist:///db")[1]
-    return lsp:references($xquery, $line, $column, $base)
+    return lang:references($xquery, $line, $column, $base)
 };
 
 (:~
  : GET /api/query/{id}/results — Paginated result items from cursor.
  :
- : Uses lsp:fetch() to retrieve a page of items from the server-side cursor.
+ : Uses cursor:fetch() to retrieve a page of items from the server-side cursor.
  : Only the requested items are serialized; the rest remain as live references.
  : Each item includes: value (serialized), type, documentURI, nodeId.
  :
@@ -300,14 +301,14 @@ declare function query:results($request as map(*)) {
     ))
     (: Use 4-arity fetch with serialization params if available,
        fall back to 3-arity (default serialization) if not :)
-    let $fetch4 := function-lookup(QName("http://exist-db.org/xquery/lsp", "fetch"), 4)
+    let $fetch4 := function-lookup(QName("http://exist-db.org/xquery/cursor", "fetch"), 4)
     return
         try {
             let $page :=
                 if (exists($fetch4)) then
                     $fetch4($id, $start, $count, $ser-params)
                 else
-                    lsp:fetch($id, $start, $count)
+                    cursor:fetch($id, $start, $count)
             return map {
                 "start": $start,
                 "count": array:size($page),
@@ -325,6 +326,6 @@ declare function query:results($request as map(*)) {
 declare function query:close($request as map(*)) {
     let $id := $request?parameters?id
     return map {
-        "closed": lsp:close($id)
+        "closed": cursor:close($id)
     }
 };

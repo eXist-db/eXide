@@ -22,7 +22,7 @@
  *
  * Uses CM6's hoverTooltip to show function signatures and variable info
  * when the user hovers over symbols. Fetches data from the server-side
- * lsp:hover() function via /api/query/hover.
+ * lang:hover() function via /api/query/hover.
  */
 eXide.namespace("eXide.edit.LspHover");
 
@@ -100,10 +100,10 @@ eXide.edit.LspHover = (function () {
                 above: true,
                 create: function () {
                     var dom = document.createElement("div");
-                    dom.className = "cm-lsp-hover";
+                    dom.className = "cm-lang-hover";
 
                     var sig = document.createElement("code");
-                    sig.className = "cm-lsp-hover-signature";
+                    sig.className = "cm-lang-hover-signature";
                     sig.textContent = data.contents.split("\n\n")[0];
                     dom.appendChild(sig);
 
@@ -111,7 +111,7 @@ eXide.edit.LspHover = (function () {
                     var parts = data.contents.split("\n\n");
                     if (parts.length > 1) {
                         var desc = document.createElement("p");
-                        desc.className = "cm-lsp-hover-description";
+                        desc.className = "cm-lang-hover-description";
                         desc.textContent = parts.slice(1).join("\n\n");
                         dom.appendChild(desc);
                     }
@@ -127,7 +127,7 @@ eXide.edit.LspHover = (function () {
 
     /**
      * Client-side hover fallback: look up local function/variable from AST
-     * when the server's lsp:hover() returns nothing.
+     * when the server's lang:hover() returns nothing.
      */
     function localHoverFallback(view, pos, line, column) {
         var doc = eXide.app.getEditor().getActiveDocument();
@@ -209,14 +209,14 @@ eXide.edit.LspHover = (function () {
                     above: true,
                     create: function () {
                         var dom = document.createElement("div");
-                        dom.className = "cm-lsp-hover";
+                        dom.className = "cm-lang-hover";
                         var sig = document.createElement("code");
-                        sig.className = "cm-lsp-hover-signature";
+                        sig.className = "cm-lang-hover-signature";
                         sig.textContent = match.text || funcName;
                         dom.appendChild(sig);
                         if (match.description) {
                             var desc = document.createElement("p");
-                            desc.className = "cm-lsp-hover-description";
+                            desc.className = "cm-lang-hover-description";
                             desc.textContent = match.description;
                             dom.appendChild(desc);
                         }
@@ -233,9 +233,9 @@ eXide.edit.LspHover = (function () {
             above: true,
             create: function () {
                 var dom = document.createElement("div");
-                dom.className = "cm-lsp-hover";
+                dom.className = "cm-lang-hover";
                 var sig = document.createElement("code");
-                sig.className = "cm-lsp-hover-signature";
+                sig.className = "cm-lang-hover-signature";
                 sig.textContent = signature || funcName;
                 dom.appendChild(sig);
                 return { dom: dom };

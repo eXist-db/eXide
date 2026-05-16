@@ -219,7 +219,7 @@ eXide.edit.CompletionSource = (function () {
                 }
                 var options = [];
 
-                // Server functions (from /api/query/completions via lsp:completions())
+                // Server functions (from /api/query/completions via lang:completions())
                 // Includes both built-in/imported functions AND user-defined local functions
                 if (serverFuncs) {
                     // Determine if we need to add a namespace prefix to server results.

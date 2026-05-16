@@ -1,4 +1,4 @@
-// TODO: remove LSP skip once lsp:* module is available on CI's eXist-db
+// TODO: remove LSP skip once lang/cursor modules are available on CI's eXist-db
 describe('Outline modes and filter', () => {
   var lspAvailable = false
 

@@ -266,7 +266,7 @@ eXide.edit.XQueryModeHelper = (function () {
 			var line = (err.line || 0) - 1;
 			var column = err.column || 0;
 			var msg = err.message || err.code || "Unknown error";
-			// lsp:diagnostics() may return line 0 for all errors;
+			// lang:diagnostics() may return line 0 for all errors;
 			// fall back to parsing the location from the message text
 			if (line <= 0 && msg) {
 				var locMatch = msg.match(/\[at line (\d+), column (\d+)/);
@@ -396,7 +396,7 @@ eXide.edit.XQueryModeHelper = (function () {
             });
             eXide.util.QuickPicker.show(items, function (selected) {
                 if (selected) {
-                    // lsp:symbols() returns 0-based line; gotoLine expects 1-based
+                    // lang:symbols() returns 0-based line; gotoLine expects 1-based
                     editorUtils.gotoLine(self.editor, selected.line + 1, selected.column, true);
                 }
             }, { placeholder: "Go to symbol\u2026", parentEditor: self.editor });

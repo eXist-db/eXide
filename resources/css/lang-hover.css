@@ -5,7 +5,7 @@
  * a simpler layout for hover info (signature + optional description).
  */
 
-.cm-lsp-hover {
+.cm-lang-hover {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 12px;
     line-height: 1.4;
@@ -18,7 +18,7 @@
     padding: 8px 10px;
 }
 
-.cm-lsp-hover-signature {
+.cm-lang-hover-signature {
     font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
     font-size: 12px;
     font-weight: 600;
@@ -28,7 +28,7 @@
     display: block;
 }
 
-.cm-lsp-hover-description {
+.cm-lang-hover-description {
     margin: 6px 0 0 0;
     padding-top: 6px;
     border-top: 1px solid #eee;
@@ -38,17 +38,17 @@
 
 /* --- Dark mode --- */
 
-.dark-mode .cm-lsp-hover {
+.dark-mode .cm-lang-hover {
     background: #1e1e1e;
     border-color: #444;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
-.dark-mode .cm-lsp-hover-signature {
+.dark-mode .cm-lang-hover-signature {
     color: #e0e0e0;
 }
 
-.dark-mode .cm-lsp-hover-description {
+.dark-mode .cm-lang-hover-description {
     color: #bbb;
     border-top-color: #444;
 }
