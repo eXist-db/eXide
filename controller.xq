@@ -18,6 +18,7 @@ declare variable $local:method := request:get-method() => lower-case();
 declare variable $local:uri := request:get-uri();
 declare variable $local:forwarded-for := request:get-header("X-Forwarded-URI");
 declare variable $local:wants-json := tokenize(request:get-header('Accept'), ', ?') = 'application/json';
+declare variable $local:is-ajax-request := request:get-header("X-Requested-With") = "XMLHttpRequest";
 
 declare function local:get-user () as xs:string? {
     let $login := login:set-user($local:login-domain, xs:dayTimeDuration("P7D"), false())
@@ -109,9 +110,10 @@ else if ($local:method = 'get' and $exist:resource = "backdrop.svg") then
 
 else if (not($user-allowed))
 then (
-    if ($local:wants-json)
+    if ($local:wants-json or $local:is-ajax-request)
     then (
-        util:declare-option("output:method", "json"),
+        util:declare-option("exist:serialize", "method=json media-type=application/json"),
+        response:set-header("Content-Type", "application/json; charset=UTF-8"),
         response:set-status-code(401),
         <status>
             <error>unauthorized</error>
@@ -128,12 +130,13 @@ then (
  : Login a user via AJAX. Just returns a 401 if login fails.
  :)
 else if (
-    $local:wants-json and
+    ($local:wants-json or $local:is-ajax-request) and
     $local:method = 'post' and
     $exist:resource = 'login'
 )
 then (
-    util:declare-option("output:method", "json"),
+    util:declare-option("exist:serialize", "method=json media-type=application/json"),
+    response:set-header("Content-Type", "application/json; charset=UTF-8"),
     <status>
         <user>{$user}</user>
         <isAdmin json:literal="true">{$user-is-dba}</isAdmin>
