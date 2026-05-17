@@ -18,7 +18,7 @@
  :)
 xquery version "3.0";
 
-declare option exist:serialize "method=json indent=yes";
+declare option exist:serialize "method=json media-type=application/json indent=yes";
 
 declare function local:generate-signature($func as element(function)) {
     $func/@name/string() || "(" ||
