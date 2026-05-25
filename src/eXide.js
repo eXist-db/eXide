@@ -862,7 +862,11 @@ eXide.app = (function(util) {
 
                     document.getElementById("serialization-mode").removeAttribute("disabled");
                     var serializationMode = document.getElementById("serialization-mode").value;
-        			var moduleLoadPath = "xmldb:exist://" + editor.getActiveDocument().getBasePath();
+                    // Unsaved buffers (path "__new__N") have no real collection. Send "." so
+                    // the server treats it as "no location" rather than a malformed xmldb URI
+                    // (xmldb:exist://__new__1), which previously crashed module imports server-side.
+                    var activeDoc = editor.getActiveDocument();
+        			var moduleLoadPath = activeDoc.isNew() ? "." : "xmldb:exist://" + activeDoc.getBasePath();
         			document.querySelectorAll('.results-container .results').forEach(function(el) { el.innerHTML = ""; });
 
                     app.runQueryCursor(code, moduleLoadPath, serializationMode, livePreview);
