@@ -44,12 +44,22 @@ describe('Go-to-definition and Find References', () => {
     it('adds cm-goto-clickable class when Cmd/Ctrl is held', () => {
       setEditorContent('let $x := 1 return $x')
 
-      // The cm-content should get clickable class on modifier key
-      cy.get('.cm-content').trigger('keydown', { metaKey: true, key: 'Meta' })
-      cy.get('.cm-content.cm-goto-clickable, .cm-editor .cm-goto-clickable')
-        .should('exist')
-
-      cy.get('.cm-content').trigger('keyup', { key: 'Meta' })
+      // The editor's keydown handler in editor.js branches on
+      // navigator.platform: 'Meta' key on Mac, 'Control' key elsewhere.
+      // Cypress on Linux CI ≠ macOS local, so dispatch the key that
+      // matches the runner's platform — otherwise the class is never
+      // added and the assertion times out.
+      cy.window().then((win) => {
+        var isMac = /Mac|iPhone|iPod|iPad/.test(win.navigator.platform)
+        var modKey = isMac ? 'Meta' : 'Control'
+        var keydownProps = isMac
+          ? { metaKey: true, key: modKey }
+          : { ctrlKey: true, key: modKey }
+        cy.get('.cm-content').trigger('keydown', keydownProps)
+        cy.get('.cm-content.cm-goto-clickable, .cm-editor .cm-goto-clickable')
+          .should('exist')
+        cy.get('.cm-content').trigger('keyup', { key: modKey })
+      })
     })
   })
 
