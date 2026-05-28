@@ -82,8 +82,8 @@ declare function wsmon:push-status($request as map(*)) {
         },
         "runningQueries":
             if ($jmx-data) then
-                count($jmx-data//*[local-name() = 'RunningQueries']/*[local-name() = 'row']/*[local-name() = 'value'][not(*[local-name() = 'caller'] = 'true')])
-            else count($running-queries//system:query[not(@caller = 'true')]),
+                count($jmx-data//*[local-name() = 'RunningQueries']/*[local-name() = 'row']/*[local-name() = 'value'][not(*[local-name() = 'caller'] = 'true')][not(contains(string(*[local-name() = 'sourceKey']), '/apps/eXide/modules/api/'))])
+            else count($running-queries//system:xquery[not(@caller = 'true')][not(contains(string(system:sourceKey), '/apps/eXide/modules/api/'))]),
         "queries": array {
             if ($jmx-data) then
                 for $row in $jmx-data//*[local-name() = 'RunningQueries']/*[local-name() = 'row']
@@ -100,13 +100,15 @@ declare function wsmon:push-status($request as map(*)) {
                     "elapsed": string(($v/*[local-name() = 'elapsed'])[1])
                 }
             else
-                for $query in $running-queries//system:query[not(@caller = 'true')]
+                for $query in $running-queries//system:xquery[not(@caller = 'true')]
+                let $src := string($query/system:sourceKey)
+                where not(contains($src, '/apps/eXide/modules/api/'))
                 return map {
                     "id": string($query/@id),
                     "sourceType": string($query/@sourceType),
                     "started": string($query/@started),
                     "terminating": string($query/@terminating),
-                    "sourceKey": string($query/system:sourceKey),
+                    "sourceKey": $src,
                     "elapsed": "0"
                 }
         },
