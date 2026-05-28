@@ -47,7 +47,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Download existdb-openapi dependency
-        run: gh release download v0.9.0 --repo eXist-db/existdb-openapi --pattern "existdb-openapi-*.xar" --dir build/
+        run: gh release download v0.9.1 --repo eXist-db/existdb-openapi --pattern "existdb-openapi-*.xar" --dir build/
         env:
           GH_TOKEN: ${{ github.token }}
 
