@@ -128,8 +128,14 @@ declare function query:completions($request as map(*)) {
         }
 
     (: Supplement with inspect:inspect-module-uri() for imported XQuery modules
-       that lang:completions() doesn't cover (e.g. kwic, templating) :)
-    let $ns-prefix := if (contains($prefix, ":")) then substring-before($prefix, ":") else $prefix
+       that lang:completions() doesn't cover (e.g. kwic, templating).
+
+       Only run this fallback when the user typed a namespace-qualified prefix
+       (e.g. "kwic:summ" — has a colon). An unprefixed identifier like "str"
+       is never a namespace name; treating it as one triggers a slow walk over
+       every registered/mapped module via inspect:inspect-module-uri(), adding
+       ~1.5s per completion request for no benefit. :)
+    let $ns-prefix := if (contains($prefix, ":")) then substring-before($prefix, ":") else ""
     let $inspect-results :=
         if ($ns-prefix = "" or exists($lang-results)) then ()
         else
