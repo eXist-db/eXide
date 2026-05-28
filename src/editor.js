@@ -286,9 +286,12 @@ eXide.edit.Editor = (function () {
             eXide.edit.LspHover.extension(),
             eXide.edit.TagMatching.extension(),
             eXide.edit.SemanticHighlight.extension(),
+            // Initial config: explicit-trigger only (Ctrl-Space). Preferences
+            // upgrades this to as-you-type via the compartment reconfigure
+            // in preferences.js if the user opts in.
             autocompletionCompartment.of(CM6.autocompletion({
                 override: [eXide.edit.CompletionSource.completionSource],
-                activateOnTyping: true,
+                activateOnTyping: false,
                 maxRenderedOptions: 50,
                 icons: true
             })),

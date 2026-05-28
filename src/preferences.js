@@ -30,7 +30,7 @@ eXide.util.Preferences = (function () {
         font: "Default",
 		showInvisibles: false,
         autoPair: true,
-        autocompleteOnType: true,
+        autocompleteOnType: false,
 		showPrintMargin: true,
 		showHScroll: false,
         indent: -1,
@@ -124,7 +124,7 @@ eXide.util.Preferences = (function () {
 		form.querySelector('input[name="omit-xml-decl-on-download-package"]').checked = this.preferences.omitXMLDeclarationOnDownloadPackage;
 		form.querySelector('input[name="show-invisibles"]').checked = this.preferences.showInvisibles;
         form.querySelector('input[name="auto-pair"]').checked = this.preferences.autoPair;
-        form.querySelector('input[name="autocomplete-on-type"]').checked = this.preferences.autocompleteOnType !== false;
+        form.querySelector('input[name="autocomplete-on-type"]').checked = this.preferences.autocompleteOnType === true;
 		form.querySelector('input[name="print-margin"]').checked = this.preferences.showPrintMargin;
 		form.querySelector('input[name="emmet"]').checked = this.preferences.emmet;
 		form.querySelector('input[name="split-pane"]').checked = this.preferences.splitPane;
@@ -322,7 +322,7 @@ eXide.util.Preferences = (function () {
                 effects.push(this.editor._autocompletionCompartment.reconfigure(
                     CM6.autocompletion({
                         override: [eXide.edit.CompletionSource.completionSource],
-                        activateOnTyping: this.preferences.autocompleteOnType !== false,
+                        activateOnTyping: this.preferences.autocompleteOnType === true,
                         maxRenderedOptions: 50,
                         icons: true
                     })
