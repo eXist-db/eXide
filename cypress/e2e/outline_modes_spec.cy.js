@@ -1,25 +1,4 @@
-// TODO: remove LSP skip once lang/cursor modules are available on CI's eXist-db
 describe('Outline modes and filter', () => {
-  var lspAvailable = false
-
-  before(() => {
-    cy.loginXHR('admin', '')
-    cy.request({
-      method: 'POST',
-      url: '/eXide/api/query/symbols',
-      body: { query: 'declare function local:test() { 1 };', base: 'xmldb:exist:///db' },
-      headers: { 'Content-Type': 'application/json' },
-      failOnStatusCode: false
-    }).then((resp) => {
-      try {
-        var body = typeof resp.body === 'string' ? JSON.parse(resp.body) : resp.body
-        lspAvailable = resp.status === 200 && Array.isArray(body) && body.length > 0 && body[0].name !== undefined
-      } catch (e) {
-        lspAvailable = false
-      }
-    })
-  })
-
   function setup() {
     cy.loginXHR('admin', '')
     cy.visit('/eXide/index.html')
@@ -38,7 +17,6 @@ describe('Outline modes and filter', () => {
   }
 
   it('shows toolbar with three mode buttons', function () {
-    if (!lspAvailable) this.skip()
     setup()
     cy.get('#outline-toolbar').should('exist')
     cy.get('[data-outline-mode="nested-doc"]').should('exist')
@@ -47,7 +25,6 @@ describe('Outline modes and filter', () => {
   })
 
   it('nested-doc mode is active by default', function () {
-    if (!lspAvailable) this.skip()
     setup()
     cy.get('[data-outline-mode="nested-doc"]').should('have.class', 'active')
     cy.get('[data-outline-mode="flat-doc"]').should('not.have.class', 'active')
@@ -55,7 +32,6 @@ describe('Outline modes and filter', () => {
   })
 
   it('switches to flat-doc mode', function () {
-    if (!lspAvailable) this.skip()
     setup()
     cy.get('[data-outline-mode="flat-doc"]').click()
     cy.get('[data-outline-mode="flat-doc"]').should('have.class', 'active')
@@ -65,7 +41,6 @@ describe('Outline modes and filter', () => {
   })
 
   it('switches to flat-alpha mode and sorts alphabetically', function () {
-    if (!lspAvailable) this.skip()
     setup()
     cy.get('[data-outline-mode="flat-alpha"]').click()
     cy.get('[data-outline-mode="flat-alpha"]').should('have.class', 'active')
@@ -83,7 +58,6 @@ describe('Outline modes and filter', () => {
   })
 
   it('flat-doc mode preserves document order', function () {
-    if (!lspAvailable) this.skip()
     setup()
     var nestedOrder = []
     cy.get('#outline li a .outline-name').then(($names) => {
@@ -105,7 +79,6 @@ describe('Outline modes and filter', () => {
   })
 
   it('filter input narrows visible items', function () {
-    if (!lspAvailable) this.skip()
     setup()
     var totalCount
     cy.get('#outline li').then(($items) => {
@@ -124,7 +97,6 @@ describe('Outline modes and filter', () => {
   })
 
   it('clearing filter shows all items again', function () {
-    if (!lspAvailable) this.skip()
     setup()
     var totalCount
     cy.get('#outline li').then(($items) => {
@@ -144,7 +116,6 @@ describe('Outline modes and filter', () => {
   })
 
   it('clicking an outline item navigates the editor', function () {
-    if (!lspAvailable) this.skip()
     setup()
     cy.on('uncaught:exception', () => false)
 

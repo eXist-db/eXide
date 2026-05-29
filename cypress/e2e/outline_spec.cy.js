@@ -1,27 +1,5 @@
-// TODO: remove LSP skip once lang/cursor modules are available on CI's eXist-db
 describe('Outline view', () => {
-  var lspAvailable = false
-
-  before(() => {
-    cy.loginXHR('admin', '')
-    cy.request({
-      method: 'POST',
-      url: '/eXide/api/query/symbols',
-      body: { query: 'declare function local:test() { 1 };', base: 'xmldb:exist:///db' },
-      headers: { 'Content-Type': 'application/json' },
-      failOnStatusCode: false
-    }).then((resp) => {
-      try {
-        var body = typeof resp.body === 'string' ? JSON.parse(resp.body) : resp.body
-        lspAvailable = resp.status === 200 && Array.isArray(body) && body.length > 0 && body[0].name !== undefined
-      } catch (e) {
-        lspAvailable = false
-      }
-    })
-  })
-
   it('should show XQuery functions after opening a library module via collections pane', function () {
-    if (!lspAvailable) this.skip()
 
     cy.loginXHR('admin', '')
     cy.visit('/eXide/index.html')
