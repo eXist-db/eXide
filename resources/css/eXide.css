@@ -4868,3 +4868,86 @@ body.dark .panel-south .minimized { background: linear-gradient(to top, #444, #5
 
 /* Login error */
 body.dark #login-error { color: #fc8181; }
+
+/* ============================================================
+ * XQuery > Run as test — results table styling
+ * ============================================================ */
+
+.test-summary {
+    padding: 6px 0;
+    font-size: 12px;
+}
+.test-summary .test-failures { color: #c0392b; font-weight: 600; }
+.test-summary .test-errors { color: #c0392b; font-weight: 600; }
+
+.test-results {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin-top: 4px;
+}
+.test-results th, .test-results td {
+    padding: 4px 8px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+    text-align: left;
+}
+.test-results th {
+    background: #f8f8f8;
+    font-weight: 600;
+}
+.test-results .test-pass td:nth-child(2) { color: #27ae60; }
+.test-results .test-failure td:nth-child(2),
+.test-results .test-error   td:nth-child(2) { color: #c0392b; font-weight: 600; }
+
+/* Per-row expandable details for failures/errors */
+.test-results .test-details summary {
+    cursor: pointer;
+    /* Inherit the cell's text color so failure summaries don't lose emphasis */
+    color: inherit;
+    /* Trim the default disclosure triangle indent */
+    margin-left: -2px;
+}
+.test-results .test-details[open] summary {
+    margin-bottom: 4px;
+}
+.test-results .test-full-output {
+    margin: 4px 0 0 0;
+    padding: 6px 8px;
+    background: #f8f8f8;
+    border: 1px solid #e0e0e0;
+    border-radius: 3px;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 11px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    max-height: 300px;
+    overflow: auto;
+}
+
+.test-error {
+    padding: 8px;
+    background: #fde8e8;
+    border: 1px solid #f5c2c2;
+    border-radius: 3px;
+    color: #c0392b;
+    font-size: 12px;
+}
+
+/* Dark-mode counterparts */
+body.dark .test-results th { background: #2a2a2a; }
+body.dark .test-results th,
+body.dark .test-results td { border-bottom-color: #333; }
+body.dark .test-results .test-pass td:nth-child(2) { color: #58d68d; }
+body.dark .test-results .test-failure td:nth-child(2),
+body.dark .test-results .test-error   td:nth-child(2) { color: #ff6b6b; }
+body.dark .test-results .test-full-output {
+    background: #1f1f1f;
+    border-color: #333;
+    color: #ddd;
+}
+body.dark .test-error {
+    background: #3a1a1a;
+    border-color: #5a2a2a;
+    color: #ff8e8e;
+}

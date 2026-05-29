@@ -1047,13 +1047,37 @@ eXide.edit.XQueryModeHelper = (function () {
             for (var i = 0; i < data.testcases.length; i++) {
                 var tc = data.testcases[i];
                 var status = tc.failure ? 'failure' : (tc.error ? 'error' : 'pass');
-                var detail = '';
-                if (tc.failure) detail = tc.failure.message || tc.failure.detail || '';
-                if (tc.error) detail = tc.error.message || tc.error.detail || '';
+                // Short summary message + optional full output for failures/errors.
+                // The XQSuite endpoint may return either a string in `.message` /
+                // `.detail` or a structured object with both fields; we surface
+                // `.message` as the one-line summary and `.detail` (or anything
+                // additional) in the expandable <details>. Both are escaped before
+                // insertion.
+                var summary = '';
+                var fullOutput = '';
+                if (tc.failure) {
+                    summary = tc.failure.message || tc.failure.detail || '';
+                    fullOutput = tc.failure.detail && tc.failure.detail !== summary
+                        ? tc.failure.detail : '';
+                }
+                if (tc.error) {
+                    summary = tc.error.message || tc.error.detail || '';
+                    fullOutput = tc.error.detail && tc.error.detail !== summary
+                        ? tc.error.detail : '';
+                }
                 html += '<tr class="test-' + status + '">';
                 html += '<td>' + escapeHtml(tc.name) + '</td>';
                 html += '<td>' + status + '</td>';
-                html += '<td>' + escapeHtml(detail) + '</td>';
+                if (fullOutput) {
+                    html += '<td>' +
+                        '<details class="test-details">' +
+                        '<summary>' + escapeHtml(summary) + '</summary>' +
+                        '<pre class="test-full-output">' + escapeHtml(fullOutput) + '</pre>' +
+                        '</details>' +
+                        '</td>';
+                } else {
+                    html += '<td>' + escapeHtml(summary) + '</td>';
+                }
                 html += '</tr>';
             }
         }
