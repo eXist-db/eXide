@@ -980,6 +980,16 @@ eXide.app = (function(util) {
 		            util.message("Query cancelled.");
 		            return;
 		        }
+		        // Connection drops from a server-side kill (via the Monitor
+		        // panel's kill button, or another admin tool) surface as
+		        // generic network errors — TypeError "Failed to fetch"
+		        // (Chrome/Firefox) or "Load failed" (Safari). Treat these as
+		        // cancellations rather than as "Server Error" toasts, since
+		        // they reflect intentional admin actions, not server bugs.
+		        if (err.name === "TypeError" || /Failed to fetch|Load failed|NetworkError/i.test(String(err.message || err))) {
+		            util.message("Query cancelled.");
+		            return;
+		        }
 		        util.error(err.message || String(err), "Server Error");
 		    });
 		},

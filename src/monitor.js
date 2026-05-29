@@ -425,7 +425,8 @@ eXide.app.Monitor = (function () {
     };
 
     Constr.prototype.killQuery = function (id) {
-        fetch("api/admin/queries/" + encodeURIComponent(id), { method: "DELETE" });
+        fetch("api/admin/queries/" + encodeURIComponent(id), { method: "DELETE" })
+            .catch(function () { /* fire-and-forget; admin endpoint failures are non-fatal */ });
     };
 
     Constr.prototype.showError = function (msg) {
