@@ -1277,6 +1277,14 @@ eXide.edit.Editor = (function () {
             CM6.syntaxHighlighting(CM6.oneDarkHighlightStyle),
             CM6.xqueryDarkHighlightStyle ? CM6.syntaxHighlighting(CM6.xqueryDarkHighlightStyle) : []
         ] : [
+            // Light theme: explicit white editor background (CM6's default
+            // is a light gray which @line-o found visually noisy in PR #794
+            // review). Marked as light via { dark: false } so CM6 doesn't
+            // try to inherit dark-theme bits if the page later switches.
+            EditorView.theme({
+                "&": { backgroundColor: "#ffffff" },
+                ".cm-gutters": { backgroundColor: "#ffffff" }
+            }, { dark: false }),
             CM6.xqueryHighlightStyle ? CM6.syntaxHighlighting(CM6.xqueryHighlightStyle) : []
         ];
         this.editor.dispatch({
