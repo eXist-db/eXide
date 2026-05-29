@@ -15,7 +15,8 @@ jobs:
          # eXide 4.0 requires eXist 7.0+ (lang/cursor modules from existdb-openapi),
          # so we test only against the 'latest' (develop) Docker tag.
          exist-version: [latest]
-         node-version: ['22']
+         # Node 22 is EOL; track current Node LTS (24).
+         node-version: ['24']
 
     steps:
       - uses: actions/checkout@v6
@@ -47,7 +48,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Download existdb-openapi dependency
-        run: gh release download v0.9.1 --repo eXist-db/existdb-openapi --pattern "existdb-openapi-*.xar" --dir build/
+        run: gh release download v0.9.3 --repo eXist-db/existdb-openapi --pattern "existdb-openapi-*.xar" --dir build/
         env:
           GH_TOKEN: ${{ github.token }}
 
