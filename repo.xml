@@ -12,6 +12,23 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="4.0.0">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li><strong>Modernization release.</strong> Requires eXist-db 7.0+.</li>
+                <li>Replaced Ace editor with <a href="https://codemirror.net/">CodeMirror 6</a>: new completion popup, semantic highlighting, language helpers for XQuery, XML, HTML, CSS, JavaScript, JSON, Markdown.</li>
+                <li>Replaced xqlint with a <a href="https://github.com/bwbohl/REx">REx</a>-generated XQuery parser built from the W3C XQuery 3.1 EBNF (XQuery 4.0 parser available behind a feature flag).</li>
+                <li><a href="https://www.prettier.io/">Prettier</a> integration for XQuery, XML, HTML, CSS, JS, JSON, Markdown — replacing the old per-mode formatters.</li>
+                <li>Removed jQuery, jQuery UI, and AG Grid — switched to vanilla JS and native <code>&lt;dialog&gt;</code>.</li>
+                <li>New REST API surface built on <a href="https://github.com/eeditiones/roaster">Roaster</a> and the <a href="https://github.com/eXist-db/existdb-openapi">existdb-openapi</a> package, replacing the legacy ad-hoc XQuery endpoints.</li>
+                <li>New language-services integration: as-you-type diagnostics, hover-doc, go-to-definition, find-all-references, document outline, hierarchical symbols — all via the <code>langservice:</code> module in existdb-openapi.</li>
+                <li>Server-side cursor pagination for query results (via the <code>cursor:</code> module): AbortController cancel, update-query warning, adaptive serialization.</li>
+                <li>New WebSocket transport for real-time monitoring (running queries, memory, kill-query) and diagnostics push.</li>
+                <li>Redesigned UI: toolbar, status bar, dialogs, tabs, dark mode, outline panel.</li>
+                <li>New Cypress integration test suite (242 tests at 4.0 release).</li>
+                <li>Dependencies: requires <a href="https://github.com/eXist-db/existdb-openapi">existdb-openapi</a> (≥ 0.9.0) and <a href="https://github.com/eeditiones/roaster">roaster</a> (≥ 1.8.0).</li>
+                <li>See PR <a href="https://github.com/eXist-db/eXide/pull/794">#794</a> for full details and supersedes <a href="https://github.com/eXist-db/eXide/pull/778">#778</a>.</li>
+            </ul>
+        </change>
         <change version="3.5.5">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fixed: update collection.xconf schema to support Lucene 10 settings - <a href="https://github.com/eXist-db/eXide/pull/784">#784</a></li>
