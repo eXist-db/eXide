@@ -6,6 +6,21 @@
  * signature help / hover panels (as used in existdb-langserver).
  */
 
+/*
+ * Constrain the outer CM6 tooltip wrapper too — without this, the
+ * inner max-width is honored but the outer .cm-tooltip element can
+ * stretch much wider than the visible content (reported by @line-o
+ * in PR #794 review: screenshot showed the popup spanning the full
+ * page width). The :has() selector targets only .cm-tooltip elements
+ * that directly contain our funcdoc-tooltip content, so we don't
+ * affect other CM6 tooltips on the page (autocomplete, hover, etc.).
+ * :has() is supported in Chrome 105+, Firefox 121+, Safari 15.4+.
+ */
+.cm-tooltip:has(> .cm-funcdoc-tooltip) {
+    max-width: 550px;
+    box-sizing: border-box;
+}
+
 .cm-funcdoc-tooltip {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 12px;
@@ -14,8 +29,12 @@
     border: 1px solid #ccc;
     border-radius: 4px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    max-width: 700px;
+    /* Cap at 550px (down from 700) per @line-o's readability feedback. */
+    max-width: 550px;
     min-width: 400px;
+    /* Shrink-to-fit content width when content is narrower than max-width;
+     * without this, the popup defaults to stretching to fit its container. */
+    width: max-content;
     outline: none;
 }
 
