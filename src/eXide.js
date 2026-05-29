@@ -936,11 +936,33 @@ eXide.app = (function(util) {
 		        hideCancel();
 		        if (!response.ok) {
 		            return response.json().then(function(err) {
-		                var msg = err.error || "Unknown error";
+		                // existdb-openapi/cursor:eval errors come back as
+		                // { code, description, line, column, module, value }
+		                // (the standard XPathException → JSON shape). Older
+		                // code paths used { error: "..." } or { message: "..." }.
+		                // Coalesce so the user sees the real cause regardless
+		                // of which shape the server returns; fall back to a
+		                // serialized payload so the user can still copy/paste
+		                // the response if all known fields are missing.
+		                var msg = err.description || err.error || err.message
+		                    || (typeof err === "string" ? err : JSON.stringify(err));
+		                if (err.code) {
+		                    msg = "[" + err.code + "] " + msg;
+		                }
 		                if (err.line > 0) {
 		                    msg = "line " + err.line + ": " + msg;
 		                }
 		                editor.evalError(msg, !livePreview);
+		            }, function () {
+		                // Body wasn't JSON — try to surface whatever the
+		                // server actually said (HTTP status + body text).
+		                return response.text().then(function (text) {
+		                    var msg = "HTTP " + response.status + ": " +
+		                        (text ? text.slice(0, 500) : response.statusText);
+		                    editor.evalError(msg, !livePreview);
+		                }).catch(function () {
+		                    editor.evalError("HTTP " + response.status + " " + response.statusText, !livePreview);
+		                });
 		            });
 		        }
 		        return response.json().then(function(data) {
