@@ -133,6 +133,18 @@
         }
     });
     closeBtn.addEventListener('click', hidePanel);
+    // Dismiss = clear the error entirely. The MutationObserver on #error-status
+    // sees the empty value and cascades to onErrorChange(''), which removes the
+    // pill and closes the panel. Added because @line-o reported (PR #794
+    // review) getting an error stuck on-screen with 'the only way to get rid
+    // of it was by reloading the website' — the existing × button only hid
+    // the panel; the pill stayed visible.
+    var dismissBtn = document.getElementById('exide-err-panel-dismiss');
+    if (dismissBtn) {
+        dismissBtn.addEventListener('click', function () {
+            errSource.textContent = '';
+        });
+    }
     if (copyBtn) {
         copyBtn.addEventListener('click', function () {
             if (!currentRaw) return;

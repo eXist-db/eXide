@@ -1219,6 +1219,30 @@ Sub level menu list items (undo style from Top level List Items)
     opacity: 1;
 }
 
+/* Dismiss button — sits between Copy and Close (×). Permanently clears the
+ * error rather than just hiding the panel. Added to give users a way to
+ * dismiss stuck errors without reloading the page (PR #794 review feedback). */
+#exide-err-panel-dismiss {
+    position: absolute;
+    top: 4px;
+    right: 54px;
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: 3px;
+    color: #fbb6b6;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 2px 8px;
+    line-height: 1.2;
+    opacity: 0.85;
+}
+
+#exide-err-panel-dismiss:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
 #error-status:not(:empty) ~ .status-right {
     margin-left: 0;
 }
