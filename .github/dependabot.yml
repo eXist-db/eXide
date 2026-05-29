@@ -1,25 +1,37 @@
 version: 2
 updates:
-- package-ecosystem: github-actions
-  directory: "/"
-  schedule:
-    interval: weekly
-    time: "04:00"
-- package-ecosystem: npm
-  directory: "/"
-  schedule:
-    interval: daily
-    time: "03:00"
-  open-pull-requests-limit: 10
-  ignore:
-  - dependency-name: cypress
-    versions:
-    - 6.3.0
-    - 6.4.0
-    - 6.5.0
-    - 6.6.0
-    - 6.7.1
-    - 6.8.0
-    - 7.0.0
-    - 7.0.1
-    - 7.1.0
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      time: "04:00"
+    # Bundle all GitHub Actions bumps into a single PR per week.
+    groups:
+      github-actions:
+        patterns: ["*"]
+
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: daily
+      time: "03:00"
+    open-pull-requests-limit: 10
+    # Group related libraries into single weekly PRs to cut review noise.
+    # Major updates land in their own per-library PR so they can be reviewed
+    # carefully; minor + patch bumps are batched.
+    groups:
+      codemirror:
+        patterns:
+          - "@codemirror/*"
+          - "@lezer/*"
+        update-types:
+          - "minor"
+          - "patch"
+      prettier:
+        patterns:
+          - "prettier"
+          - "prettier-*"
+          - "@prettier/*"
+        update-types:
+          - "minor"
+          - "patch"
