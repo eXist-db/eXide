@@ -27,6 +27,13 @@ eXide.wsEval = (function () {
     var reconnectTimer = null;
     var reconnectDelay = 1000;
     var maxReconnectDelay = 30000;
+    var reconnectAttempts = 0;
+    var maxReconnectAttempts = 5;
+    // Whether we've received a real application message on the current
+    // connection. Used to gate the backoff reset in onopen so a server that
+    // accepts the WS upgrade and immediately drops the connection can't
+    // sustain a fast open→close→reset→open loop.
+    var sessionEstablished = false;
 
     /**
      * Connect to the /ws/eval endpoint.
@@ -48,12 +55,25 @@ eXide.wsEval = (function () {
 
         socket.onopen = function () {
             connected = true;
-            reconnectDelay = 1000;
+            sessionEstablished = false;
+            // NB: do NOT reset reconnectDelay or reconnectAttempts here.
+            // Reset only when we've actually exchanged an application message
+            // (see onmessage). Otherwise a server that accepts the WebSocket
+            // upgrade and then immediately closes will reset our backoff every
+            // reconnect, producing an infinite fast loop.
             console.log("[ws-eval] Connected");
         };
 
         socket.onmessage = function (event) {
             if (event.data === "ping") return;
+
+            // First real message confirms the server is alive on this endpoint:
+            // safe to reset the backoff counters now.
+            if (!sessionEstablished) {
+                sessionEstablished = true;
+                reconnectDelay = 1000;
+                reconnectAttempts = 0;
+            }
 
             try {
                 var msg = JSON.parse(event.data);
@@ -174,10 +194,18 @@ eXide.wsEval = (function () {
     function scheduleReconnect() {
         if (reconnectTimer) return;
         if (!url) return;
+        if (reconnectAttempts >= maxReconnectAttempts) {
+            console.warn("[ws-eval] Giving up after " + reconnectAttempts +
+                " reconnect attempts — server endpoint appears unavailable. " +
+                "Call eXide.wsEval.connect(url) explicitly to retry.");
+            url = null;  // prevent further reconnects until someone re-arms
+            return;
+        }
 
+        reconnectAttempts++;
         reconnectTimer = setTimeout(function () {
             reconnectTimer = null;
-            console.log("[ws-eval] Reconnecting...");
+            console.log("[ws-eval] Reconnecting (attempt " + reconnectAttempts + "/" + maxReconnectAttempts + ")...");
             connect(url);
         }, reconnectDelay);
 

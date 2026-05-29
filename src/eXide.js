@@ -217,10 +217,17 @@ eXide.app = (function(util) {
                         });
                     }
 
-                    // Connect eval WebSocket for streaming query execution
-                    if (typeof eXide.wsEval !== "undefined" && eXide.wsEval.autoConnect) {
-                        eXide.wsEval.autoConnect();
-                    }
+                    // Streaming-query WebSocket (eXide.wsEval / /ws/eval) is scaffolded
+                    // for a future eXist-db feature that isn't yet released. AutoConnect
+                    // is intentionally disabled here: with the endpoint missing on
+                    // current eXist builds, browsers (most visibly Safari/WebKit; see
+                    // PR #794 review) would loop open→close→reconnect indefinitely
+                    // because the server accepts the WS upgrade and then immediately
+                    // drops the connection. Re-enable once eXist-core's
+                    // feature/websocket-eval branch lands and the endpoint is stable.
+                    // if (typeof eXide.wsEval !== "undefined" && eXide.wsEval.autoConnect) {
+                    //     eXide.wsEval.autoConnect();
+                    // }
 
                     // Fetch registered module prefixes for static analysis
                     app.refreshModuleCache();
