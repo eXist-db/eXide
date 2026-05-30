@@ -39,7 +39,7 @@ eXide.edit.Projects = (function() {
             return;
         }
         var $this = this;
-        var url = "api/packages/_?collection=" + encodeURIComponent(collection);
+        var url = "api/packages/?collection=" + encodeURIComponent(collection);
         fetch(url).then(function(response) {
             if (!response.ok) return null;
             return response.json();
