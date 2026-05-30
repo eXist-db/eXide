@@ -47,11 +47,11 @@ describe('Outline modes and filter', () => {
 
     cy.get('#outline li a .outline-name').should('have.length.at.least', 2)
       .then(($names) => {
-        var names = []
+        let names = []
         $names.each(function () {
           names.push(Cypress.$(this).text().trim().replace(/^\$/, '').toLowerCase())
         })
-        for (var i = 1; i < names.length; i++) {
+        for (let i = 1; i < names.length; i++) {
           expect(names[i] >= names[i - 1], names[i - 1] + ' <= ' + names[i]).to.be.true
         }
       })
@@ -59,7 +59,7 @@ describe('Outline modes and filter', () => {
 
   it('flat-doc mode preserves document order', function () {
     setup()
-    var nestedOrder = []
+    let nestedOrder = []
     cy.get('#outline li a .outline-name').then(($names) => {
       $names.each(function () {
         nestedOrder.push(Cypress.$(this).text().trim())
@@ -70,7 +70,7 @@ describe('Outline modes and filter', () => {
     cy.get('#outline li', { timeout: 5000 }).should('have.length.at.least', 2)
 
     cy.get('#outline li a .outline-name').then(($names) => {
-      var flatOrder = []
+      let flatOrder = []
       $names.each(function () {
         flatOrder.push(Cypress.$(this).text().trim())
       })
@@ -80,7 +80,7 @@ describe('Outline modes and filter', () => {
 
   it('filter input narrows visible items', function () {
     setup()
-    var totalCount
+    let totalCount = 0
     cy.get('#outline li').then(($items) => {
       totalCount = $items.length
     })
@@ -88,7 +88,7 @@ describe('Outline modes and filter', () => {
     cy.get('#outline-filter').clear().type('access')
 
     cy.get('#outline li').then(($items) => {
-      var visible = $items.filter(function () {
+      const visible = $items.filter(function () {
         return Cypress.$(this).css('display') !== 'none'
       })
       expect(visible.length).to.be.below(totalCount)
@@ -98,7 +98,7 @@ describe('Outline modes and filter', () => {
 
   it('clearing filter shows all items again', function () {
     setup()
-    var totalCount
+    let totalCount = 0
     cy.get('#outline li').then(($items) => {
       totalCount = $items.length
     })
@@ -108,7 +108,7 @@ describe('Outline modes and filter', () => {
     cy.get('#outline-filter').clear()
 
     cy.get('#outline li').then(($items) => {
-      var visible = $items.filter(function () {
+      const visible = $items.filter(function () {
         return Cypress.$(this).css('display') !== 'none'
       })
       expect(visible.length).to.eq(totalCount)

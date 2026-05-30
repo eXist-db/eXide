@@ -7,7 +7,7 @@ describe('Prettier formatting', () => {
 
   function setEditorContent(text) {
     cy.window().then((win) => {
-      var doc = win.eXide.app.getEditor().getActiveDocument()
+      const doc = win.eXide.app.getEditor().getActiveDocument()
       doc.setText(text)
     })
   }
@@ -20,7 +20,7 @@ describe('Prettier formatting', () => {
 
   it('formats XQuery code via menu', () => {
     // Badly formatted XQuery
-    var ugly = 'for $x in (1,2,3) let $y:=$x*2 return <item>{$y}</item>'
+    const ugly = 'for $x in (1,2,3) let $y:=$x*2 return <item>{$y}</item>'
     setEditorContent(ugly)
 
     // Trigger format via the Edit > Format Code menu item
@@ -38,7 +38,7 @@ describe('Prettier formatting', () => {
     })
     cy.get('.path', { timeout: 5000 }).should('contain', 'untitled-')
 
-    var before
+    let before
     getEditorContent().then((text) => {
       before = text
     })

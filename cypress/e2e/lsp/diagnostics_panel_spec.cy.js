@@ -12,7 +12,7 @@ describe('Diagnostics panel', () => {
 
   function setEditorContent(text) {
     cy.window().then((win) => {
-      var view = win.eXide.app.getEditor().editor
+      const view = win.eXide.app.getEditor().editor
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: text }
       })

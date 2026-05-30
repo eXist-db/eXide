@@ -54,7 +54,7 @@ describe('WebSocket transport', () => {
   it('receives monitoring data via WebSocket push', function () {
     waitForWs(this)
     cy.window().then((win) => {
-      var received = null
+      let received = null
       win.eXide.ws.on("exist/metrics", function (data) {
         received = data
       })
@@ -79,7 +79,7 @@ describe('WebSocket transport', () => {
   it('receives diagnostics push after compilation', function () {
     waitForWs(this)
     cy.window().then((win) => {
-      var received = null
+      let received = null
       win.eXide.ws.on("textDocument/publishDiagnostics", function (data) {
         received = data
       })
@@ -107,7 +107,7 @@ describe('WebSocket transport', () => {
     cy.get('.cm-editor').should('exist')
     cy.get('#status-bar').should('exist')
     cy.window().then((win) => {
-      var editor = win.eXide.app.getEditor()
+      const editor = win.eXide.app.getEditor()
       expect(editor).to.exist
       expect(editor.editor).to.exist
     })
