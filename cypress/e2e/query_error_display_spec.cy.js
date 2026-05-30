@@ -27,7 +27,7 @@ describe('Query error display', () => {
 
   function setEditorContent(text) {
     cy.window().then((win) => {
-      var doc = win.eXide.app.getEditor().getActiveDocument()
+      const doc = win.eXide.app.getEditor().getActiveDocument()
       doc.setText(text)
     })
   }
@@ -53,7 +53,7 @@ describe('Query error display', () => {
    */
   function clearError() {
     cy.window().then((win) => {
-      var src = win.document.getElementById('error-status')
+      const src = win.document.getElementById('error-status')
       if (src) src.textContent = ''
     })
     cy.get('#exide-err-pill').should('not.have.class', 'has-error')

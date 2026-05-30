@@ -1,6 +1,6 @@
 describe('Autocomplete', () => {
   // TODO: remove this skip once lang/cursor modules are available on CI's eXist-db
-  var lspAvailable = false
+  let lspAvailable = false
 
   before(() => {
     cy.loginXHR('admin', '')
@@ -30,10 +30,10 @@ describe('Autocomplete', () => {
    */
   function setContentAndComplete(text, cursorPos) {
     cy.window().then((win) => {
-      var editor = win.eXide.app.getEditor()
-      var view = editor.editor
-      var doc = editor.getActiveDocument()
-      var anchor = cursorPos !== undefined ? cursorPos : text.length
+      const editor = win.eXide.app.getEditor()
+      const view = editor.editor
+      const doc = editor.getActiveDocument()
+      const anchor = cursorPos !== undefined ? cursorPos : text.length
 
       editor.validator.setEnabled(false)
       view.dispatch({
@@ -50,10 +50,10 @@ describe('Autocomplete', () => {
 
   function setEditorContent(text, cursorPos) {
     cy.window().then((win) => {
-      var editor = win.eXide.app.getEditor()
-      var view = editor.editor
-      var doc = editor.getActiveDocument()
-      var anchor = cursorPos !== undefined ? cursorPos : text.length
+      const editor = win.eXide.app.getEditor()
+      const view = editor.editor
+      const doc = editor.getActiveDocument()
+      const anchor = cursorPos !== undefined ? cursorPos : text.length
       editor.validator.setEnabled(false)
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: text },

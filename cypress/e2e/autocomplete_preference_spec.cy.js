@@ -20,7 +20,7 @@ describe('Autocomplete-on-type preference', () => {
   // The completion source talks to the existdb-openapi /api/query/completions
   // endpoint; skip these tests if the server doesn't have it (older eXist
   // images, no roaster, etc.).
-  var lspAvailable = false
+  let lspAvailable = false
 
   before(() => {
     cy.loginXHR('admin', '')
@@ -51,7 +51,7 @@ describe('Autocomplete-on-type preference', () => {
     // the file starts clean (covers tests that leave the toggle on).
     cy.window().then((win) => {
       try {
-        var prefs = JSON.parse(win.localStorage.getItem('eXide.preferences') || '{}')
+        const prefs = JSON.parse(win.localStorage.getItem('eXide.preferences') || '{}')
         prefs.autocompleteOnType = false
         win.localStorage.setItem('eXide.preferences', JSON.stringify(prefs))
       } catch (e) { /* ignore */ }
@@ -68,9 +68,9 @@ describe('Autocomplete-on-type preference', () => {
   function typeIntoEditor(text) {
     // First clear any existing content via the view API
     cy.window().then((win) => {
-      var editor = win.eXide.app.getEditor()
+      const editor = win.eXide.app.getEditor()
       editor.validator.setEnabled(false)
-      var view = editor.editor
+      const view = editor.editor
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: '' }
       })

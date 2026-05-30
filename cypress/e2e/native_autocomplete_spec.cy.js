@@ -13,13 +13,13 @@ describe('Native autocomplete for non-XQuery modes', () => {
    */
   function newDocument(type, content) {
     cy.window().then((win) => {
-      var editor = win.eXide.app.getEditor()
+      const editor = win.eXide.app.getEditor()
       editor.newDocument(null, type)
     })
     cy.wait(300)
     if (content) {
       cy.window().then((win) => {
-        var view = win.eXide.app.getEditor().editor
+        const view = win.eXide.app.getEditor().editor
         view.dispatch({
           changes: { from: 0, to: view.state.doc.length, insert: content },
           selection: { anchor: content.length }
@@ -31,7 +31,7 @@ describe('Native autocomplete for non-XQuery modes', () => {
 
   function triggerCompletion() {
     cy.window().then((win) => {
-      var view = win.eXide.app.getEditor().editor
+      const view = win.eXide.app.getEditor().editor
       view.focus()
       win.CM6.startCompletion(view)
     })
@@ -88,7 +88,7 @@ describe('Native autocomplete for non-XQuery modes', () => {
 
   describe('JavaScript completions', () => {
     it('shows local variable completions', () => {
-      newDocument('javascript', 'var myLongVariable = 42;\nmy')
+      newDocument('javascript', 'let myLongVariable = 42;\nmy')
       triggerCompletion()
 
       cy.get('.cm-tooltip-autocomplete', { timeout: 5000 })

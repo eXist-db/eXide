@@ -9,7 +9,7 @@ describe('Rename (multi-cursor)', () => {
 
   function setEditorContent(text) {
     cy.window().then((win) => {
-      var doc = win.eXide.app.getEditor().getActiveDocument()
+      const doc = win.eXide.app.getEditor().getActiveDocument()
       doc.setText(text)
     })
   }
@@ -18,13 +18,13 @@ describe('Rename (multi-cursor)', () => {
     // Place cursor and trigger rename in a single window call
     // to avoid focus-change side effects between Cypress commands
     cy.window().then((win) => {
-      var editor = win.eXide.app.getEditor()
-      var view = editor.editor
-      var editorUtils = win.editorUtils
-      var offset = editorUtils.rowColToOffset(view.state, line, col)
+      const editor = win.eXide.app.getEditor()
+      const view = editor.editor
+      const editorUtils = win.editorUtils
+      const offset = editorUtils.rowColToOffset(view.state, line, col)
       view.dispatch({ selection: { anchor: offset } })
       view.focus()
-      var doc = editor.getActiveDocument()
+      const doc = editor.getActiveDocument()
       doc.helper.rename(doc)
     })
   }
