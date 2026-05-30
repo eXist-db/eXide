@@ -30,17 +30,19 @@
         s = s.replace(/\s*\[at line[\s\S]*$/, '');
         return s.length > 55 ? s.substring(0, 53) + '\u2026' : s;
     }
+    function escapeHtml(s) {
+        return String(s)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
     /**
      * Format the raw error string as HTML for the detail panel.
      * Highlights the error code and location clause.
      */
     function formatPanelHtml(raw) {
         if (!raw) return '';
-        // Escape HTML
-        var s = raw
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
+        var s = escapeHtml(raw);
         // Highlight error code (e.g. err:XPST0017)
         s = s.replace(/(err:[A-Z0-9]+)/g, '<span class="ep-code">$1</span>');
         // Highlight location clause
@@ -49,6 +51,66 @@
             '<span class="ep-loc">$1</span>'
         );
         return s;
+    }
+    /**
+     * Format a structured error object (from existdb-openapi:
+     * { code, description, line, column, module, value }) as a multi-field
+     * panel body. Renders only the fields that are present so we don't
+     * surface noise like "module: null" or empty values. Falls back to
+     * formatPanelHtml(raw) when no structured data is available.
+     */
+    function formatStructuredPanelHtml(errObj, raw) {
+        if (!errObj) return formatPanelHtml(raw);
+        var rows = [];
+        function row(label, value, cssClass) {
+            if (value === null || value === undefined || value === '') return;
+            rows.push(
+                '<div class="ep-field ep-field-' + cssClass + '">' +
+                  '<span class="ep-field-label">' + label + '</span>' +
+                  '<span class="ep-field-value">' + escapeHtml(value) + '</span>' +
+                '</div>'
+            );
+        }
+        row('Code', errObj.code, 'code');
+        var loc = '';
+        if (errObj.line) {
+            loc = 'line ' + errObj.line;
+            if (errObj.column) loc += ', column ' + errObj.column;
+        }
+        if (loc) row('Location', loc, 'loc');
+        row('Description', errObj.description, 'desc');
+        if (errObj.module && errObj.module !== 'unknown' && !/^String\//.test(errObj.module)) {
+            // Skip synthetic module IDs from compile errors on inline source
+            // (e.g. "String/-3990248984871632423") \u2014 they're internal noise
+            // and confuse users; keep real module paths.
+            row('Module', errObj.module, 'module');
+        }
+        if (errObj.value !== null && errObj.value !== undefined && errObj.value !== '') {
+            row('Value', errObj.value, 'value');
+        }
+        return rows.join('');
+    }
+    /**
+     * Format the structured error as a plain-text dump for the pill's
+     * `title` attribute, so hovering the pill exposes the full info
+     * (request from @line-o on PR #794: "put the dump in a title
+     * attribute where we can still access it").
+     */
+    function formatTitleDump(errObj, raw) {
+        if (!errObj) return raw;
+        var lines = [];
+        if (errObj.code) lines.push('Code:        ' + errObj.code);
+        if (errObj.line) {
+            var l = 'Location:    line ' + errObj.line;
+            if (errObj.column) l += ', column ' + errObj.column;
+            lines.push(l);
+        }
+        if (errObj.description) lines.push('Description: ' + errObj.description);
+        if (errObj.module) lines.push('Module:      ' + errObj.module);
+        if (errObj.value !== null && errObj.value !== undefined && errObj.value !== '') {
+            lines.push('Value:       ' + errObj.value);
+        }
+        return lines.length ? lines.join('\n') : raw;
     }
     // ── Element references ───────────────────────────────────────────────────
     var errSource  = document.getElementById('error-status');       // eXide writes here
@@ -65,19 +127,44 @@
     }
     // ── State ────────────────────────────────────────────────────────────────
     var currentRaw  = '';
+    var currentErr  = null;   // structured payload from editor.evalError, or null
     var panelOpen   = false;
     // ── Rendering ────────────────────────────────────────────────────────────
+    function readStructured() {
+        var json = errSource.dataset.error;
+        if (!json) return null;
+        try { return JSON.parse(json); } catch (e) { return null; }
+    }
     function updatePill(raw, open) {
         if (!raw) {
             pill.classList.remove('has-error');
+            pill.removeAttribute('title');
             return;
         }
         pillLabel.textContent = makeShortLabel(raw);
-        pillArrow.textContent = open ? '\u25BC' : '\u25B2'; // ▼ or ▲
+        // Expose full structured dump (when available) on hover, so the
+        // user can read every field — code, location, description,
+        // module, value — without expanding the panel.
+        var dump = formatTitleDump(currentErr, raw);
+        if (dump) {
+            pill.setAttribute('title', dump);
+        } else {
+            pill.removeAttribute('title');
+        }
+        pillArrow.textContent = open ?'\u25BC' : '\u25B2'; // ▼ or ▲
         pill.classList.add('has-error');
     }
+    function renderPanelBody() {
+        if (currentErr) {
+            panelBody.innerHTML = formatStructuredPanelHtml(currentErr, currentRaw);
+            panelBody.classList.add('ep-structured');
+        } else {
+            panelBody.innerHTML = formatPanelHtml(currentRaw);
+            panelBody.classList.remove('ep-structured');
+        }
+    }
     function showPanel() {
-        panelBody.innerHTML = formatPanelHtml(currentRaw);
+        renderPanelBody();
         panel.classList.add('ep-open');
         panelOpen = true;
         updatePill(currentRaw, true);
@@ -90,14 +177,16 @@
     // ── React to error changes ───────────────────────────────────────────────
     function onErrorChange(raw) {
         currentRaw = raw || '';
+        currentErr = currentRaw ? readStructured() : null;
         if (!currentRaw) {
             hidePanel();
             pill.classList.remove('has-error');
+            pill.removeAttribute('title');
             return;
         }
         // Keep panel body in sync if it's open
         if (panelOpen) {
-            panelBody.innerHTML = formatPanelHtml(currentRaw);
+            renderPanelBody();
         }
         // Update the pill
         updatePill(currentRaw, panelOpen);
@@ -111,14 +200,19 @@
     // so there is no risk of a feedback loop.
     var observer = new MutationObserver(function () {
         var raw = errSource.textContent.trim();
-        if (raw !== currentRaw) {
+        var struct = readStructured();
+        var structJson = struct ? JSON.stringify(struct) : null;
+        var currentStructJson = currentErr ? JSON.stringify(currentErr) : null;
+        if (raw !== currentRaw || structJson !== currentStructJson) {
             onErrorChange(raw);
         }
     });
     observer.observe(errSource, {
-        childList:     true,
-        characterData: true,
-        subtree:       true
+        childList:       true,
+        characterData:   true,
+        subtree:         true,
+        attributes:      true,
+        attributeFilter: ['data-error']
     });
     // ── Event wiring ─────────────────────────────────────────────────────────
     pill.addEventListener('click', function () {
@@ -148,7 +242,13 @@
     if (copyBtn) {
         copyBtn.addEventListener('click', function () {
             if (!currentRaw) return;
-            navigator.clipboard.writeText(currentRaw).then(function () {
+            // When the structured payload is available, copy the full dump
+            // (every field, one per line). Otherwise fall back to the raw
+            // formatted message that the pill displays.
+            var text = currentErr
+                ? formatTitleDump(currentErr, currentRaw)
+                : currentRaw;
+            navigator.clipboard.writeText(text).then(function () {
                 copyBtn.classList.add('ep-copied');
                 setTimeout(function () { copyBtn.classList.remove('ep-copied'); }, 1500);
             });

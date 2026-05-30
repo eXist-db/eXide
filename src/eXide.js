@@ -952,7 +952,11 @@ eXide.app = (function(util) {
 		                if (err.line > 0) {
 		                    msg = "line " + err.line + ": " + msg;
 		                }
-		                editor.evalError(msg, !livePreview);
+		                // Pass the full structured error so the panel can
+		                // surface code/line/column/module/value separately
+		                // (request from @line-o on PR #794: the description
+		                // alone isn't enough — need all the info).
+		                editor.evalError(msg, !livePreview, err);
 		            }, function () {
 		                // Body wasn't JSON — try to surface whatever the
 		                // server actually said (HTTP status + body text).

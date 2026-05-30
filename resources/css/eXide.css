@@ -1178,6 +1178,59 @@ Sub level menu list items (undo style from Top level List Items)
     color: #90cdf4;
 }
 
+/* Structured-error rendering: each known field gets its own row with a
+ * fixed-width label and a value column. Activated when the eval response
+ * carries the existdb-openapi error shape (code / line / column / module
+ * / description / value) — see error-status-ui.js: formatStructuredPanelHtml. */
+#exide-err-panel-body.ep-structured {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#exide-err-panel-body.ep-structured .ep-field {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    line-height: 1.5;
+}
+
+#exide-err-panel-body.ep-structured .ep-field-label {
+    flex: 0 0 5em;
+    color: #a0aec0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+#exide-err-panel-body.ep-structured .ep-field-value {
+    flex: 1;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+#exide-err-panel-body.ep-structured .ep-field-code .ep-field-value {
+    color: #fc8181;
+    font-weight: 700;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+#exide-err-panel-body.ep-structured .ep-field-loc .ep-field-value {
+    color: #90cdf4;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+#exide-err-panel-body.ep-structured .ep-field-module .ep-field-value {
+    color: #b7c0ce;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 12px;
+}
+
+#exide-err-panel-body.ep-structured .ep-field-value .ep-field-value {
+    color: #f6ad55;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
 #exide-err-panel-close {
     position: absolute;
     top: 4px;

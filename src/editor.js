@@ -1303,11 +1303,18 @@ eXide.edit.Editor = (function () {
         }
     };
 
-    Constr.prototype.evalError = function(msg, gotoLine) {
-        var str = /.*line\s(\d+)/i.exec(msg);
+    Constr.prototype.evalError = function(msg, gotoLine, errObj) {
+        // Prefer the structured line number from errObj when provided;
+        // otherwise parse "line N" out of the formatted message string
+        // (older code paths that don't supply errObj).
         var line = -1;
-        if (str) {
-            line = parseInt(str[1]);
+        if (errObj && typeof errObj.line === "number" && errObj.line > 0) {
+            line = errObj.line;
+        } else {
+            var str = /.*line\s(\d+)/i.exec(msg);
+            if (str) {
+                line = parseInt(str[1]);
+            }
         }
         if (gotoLine) {
             this.editor.focus();
@@ -1320,6 +1327,22 @@ eXide.edit.Editor = (function () {
                 type: "error"
         }];
         this.updateStatus(msg);
+        // Stash the structured error (when supplied) on the status element
+        // so error-status-ui can render code/line/column/module/value in
+        // the detail panel and the full dump in the pill's title tooltip.
+        // Falls back gracefully if errObj is omitted — existing callers
+        // (validator, etc.) keep working with the unstructured string.
+        if (this.status) {
+            if (errObj && typeof errObj === "object") {
+                try {
+                    this.status.dataset.error = JSON.stringify(errObj);
+                } catch (e) {
+                    delete this.status.dataset.error;
+                }
+            } else {
+                delete this.status.dataset.error;
+            }
+        }
         editorUtils.setAnnotations(this.editor, annotation);
     };
 
