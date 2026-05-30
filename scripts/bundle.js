@@ -25,7 +25,6 @@ import '../src/json-helper.js';
 import '../src/markdown-helper.js';
 import '../src/outline.js';
 import '../src/directory.js';
-import '../src/debuger.js';
 import '../src/codevalidator.js';
 import '../src/editor.js';
 import '../src/deployment.js';
