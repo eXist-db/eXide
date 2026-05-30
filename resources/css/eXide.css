@@ -3227,16 +3227,6 @@ form.file_upload .file_upload_body input {
     font-size: 1.1em;
 }
 
-
-#debug-actions {
-    background-color: #F3F3F3;
-    padding: 4px;
-}
-
-div#debuger-container {
-    padding: 0;
-}
-
 div#valueHighLight {
     position: absolute;
     top: 0;
