@@ -233,15 +233,6 @@ else if ($local:method = 'get' and starts-with($exist:path, '/results/')) then
         </forward>
     </dispatch>
 
-(: Disabled: debuger.xq is abandoned/non-functional
-else if ($exist:resource eq "debug") then
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward url="modules/debuger.xq">
-            <set-header name="Cache-Control" value="no-cache"/>
-        </forward>
-    </dispatch>
-:)
-
 (: Block abandoned/non-functional modules :)
 else if ($exist:resource = ("debuger.xq", "git.xq")) then (
     response:set-status-code(410),
