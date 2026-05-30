@@ -1010,7 +1010,28 @@ eXide.edit.XQueryModeHelper = (function () {
         var self = this;
         this.parseXQuery(doc);
         var info = new eXide.edit.ModuleInfo(doc.ast);
-        if (info.isModule() && info.hasTests()) {
+        if (!(info.isModule() && info.hasTests())) {
+            return;
+        }
+
+        // The api/test endpoint runs the testsuite from the *stored* collection
+        // (via `source: doc.getPath()`), not the in-memory editor buffer. If
+        // the user has unsaved changes, those changes wouldn't be reflected in
+        // the test run — leading to confusing "I edited the test but nothing
+        // changed" reports (raised by @line-o on PR #794).
+        //
+        // Two unsafe states to handle:
+        //   1. Untitled buffer (no path) — can't save without Save As, so we
+        //      explicitly ask the user to save first.
+        //   2. Dirty buffer (saved path, unsaved changes) — auto-save first,
+        //      since the user explicitly invoked Run as test and expects the
+        //      test to reflect what's on screen.
+        if (doc.isNew()) {
+            eXide.util.error("Save the testsuite to the database before running its tests.");
+            return;
+        }
+
+        function doRun() {
             fetch("api/test", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -1028,8 +1049,21 @@ eXide.edit.XQueryModeHelper = (function () {
             })
             .catch(function(err) {
                 eXide.util.error(String(err), "Server Error");
-            })
+            });
         }
+
+        if (!doc.saved) {
+            // Auto-save the dirty buffer, then run. Surfacing a save failure
+            // means we don't silently run stale code.
+            self.parent.saveDocument(null, function () {
+                doRun();
+            }, function (msg) {
+                eXide.util.error("Could not save testsuite before running: " + msg);
+            });
+            return;
+        }
+
+        doRun();
     };
 
     Constr.prototype.renderTestResults = function(data) {
