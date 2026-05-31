@@ -32,8 +32,11 @@ declare function test:run($request as map(*)) {
                     <output:indent>yes</output:indent>
                 </output:serialization-parameters>)
 
-                (: Parse the JUnit-style XML result into JSON :)
-                let $testsuite := $result/self::testsuite
+                (: xqsuite:suite() returns <testsuites><testsuite>...</testsuite></testsuites>;
+                 : earlier code looked at $result/self::testsuite (singular), which never
+                 : matched, so @tests/@failures/@time/@pending all fell back to 0 or ""
+                 : even when XQSuite reported real values. Walk one level down. :)
+                let $testsuite := $result/testsuite
                 return map {
                     "source": $source,
                     "tests": xs:integer(($testsuite/@tests, count($result//testcase))[1]),
@@ -46,10 +49,17 @@ declare function test:run($request as map(*)) {
                         return map {
                             "name": string($tc/@name),
                             "class": string($tc/@class),
+                            "line": xs:integer(($tc/@line, 0)[1]),
                             "time": string(($tc/@time, "")[1]),
+                            (: XQSuite emits the *expected* value as the body of <failure>
+                             : and the *actual* value as a sibling <output> element. Surfacing
+                             : only one half left users wondering "expected what?" or
+                             : "actual what?"; merge both into the failure map. :)
                             "failure": if ($tc/failure) then map {
                                 "message": string($tc/failure/@message),
                                 "type": string($tc/failure/@type),
+                                "expected": string($tc/failure),
+                                "actual": string($tc/output),
                                 "detail": string($tc/failure)
                             } else (),
                             "error": if ($tc/error) then map {

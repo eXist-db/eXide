@@ -1091,13 +1091,32 @@ eXide.edit.XQueryModeHelper = (function () {
                 var fullOutput = '';
                 if (tc.failure) {
                     summary = tc.failure.message || tc.failure.detail || '';
-                    fullOutput = tc.failure.detail && tc.failure.detail !== summary
-                        ? tc.failure.detail : '';
+                    // XQSuite assertion failures carry the *expected* value as
+                    // `expected` and the *actual* value as `actual` (parsed
+                    // server-side from <failure> + sibling <output>). Show both
+                    // so users don't have to guess which half they're seeing.
+                    var lines = [];
+                    if (tc.failure.expected !== undefined && tc.failure.expected !== '') {
+                        lines.push('expected: ' + tc.failure.expected);
+                    }
+                    if (tc.failure.actual !== undefined && tc.failure.actual !== '') {
+                        lines.push('actual:   ' + tc.failure.actual);
+                    }
+                    if (tc.failure.type) {
+                        lines.push('type:     ' + tc.failure.type);
+                    }
+                    fullOutput = lines.length > 0 ? lines.join('\n')
+                        : (tc.failure.detail && tc.failure.detail !== summary
+                            ? tc.failure.detail : '');
                 }
                 if (tc.error) {
                     summary = tc.error.message || tc.error.detail || '';
-                    fullOutput = tc.error.detail && tc.error.detail !== summary
-                        ? tc.error.detail : '';
+                    var errLines = [];
+                    if (tc.error.type) errLines.push('type:   ' + tc.error.type);
+                    if (tc.error.detail && tc.error.detail !== summary) {
+                        errLines.push('detail: ' + tc.error.detail);
+                    }
+                    fullOutput = errLines.join('\n');
                 }
                 html += '<tr class="test-' + status + '">';
                 html += '<td>' + escapeHtml(tc.name) + '</td>';
