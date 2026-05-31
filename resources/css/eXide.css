@@ -1196,7 +1196,7 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 #exide-err-panel-body.ep-structured .ep-field-label {
-    flex: 0 0 5em;
+    flex: 1;
     color: #a0aec0;
     font-size: 11px;
     text-transform: uppercase;
@@ -1204,7 +1204,7 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 #exide-err-panel-body.ep-structured .ep-field-value {
-    flex: 1;
+    flex: 6;
     word-break: break-word;
     white-space: pre-wrap;
 }
