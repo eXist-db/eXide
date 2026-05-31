@@ -1045,6 +1045,10 @@ eXide.edit.XQueryModeHelper = (function () {
                 var results = document.querySelector(".results-container .results");
                 if (results) {
                     results.innerHTML = self.renderTestResults(data);
+                    // Wire up click-to-jump and JUnit download handlers.
+                    // Delegated from the container so we don't refit listeners
+                    // every time the renderer rebuilds innerHTML.
+                    self.wireTestResultsHandlers(results, data, doc);
                 }
             })
             .catch(function(err) {
@@ -1070,17 +1074,44 @@ eXide.edit.XQueryModeHelper = (function () {
         if (data.error) {
             return '<div class="test-error">' + escapeHtml(data.error) + '</div>';
         }
+        // setUp failure shape: xqsuite emits a testsuite with no testcases and
+        // the error text in the element body. Render a distinct "Setup Failed"
+        // panel — the regular table would show "0 tests" which obscures what
+        // actually went wrong.
+        if (data.setupFailure) {
+            return '<div class="test-summary test-setup-failure-summary">' +
+                '<span class="test-errors">setUp failed</span>' +
+                ' — ' + data.setupFailure.errors + ' tests blocked' +
+                '</div>' +
+                '<div class="test-setup-failure">' +
+                '<div class="test-setup-failure-label">Error from %test:setUp function:</div>' +
+                '<pre class="test-full-output">' + escapeHtml(data.setupFailure.message) + '</pre>' +
+                '</div>';
+        }
         var html = '<div class="test-summary">';
         html += '<span class="test-count">' + data.tests + ' tests</span>';
         if (data.failures > 0) html += ', <span class="test-failures">' + data.failures + ' failures</span>';
         if (data.errors > 0) html += ', <span class="test-errors">' + data.errors + ' errors</span>';
+        if (data.pending > 0) html += ', <span class="test-pending">' + data.pending + ' pending</span>';
         if (data.time) html += ' (' + data.time + ')';
+        // JUnit XML download button. data.xml is the raw <testsuites>…</testsuites>
+        // already prepared server-side; we expose it as a blob download so users
+        // can hand the result to CI consumers (GitHub Actions test reporters,
+        // Jenkins, etc.) that expect JUnit-shaped XML.
+        if (data.xml) {
+            html += ' <button type="button" class="test-download-junit" title="Download JUnit XML">' +
+                '<span class="fa fa-download"/> JUnit XML</button>';
+        }
         html += '</div>';
         html += '<table class="test-results"><thead><tr><th>Test</th><th>Status</th><th>Details</th></tr></thead><tbody>';
         if (data.testcases) {
             for (var i = 0; i < data.testcases.length; i++) {
                 var tc = data.testcases[i];
-                var status = tc.failure ? 'failure' : (tc.error ? 'error' : 'pass');
+                // %test:pending appears as <testcase><pending/></testcase> — surfaced as
+                // tc.pending by the server. Without a distinct status the row would render
+                // as a passing test, hiding from the user that the test was intentionally skipped.
+                var status = tc.pending ? 'pending' :
+                    (tc.failure ? 'failure' : (tc.error ? 'error' : 'pass'));
                 // Short summary message + optional full output for failures/errors.
                 // The XQSuite endpoint may return either a string in `.message` /
                 // `.detail` or a structured object with both fields; we surface
@@ -1118,7 +1149,14 @@ eXide.edit.XQueryModeHelper = (function () {
                     }
                     fullOutput = errLines.join('\n');
                 }
-                html += '<tr class="test-' + status + '">';
+                // data-source + data-line let the row act as a "jump to source line" link.
+                // Wired up in wireTestResultsHandlers (delegated click) so we don't re-bind
+                // every render.
+                var rowAttrs = ' class="test-' + status + ' test-clickable"' +
+                    ' data-source="' + escapeHtml(tc.source || '') + '"' +
+                    ' data-line="' + escapeHtml(String(tc.line || 0)) + '"' +
+                    ' title="Click to open source"';
+                html += '<tr' + rowAttrs + '>';
                 html += '<td>' + escapeHtml(tc.name) + '</td>';
                 html += '<td>' + status + '</td>';
                 if (fullOutput) {
@@ -1137,7 +1175,79 @@ eXide.edit.XQueryModeHelper = (function () {
         html += '</tbody></table>';
         return html;
     };
-    
+
+    /**
+     * Wire interactive handlers on a freshly-rendered test results panel.
+     * Delegated from the results container so we attach once per render.
+     *
+     *  - Click on a test row → open the source module at the test's annotation
+     *    line. If the source matches the currently-active document, we just
+     *    jump in-place; otherwise we open the file via the standard resource
+     *    pathway so the user can edit + re-run.
+     *  - Click on "JUnit XML" download → save data.xml as a .xml blob using
+     *    the active document's name as the filename base.
+     *  - Clicks inside <details>/<summary>/<pre> are ignored so users can
+     *    expand failure detail without triggering the jump.
+     */
+    Constr.prototype.wireTestResultsHandlers = function(container, data, currentDoc) {
+        var self = this;
+
+        var downloadBtn = container.querySelector(".test-download-junit");
+        if (downloadBtn && data.xml) {
+            downloadBtn.addEventListener("click", function() {
+                var blob = new Blob([data.xml], { type: "application/xml" });
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement("a");
+                a.href = url;
+                // currentDoc.getName() returns "foo.xqm"; strip the extension and
+                // append "-junit.xml" so the file is easy to find on disk.
+                var base = (currentDoc && currentDoc.getName && currentDoc.getName()) || "tests";
+                a.download = base.replace(/\.[^.]+$/, "") + "-junit.xml";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+        }
+
+        var tbody = container.querySelector(".test-results tbody");
+        if (tbody) {
+            tbody.addEventListener("click", function(ev) {
+                // Don't intercept clicks inside the expandable details panel — users
+                // need to be able to expand/collapse failure detail without triggering
+                // the row jump.
+                if (ev.target.closest("details") || ev.target.closest("summary")) return;
+                var row = ev.target.closest("tr.test-clickable");
+                if (!row) return;
+                var src = row.getAttribute("data-source");
+                var line = parseInt(row.getAttribute("data-line"), 10) || 0;
+                if (!src) return;
+                self.openTestSource(src, line, currentDoc);
+            });
+        }
+    };
+
+    /**
+     * Open the source module at a specific line. If the target is the document
+     * currently in focus, we just scroll/cursor there (cheap, no roundtrip).
+     * Otherwise we open via the standard resource pathway so it lands in a new
+     * tab and the user can edit + re-run.
+     */
+    Constr.prototype.openTestSource = function(source, line, currentDoc) {
+        var currentPath = currentDoc && currentDoc.getPath && currentDoc.getPath();
+        if (currentPath === source) {
+            editorUtils.gotoLine(this.editor, line || 1, 0, true);
+            return;
+        }
+        var resource = {
+            path: source,
+            name: source.replace(/^.*\//, ""),
+            writable: true,
+            line: line || 1
+        };
+        eXide.app.$doOpenDocument(resource);
+    };
+
     Constr.prototype.createOutline = function(doc, onComplete) {
         var code = doc.getText();
         var basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");

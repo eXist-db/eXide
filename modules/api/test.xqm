@@ -37,20 +37,37 @@ declare function test:run($request as map(*)) {
                  : matched, so @tests/@failures/@time/@pending all fell back to 0 or ""
                  : even when XQSuite reported real values. Walk one level down. :)
                 let $testsuite := $result/testsuite
+                (: setUp failure shape: xqsuite emits <testsuite errors="N">message-text</testsuite>
+                 : with no @tests, no @failures, no <testcase> children. We detect that distinct
+                 : shape so the client can render a "Setup Failed" panel instead of an empty table. :)
+                let $setup-failure := if (empty($testsuite/testcase) and string-length(string($testsuite)) > 0) then
+                    map {
+                        "message": string($testsuite),
+                        "errors": xs:integer(($testsuite/@errors, 0)[1])
+                    }
+                else ()
                 return map {
                     "source": $source,
                     "tests": xs:integer(($testsuite/@tests, count($result//testcase))[1]),
                     "failures": xs:integer(($testsuite/@failures, count($result//failure))[1]),
                     "errors": xs:integer(($testsuite/@errors, count($result//error))[1]),
-                    "pending": xs:integer(($testsuite/@pending, 0)[1]),
+                    "pending": xs:integer(($testsuite/@pending, count($result//testcase[pending]))[1]),
                     "time": string(($testsuite/@time, "")[1]),
+                    "setupFailure": $setup-failure,
                     "testcases": array {
                         for $tc in $result//testcase
                         return map {
                             "name": string($tc/@name),
                             "class": string($tc/@class),
                             "line": xs:integer(($tc/@line, 0)[1]),
+                            (: <testcase @source> carries the db path of the module under test —
+                             : needed by the client for "click row to jump to source line" :)
+                            "source": string($tc/@source),
                             "time": string(($tc/@time, "")[1]),
+                            (: %test:pending tests appear as <testcase><pending/></testcase>;
+                             : without a failure or error child they'd render as passing. Surface
+                             : the pending flag so the client can render a distinct row class. :)
+                            "pending": exists($tc/pending),
                             (: XQSuite emits the *expected* value as the body of <failure>
                              : and the *actual* value as a sibling <output> element. Surfacing
                              : only one half left users wondering "expected what?" or
