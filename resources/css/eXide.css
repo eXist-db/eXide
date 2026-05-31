@@ -4946,6 +4946,21 @@ body.dark #login-error { color: #fc8181; }
 }
 .test-summary .test-failures { color: #c0392b; font-weight: 600; }
 .test-summary .test-errors { color: #c0392b; font-weight: 600; }
+.test-summary .test-pending { color: #8e7300; font-weight: 600; }
+
+/* JUnit XML download button in the summary line */
+.test-summary .test-download-junit {
+    margin-left: 10px;
+    padding: 2px 8px;
+    font-size: 11px;
+    background: #f8f8f8;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    cursor: pointer;
+    color: inherit;
+}
+.test-summary .test-download-junit:hover { background: #eef; border-color: #99c; }
+.test-summary .test-download-junit .fa { margin-right: 4px; }
 
 .test-results {
     width: 100%;
@@ -4966,6 +4981,35 @@ body.dark #login-error { color: #fc8181; }
 .test-results .test-pass td:nth-child(2) { color: #27ae60; }
 .test-results .test-failure td:nth-child(2),
 .test-results .test-error   td:nth-child(2) { color: #c0392b; font-weight: 600; }
+.test-results .test-pending td:nth-child(2) { color: #8e7300; font-weight: 600; }
+
+/* Clickable row affordance: faint hover to signal interactivity */
+.test-results .test-clickable td:first-child {
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: rgba(0, 0, 0, 0.2);
+}
+.test-results .test-clickable:hover td:first-child {
+    text-decoration-color: rgba(0, 0, 0, 0.6);
+}
+
+/* Setup-failure panel — distinct from the regular table because there are
+   no testcases to enumerate */
+.test-setup-failure-summary { color: #c0392b; font-weight: 600; }
+.test-setup-failure {
+    margin-top: 8px;
+    padding: 10px;
+    background: #fde8e8;
+    border: 1px solid #f5c2c2;
+    border-radius: 3px;
+    font-size: 12px;
+}
+.test-setup-failure-label { font-weight: 600; margin-bottom: 4px; color: #c0392b; }
+.test-setup-failure .test-full-output {
+    margin: 0;
+    background: #fff;
+    border-color: #e8b8b8;
+}
 
 /* Per-row expandable details for failures/errors */
 .test-results .test-details summary {
@@ -5008,6 +5052,22 @@ body.dark .test-results td { border-bottom-color: #333; }
 body.dark .test-results .test-pass td:nth-child(2) { color: #58d68d; }
 body.dark .test-results .test-failure td:nth-child(2),
 body.dark .test-results .test-error   td:nth-child(2) { color: #ff6b6b; }
+body.dark .test-results .test-pending td:nth-child(2) { color: #f0c674; }
+body.dark .test-summary .test-pending { color: #f0c674; }
+body.dark .test-results .test-clickable td:first-child { text-decoration-color: rgba(255, 255, 255, 0.25); }
+body.dark .test-results .test-clickable:hover td:first-child { text-decoration-color: rgba(255, 255, 255, 0.65); }
+body.dark .test-summary .test-download-junit {
+    background: #2a2a2a;
+    border-color: #444;
+}
+body.dark .test-summary .test-download-junit:hover { background: #333; border-color: #66a; }
+body.dark .test-setup-failure {
+    background: #3a1a1a;
+    border-color: #5a2a2a;
+}
+body.dark .test-setup-failure-summary,
+body.dark .test-setup-failure-label { color: #ff8e8e; }
+body.dark .test-setup-failure .test-full-output { background: #1f1010; border-color: #5a2a2a; color: #ffcccc; }
 body.dark .test-results .test-full-output {
     background: #1f1f1f;
     border-color: #333;

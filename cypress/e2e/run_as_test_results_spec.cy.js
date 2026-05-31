@@ -168,6 +168,90 @@ describe('Run as test — results rendering', () => {
     })
   })
 
+  it('%test:pending renders distinct pending row + summary count', () => {
+    var src =
+      'xquery version "3.1";\n' +
+      'module namespace t = "http://example.com/cy-pending";\n' +
+      'declare namespace test = "http://exist-db.org/xquery/xqsuite";\n' +
+      'declare %test:assertEquals(1) function t:passes() { 1 };\n' +
+      'declare %test:pending %test:assertEquals(1) function t:skipped() { 1 };\n'
+
+    runSuite(src).within(() => {
+      cy.get('.test-summary .test-pending').should('contain.text', '1 pending')
+      cy.get('tr.test-pending').should('have.length', 1)
+      cy.get('tr.test-pending').should('contain.text', 'skipped')
+      cy.get('tr.test-pass').should('have.length', 1)
+    })
+  })
+
+  it('setup-failure renders distinct panel instead of empty table', () => {
+    var src =
+      'xquery version "3.1";\n' +
+      'module namespace t = "http://example.com/cy-setup";\n' +
+      'declare namespace test = "http://exist-db.org/xquery/xqsuite";\n' +
+      'declare %test:setUp function t:setup() {\n' +
+      '  error(xs:QName("t:setup-boom"), "setup blew up")\n' +
+      '};\n' +
+      'declare %test:assertEquals(1) function t:never-runs() { 1 };\n'
+
+    runSuite(src).within(() => {
+      cy.get('.test-setup-failure-summary').should('exist')
+      cy.get('.test-setup-failure-label').should('contain.text', 'setUp')
+      cy.get('.test-setup-failure').should('contain.text', 'setup blew up')
+      // Empty results table not shown — the setup panel takes over.
+      cy.get('tbody tr').should('not.exist')
+    })
+  })
+
+  it('JUnit XML download button appears and is wired to a blob', () => {
+    var src =
+      'xquery version "3.1";\n' +
+      'module namespace t = "http://example.com/cy-junit";\n' +
+      'declare namespace test = "http://exist-db.org/xquery/xqsuite";\n' +
+      'declare %test:assertEquals(1) function t:trivial() { 1 };\n'
+
+    runSuite(src).within(() => {
+      cy.get('.test-download-junit').should('be.visible')
+        .and('contain.text', 'JUnit XML')
+    })
+    // Verify the JSON payload carries the serialized xml the button will save.
+    cy.get('@runTest').its('response.body.xml').should('match', /<testsuites/)
+  })
+
+  it('clicking a test row jumps to the annotation line in the editor', () => {
+    var src =
+      'xquery version "3.1";\n' +                                  // 1
+      'module namespace t = "http://example.com/cy-jump";\n' +     // 2
+      'declare namespace test = "http://exist-db.org/xquery/xqsuite";\n' + // 3
+      '\n' +                                                       // 4
+      '\n' +                                                       // 5
+      'declare %test:assertEquals(1) function t:first() { 1 };\n' +  // 6
+      '\n' +                                                       // 7
+      '\n' +                                                       // 8
+      '\n' +                                                       // 9
+      'declare %test:assertEquals(2) function t:second() { 2 };\n'   // 10
+
+    runSuite(src).within(() => {
+      // Rows expose data-source/data-line for the click-to-jump handler.
+      cy.get('tr.test-clickable[data-source]').should('have.length', 2)
+      cy.get('tr.test-clickable').eq(1).should('have.attr', 'data-line')
+        .and('match', /^\d+$/)
+      // Click second-row → editor cursor should move to that line.
+      cy.get('tr.test-clickable').eq(1).then(($row) => {
+        var line = parseInt($row.attr('data-line'), 10)
+        expect(line, 'data-line is a positive int').to.be.greaterThan(0)
+        cy.wrap($row).click()
+        cy.window().then((win) => {
+          var view = win.eXide.app.getEditor().editor
+          var head = view.state.selection.main.head
+          var cursorLine = view.state.doc.lineAt(head).number
+          // CM6 .number is 1-indexed, matching data-line.
+          expect(cursorLine).to.eq(line)
+        })
+      })
+    })
+  })
+
   it('summary surfaces elapsed time when XQSuite reports it', () => {
     // Regression test for the bug where `$result/self::testsuite` never
     // matched the actual <testsuites><testsuite/></testsuites> shape, so
