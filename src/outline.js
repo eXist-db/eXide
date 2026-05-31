@@ -1,6 +1,6 @@
 /*
  *  eXide - web-based XQuery IDE
- *  
+ *
  *  Copyright (C) 2011 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -20,169 +20,294 @@
 eXide.namespace("eXide.edit.Outline");
 
 /**
- * XQuery function outline view. Available functions and variables are
- * kept in the document instance. Templates are loaded once and kept in
- * this class.
- * 
+ * Outline view for functions, variables, elements, etc.
+ * Supports three display modes: nested/document, flat/document, flat/alpha.
  */
 eXide.edit.Outline = (function () {
-	
-	Constr = function() {
-		this.currentDoc = null;
+
+    // View modes
+    var MODE_NESTED_DOC = "nested-doc";
+    var MODE_FLAT_DOC   = "flat-doc";
+    var MODE_FLAT_ALPHA = "flat-alpha";
+
+    Constr = function() {
+        this.currentDoc = null;
         this.__activated = false;
-        
+        this._viewMode = MODE_NESTED_DOC;
+
         var self = this;
-        $("#outline-filter").keyup(function() {
+        document.getElementById("outline-filter").addEventListener("keyup", function() {
             self.filter(this.value);
         });
-	};
-	
-	Constr.prototype = {
-		
-		toggle : function(state) {
-			if(state || state === false) {this.__activated = !!state}
-			else {this.__activated = !this.__activated};
-// 			d3.select("#outline-body").style("display", this.__activated ? "block" : "none")
-			d3.select("#outline-body").style("position", this.__activated ? "relative" : "absolute");
+
+        // Toolbar buttons
+        var toolbar = document.getElementById("outline-toolbar");
+        if (toolbar) {
+            toolbar.addEventListener("click", function(e) {
+                var btn = e.target.closest("[data-outline-mode]");
+                if (!btn) return;
+                self._viewMode = btn.getAttribute("data-outline-mode");
+                toolbar.querySelectorAll("[data-outline-mode]").forEach(function(b) {
+                    b.classList.toggle("active", b === btn);
+                });
+                if (self.currentDoc) {
+                    self.$outlineUpdate(self.currentDoc);
+                }
+            });
+            // Mark initial active
+            var initial = toolbar.querySelector('[data-outline-mode="' + this._viewMode + '"]');
+            if (initial) initial.classList.add("active");
+        }
+    };
+
+    function docOrderSort(a, b) {
+        var ra = a.row !== undefined ? a.row : 999999;
+        var rb = b.row !== undefined ? b.row : 999999;
+        return ra - rb;
+    }
+
+    function alphaSort(a, b) {
+        var na = (a.name || "").toLowerCase();
+        var nb = (b.name || "").toLowerCase();
+        return na > nb ? 1 : na < nb ? -1 : 0;
+    }
+
+    /**
+     * Create the <a> element for an outline item with click handler.
+     */
+    function makeLink(d) {
+        var a = document.createElement("a");
+        if (d.signature) a.title = d.signature;
+        a.href = "#" + (d.source ? d.source : "");
+
+        var text = d.type == eXide.edit.Document.TYPE_VARIABLE ? "$" + d.name : d.name;
+        var nameSpan = document.createElement("span");
+        nameSpan.className = "outline-name";
+        nameSpan.textContent = text;
+        a.appendChild(nameSpan);
+
+        if (d.hint) {
+            var hintSpan = document.createElement("span");
+            hintSpan.className = "outline-hint";
+            hintSpan.textContent = " \u201C" + d.hint + "\u201D";
+            a.appendChild(hintSpan);
+        }
+
+        a.addEventListener("click", function(e) {
+            e.preventDefault();
+            var path = this.hash.substring(1);
+            if (d.from !== undefined && d.to !== undefined) {
+                var ed = eXide.app.getEditor();
+                if (ed && ed.editor) {
+                    ed.editor.dispatch({
+                        selection: { anchor: d.to, head: d.from }
+                    });
+                    ed.editor.dispatch({
+                        effects: CM6.EditorView.scrollIntoView(d.from, { y: "center" })
+                    });
+                    editorUtils.flashLine(ed.editor, d.from);
+                    ed.editor.focus();
+                }
+            } else if(d.row !== undefined && d.row !== null) {
+                var ed = eXide.app.getEditor();
+                if (ed && ed.editor) {
+                    editorUtils.gotoLine(ed.editor, d.row + 1, d.column || 0, true);
+                }
+            } else if(d.type == eXide.edit.Document.TYPE_FUNCTION) {
+                eXide.app.locate("function", path == '' ? null: path, d.name);
+            } else {
+                eXide.app.locate("variable", path == '' ? null: path, d.name);
+            }
+        });
+
+        a.style.opacity = "0";
+        requestAnimationFrame(function() {
+            a.style.transition = "opacity 0.4s";
+            a.style.opacity = "1";
+        });
+
+        return a;
+    }
+
+    /**
+     * Create a <li> element with the appropriate CSS classes.
+     */
+    function makeLi(d) {
+        var li = document.createElement("li");
+        var cl = d.type == eXide.edit.Document.TYPE_FUNCTION ? "t_function" : "t_variable";
+        if (d.visibility === "private") cl += " private";
+        else if (d.visibility === "public") cl += " public";
+        if (d.outlineClass) cl += " " + d.outlineClass;
+        li.className = cl;
+        li.appendChild(makeLink(d));
+        return li;
+    }
+
+    /**
+     * Check whether any items have indent > 0 (i.e. the data is hierarchical).
+     */
+    function hasHierarchy(items) {
+        for (var i = 0; i < items.length; i++) {
+            if (items[i].indent > 0) return true;
+        }
+        return false;
+    }
+
+    Constr.prototype = {
+
+        toggle : function(state) {
+            if(state || state === false) {this.__activated = !!state}
+            else {this.__activated = !this.__activated};
+            var body = document.getElementById("outline-body");
+            if (body) {
+                body.style.position = this.__activated ? "relative" : "absolute";
+                body.style.visibility = this.__activated ? "visible" : "hidden";
+            }
             if(this.__activated && this.currentDoc) {
                 this.updateOutline(this.currentDoc)
             }
-		},
-		
-		getTemplates: function (prefix) {
-			var re = new RegExp("^" + prefix);
-			var matches = [];
-			for (var i = 0; i < this.templates.length; i++) {
-				if (this.templates[i].name.match(re)) {
-					matches.push(this.templates[i]);
-				}
-			}
-			return matches;
-		},
-		
-		gotoDefinition: function(doc, name) {
-		    var type = "function"
+        },
+
+        getTemplates: function (prefix) {
+            var re = new RegExp("^" + prefix);
+            var matches = [];
+            for (var i = 0; i < this.templates.length; i++) {
+                if (this.templates[i].name.match(re)) {
+                    matches.push(this.templates[i]);
+                }
+            }
+            return matches;
+        },
+
+        gotoDefinition: function(doc, name) {
+            var type = "function"
             if (name.indexOf("$") === 0) {
-		        name = name.substring(1);
-		        type = "variable";
-		        
-		    }
-			$.each(doc.functions, function (i, func) {
-				if (name == func.name && type == func.type) {
-					eXide.app.locate(func.type, func.source == '' ? null : func.source, name);
-					return false;
-				}
-			});
-		},
-		
+                name = name.substring(1);
+                type = "variable";
+            }
+            for (var i = 0; i < doc.functions.length; i++) {
+                var func = doc.functions[i];
+                if (name == func.name && type == func.type) {
+                    eXide.app.locate(func.type, func.source == '' ? null : func.source, name);
+                    break;
+                }
+            }
+        },
+
         findDefinition: function(doc, name) {
             for (var i = 0; i < doc.functions.length; i++) {
                 var func = doc.functions[i];
-    			if (name == func.name) {
-					return func;
-				}
-			}
+                if (name == func.name) {
+                    return func;
+                }
+            }
             return null;
         },
-        
-		updateOutline: function(doc) {
+
+        updateOutline: function(doc) {
             var self = this;
-			self.currentDoc = doc;
-            
+            self.currentDoc = doc;
+
             var helper = doc.getModeHelper();
             if (helper != null && this.__activated) {
-                doc.functions = [];
-                helper.createOutline(doc, function() {
-                    self.$outlineUpdate(doc);
+                // Defer to let CM6 process language reconfiguration before
+                // walking the syntax tree (Lezer parses asynchronously)
+                requestAnimationFrame(function() {
+                    if (self.currentDoc !== doc) return;
+                    doc.functions = [];
+                    helper.createOutline(doc, function() {
+                        self.$outlineUpdate(doc);
+                    });
                 });
             }
-		},
-		
-		clearOutline: function() {
-			$("#outline").empty();
-		},
-		
+        },
+
+        clearOutline: function() {
+            var el = document.getElementById("outline");
+            if (el) el.innerHTML = "";
+        },
+
         filter: function(str) {
             var regex = new RegExp(str, "i");
-            $("#outline li a").each(function() {
-                var item = $(this);
-                if (!regex.test(item.text())) {
-                    item.hide();
-                } else {
-                    item.show();
-                }
-            });
+            var links = document.querySelectorAll("#outline li a");
+            for (var i = 0; i < links.length; i++) {
+                var link = links[i];
+                link.parentNode.style.display = regex.test(link.textContent) ? "" : "none";
+            }
         },
-        
+
         $outlineUpdate: function (doc) {
             if (this.currentDoc != doc)
                 return;
-            
+
+            var mode = this._viewMode;
+            var nested = (mode === MODE_NESTED_DOC);
+
+            // Prepare sorted data
+            var items = doc.functions.slice();
+            if (mode === MODE_FLAT_ALPHA) {
+                items.sort(alphaSort);
+            } else {
+                items.sort(docOrderSort);
+            }
+
             eXide.app.resize();
-            // use d3s for smooth transitions
-            var outline = d3.select("#outline");
 
-            var sel = outline.selectAll("li")
-                .data(doc.functions, function(d) {
-                    return d.sort;
-                });
+            var outline = document.getElementById("outline");
+            outline.innerHTML = "";
 
-            function stringCompare(a, b) {
-                a = a.toLowerCase();
-                b = b.toLowerCase();
-                return a > b ? 1 : a == b ? 0 : -1;
-            }   
+            // Use nested <ul> tree when in nested mode and data has hierarchy
+            if (nested && hasHierarchy(items)) {
+                this.$renderNested(outline, items);
+            } else {
+                this.$renderFlat(outline, items);
+            }
+        },
 
-            var li = sel.enter()
-                .append("li")
-                    .attr("class", function(d) {
-                        return d.type == eXide.edit.Document.TYPE_FUNCTION
-                            ? "ace_support.ace_function"
-                            : "ace_variable";
-                    })
-                    .attr("class",function(d) {
-                      var cl =  d.type == eXide.edit.Document.TYPE_FUNCTION ?  "t.function" : "t_variable";
-                      return cl + " " + (d.visibility === "private" ? "private" : "public" );
-                    })
-                    .append("a")
-                        .style("opacity", 0)
-                        .attr("title", function(d) {
-                            if (d.signature) { return d.signature }
-                            return null;
-                        })
-                        .attr("href", function(d) {
-                            return  "#" + (d.source ? d.source : "");
-                        })
-                       .text(function(d) {
-                            if (d.type == eXide.edit.Document.TYPE_VARIABLE) {
-                                return "$" + d.name;
-                            } else {
-                                return d.name;
-                            }    
-                       })
+        /**
+         * Render a flat list of <li> elements (for flat modes or non-hierarchical data).
+         */
+        $renderFlat: function(outline, items) {
+            items.forEach(function(d) {
+                outline.appendChild(makeLi(d));
+            });
+        },
 
-                       .on("click", function(d) {
-                            var path = this.hash.substring(1);
-                            if(d.row) {
-                                eXide.app.locate("function", path == '' ? null: path, parseInt(d.row));
-                            } else if(d.type == eXide.edit.Document.TYPE_FUNCTION) {
-                                eXide.app.locate("function", path == '' ? null: path, d.name);
-                            } else {
-                                eXide.app.locate("variable", path == '' ? null: path,d.name);
-                            }
-                       })
-                       .transition()
-                            .duration(800)
-                            .style("opacity",1);
+        /**
+         * Render a nested <ul> tree based on indent levels.
+         * Each item with children gets a child <ul> inside its <li>.
+         */
+        $renderNested: function(outline, items) {
+            // Stack tracks the current <ul> at each depth level
+            var stack = [outline];
+            var currentDepth = 0;
 
-            sel.exit()
-                .transition()
-                    .duration(400)
-                    .style("opacity",0)
-                    .remove();
-            sel.sort(function (a, b) { return a == null || b == null ? -1  : stringCompare(a.sort, b.sort); });
+            items.forEach(function(d) {
+                var depth = d.indent || 0;
+
+                // Go deeper: open new <ul> inside the last <li>
+                while (currentDepth < depth) {
+                    var ul = document.createElement("ul");
+                    var parentLi = stack[stack.length - 1].lastElementChild;
+                    if (parentLi) {
+                        parentLi.appendChild(ul);
+                    } else {
+                        stack[stack.length - 1].appendChild(ul);
+                    }
+                    stack.push(ul);
+                    currentDepth++;
+                }
+
+                // Go shallower: pop back up the stack
+                while (currentDepth > depth && stack.length > 1) {
+                    stack.pop();
+                    currentDepth--;
+                }
+
+                stack[stack.length - 1].appendChild(makeLi(d));
+            });
         }
-	};
-	
-	return Constr;
+    };
+
+    return Constr;
 }());

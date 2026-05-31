@@ -1,6 +1,6 @@
 /*
  *  eXide - web-based XQuery IDE
- *  
+ *
  *  Copyright (C) 2013 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -22,9 +22,7 @@ eXide.namespace("eXide.edit.XQueryQuickFix");
  * XQuery specific helper methods.
  */
 eXide.edit.XQueryQuickFix = (function () {
-    
-    var SnippetManager = require("ace/snippets").snippetManager;
-    
+
     var quickFixes = [
         {
             regex: /Call to undeclared function/,
@@ -69,31 +67,49 @@ eXide.edit.XQueryQuickFix = (function () {
             }
         },
         {
-            regex: /No namespace defined/,
+            regex: /No namespace defined|XPST0081/,
             getResolutions: function(helper, editor, doc, annotation, ast) {
-                var matches = /for prefix (\w+)/.exec(annotation.text);
-                if (matches.length === 2) {
+                var matches = /for prefix (\w+)/.exec(annotation.text) ||
+                              /\[XPST0081\] "(\w+)"/.exec(annotation.text);
+                if (matches && matches.length === 2) {
                     if (ast && ast.getParent.name === "FunctionCall") {
                         return [{
                             resolve: function(helper, editor, doc, annotation) {
+                                var prefix = matches[1];
                                 helper.parent.validator.setEnabled(false);
-                                var adder = new eXide.edit.PrologAdder(editor, doc);
-                                adder.importModule(matches[1]);
-                                helper.xqlint(doc);
-                                helper.autocomplete(doc);
-                                helper.parent.validator.setEnabled(true);
+
+                                function doImport(mod) {
+                                    var adder = new eXide.edit.PrologAdder(editor, doc);
+                                    if (mod) {
+                                        var at = mod.at;
+                                        if (at && at.indexOf("java:") === 0) at = null;
+                                        adder.importModule(prefix, mod.uri, at);
+                                    } else {
+                                        adder.importModule(prefix);
+                                    }
+                                    helper.parseXQuery(doc);
+                                    helper.parent.validator.setEnabled(true);
+                                }
+
+                                var mod = staticAnalysis.getModuleByPrefix(prefix);
+                                if (mod) {
+                                    doImport(mod);
+                                } else {
+                                    eXide.app.refreshModuleCache().then(function () {
+                                        doImport(staticAnalysis.getModuleByPrefix(prefix));
+                                    });
+                                }
                             },
                             action: "Import module \"" + matches[1] + "\""
                         }];
-                    } else if (ast && (ast.name === "EQName" || ast.getParent.name === "ElementTest" 
+                    } else if (ast && (ast.name === "EQName" || ast.getParent.name === "ElementTest"
                         || ast.getParent.name === "OptionDecl")) {
                         return [{
                             resolve: function(helper, editor, doc, annotation) {
                                 helper.parent.validator.setEnabled(false);
                                 var adder = new eXide.edit.PrologAdder(editor, doc);
                                 adder.declareNamespace(matches[1]);
-                                helper.xqlint(doc);
-                                helper.autocomplete(doc);
+                                helper.parseXQuery(doc);
                                 helper.parent.validator.setEnabled(true);
                             },
                             action: "Declare namespace \"" + matches[1] + "\""
@@ -103,7 +119,7 @@ eXide.edit.XQueryQuickFix = (function () {
             }
         },
         {
-            regex: /variable.*not set/,
+            regex: /variable.*not set|undeclared variable/,
             getResolutions: function(helper, editor, doc, annotation, ast) {
                 if (ast.getParent.name === "VarName") {
                     return [
@@ -130,12 +146,14 @@ eXide.edit.XQueryQuickFix = (function () {
                                     template = "let \\$" + ast.value + " := ${1:()}" + "\nreturn";
                                 }
                                 helper.parent.validator.setEnabled(false);
-                                $.log("extract variable: context: %o", contextNode);
-                                editor.editor.gotoLine(contextNode.pos.sl + 1, contextNode.pos.sc);
-                                editor.editor.insert("\n");
-                                editor.editor.gotoLine(contextNode.pos.sl + 1, contextNode.pos.sc);
-                                SnippetManager.insertSnippet(editor.editor, template);
-                                editor.editor.focus();
+                                console.log("extract variable: context: %o", contextNode);
+                                var view = editor.editor;
+                                editorUtils.gotoLine(view, contextNode.pos.sl + 1, contextNode.pos.sc);
+                                var pos = view.state.selection.main.head;
+                                view.dispatch({ changes: { from: pos, insert: "\n" }, selection: { anchor: pos + 1 } });
+                                editorUtils.gotoLine(view, contextNode.pos.sl + 1, contextNode.pos.sc);
+                                editorUtils.insertSnippet(view, template);
+                                view.focus();
                                 helper.parent.validator.setEnabled(true);
                             },
                             action: "Create let statement"
@@ -145,32 +163,34 @@ eXide.edit.XQueryQuickFix = (function () {
             }
         }
     ];
-    
-    var Compiler = require("lib/Compiler").Compiler;
-    var Range = require("ace/range").Range;
-    
+
+
     function unusedNamespaceFix(helper, editor, doc, annotation) {
         var nsNode = eXide.edit.XQueryUtils.findNode(doc.ast, {line: annotation.row, col: annotation.column + 1});
         var nsDecl = nsNode.getParent;
         var separator = eXide.edit.XQueryUtils.findNext(nsDecl, "Separator");
-        
+
         var pos = {
             sl: annotation.pos.sl,
             sc: annotation.pos.sc,
             el: separator ? separator.pos.el : annotation.pos.el,
             ec: separator ? separator.pos.ec : annotation.pos.ec
         };
-        var range;
-        var lastLine = editor.editor.getSession().getLine(pos.el);
+        var view = editor.editor;
+        var lineNum = pos.el + 1;
+        var lastLine = (lineNum >= 1 && lineNum <= view.state.doc.lines) ? view.state.doc.line(lineNum).text : "";
+        var from, to;
         if (pos.ec == lastLine.length) {
-            range = new Range(pos.sl, pos.sc, pos.el + 1, 0);
+            from = editorUtils.rowColToOffset(view.state, pos.sl, pos.sc);
+            to = editorUtils.rowColToOffset(view.state, pos.el + 1, 0);
         } else {
-            range = new Range(pos.sl, pos.sc, pos.el, pos.ec);
+            from = editorUtils.rowColToOffset(view.state, pos.sl, pos.sc);
+            to = editorUtils.rowColToOffset(view.state, pos.el, pos.ec);
         }
-        
-        editor.editor.getSession().remove(range);
+
+        view.dispatch({ changes: { from: from, to: to } });
     }
-    
+
     function getResolutions(helper, editor, doc, annotation) {
         var resolutions = [];
         for (var i = 0; i < quickFixes.length; i++) {
@@ -186,7 +206,7 @@ eXide.edit.XQueryQuickFix = (function () {
         }
         return resolutions;
     }
-    
+
     return {
         "getResolutions": getResolutions
     };
@@ -198,29 +218,47 @@ eXide.namespace("eXide.edit.PrologAdder");
  * XQuery specific helper methods.
  */
 eXide.edit.PrologAdder = (function () {
-    
-    var Range = require("ace/range").Range;
-    var SnippetManager = require("ace/snippets").snippetManager;
-    
+
+    /**
+     * Navigate to end of a row, insert two newlines, then position cursor
+     * on the new blank line. Used by prepareFunction, importModule,
+     * declareNamespace, and declareVariable.
+     *
+     * @param {EditorView} view - CM6 editor view
+     * @param {number} row - 0-indexed row number
+     * @returns {number} the 1-indexed line number of the new insertion point
+     */
+    function insertBlankLinesAfterRow(view, row) {
+        editorUtils.gotoLine(view, row + 1);
+        var lineNum = row + 1;
+        var line = (lineNum >= 1 && lineNum <= view.state.doc.lines) ? view.state.doc.line(lineNum).text : "";
+        var offset = editorUtils.rowColToOffset(view.state, row, line.length);
+        view.dispatch({ selection: { anchor: offset } });
+        var pos = view.state.selection.main.head;
+        view.dispatch({ changes: { from: pos, insert: "\n\n" }, selection: { anchor: pos + 2 } });
+        editorUtils.gotoLine(view, row + 3, 0);
+        return row + 3;
+    }
+
     Constr = function(editor, doc) {
         this.editor = editor;
         this.doc = doc;
         this.prolog = null;
         this.program = null;
-        
+
         this.visit(doc.ast);
     };
-    
+
     eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
-    
+
     Constr.prototype.Prolog = function(prolog) {
         this.prolog = prolog;
     };
-    
+
     Constr.prototype.VersionDecl = function(decl) {
         this.decl = decl;
     };
-    
+
     Constr.prototype.getInsertionPoint = function(func) {
         var row = 0;
         if (func) {
@@ -250,11 +288,12 @@ eXide.edit.PrologAdder = (function () {
             }
         }
         template += ") {\n\t${" + (arguments.length + 1) + ":()}\n};";
-        SnippetManager.insertSnippet(this.editor.editor, template);
+        editorUtils.insertSnippet(this.editor.editor, template);
     };
-    
+
     Constr.prototype.createFunction = function(params, code, insertRow) {
         var row = this.prepareFunction(insertRow);
+        var view = this.editor.editor;
 
         var fn = "declare function (";
         for (var i = 0; i < params.length; i++) {
@@ -264,22 +303,17 @@ eXide.edit.PrologAdder = (function () {
             fn += "$" + params[i];
         }
         fn += ") {\n\t" + code + "\n};";
-        
-        this.editor.editor.insert(fn);
-        this.editor.editor.gotoLine(row, 17);
+
+        var pos = view.state.selection.main.head;
+        view.dispatch({ changes: { from: pos, insert: fn }, selection: { anchor: pos + fn.length } });
+        editorUtils.gotoLine(view, row, 17);
     };
 
     Constr.prototype.prepareFunction = function(insertRow) {
         var row = insertRow || this.getInsertionPoint();
-
-        this.editor.editor.gotoLine(row + 1);
-        this.editor.editor.navigateLineEnd();
-        this.editor.editor.insert("\n\n");
-        this.editor.editor.gotoLine(row + 3, 0);
-
-        return row + 3;
+        return insertBlankLinesAfterRow(this.editor.editor, row);
     };
-    
+
     Constr.prototype.importModule = function(name, namespace, location) {
         var prefix = name.indexOf(":") > -1 ? name.substring(0, name.indexOf(":")) : name;
         var row = 0;
@@ -293,12 +327,9 @@ eXide.edit.PrologAdder = (function () {
             }
         }
         row = row < 0 ? 0 : row;
-        
-        this.editor.editor.gotoLine(row + 1);
-        this.editor.editor.navigateLineEnd();
-        this.editor.editor.insert("\n\n");
-        this.editor.editor.gotoLine(row + 3, 0);
-        
+
+        insertBlankLinesAfterRow(this.editor.editor, row);
+
         var template;
         if (namespace) {
             template = "import module namespace " + prefix + "=\"" + namespace + "\"";
@@ -310,10 +341,10 @@ eXide.edit.PrologAdder = (function () {
         } else {
             template = "import module namespace " + prefix + "=\"${1}\";";
         }
-        SnippetManager.insertSnippet(this.editor.editor, template);
-        this.editor.editor.gotoLine(row + 3, 26 + prefix.length);
+        editorUtils.insertSnippet(this.editor.editor, template);
+        editorUtils.gotoLine(this.editor.editor, row + 3, 26 + prefix.length);
     };
-    
+
     Constr.prototype.declareNamespace = function(prefix) {
         var row = 0;
         if (this.decl) {
@@ -326,18 +357,15 @@ eXide.edit.PrologAdder = (function () {
             }
         }
         row = row < 0 ? 0 : row;
-        
-        this.editor.editor.gotoLine(row + 1);
-        this.editor.editor.navigateLineEnd();
-        this.editor.editor.insert("\n\n");
-        this.editor.editor.gotoLine(row + 3, 0);
-        
+
+        insertBlankLinesAfterRow(this.editor.editor, row);
+
         var template = "declare namespace " + prefix + "=\"${1}\";";
-        SnippetManager.insertSnippet(this.editor.editor, template);
+        editorUtils.insertSnippet(this.editor.editor, template);
     };
-    
+
     Constr.prototype.declareVariable = function(name) {
-        $.log("prolog: %o", this.prolog);
+        console.log("prolog: %o", this.prolog);
         var row = -1;
         for (var i = 0; i < this.prolog.children.length; i++) {
             if (this.prolog.children[i].name === "AnnotatedDecl") {
@@ -354,17 +382,14 @@ eXide.edit.PrologAdder = (function () {
                 row = 0;
             }
         }
-        
-        $.log("Inserting at %d", row);
-        
-        this.editor.editor.gotoLine(row + 1);
-        this.editor.editor.navigateLineEnd();
-        this.editor.editor.insert("\n\n");
-        this.editor.editor.gotoLine(row + 3, 0);
-        
+
+        console.log("Inserting at %d", row);
+
+        insertBlankLinesAfterRow(this.editor.editor, row);
+
         var template = "declare variable \\$" + name + " := ${1:expression};";
-        SnippetManager.insertSnippet(this.editor.editor, template);
+        editorUtils.insertSnippet(this.editor.editor, template);
     };
-    
+
     return Constr;
 }());

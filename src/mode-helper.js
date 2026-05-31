@@ -1,6 +1,6 @@
 /*
  *  eXide - web-based XQuery IDE
- *  
+ *
  *  Copyright (C) 2013 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -23,170 +23,173 @@ eXide.namespace("eXide.edit.ModeHelper");
  * Base class for helper methods needed by specific editing modes (like XQuery, XML...)
  */
 eXide.edit.ModeHelper = (function () {
-	
-    var SnippetManager = require("ace/snippets").snippetManager;
-    var Range = require("ace/range").Range;
-    
-	Constr = function(editor) {
-		this.parent = editor;
-		this.editor = this.parent.editor;
-		
-		this.commands = {};
+
+    Constr = function(editor) {
+        this.parent = editor;
+        this.editor = this.parent.editor;
+
+        this.commands = {};
         this.addCommand("locate", this.locate);
-	}
-	
-	Constr.prototype = {
+        this.addCommand("format", this.format);
+        this.addCommand("gotoSymbol", this.gotoSymbol);
+    }
+
+    Constr.prototype = {
 
         activate: function() {
         },
-        
+
         deactivate: function() {
         },
-        
-		/**
-		 * Add a command which can be invoked dynamically by the editor
-		 */
-		addCommand: function (name, func) {
-			if (!this.commands) {
-				this.commands = {};
-			}
-			this.commands[name] = func;
-		},
-		
-		/**
-		 * Dynamically call a method of this class.
-		 */
-		exec: function (command, doc, args) {
-			if (this.commands && this.commands[command]) {
-				var nargs = [doc];
-				for (var i = 0; i < args.length; i++) {
-					nargs.push(args[i]);
-				}
-				$.log("Calling command %s ...", command);
-				this.commands[command].apply(this, nargs);
-			} else {
+
+        addCommand: function (name, func) {
+            if (!this.commands) {
+                this.commands = {};
+            }
+            this.commands[name] = func;
+        },
+
+        exec: function (command, doc, args) {
+            var fn = (this.commands && this.commands[command]) || this[command];
+            if (typeof fn === "function") {
+                var nargs = [doc];
+                for (var i = 0; i < args.length; i++) {
+                    nargs.push(args[i]);
+                }
+                fn.apply(this, nargs);
+            } else {
                 eXide.util.message(command + " not supported in this mode.")
             }
-		},
-        
+        },
+
         validate: function(doc, code, onComplete) {
             if (onComplete)
                 onComplete(doc);
         },
-        
-        /**
-         * Parse the document and add functions to the
-         * document for the outline view.
-         */
+
         createOutline: function(doc, onComplete) {
-            // implemented by subclasses
-            d3.select("#outline").selectAll("li")
-                .transition()
-                    .duration(400)
-                    .style("opacity",0)
-                    .remove();
+            var outline = document.getElementById("outline");
+            if (outline) outline.innerHTML = "";
         },
-        
-        /**
-         * Called after a document was saved.
-         */
+
+        collectErrors: function(doc) {
+            var state = this.editor.state;
+            var tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
+            tree.iterate({
+                enter: function(node) {
+                    if (node.type.isError) {
+                        var line = state.doc.lineAt(node.from);
+                        var context = state.sliceDoc(
+                            Math.max(0, node.from - 10),
+                            Math.min(state.doc.length, node.to + 20)
+                        ).replace(/\n/g, " ").trim();
+                        if (context.length > 40) context = context.substring(0, 40) + "…";
+                        doc.functions.push({
+                            type: eXide.edit.Document.TYPE_FUNCTION,
+                            name: "Error at line " + line.number,
+                            outlineClass: "outline-error",
+                            source: doc.getPath(),
+                            signature: "Syntax error near: " + context,
+                            sort: "000000",
+                            row: line.number - 1,
+                            from: node.from,
+                            to: node.to
+                        });
+                        return false;
+                    }
+                }
+            });
+        },
+
         documentSaved: function(doc) {
-            // implemented by subclasses
         },
-        
+
         locate: function(doc, type, row) {
             if (typeof row == "number") {
-                this.editor.gotoLine(row + 1);
-            	this.editor.focus();
+                editorUtils.gotoLine(this.editor, row + 1);
+                this.editor.focus();
             }
             return false;
         },
-        
-        /**
-         * General autocomplete method: shows template popup.
-         */
-        autocomplete : function(doc, alwaysShow) {
+
+        format: function(doc) {
+            if (typeof prettierFormat === "undefined") {
+                eXide.util.message("format not supported in this mode.");
+                return;
+            }
             var self = this;
-            var range;
-            if (alwaysShow === undefined) {
-                alwaysShow = true;
+            var sel = this.editor.state.selection.main;
+            var code = this.editor.state.sliceDoc(sel.from, sel.to);
+            var isSelection = code.length > 0;
+            if (!isSelection) {
+                code = doc.getText();
             }
-            
-            function apply(selected) {
-                if (range) {
-                    self.editor.getSession().remove(range);
-                }
-                SnippetManager.insertSnippet(self.editor, selected.template);
-            }
-            
-            if (alwaysShow === undefined) {
-                alwaysShow = true;
-            }
-            
-            var sel   = this.editor.getSelection();
-            var lead = sel.getSelectionLead();
-            var pos = this.editor.renderer.textToScreenCoordinates(lead.row, lead.column);
-            var token;
-            if (sel.isEmpty()) {
-                var row = lead.row;
-                var line = this.editor.getSession().getDisplayLine(lead.row);
-                var start = lead.column - 1;
-                var end = lead.column;
-                while (start >= 0) {
-                   var ch = line.substring(start, end);
-                   if (ch.match(/^\$[\w:\-_\.]+$/)) {
-                       break;
-                   }
-                   if (!ch.match(/^[\w:\-_\.]+$/)) {
-                       start++;
-                       break;
-                   }
-                   start--;
-                }
-                token = line.substring(start, end);
-                end++;
-                
-                if (token === "" && !alwaysShow) {
-                    return false;
+            var mode = doc.getSyntax();
+            prettierFormat.format(code, mode).then(function (formatted) {
+                formatted = formatted.replace(/\n$/, "");
+                if (isSelection) {
+                    self.editor.dispatch({
+                        changes: { from: sel.from, to: sel.to, insert: formatted }
+                    });
                 } else {
-                    range = new Range(row, start, row, end);
+                    var cursorOffset = self.editor.state.selection.main.head;
+                    self.editor.dispatch({
+                        changes: { from: 0, to: self.editor.state.doc.length, insert: formatted },
+                        selection: { anchor: Math.min(cursorOffset, formatted.length) }
+                    });
                 }
-            } else if (!alwaysShow) {
-                return false;
-            }
-            
-            eXide.util.Popup.position(pos);
-    
-            var popupItems = this.getTemplates(doc, token, []);
-            if (popupItems.length == 0) {
-                return false;
-            } else if (popupItems.length > 1) {
-                eXide.util.Popup.show(popupItems, function(selected) {
-                    if (selected) {
-                        apply(selected);
-                    }
-                });
-            } else if (popupItems.length == 1) {
-                apply(popupItems[0]);
-            }
-            return true;
+            }).catch(function (e) {
+                console.log("Error formatting code: %s", e.message);
+                eXide.util.error("Code could not be formatted: " + e.message);
+            });
         },
-        
+
+        gotoSymbol: function(doc) {
+            var self = this;
+            if (!doc.functions || doc.functions.length === 0) {
+                eXide.util.message("No symbols found.");
+                return;
+            }
+            var items = doc.functions.map(function(f) {
+                return {
+                    label: f.signature || f.name,
+                    name: f.name,
+                    row: f.row,
+                    from: f.from
+                };
+            });
+            eXide.util.QuickPicker.show(items, function(selected) {
+                if (selected) {
+                    if (selected.from !== undefined) {
+                        self.editor.dispatch({
+                            selection: { anchor: selected.from }
+                        });
+                        self.editor.dispatch({
+                            effects: CM6.EditorView.scrollIntoView(selected.from, { y: "center" })
+                        });
+                        editorUtils.flashLine(self.editor, selected.from);
+                        self.editor.focus();
+                    } else if (selected.row !== undefined) {
+                        editorUtils.gotoLine(self.editor, selected.row + 1, 0, true);
+                    }
+                }
+            }, { placeholder: "Go to symbol\u2026", parentEditor: self.editor });
+        },
+
         getTemplates: function (doc, prefix, popupItems) {
             var templates = eXide.util.Snippets.getTemplates(doc, prefix);
-        	// add templates
-    		for (var i = 0; i < templates.length; i++) {
-    			var item = {
-    				type: "template",
-    				label: "[S] " + templates[i].name,
-    				template: templates[i].template,
+            for (var i = 0; i < templates.length; i++) {
+                var item = {
+                    type: "template",
+                    label: "[S] " + templates[i].name,
+                    template: templates[i].template,
                     completion: templates[i].completion
-    			};
-    			popupItems.push(item);
-    		}
+                };
+                popupItems.push(item);
+            }
             return popupItems;
-    	}
-	};
-	
-	return Constr;
+        }
+    };
+
+    return Constr;
 }());

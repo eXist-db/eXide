@@ -1,7 +1,7 @@
 eXide.namespace("eXide.edit.CodeValidator");
 
 /**
- * The main editor component. Handles the ACE editor as well as tabs, keybindings, commands...
+ * Code validation component. Validates documents on change and displays diagnostics.
  */
 eXide.edit.CodeValidator = (function () {
 
@@ -13,6 +13,13 @@ eXide.edit.CodeValidator = (function () {
             return false;
         }
         return true;
+    }
+
+    function createDeferred() {
+        var resolve;
+        var promise = new Promise(function(r) { resolve = r; });
+        promise.resolve = resolve;
+        return promise;
     }
 
     Constr = function(editor) {
@@ -40,7 +47,7 @@ eXide.edit.CodeValidator = (function () {
             clearTimeout(this.validateTimeout);
         }
 
-        this.deferred = $.Deferred();
+        this.deferred = createDeferred();
         this.validateTimeout = setTimeout(function() {
             self.triggerNow.apply(self, [doc]);
         }, VALIDATE_TIMEOUT);
@@ -56,22 +63,35 @@ eXide.edit.CodeValidator = (function () {
         if (this.inProgress) {
             return this.deferred;
         }
-        
+
         var self = this;
         if (!this.deferred) {
-            this.deferred = $.Deferred();
+            this.deferred = createDeferred();
         }
 
         this.inProgress = true;
+        var startedAt = new Date().getTime();
         doc.getModeHelper().validate(doc, doc.getText(), function (success) {
+            // Check if document changed while compile was in flight,
+            // BEFORE updating lastValidation (which would mask the change)
+            var changedDuringValidation = doc.lastChangeEvent > startedAt;
+
             doc.lastValidation = new Date().getTime();
             self.inProgress = false;
-            self.deferred.resolve([success]);
-            self.deferred = null;
+            if (self.deferred) {
+                self.deferred.resolve([success]);
+                self.deferred = null;
+            }
 
             self.$triggerEvent("validate", [doc]);
             if (success) {
                 self.$triggerEvent("documentValid", [doc]);
+            }
+
+            // Re-validate with the newer code
+            if (changedDuringValidation && self.editor.activeDoc === doc) {
+                doc.lastValidation = 0; // force needsValidation() to return true
+                self.triggerDelayed(doc);
             }
         });
         return this.deferred;

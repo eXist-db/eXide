@@ -121,7 +121,7 @@ eXide.edit.XQueryUtils = (function () {
         findAncestor: function(node, type) {
             if (type instanceof Array) {
                 while (node !== null) {
-                    if ($.inArray(node.name, type) > -1) {
+                    if (type.indexOf(node.name) > -1) {
                         return node;
                     }
                     node = node.getParent;
@@ -194,8 +194,6 @@ eXide.namespace("eXide.edit.VariableReferences");
  */
 eXide.edit.VariableReferences = (function () {
     
-    var Range = require("ace/range").Range;
-    
     Constr = function(variable, ast) {
         this.variable = variable;
         this.references = [];
@@ -232,8 +230,6 @@ eXide.namespace("eXide.edit.InScopeVariables");
  * XQuery specific helper methods.
  */
 eXide.edit.InScopeVariables = (function () {
-    
-    var Range = require("ace/range").Range;
     
     Constr = function(root, node) {
         this.node = node;
@@ -324,8 +320,6 @@ eXide.namespace("eXide.edit.FunctionParameters");
  */
 eXide.edit.FunctionParameters = (function () {
     
-    var Range = require("ace/range").Range;
-    
     Constr = function(root) {
         this.parameters = [];
         this.visit(root);
@@ -362,8 +356,6 @@ eXide.namespace("eXide.edit.FunctionCalls");
  * XQuery specific helper methods.
  */
 eXide.edit.FunctionCalls = (function () {
-    
-    var Range = require("ace/range").Range;
     
     Constr = function(funcName, arity, ast) {
         this.name = funcName;

@@ -1,0 +1,54 @@
+/*
+ * LSP hover tooltip styles.
+ *
+ * Matches the visual language of funcdoc-tooltip.css while providing
+ * a simpler layout for hover info (signature + optional description).
+ */
+
+.cm-lang-hover {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    max-width: 600px;
+    min-width: 200px;
+    padding: 8px 10px;
+}
+
+.cm-lang-hover-signature {
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: #333;
+    word-break: break-all;
+    white-space: pre-wrap;
+    display: block;
+}
+
+.cm-lang-hover-description {
+    margin: 6px 0 0 0;
+    padding-top: 6px;
+    border-top: 1px solid #eee;
+    color: #444;
+    font-size: 11px;
+}
+
+/* --- Dark mode --- */
+
+.dark-mode .cm-lang-hover {
+    background: #1e1e1e;
+    border-color: #444;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+.dark-mode .cm-lang-hover-signature {
+    color: #e0e0e0;
+}
+
+.dark-mode .cm-lang-hover-description {
+    color: #bbb;
+    border-top-color: #444;
+}

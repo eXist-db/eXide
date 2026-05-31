@@ -1,5 +1,7 @@
-const indexPage = 'http://localhost:8080/exist/apps/eXide/index.html'
-const loginPage = 'http://localhost:8080/exist/apps/eXide/login.html'
+// Derive expected URLs from Cypress's baseUrl so the spec works against any
+// port/host the test runner is pointed at (CI defaults to localhost:8080).
+const indexPage = `${Cypress.config('baseUrl')}/eXide/index.html`
+const loginPage = `${Cypress.config('baseUrl')}/eXide/login.html`
 
 describe('with guest=yes (default)', function() {
     before(function () {

@@ -4,39 +4,36 @@ eXide.namespace("eXide.util.DnD");
  * Drag and drop of files.
  */
 eXide.util.DnD = (function(util) {
-    
+
     var Constr = function(container) {
         var self = this;
-        container = $(container);
-        container.on("dragenter", function(ev) {
+        var el = typeof container === "string" ? document.querySelector(container) : container;
+        el.addEventListener("dragenter", function(ev) {
             ev.stopPropagation();
             ev.preventDefault();
-            container.addClass("dropping");
+            el.classList.add("dropping");
         });
-        container.on("dragover", function(ev) {
+        el.addEventListener("dragover", function(ev) {
             ev.stopPropagation();
             ev.preventDefault();
         });
-        container.on("dragleave", function(ev) {
+        el.addEventListener("dragleave", function(ev) {
             ev.stopPropagation();
             ev.preventDefault();
-            
-            container.removeClass("dropping");
+            el.classList.remove("dropping");
         });
-        container.on("drop", function(ev) {
+        el.addEventListener("drop", function(ev) {
             ev.stopPropagation();
             ev.preventDefault();
-            
-            container.removeClass("dropping");
-            
-            if (ev.originalEvent.dataTransfer && ev.originalEvent.dataTransfer.files) {
-                self.$triggerEvent("drop", [ev.originalEvent.dataTransfer.files]);
+            el.classList.remove("dropping");
+            if (ev.dataTransfer && ev.dataTransfer.files) {
+                self.$triggerEvent("drop", [ev.dataTransfer.files]);
             }
         });
     };
-    
+
     // Extend eXide.events.Sender for event support
     eXide.util.oop.inherit(Constr, eXide.events.Sender);
-    
+
     return Constr;
 }());

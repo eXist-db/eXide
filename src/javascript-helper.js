@@ -1,6 +1,6 @@
 /*
  *  eXide - web-based XQuery IDE
- *  
+ *
  *  Copyright (C) 2011 Wolfgang Meier
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -19,113 +19,156 @@
 eXide.namespace("eXide.edit.JavascriptModeHelper");
 
 /**
- * XML specific helper methods.
+ * JavaScript specific helper methods.
  */
 eXide.edit.JavascriptModeHelper = (function () {
-    
+
     var RE_FUNC_NAME = /^[\$\w\-_]+/;
-    
-    var TokenIterator = require("ace/token_iterator").TokenIterator;
-    
+
     Constr = function(editor) {
-		this.parent = editor;
-		this.editor = this.parent.editor;
+        this.parent = editor;
+        this.editor = this.parent.editor;
         this.addCommand("gotoDefinition", this.gotoDefinition);
         this.addCommand("locate", this.locate);
         this.addCommand("gotoSymbol", this.gotoSymbol);
-	}
-	
-	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
-    
-    // Constr.prototype.activate = function(doc) {
-    //     this.editor.setOption("enableBasicAutocompletion", true);
-    // };
-    
-    // Constr.prototype.deactivate = function(doc) {
-    //     this.editor.setOption("enableBasicAutocompletion", false);
-    // };
-    
+        this.addCommand("format", this.format);
+    }
+
+    eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
+
     Constr.prototype.createOutline = function(doc, onComplete) {
-        var iterator = new TokenIterator(doc.getSession(), 0, 0);
-        var next = iterator.stepForward();
-        while (next != null) {
-            if (next.type == "entity.name.function") {
-                doc.functions.push({
-            		type: eXide.edit.Document.TYPE_FUNCTION,
-    				name: next.value,
-    				signature: next.value,
-                    sort: next.value,
-                    row: iterator.getCurrentTokenRow(),
-                    column: iterator.getCurrentTokenColumn()
-    			});
+        var state = this.editor.state;
+        var tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
+        tree.iterate({
+            enter: function(node) {
+                var name = null, type = eXide.edit.Document.TYPE_FUNCTION, sig = null;
+                if (node.name === "FunctionDeclaration") {
+                    var vn = node.node.getChild("VariableDefinition");
+                    if (vn) name = state.sliceDoc(vn.from, vn.to);
+                    if (name) sig = state.sliceDoc(node.from, Math.min(node.to, node.from + 80)).split("{")[0].trim();
+                } else if (node.name === "ClassDeclaration") {
+                    var cn = node.node.getChild("VariableDefinition");
+                    if (cn) name = state.sliceDoc(cn.from, cn.to);
+                    if (name) sig = "class " + name;
+                } else if (node.name === "MethodDeclaration") {
+                    var pn = node.node.getChild("PropertyDefinition");
+                    if (pn) name = state.sliceDoc(pn.from, pn.to);
+                    if (name) sig = state.sliceDoc(node.from, Math.min(node.to, node.from + 80)).split("{")[0].trim();
+                } else if (node.name === "VariableDeclaration") {
+                    var child = node.node.firstChild;
+                    var keyword = child ? state.sliceDoc(child.from, child.to) : "var";
+                    child = child ? child.nextSibling : null;
+                    while (child) {
+                        if (child.name === "VariableDefinition") {
+                            var vname = state.sliceDoc(child.from, child.to);
+                            var nextSib = child.nextSibling;
+                            if (nextSib && (nextSib.name === "ArrowFunction" || nextSib.name === "FunctionExpression")) {
+                                name = vname;
+                                sig = keyword + " " + vname + " = " + (nextSib.name === "ArrowFunction" ? "() => …" : "function(…)");
+                            }
+                        }
+                        child = child.nextSibling;
+                    }
+                }
+                if (name) {
+                    var line = state.doc.lineAt(node.from);
+                    doc.functions.push({
+                        type: type,
+                        name: name,
+                        signature: sig || name,
+                        sort: name,
+                        row: line.number - 1,
+                        from: node.from,
+                        to: node.to
+                    });
+                    if (node.name === "ClassDeclaration") return true;
+                    return false;
+                }
             }
-            next = iterator.stepForward();
-        }
-        if (onComplete)
-            onComplete(doc);
+        });
+        this.collectErrors(doc);
+        if (onComplete) onComplete(doc);
     };
-    
+
     Constr.prototype.gotoSymbol = function(doc) {
         var self = this;
-        var popupItems = [];
-        for (var i = 0; i < doc.functions.length; i++) {
-            item = { 
-                label: doc.functions[i].name,
-                name: doc.functions[i].name,
-                type: doc.functions[i].type,
-                row: doc.functions[i].row
-            };
-            popupItems.push(item);
-        };
-        if (popupItems.length > 1) {
-            var left = this.parent.getOffset().left;
-            eXide.util.Popup.position({pageX: left, pageY: 20});
-            eXide.util.Popup.show(popupItems, function (selected) {
-                if (selected) {
-                    self.parent.history.push(doc.getPath(), doc.getCurrentLine());
-                    self.editor.gotoLine(selected.row + 1);
-                }
-                self.editor.focus();
+        // Ensure outline is populated
+        if (!doc.functions || doc.functions.length === 0) {
+            doc.functions = [];
+            this.createOutline(doc, function() {
+                self._showSymbolPicker(doc);
             });
+        } else {
+            this._showSymbolPicker(doc);
         }
     };
 
+    Constr.prototype._showSymbolPicker = function(doc) {
+        var self = this;
+        if (!doc.functions || doc.functions.length === 0) {
+            eXide.util.message("No symbols found.");
+            return;
+        }
+        var items = doc.functions.map(function(f) {
+            return {
+                label: f.signature || f.name,
+                name: f.name,
+                row: f.row,
+                from: f.from
+            };
+        });
+        eXide.util.QuickPicker.show(items, function (selected) {
+            if (selected) {
+                self.parent.history.push(doc.getPath(), doc.getCurrentLine());
+                if (selected.from !== undefined) {
+                    self.editor.dispatch({ selection: { anchor: selected.from } });
+                    self.editor.dispatch({
+                        effects: CM6.EditorView.scrollIntoView(selected.from, { y: "center" })
+                    });
+                    editorUtils.flashLine(self.editor, selected.from);
+                    self.editor.focus();
+                } else {
+                    editorUtils.gotoLine(self.editor, selected.row + 1);
+                }
+            }
+        }, { placeholder: "Go to symbol\u2026", parentEditor: self.editor });
+    };
+
     Constr.prototype.gotoDefinition = function (doc) {
-    	var sel = this.editor.getSelection();
-		var lead = sel.getSelectionLead();
-		var funcName = this.getFunctionAtCursor(lead);
-		if (funcName) {
-			this.locate(doc, null, funcName);
-		}
-	};
-    
+        var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
+        var funcName = this.getFunctionAtCursor(lead);
+        if (funcName) {
+            this.locate(doc, null, funcName);
+        }
+    };
+
     Constr.prototype.locate = function(doc, type, name) {
         if (typeof name == "number") {
-            this.editor.gotoLine(name + 1);
+            editorUtils.gotoLine(this.editor, name + 1);
         } else {
-        	var func = this.parent.outline.findDefinition(doc, name);
+            var func = this.parent.outline.findDefinition(doc, name);
             if (func && func.row) {
                 this.parent.history.push(doc.getPath(), doc.getCurrentLine());
-                this.editor.gotoLine(func.row + 1);
+                editorUtils.gotoLine(this.editor, func.row + 1);
             }
         }
-	};
-    
+    };
+
     Constr.prototype.getFunctionAtCursor = function (lead) {
-    	var row = lead.row;
-	    var session = this.editor.getSession();
-		var line = session.getDisplayLine(row);
-		var start = lead.column;
-		do {
-			start--;
-		} while (start >= 0 && line.charAt(start).match(RE_FUNC_NAME));
-		start++;
-		var end = lead.column;
-		while (end < line.length && line.charAt(end).match(RE_FUNC_NAME)) {
-			end++;
-		}
-		return line.substring(start, end);
-	};
-    
+        var row = lead.row;
+        var lineNum = row + 1;
+        var line = (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) ? this.editor.state.doc.line(lineNum).text : "";
+        var start = lead.column;
+        do {
+            start--;
+        } while (start >= 0 && line.charAt(start).match(RE_FUNC_NAME));
+        start++;
+        var end = lead.column;
+        while (end < line.length && line.charAt(end).match(RE_FUNC_NAME)) {
+            end++;
+        }
+        return line.substring(start, end);
+    };
+
     return Constr;
 }());

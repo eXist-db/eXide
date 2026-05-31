@@ -16,7 +16,7 @@
  :  You should have received a copy of the GNU General Public License
  :  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  :)
-xquery version "3.0";
+xquery version "3.1";
 
 (:~
     Post-processes query results for the sandbox application. The
@@ -31,7 +31,9 @@ xquery version "3.0";
 
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
 
-declare option exist:serialize "method=xml media-type=text/xml omit-xml-declaration=yes indent=no";
+declare option output:method "html";
+declare option output:html-version "5.0";
+declare option output:media-type "text/html";
 
 (:~ Retrieve a single query result. :)
 declare function local:retrieve($num as xs:integer) as element() {
@@ -61,14 +63,15 @@ declare function local:retrieve($num as xs:integer) as element() {
             <div class="pos">
             {
                 if (string-length($documentURI) > 0) then
-                    <a href="{$documentURI}#{util:node-id($cached-item)}" data-path="{$documentURI}"
+                    <a class="badge" href="{$documentURI}#{util:node-id($cached-item)}" data-path="{$documentURI}"
                         title="Click to load source document">{$num}</a>
                 else
-                    $num
+                    <span class="badge">{$num}</span>
             }
             </div>
             <div class="item">
-                <div class="content ace_editor ace-tomorrow" style="white-space: pre-wrap">
+                <i class="fa fa-clipboard copy-result" title="Copy this item to clipboard"/>
+                <div class="content" style="white-space: pre-wrap">
                     { $serialized }
                 </div>
             </div>
