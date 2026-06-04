@@ -63,14 +63,10 @@ eXide.edit.Projects = (function () {
     };
 
     Constr.prototype.getProjectFor = function (collection) {
-        const re = new RegExp("^" + collection);
-        for (const k in this.projects) {
-            const project = this.projects[k];
-            if (collection.substring(0, project.root.length) === project.root) {
-                return project;
-            }
-        }
-        return null;
+        const filteredProjects = Object.values(this.projects)
+            .filter(project => project &&  project.root && collection.startsWith(project.root));
+
+        return filteredProjects[0] || null;
     };
 
     Constr.prototype.saveState = function () {
