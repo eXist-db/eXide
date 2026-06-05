@@ -1,5 +1,12 @@
-.DS_Store
-.env
+.*
+!.gitignore
+!.existdb.json
+!.gitmodules
+!.github
+!.releaserc
+!.commitlintrc.js
+!.husky
+
 build/*
 expath-pkg.xml
 
@@ -22,9 +29,3 @@ cypress/videos/*.mp4
 cypress/screenshots/**/*.png
 
 CLAUDE.md
-
-.*
-!.gitignore
-!.existdb.json
-!.gitmodules
-!.github
