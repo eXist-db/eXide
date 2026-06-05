@@ -1,6 +1,6 @@
 {
 	"name": "exide",
-	"version": "4.0.0",
+	"version": "0.0.0-development",
 	"description": "a web-based XQuery IDE",
 	"main": "main.js",
 	"directories": {
@@ -10,7 +10,9 @@
 		"build": "npm run bundle-cm6 && npm run bundle-prettier && node scripts/build.js prepare && node scripts/build.js",
 		"build:dev": "npm run bundle-cm6 && npm run bundle-prettier && node scripts/build.js prepare && node scripts/build.js --dev",
 		"clean": "node scripts/build.js clean",
+		"prepare": "husky install",
 		"test": "node --test",
+		"commitlint": "commitlint --from=HEAD~1",
 		"bundle-prettier": "node tools/bundle-prettier.js",
 		"bundle-cm6": "node tools/bundle-cm6.js",
 		"generate-parser": "node tools/generate-parser.js",
@@ -41,7 +43,15 @@
 		"glob-stream": "^7.0.0",
 		"micro-fs": "^1.0.3",
 		"request": "^2.88.2",
-		"ws": "^8.20.0"
+		"ws": "^8.20.0",
+		"husky": "^9.1.7",
+		"@commitlint/cli": "^20.3.1",
+		"@commitlint/config-conventional": "^20.3.1",
+		"@semantic-release/commit-analyzer": "^10.0.0",
+		"@semantic-release/github": "^12.0.5",
+		"@semantic-release/release-notes-generator": "^10.0.0",
+		"conventional-changelog-conventionalcommits": "^9.0.0",
+		"semantic-release": "^25.0.3"
 	},
 	"dependencies": {
 		"@codemirror/autocomplete": "^6.20.1",
