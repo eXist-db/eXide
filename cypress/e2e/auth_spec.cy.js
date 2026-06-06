@@ -133,3 +133,53 @@ describe('login using form', function () {
     })
 
 })
+
+// GET /api/auth/whoami must report identity from the eXist subject (sm:id()),
+// not the persistent-login request attribute. The attribute is only populated
+// by the cookie/param flow, so before this fix a request authenticated with the
+// HTTP Basic header reported as "guest" even though it executed as the real
+// user. These assert identity is consistent across all three auth mechanisms.
+describe('whoami identity source (sm:id, not the login attribute)', function () {
+    const whoami = '/eXide/api/auth/whoami'
+
+    it('reports the real user under HTTP Basic auth (regression)', function () {
+        cy.request({
+            url: whoami,
+            auth: { user: 'admin', pass: '' }
+        }).then((res) => {
+            expect(res.body.user).to.eq('admin')
+            expect(res.body.isLoggedIn).to.eq(true)
+            expect(res.body.isAdmin).to.eq(true)
+        })
+    })
+
+    it('reports guest when unauthenticated', function () {
+        // Cypress shares a cookie jar across requests; clear it so no
+        // remember-me cookie leaks into this assertion.
+        cy.clearCookies()
+        cy.request({ url: whoami }).then((res) => {
+            expect(res.body.user).to.eq('guest')
+            expect(res.body.isLoggedIn).to.eq(false)
+            expect(res.body.isAdmin).to.eq(false)
+        })
+    })
+
+    it('reports the real user via the persistent-login cookie', function () {
+        cy.clearCookies()
+        // Mint the cookie the way the login form does (form params).
+        cy.request({
+            method: 'POST',
+            url: '/eXide/api/auth/session',
+            form: true,
+            body: { user: 'admin', password: '' }
+        }).then((res) => {
+            expect(res.body.user).to.eq('admin')
+        })
+        // Subsequent request carries the cookie; whoami must agree.
+        cy.request({ url: whoami }).then((res) => {
+            expect(res.body.user).to.eq('admin')
+            expect(res.body.isLoggedIn).to.eq(true)
+            expect(res.body.isAdmin).to.eq(true)
+        })
+    })
+})
