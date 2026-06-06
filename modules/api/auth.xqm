@@ -9,33 +9,17 @@ import module namespace roaster="http://e-editiones.org/roaster";
 import module namespace config="http://exist-db.org/xquery/apps/config" at "../config.xqm";
 
 (:~
- : The current request's identity, derived from the actual eXist subject
- : (`sm:id()`) rather than the persistent-login request attribute.
+ : Identity comes from `$request?user`, which Roaster's standard-authorization
+ : middleware populates (via `rutil:getDBUser()` → `sm:id()`) for every route.
  :
- : This matters: the attribute (`org.exist.login.user`) is populated only by
- : the persistent-login flow (login form params or the remember-me cookie), so
- : a request authenticated by the HTTP Basic header reported as `guest` even
- : though it executed as the real user. `sm:id()` reflects whatever
- : authenticated the request — Basic header, the shared `org.exist.login`
- : cookie (processed by controller.xq before this handler runs), or a freshly
- : minted login session — uniformly. This is the same identity basis used by
- : Roaster's `rutil:getDBUser()` and by existdb-openapi, so eXide's notion of
- : "who" now matches the rest of the stack.
- :
- : `sm:effective` is preferred over `sm:real` because token/cookie logins set
- : the effective user (same reasoning as Roaster's getDBUser).
+ : These two auth routes previously carried a `security: []` override, which
+ : opted them out of the middleware and forced the handlers to resolve identity
+ : themselves. With the override removed they participate in the same
+ : cookie/Basic authentication as every other route, so the handler just reads
+ : `$request?user` — the single identity basis shared with existdb-openapi and
+ : the rest of the stack. The map shape is `{name, fullName, groups, dba}`,
+ : with `name` = "guest" when unauthenticated.
  :)
-declare function auth:current-user() as map(*) {
-    let $id := sm:id()/sm:id
-    let $principal := ($id/sm:effective, $id/sm:real)[1]
-    let $name := ($principal/sm:username/string(), "guest")[1]
-    return map {
-        "name": $name,
-        "isAdmin": sm:is-dba($name),
-        "isLoggedIn": not($name = ("guest", "nobody"))
-    }
-};
-
 declare function auth:is-allowed($user as xs:string?) as xs:boolean {
     let $conf := config:get-configuration()
     return
@@ -49,15 +33,17 @@ declare function auth:is-allowed($user as xs:string?) as xs:boolean {
  :
  : The persistent-login cookie is minted by controller.xq's `login:set-user`,
  : which reads the `user` / `password` / `duration` form parameters before
- : forwarding here. This handler reports the resulting identity.
+ : forwarding here. By handler time Roaster has resolved the resulting subject
+ : into `$request?user`; this handler reports it.
  :)
 declare function auth:login($request as map(*)) {
-    let $user := auth:current-user()
+    let $user := $request?user
+    let $name := ($user?name, "guest")[1]
     return
-        if (auth:is-allowed($user?name)) then
+        if (auth:is-allowed($name)) then
             map {
-                "user": $user?name,
-                "isAdmin": $user?isAdmin
+                "user": $name,
+                "isAdmin": $user?dba
             }
         else
             roaster:response(401, "application/json",
@@ -80,14 +66,15 @@ declare function auth:logout($request as map(*)) {
  : GET /api/auth/whoami — Current user info.
  :)
 declare function auth:whoami($request as map(*)) {
-    let $user := auth:current-user()
+    let $user := $request?user
+    let $name := ($user?name, "guest")[1]
     let $conf := config:get-configuration()
     return map {
-        "user": $user?name,
-        "isAdmin": $user?isAdmin,
-        "isLoggedIn": $user?isLoggedIn,
-        "queryExecution": $user?isAdmin or (
-            $conf/restrictions/@execute-query = "yes" and auth:is-allowed($user?name)
+        "user": $name,
+        "isAdmin": $user?dba,
+        "isLoggedIn": not($name = ("guest", "nobody")),
+        "queryExecution": $user?dba or (
+            $conf/restrictions/@execute-query = "yes" and auth:is-allowed($name)
         )
     }
 };

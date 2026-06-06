@@ -40,7 +40,6 @@
                 "tags": [
                     "auth"
                 ],
-                "security": [],
                 "responses": {
                     "200": {
                         "description": "Login successful",
@@ -91,7 +90,6 @@
                 "tags": [
                     "auth"
                 ],
-                "security": [],
                 "responses": {
                     "200": {
                         "description": "User info",
