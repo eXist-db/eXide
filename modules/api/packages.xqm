@@ -218,13 +218,13 @@ declare function packages:deploy($request as map(*)) {
 declare function packages:config($request as map(*)) {
     let $abbrev := $request?parameters?abbrev
     let $body := $request?body
-    let $config-xml := $body?config
     let $collection := ($body?collection, repo:get-root() || $abbrev)[1]
+    let $config-xml := doc($collection || "/" || $body?config)
     return
         try {
             let $config-col := "/db/system/config" || $collection
             let $_ := packages:mkcol($config-col, (), ())
-            let $_ := xmldb:store($config-col, "collection.xconf", $config-xml, "text/xml")
+            let $_ := xmldb:store($config-col, "collection.xconf", $config-xml, "application/xml")
             let $_ := xmldb:reindex($collection)
             return map {
                 "status": "ok",
