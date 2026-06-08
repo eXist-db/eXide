@@ -38,7 +38,7 @@ declare function auth:is-allowed($user as xs:string?) as xs:boolean {
  :)
 declare function auth:login($request as map(*)) {
     let $user := $request?user
-    let $name := ($user?name, "guest")[1]
+    let $name := $user?name
     return
         if (auth:is-allowed($name)) then
             map {
@@ -67,7 +67,7 @@ declare function auth:logout($request as map(*)) {
  :)
 declare function auth:whoami($request as map(*)) {
     let $user := $request?user
-    let $name := ($user?name, "guest")[1]
+    let $name := $user?name
     let $conf := config:get-configuration()
     return map {
         "user": $name,
