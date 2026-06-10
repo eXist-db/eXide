@@ -1,272 +1,312 @@
 (:
  :  eXide REST API — Database resource handlers.
- :  Migrated from collections.xq, load.xq, store.xq.
+ :
+ :  Thin ADAPTER over existdb-openapi's roaster-independent db-core module: the
+ :  /api/storage surface and eXide's response shapes are kept identical (the
+ :  frontend is untouched), but all resource CRUD + naming correctness is
+ :  delegated in-process to db-core (imported by namespace; existdb-openapi is a
+ :  declared dependency). No HTTP hop, no re-auth — db-core runs as the current
+ :  request user. This makes existdb-openapi the single audited implementation of
+ :  db resource handling; eXide stops carrying its own xmldb:store/doc()/encode
+ :  logic.
+ :
+ :  What stays eXide-side for now (progressively migrating as db-core grows):
+ :   - binary load + ?download raw streaming (db-core's binary handling is cruder;
+ :     full transport is existdb-openapi#38, the Roaster streaming track);
+ :   - externalPath, computed eXide's way (context-path aware), overriding
+ :     db-core's runPath.
+ :
+ :  Naming convention: this adapter speaks DECODED paths to db-core, which applies
+ :  fn:iri-to-uri internally — so it adopts existdb-openapi's resource-naming
+ :  convention (sub-delims left literal, e.g. it's.xml) rather than eXide's former
+ :  full-encode (it%27s.xml). The cutover of this convention is gated on the
+ :  resource-naming contract decision.
  :)
 xquery version "3.1";
 
 module namespace db="http://exist-db.org/apps/eXide/api/db";
 
 import module namespace roaster="http://e-editiones.org/roaster";
-import module namespace dbutil="http://exist-db.org/xquery/dbutil" at "../dbutils.xqm";
-import module namespace config="http://exist-db.org/xquery/apps/config" at "../config.xqm";
+(: db-core: imported by namespace — existdb-openapi is a declared dependency
+ : (expath-pkg.xml) and registers db-core as a public XQuery module. :)
+import module namespace dbc="http://exist-db.org/api/db-core";
 
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
+declare namespace sm="http://exist-db.org/xquery/securitymanager";
 
-(: Handle difference between 4.x.x and 5.x.x releases of eXist :)
-declare variable $db:copy-collection :=
-    let $fnNew := function-lookup(xs:QName("xmldb:copy-collection"), 2)
-    return
-        if (exists($fnNew)) then $fnNew else function-lookup(xs:QName("xmldb:copy"), 2);
+(:~
+ : Map a typed db-core error to an eXide HTTP response. db-core signals failures
+ : as typed errors in http://exist-db.org/api/db-core/error; the local-name picks
+ : the status, $err:description becomes the message, $err:value (a map) adds any
+ : extra fields (move/copy partial-state hints). Unknown codes fall through to 500.
+ :)
+declare %private function db:error-response(
+    $code as xs:QName, $description as xs:string?, $value as item()*
+) {
+    let $status :=
+        (map {
+            "bad-request": 400,
+            "forbidden": 403,
+            "not-found": 404,
+            "conflict": 409,
+            "server-error": 500
+        }(local-name-from-QName($code)), 500)[1]
+    let $extra := if ($value instance of map(*)) then $value else map {}
+    return roaster:response($status, "application/json",
+        map:merge((map { "error": $description }, $extra)))
+};
 
-declare variable $db:copy-resource :=
-    let $fnNew := function-lookup(xs:QName("xmldb:copy-resource"), 4)
-    return
-        if (exists($fnNew)) then $fnNew
-        else
-            let $fnOld := function-lookup(xs:QName("xmldb:copy"), 3)
-            return function($sourceCol, $sourceName, $targetCol, $targetName) {
-                $fnOld($sourceCol, $targetCol, $sourceName)
-            };
+(:~ The decoded wire path for a {path} route parameter. :)
+declare %private function db:wire($request as map(*)) as xs:string {
+    "/" || $request?parameters?path
+};
 
 (:~
  : GET /api/storage/{path} — Browse collection or load document.
  :)
 declare function db:get($request as map(*)) {
-    let $path := db:encode-path("/" || $request?parameters?path)
-    let $user := (request:get-attribute("org.exist.login.user"), "guest")[1]
-    return
-        if (xmldb:collection-available($path)) then
-            db:browse-collection($path, $request, $user)
-        else if (doc-available($path) or util:binary-doc-available($path)) then
-            db:load-document($path, $request, $user)
-        else
-            roaster:response(404, "application/json",
-                map { "error": "Not found: " || $path })
-};
-
-(:~
- : PUT /api/storage/{path} — Create or update document.
- :)
-declare function db:put($request as map(*)) {
-    let $path := db:encode-path("/" || $request?parameters?path)
-    let $data := $request?body
-    let $collection := replace($path, "/[^/]+$", "")
-    let $resource := replace($path, "^.*/", "")
+    let $wire := db:wire($request)
+    let $stored := dbc:to-stored($wire)
     return
         try {
-            let $stored := xs:anyURI(xmldb:store($collection, $resource, $data))
-            (: Fix permissions for XQuery files :)
-            let $mime := xmldb:get-mime-type($stored)
-            let $_ :=
-                if ($mime = "application/xquery") then
-                    sm:chmod($stored, "rwxr-xr-x")
-                else ()
-            return map {
-                "status": "ok",
-                "path": $stored
-            }
+            if (xmldb:collection-available($stored)) then
+                db:browse($wire, $request)
+            else if (doc-available($stored) or util:binary-doc-available($stored)) then
+                db:load($wire, $stored, $request)
+            else
+                roaster:response(404, "application/json",
+                    map { "error": "Not found: " || dbc:to-display($stored) })
         } catch * {
-            roaster:response(400, "application/json",
-                map { "error": $err:description })
+            db:error-response($err:code, $err:description, $err:value)
         }
 };
 
 (:~
- : POST /api/storage/{path} — Create subcollection or batch operations.
- : Body: { "action": "create" | "copy" | "move" | "rename", ... }
+ : PUT /api/storage/{path} — Create or update document. Body is the raw content.
+ :)
+declare function db:put($request as map(*)) {
+    try {
+        (: mime omitted -> db-core lets eXist infer from the name (3-arg xmldb:store) :)
+        let $r := dbc:store(db:wire($request), $request?body, ())
+        return map { "status": "ok", "path": $r?stored }
+    } catch * {
+        db:error-response($err:code, $err:description, $err:value)
+    }
+};
+
+(:~
+ : POST /api/storage/{path} — Create subcollection or batch copy/move/rename.
+ : Body: { "action": "create" | "copy" | "move" | "rename", … }
  :)
 declare function db:post($request as map(*)) {
-    let $path := db:encode-path("/" || $request?parameters?path)
+    let $wire := db:wire($request)
     let $body := $request?body
     let $action := $body?action
     return
-        switch ($action)
-            case "create" return
-                try {
-                    let $name := $body?name
-                    let $created := xmldb:create-collection($path, $name)
-                    return map { "status": "ok", "path": $created }
-                } catch * {
-                    roaster:response(400, "application/json",
-                        map { "error": $err:description })
-                }
-            case "copy" return
-                try {
-                    let $sources := $body?sources?*
+        try {
+            switch ($action)
+                case "create" return
+                    let $r := dbc:create-collection($wire || "/" || $body?name)
+                    return map { "status": "ok", "path": $r?created }
+                case "copy" return
                     let $_ :=
-                        for $source in $sources
-                        let $enc-source := db:encode-path($source)
-                        return
-                            if (xmldb:collection-available($enc-source)) then
-                                $db:copy-collection($enc-source, $path)
-                            else
-                                let $name := replace($enc-source, "^.*/", "")
-                                let $src-col := replace($enc-source, "/[^/]+$", "")
-                                return $db:copy-resource($src-col, $name, $path, $name)
+                        for $source in $body?sources?*
+                        return dbc:copy(map { "source": $source, "parent": $wire })
                     return map { "status": "ok" }
-                } catch * {
+                case "move" return
+                    let $_ :=
+                        for $source in $body?sources?*
+                        return dbc:move(map { "source": $source, "parent": $wire })
+                    return map { "status": "ok" }
+                case "rename" return
+                    let $_ := dbc:move(map { "source": $wire, "newName": $body?target })
+                    return map { "status": "ok" }
+                default return
                     roaster:response(400, "application/json",
-                        map { "error": $err:description })
-                }
-            case "move" return
-                try {
-                    let $sources := $body?sources?*
-                    for $source in $sources
-                    let $enc-source := db:encode-path($source)
-                    return
-                        if (xmldb:collection-available($enc-source)) then
-                            xmldb:move($enc-source, $path)
-                        else
-                            let $name := replace($enc-source, "^.*/", "")
-                            let $src-col := replace($enc-source, "/[^/]+$", "")
-                            return xmldb:move($src-col, $path, $name)
-                    ,
-                    map { "status": "ok" }
-                } catch * {
-                    roaster:response(400, "application/json",
-                        map { "error": $err:description })
-                }
-            case "rename" return
-                try {
-                    let $target := $body?target
-                    return
-                        if (xmldb:collection-available($path)) then (
-                            xmldb:rename($path, $target),
-                            map { "status": "ok" }
-                        )
-                        else
-                            let $col := replace($path, "/[^/]+$", "")
-                            let $name := replace($path, "^.*/", "")
-                            return (
-                                xmldb:rename($col, $name, $target),
-                                map { "status": "ok" }
-                            )
-                } catch * {
-                    roaster:response(400, "application/json",
-                        map { "error": $err:description })
-                }
-            default return
-                roaster:response(400, "application/json",
-                    map { "error": "Unknown action: " || $action })
+                        map { "error": "Unknown action: " || $action })
+        } catch * {
+            db:error-response($err:code, $err:description, $err:value)
+        }
 };
 
 (:~
  : DELETE /api/storage/{path} — Delete resource or collection.
  :)
 declare function db:delete($request as map(*)) {
-    let $path := db:encode-path("/" || $request?parameters?path)
-    return
-        try {
-            if (xmldb:collection-available($path)) then (
-                xmldb:remove($path),
-                map { "status": "ok" }
-            )
-            else
-                let $col := replace($path, "/[^/]+$", "")
-                let $name := replace($path, "^.*/", "")
-                return (
-                    xmldb:remove($col, $name),
-                    map { "status": "ok" }
-                )
-        } catch * {
-            roaster:response(400, "application/json",
-                map { "error": $err:description })
-        }
+    try {
+        let $wire := db:wire($request)
+        let $stored := dbc:to-stored($wire)
+        let $_ :=
+            if (xmldb:collection-available($stored))
+            (: force=true mirrors eXide's recursive delete; db-core also guards the
+             : protected paths (/db, /db/apps, /db/system) with a 403. :)
+            then dbc:remove-collection($wire, true())
+            else dbc:remove-resource($wire)
+        return map { "status": "ok" }
+    } catch * {
+        db:error-response($err:code, $err:description, $err:value)
+    }
 };
 
 (:~
  : PATCH /api/storage/{path} — Modify permissions, owner, group, MIME type.
- : Body: { "owner": "...", "group": "...", "mode": "rwxr-x---", "mime": "..." }
+ : Body: { "owner": …, "group": …, "mode": "rwxr-x---", "mime": … }
+ : db-core classifies failures: chown/chgrp/chmod -> 403, set-mime -> 400.
  :)
 declare function db:patch($request as map(*)) {
-    let $path := db:encode-path("/" || $request?parameters?path)
-    let $body := $request?body
-    return
-        try {
-            if (exists($body?owner)) then sm:chown($path, $body?owner) else (),
-            if (exists($body?group)) then sm:chgrp($path, $body?group) else (),
-            if (exists($body?mode)) then sm:chmod($path, $body?mode) else (),
-            if (exists($body?mime)) then xmldb:set-mime-type($path, $body?mime) else (),
-            map { "status": "ok" }
-        } catch * {
-            roaster:response(403, "application/json",
-                map { "error": $err:description })
-        }
-};
-
-
-(:~
- : Encode each segment of a path for eXist-db internal use.
- : Converts /db/AéB → /db/A%C3%A9B while preserving path separators.
- :)
-declare %private function db:encode-path($path as xs:string) as xs:string {
-    string-join(
-        for $segment in tokenize($path, "/")
-        return
-            if ($segment = "") then ""
-            else xmldb:encode($segment),
-        "/"
-    )
+    try {
+        let $body := $request?body
+        let $_ := dbc:set-permissions(map {
+            "path": db:wire($request),
+            "owner": $body?owner,
+            "group": $body?group,
+            "mode": $body?mode,
+            "mime": $body?mime
+        })
+        return map { "status": "ok" }
+    } catch * {
+        db:error-response($err:code, $err:description, $err:value)
+    }
 };
 
 (: ── Internal helpers ─────────────────────────────────────── :)
 
-declare %private function db:browse-collection($path, $request, $user) {
-    let $start := ($request?parameters?start, 1)[1]
-    let $count := ($request?parameters?count, 50)[1]
-    let $filter := $request?parameters?filter
-    let $children := xmldb:get-child-collections($path)
-    let $resources := xmldb:get-child-resources($path)
-    let $all-items := (
-        for $child in $children
-        where empty($filter) or contains($child, $filter)
-        order by lower-case($child)
-        return
-            let $child-path := $path || "/" || $child
-            let $child-uri := xs:anyURI($child-path)
-            return map {
-                "name": xmldb:decode-uri(xs:anyURI($child)),
-                "isCollection": true(),
-                "path": xmldb:decode-uri(xs:anyURI($child-path)),
-                "writable": sm:has-access($child-uri, "w"),
-                "permissions": sm:get-permissions($child-uri)/sm:permission/string(@mode),
-                "owner": sm:get-permissions($child-uri)/sm:permission/string(@owner),
-                "group": sm:get-permissions($child-uri)/sm:permission/string(@group)
-            },
-        for $res in $resources
-        where empty($filter) or contains($res, $filter)
-        order by lower-case($res)
-        return
-            let $res-path := $path || "/" || $res
-            let $res-uri := xs:anyURI($res-path)
-            return map {
-                "name": xmldb:decode-uri(xs:anyURI($res)),
-                "isCollection": false(),
-                "path": xmldb:decode-uri(xs:anyURI($res-path)),
-                "mime": xmldb:get-mime-type($res-path),
-                "writable": sm:has-access($res-uri, "w"),
-                "lastModified": string(xmldb:last-modified($path, $res)),
-                "permissions": sm:get-permissions($res-uri)/sm:permission/string(@mode),
-                "owner": sm:get-permissions($res-uri)/sm:permission/string(@owner),
-                "group": sm:get-permissions($res-uri)/sm:permission/string(@group)
-            }
-    )
-    let $total := count($all-items)
-    let $path-uri := xs:anyURI($path)
+(:~
+ : Browse a collection: db-core:list -> eXide's browse envelope/items shape.
+ : db-core does the pagination (start/count) and per-item writable; the adapter
+ : remaps key names (mode->permissions, children->items, type->isCollection,
+ : modified->lastModified, mime-type->mime). eXide's default page size is 50.
+ :)
+declare %private function db:browse($wire as xs:string, $request as map(*)) as map(*) {
+    let $r := dbc:list($wire, map {
+        "recursive": false(),
+        "depth": 0,
+        "collections-only": false(),
+        "start": ($request?parameters?start, 1)[1],
+        "count": ($request?parameters?count, 50)[1]
+    })
     return map {
-        "path": $path,
-        "total": $total,
-        "start": $start,
-        "count": $count,
-        "writable": sm:has-access($path-uri, "w"),
-        "permissions": sm:get-permissions($path-uri)/sm:permission/string(@mode),
-        "owner": sm:get-permissions($path-uri)/sm:permission/string(@owner),
-        "group": sm:get-permissions($path-uri)/sm:permission/string(@group),
-        "items": array { subsequence($all-items, $start, $count) }
+        "path": $r?path,
+        "total": $r?total,
+        "start": $r?start,
+        "count": $r?count,
+        "writable": $r?writable,
+        "permissions": $r?mode,
+        "owner": $r?owner,
+        "group": $r?group,
+        "items": array { for $c in $r?children?* return db:to-exide-item($c) }
     }
 };
 
-declare %private function db:get-run-path($path) {
+declare %private function db:to-exide-item($c as map(*)) as map(*) {
+    let $base := map {
+        "name": $c?name,
+        "isCollection": $c?type eq "collection",
+        "path": $c?path,
+        "writable": $c?writable,
+        "permissions": $c?mode,
+        "owner": $c?owner,
+        "group": $c?group
+    }
+    return
+        if ($c?type eq "collection")
+        then $base
+        else map:merge(($base, map {
+            "mime": $c?("mime-type"),
+            "lastModified": $c?modified
+        }))
+};
+
+(:~
+ : Load a document. XML (non-download) delegates to db-core:get-resource —
+ : including serialization (method/indent/omit-xml-declaration via #48, folded
+ : into db-core) and metadata (meta=full). Binary load and ?download raw
+ : streaming stay eXide-side until existdb-openapi#38's Roaster transport lands.
+ : externalPath is computed eXide's way (context-path aware), overriding
+ : db-core's runPath.
+ :
+ : eXide's serialization param names are translated to db-core's: omit-xml-decl
+ : -> omit-xml-declaration. expand-xincludes is intentionally not forwarded — it
+ : cannot be honored for node-to-string serialization in eXist 7.0.0-beta3
+ : (eXist-db/exist#3446); db-core omits it rather than give a false guarantee.
+ :)
+declare %private function db:load($wire as xs:string, $stored as xs:string, $request as map(*)) {
+    let $download := ($request?parameters?download, false())[1]
+    let $mime := xmldb:get-mime-type(xs:anyURI($stored))
+    return
+        if (not(sm:has-access(xs:anyURI($stored), "r"))) then
+            roaster:response(404, "application/json",
+                map { "error": "Not found or no read access" })
+        else if ($download) then
+            (: raw streaming — binary bytes as-is; XML via db-core's serializer :)
+            if (util:binary-doc-available($stored)) then
+                roaster:response(200, $mime, util:binary-doc($stored))
+            else
+                let $r := dbc:get-resource($wire, db:ser-opts($request))
+                return roaster:response(200, $mime, $r?content)
+        else if (util:binary-doc-available($stored)) then
+            db:load-binary($stored, $mime)
+        else
+            let $r := dbc:get-resource($wire,
+                map:merge((db:ser-opts($request), map { "meta": "full" })))
+            return map {
+                "path": $r?path,
+                "mime": $r?("mime-type"),
+                "binary": false(),
+                "externalPath": db:get-run-path($stored),
+                "content": $r?content,
+                "lastModified": $r?("last-modified"),
+                "permissions": $r?mode,
+                "owner": $r?owner,
+                "group": $r?group
+            }
+};
+
+(:~ db-core serialization options translated from eXide's request parameters. :)
+declare %private function db:ser-opts($request as map(*)) as map(*) {
+    map:merge((
+        if (exists($request?parameters?indent))
+            then map { "indent": $request?parameters?indent } else (),
+        if (exists($request?parameters?("omit-xml-decl")))
+            then map { "omit-xml-declaration": $request?parameters?("omit-xml-decl") } else ()
+    ))
+};
+
+(:~
+ : Binary load (non-download): include decoded content only for text-based binary
+ : types (matching eXide's editor behavior); never base64-decode true binaries.
+ : Stays eXide-side until db-core gains real binary transport (#38).
+ :)
+declare %private function db:load-binary($stored as xs:string, $mime as xs:string) as map(*) {
+    let $uri := xs:anyURI($stored)
+    let $collection := replace($stored, "/[^/]+$", "")
+    let $resource := replace($stored, "^.*/", "")
+    let $is-text := matches($mime, "^(text/|application/(xquery|javascript|json|xml|xslt\+xml|xsl-fo|css|less))")
+    let $content :=
+        if ($is-text)
+        then try { util:binary-to-string(util:binary-doc($stored)) } catch * { () }
+        else ()
+    return map:merge((
+        map {
+            "path": dbc:to-display($stored),
+            "mime": $mime,
+            "binary": true(),
+            "externalPath": db:get-run-path($stored),
+            "size": xmldb:size($collection, $resource),
+            "lastModified": string(xmldb:last-modified($collection, $resource)),
+            "permissions": sm:get-permissions($uri)/sm:permission/string(@mode),
+            "owner": sm:get-permissions($uri)/sm:permission/string(@owner),
+            "group": sm:get-permissions($uri)/sm:permission/string(@group)
+        },
+        if ($content) then map { "content": $content } else ()
+    ))
+};
+
+(:~
+ : Run path (URL to execute a stored resource) — eXide's context-path-aware
+ : computation, kept rather than db-core's hardcoded /exist form.
+ :)
+declare %private function db:get-run-path($path as xs:string) as xs:string {
     let $appRoot := repo:get-root()
     return
         replace(
@@ -277,70 +317,4 @@ declare %private function db:get-run-path($path) {
                 request:get-context-path() || "/rest" || $path,
             "/{2,}", "/"
         )
-};
-
-declare %private function db:load-document($path, $request, $user) {
-    let $download := ($request?parameters?download, false())[1]
-    let $indent := ($request?parameters?indent, "true")[1] = "true"
-    let $expand-xincludes := ($request?parameters?("expand-xincludes"), "false")[1] = "true"
-    let $omit-xml-decl := ($request?parameters?("omit-xml-decl"), "true")[1] = "true"
-    let $mime := xmldb:get-mime-type($path)
-    let $externalPath := db:get-run-path($path)
-    return
-        if (not(sm:has-access(xs:anyURI($path), "r"))) then
-            roaster:response(404, "application/json",
-                map { "error": "Not found or no read access" })
-        else if (util:binary-doc-available($path)) then
-            if ($download) then
-                roaster:response(200, $mime, util:binary-doc($path))
-            else
-                let $uri := xs:anyURI($path)
-                (: Text-based binary types: include content for editor :)
-                let $is-text := matches($mime, "^(text/|application/(xquery|javascript|json|xml|xslt\+xml|xsl-fo|css|less))")
-                let $content :=
-                    if ($is-text) then
-                        try { util:binary-to-string(util:binary-doc($path)) }
-                        catch * { () }
-                    else ()
-                return map:merge((
-                    map {
-                        "path": $path,
-                        "mime": $mime,
-                        "binary": true(),
-                        "externalPath": $externalPath,
-                        "size": xmldb:size(replace($path, "/[^/]+$", ""), replace($path, "^.*/", "")),
-                        "lastModified": string(xmldb:last-modified(
-                            replace($path, "/[^/]+$", ""), replace($path, "^.*/", ""))),
-                        "permissions": sm:get-permissions($uri)/sm:permission/string(@mode),
-                        "owner": sm:get-permissions($uri)/sm:permission/string(@owner),
-                        "group": sm:get-permissions($uri)/sm:permission/string(@group)
-                    },
-                    if ($content) then map { "content": $content } else ()
-                ))
-        else
-            let $serialization-opts :=
-                "expand-xincludes=" || (if ($expand-xincludes) then "yes" else "no")
-            let $_ := util:declare-option("exist:serialize", $serialization-opts)
-            let $content := serialize(doc($path), <output:serialization-parameters>
-                <output:method>xml</output:method>
-                <output:indent>{if ($indent) then "yes" else "no"}</output:indent>
-                <output:omit-xml-declaration>{if ($omit-xml-decl) then "yes" else "no"}</output:omit-xml-declaration>
-            </output:serialization-parameters>)
-            return
-                if ($download) then
-                    roaster:response(200, $mime, $content)
-                else
-                    let $uri := xs:anyURI($path)
-                    return map {
-                        "path": $path,
-                        "mime": $mime,
-                        "binary": false(),
-                        "externalPath": $externalPath,
-                        "content": $content,
-                        "lastModified": string(xmldb:last-modified(
-                            replace($path, "/[^/]+$", ""), replace($path, "^.*/", ""))),
-                        "permissions": sm:get-permissions($uri)/sm:permission/string(@mode),
-                        "owner": sm:get-permissions($uri)/sm:permission/string(@owner),
-                        "group": sm:get-permissions($uri)/sm:permission/string(@group)
-                    }
 };
