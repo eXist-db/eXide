@@ -1,0 +1,88 @@
+# This workflow builds a xar archive, deploys it into exist and execute its test suites.
+# It also includes code for using semantic-release to upload packages as part of GitHub releases
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Test
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+       fail-fast: false
+       matrix:
+         # eXide 4.0 requires eXist 7.0+ (lang/cursor modules from existdb-openapi),
+         # so we test only against the 'latest' (develop) Docker tag.
+         exist-version: [latest]
+         # Node 22 is EOL; track current Node LTS (24).
+         node-version: ['24']
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      # Install dependencies and build EXPath Package
+      - name: Install node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests
+        run: npm test
+
+      - name: Validate OpenAPI schema
+        run: npx --yes @redocly/cli lint modules/api.json
+
+      - name: Build frontend Using node.js ${{ matrix.node-version }} and build EXPath Package
+        run: npm run build
+
+      - name: Download Roaster dependency
+        run: gh release download v1.12.0 --repo eeditiones/roaster --pattern "roaster-1.12.0.xar" --output build/roaster-1.12.0.xar
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Download existdb-openapi dependency
+        run: gh release download v0.9.5 --repo eXist-db/existdb-openapi --pattern "existdb-openapi-*.xar" --dir build/
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Start eXist-db Docker Container
+        run: docker run --rm --name exist --volume $(pwd)/build:/exist/autodeploy:ro --publish 8080:8080 --detach existdb/existdb:${{ matrix.exist-version }}
+
+      - name: Wait for eXist-db Startup and Package Deployment
+        run: |
+          for i in $(seq 1 24); do
+            HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/exist/apps/eXide/index.html || true)
+            echo "Attempt $i: HTTP $HTTP_CODE"
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "eXide is ready"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Timed out waiting for eXide"
+          exit 1
+
+      - name: Run Cypress Integration Tests
+        run: npx cypress run --spec 'cypress/e2e/*.cy.js'
+
+      - name: Upload Cypress Screenshots (on failure)
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: cypress-screenshots-${{ matrix.exist-version }}-${{ matrix.node-version }}
+          path: cypress/screenshots
+
+      # Test run video was always captured, so this action uses "always()" condition
+      - name: Upload Cypress Videos
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: cypress-videos-${{ matrix.exist-version }}-${{ matrix.node-version }}
+          path: cypress/videos
