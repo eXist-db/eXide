@@ -33,6 +33,7 @@ import module namespace dbc="http://exist-db.org/api/db-core";
 
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
 declare namespace sm="http://exist-db.org/xquery/securitymanager";
+declare namespace response="http://exist-db.org/xquery/response";
 
 (:~
  : Map a typed db-core error to an eXide HTTP response. db-core signals failures
@@ -238,9 +239,14 @@ declare %private function db:load($wire as xs:string, $stored as xs:string, $req
             roaster:response(404, "application/json",
                 map { "error": "Not found or no read access" })
         else if ($download) then
-            (: raw streaming — binary bytes as-is; XML via db-core's serializer :)
+            (: Binary download: stream the raw bytes with response:stream-binary —
+               the same path roaster's own test app uses. roaster:response(…, bytes)
+               would run the value through the serializer and emit its base64 TEXT
+               (corrupting the file); response:stream-binary writes the bytes. XML
+               download serializes via db-core (a text string), so roaster:response
+               is correct there. :)
             if (util:binary-doc-available($stored)) then
-                roaster:response(200, $mime, util:binary-doc($stored))
+                util:binary-doc($stored) => response:stream-binary($mime, ())
             else
                 let $r := dbc:get-resource($wire, db:ser-opts($request))
                 return roaster:response(200, $mime, $r?content)
