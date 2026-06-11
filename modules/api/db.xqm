@@ -239,17 +239,18 @@ declare %private function db:load($wire as xs:string, $stored as xs:string, $req
             roaster:response(404, "application/json",
                 map { "error": "Not found or no read access" })
         else if ($download) then
-            (: Binary download: stream the raw bytes with response:stream-binary —
-               the same path roaster's own test app uses. roaster:response(…, bytes)
-               would run the value through the serializer and emit its base64 TEXT
-               (corrupting the file); response:stream-binary writes the bytes. XML
-               download serializes via db-core (a text string), so roaster:response
-               is correct there. :)
+            (: Download streams raw bytes with response:stream-binary — the path
+               roaster's own test app uses. roaster:response(…) would run the value
+               through the serializer: for a binary value it emits base64 TEXT
+               (corrupting the file), and for a serialized-XML STRING under an xml
+               mime it escapes the angle brackets a second time. So in both cases we
+               stream bytes: binary docs directly, XML/text via db-core's serialized
+               string (which honors indent/omit-xml-decl) converted to bytes. :)
             if (util:binary-doc-available($stored)) then
                 util:binary-doc($stored) => response:stream-binary($mime, ())
             else
                 let $r := dbc:get-resource($wire, db:ser-opts($request))
-                return roaster:response(200, $mime, $r?content)
+                return util:string-to-binary($r?content) => response:stream-binary($mime, ())
         else if (util:binary-doc-available($stored)) then
             db:load-binary($stored, $mime)
         else
