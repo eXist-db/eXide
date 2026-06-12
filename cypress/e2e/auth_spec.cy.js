@@ -18,6 +18,15 @@ describe('with guest=yes (default)', function() {
             cy.visit('/eXide/index.html')
             cy.url().should('eq', indexPage)
         })
+
+        it('return login info as json', function () {
+            // check the login xhr request is returning JSON
+            cy.intercept('GET', '/exist/apps/eXide/api/auth/whoami').as('loginRequest')
+            cy.visit('/eXide/index.html')
+            cy.url().should('eq', indexPage)
+            cy.wait('@loginRequest')
+                .its('response.headers').should('have.property', 'content-type').and('include', 'application/json')
+        })
     })
 
     describe('as admin user', function() {
