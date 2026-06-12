@@ -13,8 +13,9 @@
  :  What stays eXide-side for now (progressively migrating as db-core grows):
  :   - binary load + ?download raw streaming (db-core's binary handling is cruder;
  :     full transport is existdb-openapi#38, the Roaster streaming track);
- :   - externalPath, computed eXide's way (context-path aware), overriding
- :     db-core's runPath.
+ :   - externalPath, computed eXide's way (context-path aware). db-core no longer
+ :     returns a runPath; the executable URL is client-derived, and eXide keeps its
+ :     own context-path-aware computation rather than the generic /exist form.
  :
  :  Naming convention: this adapter speaks DECODED paths to db-core, which applies
  :  fn:iri-to-uri internally — so it adopts existdb-openapi's resource-naming
@@ -219,12 +220,14 @@ declare %private function db:to-exide-item($c as map(*)) as map(*) {
 };
 
 (:~
- : Load a document. XML (non-download) delegates to db-core:get-resource —
- : including serialization (method/indent/omit-xml-declaration via #48, folded
- : into db-core) and metadata (meta=full). Binary load and ?download raw
- : streaming stay eXide-side until existdb-openapi#38's Roaster transport lands.
- : externalPath is computed eXide's way (context-path aware), overriding
- : db-core's runPath.
+ : Load a document. XML (non-download) delegates to db-core:get-resource for the
+ : serialized content (method/indent/omit-xml-declaration via #48, folded into
+ : db-core) and to db-core:properties for owner/perms/timestamps — the
+ : consolidated db-core (existdb-openapi#59) no longer bundles metadata in
+ : get-resource, which returns just { path, binary, content, mime-type }. Binary
+ : load and ?download raw streaming stay eXide-side until existdb-openapi#38's
+ : Roaster transport lands. externalPath is computed eXide's way (context-path
+ : aware); db-core no longer returns a runPath.
  :
  : eXide's serialization param names are translated to db-core's: omit-xml-decl
  : -> omit-xml-declaration. expand-xincludes is intentionally not forwarded — it
@@ -254,18 +257,18 @@ declare %private function db:load($wire as xs:string, $stored as xs:string, $req
         else if (util:binary-doc-available($stored)) then
             db:load-binary($stored, $mime)
         else
-            let $r := dbc:get-resource($wire,
-                map:merge((db:ser-opts($request), map { "meta": "full" })))
+            let $r := dbc:get-resource($wire, db:ser-opts($request))
+            let $props := dbc:properties($wire)
             return map {
                 "path": $r?path,
                 "mime": $r?("mime-type"),
                 "binary": false(),
                 "externalPath": db:get-run-path($stored),
                 "content": $r?content,
-                "lastModified": $r?("last-modified"),
-                "permissions": $r?mode,
-                "owner": $r?owner,
-                "group": $r?group
+                "lastModified": $props?("last-modified"),
+                "permissions": $props?mode,
+                "owner": $props?owner,
+                "group": $props?group
             }
 };
 
