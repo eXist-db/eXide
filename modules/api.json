@@ -139,13 +139,6 @@
                         }
                     },
                     {
-                        "name": "filter",
-                        "in": "query",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    {
                         "name": "download",
                         "in": "query",
                         "schema": {
