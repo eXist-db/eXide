@@ -7,15 +7,10 @@ function openDbManager() {
 
 function cleanupTestCollections() {
   cy.loginXHR('admin', '')
-  cy.request({
-    method: 'POST',
-    url: '/exist/rest/db',
-    headers: { 'Content-Type': 'application/xquery' },
-    body: `for $col in ("${collectionName}", "def", "AéB")
-           where xmldb:collection-available("/db/" || $col)
-           return xmldb:remove("/db/" || $col)`,
-    failOnStatusCode: false
-  })
+  cy.execXQuery(`xquery version "3.1";
+    for $col in ("${collectionName}", "def", "AéB")
+    where xmldb:collection-available("/db/" || $col)
+    return xmldb:remove("/db/" || $col)`)
 }
 
 context('DB Manager', () => {
