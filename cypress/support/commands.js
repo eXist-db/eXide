@@ -51,16 +51,24 @@ Cypress.Commands.add("dismissDialog", () => {
     })
 })
 
+// cy.execXQuery() -- run a setup/cleanup XQuery as the logged-in user, via eXide's
+// execute endpoint. NOTE: posting raw XQuery to /exist/rest as application/xquery does
+// NOT execute it -- eXist parses the body as XML and 400s ("Content is not allowed in
+// prolog"), so any such cleanup masked with failOnStatusCode:false silently no-ops.
+// /eXide/execute is the suite's proven path for running setup queries.
+Cypress.Commands.add("execXQuery", (query) => {
+    return cy.request({
+        method: 'POST',
+        url: '/eXide/execute',
+        form: true,
+        body: { qu: query, base: 'xmldb:exist://__new__1', output: 'adaptive' }
+    })
+})
+
 // cy.cleanupTestFiles() -- removes cypress-test-* files from /db
 Cypress.Commands.add("cleanupTestFiles", () => {
     cy.loginXHR('admin', '')
-    cy.request({
-        method: 'POST',
-        url: '/exist/rest/db',
-        headers: { 'Content-Type': 'application/xquery' },
-        body: 'for $r in xmldb:get-child-resources("/db") where starts-with($r, "cypress-test-") return xmldb:remove("/db", $r)',
-        failOnStatusCode: false
-    })
+    cy.execXQuery('xquery version "3.1"; for $r in xmldb:get-child-resources("/db") where starts-with($r, "cypress-test-") return xmldb:remove("/db", $r)')
 })
 
 // cy.logout() -- does not work reliably
