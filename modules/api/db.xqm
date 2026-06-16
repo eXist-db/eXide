@@ -10,8 +10,6 @@ import module namespace roaster="http://e-editiones.org/roaster";
 import module namespace dbutil="http://exist-db.org/xquery/dbutil" at "../dbutils.xqm";
 import module namespace config="http://exist-db.org/xquery/apps/config" at "../config.xqm";
 
-declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
-
 (: Handle difference between 4.x.x and 5.x.x releases of eXist :)
 declare variable $db:copy-collection :=
     let $fnNew := function-lookup(xs:QName("xmldb:copy-collection"), 2)
@@ -318,14 +316,12 @@ declare %private function db:load-document($path, $request, $user) {
                     if ($content) then map { "content": $content } else ()
                 ))
         else
-            let $serialization-opts :=
-                "expand-xincludes=" || (if ($expand-xincludes) then "yes" else "no")
-            let $_ := util:declare-option("exist:serialize", $serialization-opts)
-            let $content := serialize(doc($path), <output:serialization-parameters>
-                <output:method>xml</output:method>
-                <output:indent>{if ($indent) then "yes" else "no"}</output:indent>
-                <output:omit-xml-declaration>{if ($omit-xml-decl) then "yes" else "no"}</output:omit-xml-declaration>
-            </output:serialization-parameters>)
+            let $content := serialize(doc($path), map {
+                "method": "xml",
+                "indent": $indent,
+                "omit-xml-declaration": $omit-xml-decl,
+                QName("http://exist.sourceforge.net/NS/exist", "expand-xincludes"): $expand-xincludes
+            })
             return
                 if ($download) then
                     roaster:response(200, $mime, $content)
