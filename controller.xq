@@ -1,29 +1,30 @@
 xquery version "3.1";
 
-import module namespace login="http://exist-db.org/xquery/login"
-  at "resource:org/exist/xquery/modules/persistentlogin/login.xql";
 import module namespace config="http://exist-db.org/xquery/apps/config" at "modules/config.xqm";
 
 declare namespace json="http://www.json.org";
 declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
+declare namespace sm="http://exist-db.org/xquery/securitymanager";
 
 declare variable $exist:path external;
 declare variable $exist:resource external;
 declare variable $exist:prefix external;
 declare variable $exist:controller external;
 
-declare variable $local:login-domain := 'org.exist.login';
 declare variable $local:config := config:get-configuration();
 declare variable $local:method := request:get-method() => lower-case();
 declare variable $local:uri := request:get-uri();
 declare variable $local:forwarded-for := request:get-header("X-Forwarded-URI");
-declare variable $local:wants-json := tokenize(request:get-header('Accept'), ', ?') = 'application/json';
-declare variable $local:is-ajax-request := request:get-header("X-Requested-With") = "XMLHttpRequest";
 
-declare function local:get-user () as xs:string? {
-    let $login := login:set-user($local:login-domain, xs:dayTimeDuration("P7D"), false())
-    let $user-id := request:get-attribute($local:login-domain || ".user")
-    return $user-id
+(:~
+ : Authentication and login are handled entirely by Roaster on the /api/* routes
+ : (see modules/api/auth.xqm) — the controller carries no login logic. It still
+ : derives the current identity from sm:id() to authorize the one privileged
+ : non-Roaster route it serves, /execute.
+ :)
+declare function local:current-user() as xs:string? {
+    let $name := sm:id()//sm:real/sm:username/string()
+    return if (empty($name) or $name = "") then () else $name
 };
 
 declare function local:user-allowed($user as xs:string?) as xs:boolean {
@@ -40,33 +41,6 @@ declare function local:query-execution-allowed($user as xs:string?, $is-dba as x
     )
 };
 
-let $user := local:get-user()
-let $user-to-check := ($user, request:get-attribute("xquery.user"), 'nobody')[1]
-let $user-is-dba := sm:is-dba($user-to-check)
-let $user-allowed := local:user-allowed($user)
-let $xquery-execution-allowed := local:query-execution-allowed($user, $user-is-dba)
-
-(: let $_ := util:log('debug', map{
-    'request': map {
-        'method': $local:method,
-        'forward': $local:forwarded-for,
-        'uri': $local:uri
-    },
-    'exist': map {
-        'resource': $exist:resource,
-        'path': $exist:path,
-        'prefix': $exist:prefix,
-        'controller': $exist:controller
-    },
-    'user': map {
-        'name': $user,
-        'allowed': $user-allowed,
-        'dba': $user-is-dba
-    }
-}) :)
-
-return
-
 (: public :)
 
 if ($exist:path eq '') then
@@ -75,30 +49,18 @@ if ($exist:path eq '') then
     </dispatch>
 
 else if ($exist:path eq '/') then
-    let $path := 
+    let $path :=
         if (
-            lower-case($local:uri) = "/exist/apps/exide/" and 
+            lower-case($local:uri) = "/exist/apps/exide/" and
             lower-case($local:forwarded-for) = "/apps/exide/"
         )
         then "/apps/eXide/"
         else ""
-    
-    let $resource := 
-        if ($user-allowed)
-        then "index.html"
-        else "login.html"
-
     return
         <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-            <redirect url="{$path}{$resource}"/>
+            <redirect url="{$path}index.html"/>
         </dispatch>
 
-else if ($local:method = 'get' and $exist:resource = "login.html" and not($user-allowed)) then
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward url="login.html">
-            <set-header name="Cache-Control" value="max-age=3600; must-revalidate;"/>
-        </forward>
-    </dispatch>
 else if ($local:method = 'get' and $exist:resource = "backdrop.svg") then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <forward url="resources/images/backdrop.svg">
@@ -106,56 +68,12 @@ else if ($local:method = 'get' and $exist:resource = "backdrop.svg") then
         </forward>
     </dispatch>
 
-(: REST API — all /api/* requests are handled by Roaster.
- : Placed before the unauthorized check so that Roaster can handle
- : its own auth via OpenAPI security schemes and x-constraints. :)
+(: REST API — all /api/* requests are handled by Roaster, including authentication. :)
 else if (starts-with($exist:path, "/api/")) then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <forward url="{$exist:controller}/modules/api/router.xq"/>
     </dispatch>
 
-(: handle unauthorized request :)
-
-else if (not($user-allowed))
-then (
-    if ($local:wants-json or $local:is-ajax-request)
-    then (
-        util:declare-option("exist:serialize", "method=json media-type=application/json"),
-        response:set-header("Content-Type", "application/json; charset=UTF-8"),
-        response:set-status-code(401),
-        <status>
-            <error>unauthorized</error>
-        </status>
-    )
-    else
-        <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-            <redirect method="get" url="login.html"/> <!-- maybe add additional parameters -->
-        </dispatch>
-)
-
-(: restricted resources :)
-(:
- : Login a user via AJAX. Just returns a 401 if login fails.
- :)
-else if (
-    ($local:wants-json or $local:is-ajax-request) and
-    $local:method = 'post' and
-    $exist:resource = 'login'
-)
-then (
-    util:declare-option("exist:serialize", "method=json media-type=application/json"),
-    response:set-header("Content-Type", "application/json; charset=UTF-8"),
-    <status>
-        <user>{$user}</user>
-        <isAdmin json:literal="true">{$user-is-dba}</isAdmin>
-    </status>
-)
-else if ($local:method = ('get', 'post') and $exist:resource = ('login.html', 'login'))
-then (
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <redirect url="index.html"/> <!-- maybe add additional parameters -->
-    </dispatch>
-)
 else if ($local:method = 'get' and $exist:resource = "index.html") then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <view>
@@ -166,13 +84,20 @@ else if ($local:method = 'get' and $exist:resource = "index.html") then
     </dispatch>
 
 else if ($exist:resource eq 'execute') then
+    let $user := local:current-user()
+    let $user-is-dba := sm:is-dba(($user, 'nobody')[1])
+    let $xquery-execution-allowed := local:query-execution-allowed($user, $user-is-dba)
     let $query := request:get-parameter("qu", ())
     let $base := request:get-parameter("base", ())
     let $output := request:get-parameter("output", "xml")
     let $startTime := util:system-time()
     return
-        if (not($xquery-execution-allowed)) then
-            response:set-status-code(403)
+        if (not($xquery-execution-allowed)) then (
+            response:set-status-code(403),
+            response:set-header("Content-Type", "application/json; charset=UTF-8"),
+            util:declare-option("exist:serialize", "method=json media-type=application/json"),
+            <status><error>Query execution is not permitted for this user.</error></status>
+        )
         else
             switch ($output)
                 case "adaptive"

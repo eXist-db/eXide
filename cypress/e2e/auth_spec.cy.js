@@ -9,9 +9,9 @@ describe('with guest=yes (default)', function() {
     })
 
     describe('as guest user', function() {
-        it('login page should redirect guest to index.html', function() {
+        it('login page shows the login form for an unauthenticated visitor', function() {
             cy.visit('/eXide/login.html')
-            cy.url().should('eq', indexPage)
+            cy.url().should('eq', loginPage)
         })
 
         it('index page should show editor', function () {
@@ -57,9 +57,13 @@ describe('with guest=no', function() {
             cy.url().should('eq', loginPage)
         })
 
-        it('index page should redirect to login', function () {
+        // Authentication is no longer a server-side page gate — the controller
+        // always serves the app and Roaster enforces access on the API. So the
+        // page loads for a guest even under guest=no; the API denies privileged
+        // operations (see the login-form and whoami tests below).
+        it('index page still loads (the API, not a page redirect, enforces access)', function () {
             cy.visit('/eXide/index.html')
-            cy.url().should('eq', loginPage)
+            cy.url().should('eq', indexPage)
         })
     })
 
