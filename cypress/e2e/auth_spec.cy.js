@@ -138,6 +138,36 @@ describe('login using form', function () {
 
 })
 
+// The privileged /execute route (arbitrary XQuery -> XQueryServlet) is not a
+// Roaster route, so it is gated in the controller: under guest=no a guest cannot
+// run queries (403), but a dba still can (200). This is the API-level enforcement
+// that replaced the old controller page-redirect for guest=no.
+describe('query execution gate (/execute) with guest=no', function () {
+    const execute = (overrides) => cy.request(Object.assign({
+        method: 'POST',
+        url: '/eXide/execute',
+        form: true,
+        body: { qu: '1 + 1', output: 'adaptive' }
+    }, overrides))
+
+    before(function () { cy.setConf(true, false) })   // execute-query=yes, guest=no
+    after(function () { cy.setConf(true, true) })
+
+    it('denies a guest with 403', function () {
+        cy.clearCookies()
+        execute({ failOnStatusCode: false }).then((res) => {
+            expect(res.status).to.eq(403)
+        })
+    })
+
+    it('allows a dba (admin) to execute', function () {
+        cy.loginXHR('admin', '')
+        execute().then((res) => {
+            expect(res.status).to.eq(200)
+        })
+    })
+})
+
 // GET /api/auth/whoami must report identity from the eXist subject (sm:id()),
 // not the persistent-login request attribute. The attribute is only populated
 // by the cookie/param flow, so before this fix a request authenticated with the
