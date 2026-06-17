@@ -33,6 +33,30 @@
         }
     },
     "paths": {
+        "/index.html": {
+            "get": {
+                "summary": "eXide application shell (refused for disallowed guests)",
+                "operationId": "view:index",
+                "tags": [
+                    "view"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Application HTML",
+                        "content": {
+                            "text/html": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "302": {
+                        "description": "Redirect to login.html when guest access is not allowed"
+                    }
+                }
+            }
+        },
         "/api/auth/session": {
             "post": {
                 "summary": "Login and create session",
