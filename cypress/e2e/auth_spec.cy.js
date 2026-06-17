@@ -57,13 +57,20 @@ describe('with guest=no', function() {
             cy.url().should('eq', loginPage)
         })
 
-        // Authentication is no longer a server-side page gate — the controller
-        // always serves the app and Roaster enforces access on the API. So the
-        // page loads for a guest even under guest=no; the API denies privileged
-        // operations (see the login-form and whoami tests below).
-        it('index page still loads (the API, not a page redirect, enforces access)', function () {
+        // Hard guest gate: the app shell is served by a Roaster route (view:index)
+        // that refuses a disallowed guest and redirects to login — so under
+        // guest=no the editor never loads for an anonymous visitor.
+        it('index page refuses a guest and redirects to login', function () {
             cy.visit('/eXide/index.html')
-            cy.url().should('eq', indexPage)
+            cy.url().should('eq', loginPage)
+        })
+
+        it('index page returns 302 -> login.html for a guest (no app HTML served)', function () {
+            cy.clearCookies()
+            cy.request({ url: '/eXide/index.html', followRedirect: false }).then((res) => {
+                expect(res.status).to.eq(302)
+                expect(res.redirectedToUrl).to.match(/login\.html$/)
+            })
         })
     })
 
@@ -138,35 +145,9 @@ describe('login using form', function () {
 
 })
 
-// The privileged /execute route (arbitrary XQuery -> XQueryServlet) is not a
-// Roaster route, so it is gated in the controller: under guest=no a guest cannot
-// run queries (403), but a dba still can (200). This is the API-level enforcement
-// that replaced the old controller page-redirect for guest=no.
-describe('query execution gate (/execute) with guest=no', function () {
-    const execute = (overrides) => cy.request(Object.assign({
-        method: 'POST',
-        url: '/eXide/execute',
-        form: true,
-        body: { qu: '1 + 1', output: 'adaptive' }
-    }, overrides))
-
-    before(function () { cy.setConf(true, false) })   // execute-query=yes, guest=no
-    after(function () { cy.setConf(true, true) })
-
-    it('denies a guest with 403', function () {
-        cy.clearCookies()
-        execute({ failOnStatusCode: false }).then((res) => {
-            expect(res.status).to.eq(403)
-        })
-    })
-
-    it('allows a dba (admin) to execute', function () {
-        cy.loginXHR('admin', '')
-        execute().then((res) => {
-            expect(res.status).to.eq(200)
-        })
-    })
-})
+// (The controller /execute route — and its authorization gate — has been retired;
+// query execution now goes through the existdb-openapi /api/query cursor, which
+// owns that authorization. See the guest-gate tests above for the page-level gate.)
 
 // GET /api/auth/whoami must report identity from the eXist subject (sm:id()),
 // not the persistent-login request attribute. The attribute is only populated

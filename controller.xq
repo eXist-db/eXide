@@ -1,47 +1,18 @@
 xquery version "3.1";
 
-import module namespace config="http://exist-db.org/xquery/apps/config" at "modules/config.xqm";
-
-declare namespace json="http://www.json.org";
-declare namespace output = "http://www.w3.org/2010/xslt-xquery-serialization";
-declare namespace sm="http://exist-db.org/xquery/securitymanager";
-
 declare variable $exist:path external;
 declare variable $exist:resource external;
 declare variable $exist:prefix external;
 declare variable $exist:controller external;
 
-declare variable $local:config := config:get-configuration();
 declare variable $local:method := request:get-method() => lower-case();
 declare variable $local:uri := request:get-uri();
 declare variable $local:forwarded-for := request:get-header("X-Forwarded-URI");
 
-(:~
- : Authentication and login are handled entirely by Roaster on the /api/* routes
- : (see modules/api/auth.xqm) — the controller carries no login logic. It still
- : derives the current identity from sm:id() to authorize the one privileged
- : non-Roaster route it serves, /execute.
- :)
-declare function local:current-user() as xs:string? {
-    let $name := sm:id()//sm:real/sm:username/string()
-    return if (empty($name) or $name = "") then () else $name
-};
-
-declare function local:user-allowed($user as xs:string?) as xs:boolean {
-    $local:config/restrictions/@guest = "yes" or (
-        not(empty($user)) and
-        not($user = ('guest', 'nobody'))
-    )
-};
-
-declare function local:query-execution-allowed($user as xs:string?, $is-dba as xs:boolean) as xs:boolean {
-    $is-dba or (
-        $local:config/restrictions/@execute-query = "yes" and
-        local:user-allowed($user)
-    )
-};
-
-(: public :)
+(: Authentication, login, and authorization are handled entirely by Roaster — on
+ : the /api/* routes and on the app-shell route (view:index serves index.html and
+ : enforces the guest gate). The controller carries no auth logic; it routes those
+ : requests to Roaster and otherwise serves static resources. :)
 
 if ($exist:path eq '') then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
@@ -68,94 +39,11 @@ else if ($local:method = 'get' and $exist:resource = "backdrop.svg") then
         </forward>
     </dispatch>
 
-(: REST API — all /api/* requests are handled by Roaster, including authentication. :)
-else if (starts-with($exist:path, "/api/")) then
+(: REST API and the app shell are handled by Roaster (router.xq), including
+ : authentication and the guest gate. :)
+else if (starts-with($exist:path, "/api/") or ($local:method = 'get' and $exist:resource = "index.html")) then
     <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
         <forward url="{$exist:controller}/modules/api/router.xq"/>
-    </dispatch>
-
-else if ($local:method = 'get' and $exist:resource = "index.html") then
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <view>
-            <forward url="modules/view.xq">
-                <set-header name="Cache-Control" value="max-age=3600"/>
-            </forward>
-        </view>
-    </dispatch>
-
-else if ($exist:resource eq 'execute') then
-    let $user := local:current-user()
-    let $user-is-dba := sm:is-dba(($user, 'nobody')[1])
-    let $xquery-execution-allowed := local:query-execution-allowed($user, $user-is-dba)
-    let $query := request:get-parameter("qu", ())
-    let $base := request:get-parameter("base", ())
-    let $output := request:get-parameter("output", "xml")
-    let $startTime := util:system-time()
-    return
-        if (not($xquery-execution-allowed)) then (
-            response:set-status-code(403),
-            response:set-header("Content-Type", "application/json; charset=UTF-8"),
-            util:declare-option("exist:serialize", "method=json media-type=application/json"),
-            <status><error>Query execution is not permitted for this user.</error></status>
-        )
-        else
-            switch ($output)
-                case "adaptive"
-                case "html5"
-                case "xhtml"
-                case "xhtml5"
-                case "text"
-                case "microxml"
-                case "json"
-                case "xml" return
-                    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-                        <!-- Query is executed by XQueryServlet -->
-                        <forward servlet="XQueryServlet">
-                            <set-header name="Cache-Control" value="no-cache"/>
-                            <!-- Query is passed via the attribute 'xquery.source' -->
-                            <set-attribute name="xquery.source" value="{$query}"/>
-                            <!-- Results should be written into attribute 'results' -->
-                            <set-attribute name="xquery.attribute" value="results"/>
-            		        <set-attribute name="xquery.module-load-path" value="{$base}"/>
-                            <clear-attribute name="results"/>
-                            <!-- Errors should be passed through instead of terminating the request -->
-                            <set-attribute name="xquery.report-errors" value="yes"/>
-                            <set-attribute name="start-time" value="{util:system-time()}"/>
-                        </forward>
-                        <view>
-                            <!-- Post process the result: store it into the HTTP session
-                               and return the number of hits only. -->
-                            <forward url="modules/session.xq">
-                               <clear-attribute name="xquery.source"/>
-                               <clear-attribute name="xquery.attribute"/>
-                               <set-attribute name="elapsed"
-                                   value="{string(seconds-from-duration(util:system-time() - $startTime))}"/>
-                            </forward>
-            	        </view>
-                    </dispatch>
-                default return
-                    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-                        <!-- Query is executed by XQueryServlet -->
-                        <forward servlet="XQueryServlet">
-                            <set-header name="Cache-Control" value="no-cache"/>
-                            <!-- Query is passed via the attribute 'xquery.source' -->
-                            <set-attribute name="xquery.source" value="{$query}"/>
-                            <set-attribute name="xquery.module-load-path" value="{$base}"/>
-                            <!-- Errors should be passed through instead of terminating the request -->
-                            <set-attribute name="xquery.report-errors" value="yes"/>
-                            <set-attribute name="start-time" value="{util:system-time()}"/>
-                        </forward>
-                    </dispatch>
-
-(: Retrieve an item from the query results stored in the HTTP session. The
- : format of the URL will be /sandbox/results/X, where X is the number of the
- : item in the result set :)
-else if ($local:method = 'get' and starts-with($exist:path, '/results/')) then
-    <dispatch xmlns="http://exist.sourceforge.net/NS/exist">
-        <forward url="../modules/session.xq">
-            <set-header name="Cache-Control" value="no-cache"/>
-            <add-parameter name="num" value="{$exist:resource}"/>
-        </forward>
     </dispatch>
 
 (: Block abandoned/non-functional modules :)
