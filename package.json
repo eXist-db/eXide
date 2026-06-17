@@ -38,7 +38,7 @@
 		"command-line-args": "^6.0.2",
 		"cypress": "^15.17.0",
 		"esbuild": "^0.28.1",
-		"glob-stream": "^7.0.0",
+		"glob-stream": "^8.0.3",
 		"micro-fs": "^1.0.3",
 		"request": "^2.88.2",
 		"ws": "^8.20.0"
