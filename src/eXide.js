@@ -1198,76 +1198,6 @@ eXide.app = (function(util) {
 			editor.validator.triggerNow(editor.getActiveDocument());
 		},
 
-		/** If there are more query results to load, retrieve
-		 *  the next result.
-		 */
-		retrieveNext: function() {
-			console.log("retrieveNext: %d", currentOffset);
-		    if (currentOffset > 0 && currentOffset <= endOffset) {
-		        document.getElementById("serialization-mode").removeAttribute("disabled");
-		        var serializationMode = document.getElementById("serialization-mode").value;
-		        var autoExpandMatches = document.getElementById("auto-expand-matches").checked;
-		        var indentResults = document.getElementById("indent-results").checked;
-		        var url = 'results/' + currentOffset;
-				currentOffset++;
-				var params = new URLSearchParams({
-				    "output": serializationMode,
-				    "auto-expand-matches": autoExpandMatches,
-				    "indent": indentResults
-				});
-				fetch(url + "?" + params.toString())
-				    .then(function(response) {
-				        if (!response.ok) throw new Error(response.statusText);
-				        return response.text();
-				    })
-				    .then(function(data) {
-                        var temp = document.createElement("div");
-                        temp.innerHTML = data;
-                        var resultNode = temp.firstElementChild;
-                        if (resultNode) {
-                            var firstChild = resultNode.querySelector(":first-child");
-                            if (firstChild) {
-                                firstChild.style.width = (Math.ceil(Math.log(endOffset + 1) / Math.LN10)) + 'ch';
-                            }
-                            document.querySelectorAll('.results-container .results').forEach(function(el) {
-                                el.appendChild(resultNode);
-                            });
-                            var contentDiv = resultNode.querySelector('.content');
-                            if (contentDiv) {
-                                highlightResultContent(contentDiv);
-                            }
-                            document.querySelectorAll('.results-container .current').forEach(function(el) {
-                                el.textContent = 'Showing results ' + startOffset + ' to ' + (currentOffset - 1) + ' of ' + hitCount;
-                            });
-                            var posLinks = resultNode.querySelectorAll('.pos a');
-                            posLinks.forEach(function(link) {
-                                link.addEventListener("click", function(e) {
-                                    e.preventDefault();
-                                    app.findDocument(this.dataset.path);
-                                });
-                            });
-                            var copyBtns = resultNode.querySelectorAll('.copy-result');
-                            copyBtns.forEach(function(btn) {
-                                btn.addEventListener("click", function() {
-                                    var sibling = btn.parentNode.querySelector('.content');
-                                    var text = sibling ? sibling.textContent : "";
-                                    navigator.clipboard.writeText(text).then(function() {
-                                        btn.classList.remove('fa-clipboard');
-                                        btn.classList.add('fa-check', 'copied');
-                                        setTimeout(function() {
-                                            btn.classList.remove('fa-check', 'copied');
-                                            btn.classList.add('fa-clipboard');
-                                        }, 1200);
-                                    });
-                                });
-                            });
-                            app.retrieveNext();
-                        }
-				    });
-			} else {
-		    }
-		},
-
 		/** Called if user clicks on "forward" link in query results. */
 		browseNext: function() {
 			if (currentOffset > 0 && endOffset < hitCount) {
@@ -1277,12 +1207,7 @@ eXide.app = (function(util) {
 				if (hitCount < endOffset)
 					endOffset = hitCount;
 				activeResultIdx = -1;
-				if (app._cursorId) {
-					app.fetchCursorPage(startOffset, endOffset);
-				} else {
-					document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
-					app.retrieveNext();
-				}
+				app.fetchCursorPage(startOffset, endOffset);
 			}
 			return false;
 		},
@@ -1299,12 +1224,7 @@ eXide.app = (function(util) {
 				if (hitCount < endOffset)
 					endOffset = hitCount;
 				activeResultIdx = -1;
-				if (app._cursorId) {
-					app.fetchCursorPage(startOffset, endOffset);
-				} else {
-					document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
-					app.retrieveNext();
-				}
+				app.fetchCursorPage(startOffset, endOffset);
 			}
 			return false;
 		},
@@ -1315,12 +1235,7 @@ eXide.app = (function(util) {
 				currentOffset = 1;
 				endOffset = Math.min(numberOfResults, hitCount);
 				activeResultIdx = -1;
-				if (app._cursorId) {
-					app.fetchCursorPage(startOffset, endOffset);
-				} else {
-					document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
-					app.retrieveNext();
-				}
+				app.fetchCursorPage(startOffset, endOffset);
 			}
 			return false;
 		},
@@ -1331,12 +1246,7 @@ eXide.app = (function(util) {
 				currentOffset = startOffset;
 				endOffset = hitCount;
 				activeResultIdx = -1;
-				if (app._cursorId) {
-					app.fetchCursorPage(startOffset, endOffset);
-				} else {
-					document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
-					app.retrieveNext();
-				}
+				app.fetchCursorPage(startOffset, endOffset);
 			}
 			return false;
 		},

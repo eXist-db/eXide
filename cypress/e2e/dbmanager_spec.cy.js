@@ -312,18 +312,18 @@ context('DB Manager', () => {
 
     describe('create resource', () => {
       it('should create resource using xmldb', () => {
+        // Run setup XQuery via the eXist REST query envelope (the eXide /execute
+        // route has been retired in favor of the existdb-openapi /api/query cursor).
         cy.request({
           method: 'POST',
-          url: `/eXide/execute`,
-          form: true,
-          body: {
-            qu: `xquery version "3.1";
-
+          url: '/exist/rest/db',
+          headers: { 'Content-Type': 'application/xml' },
+          auth: { user: 'admin', pass: '' },
+          body: `<query xmlns="http://exist.sourceforge.net/NS/exist"><text><![CDATA[
+            xquery version "3.1";
             xmldb:create-collection("/db","AéB"),
-            xmldb:store(xmldb:encode("/db/AéB"), xmldb:encode("AéB.xml"), <foo/>)`,
-            base: 'xmldb:exist://__new__1',
-            output: 'adaptive'
-          }
+            xmldb:store(xmldb:encode("/db/AéB"), xmldb:encode("AéB.xml"), <foo/>)
+          ]]></text></query>`
         })
       })
 
