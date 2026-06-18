@@ -970,6 +970,21 @@ eXide.app = (function(util) {
 		            });
 		        }
 		        return response.json().then(function(data) {
+		            // Defend against a query error reported in a 200 body rather
+		            // than an error status — e.g. existdb-openapi before
+		            // eXist-db/existdb-openapi#46 returned a compile error as
+		            // HTTP 200 { error: ... } (eXist-db/eXide#828). Without this the
+		            // error is swallowed: data.cursor/items are undefined and the
+		            // success path shows neither results nor an error. Coalesce the
+		            // shapes the same way the !response.ok branch does.
+		            if (data.error || !data.cursor) {
+		                var emsg = data.description || data.error || data.message
+		                    || "Query failed: no cursor returned.";
+		                if (data.code) { emsg = "[" + data.code + "] " + emsg; }
+		                if (data.line > 0) { emsg = "line " + data.line + ": " + emsg; }
+		                editor.evalError(emsg, !livePreview, data);
+		                return;
+		            }
 		            app._cursorId = data.cursor;
 		            hitCount = data.items;
 		            endOffset = Math.min(numberOfResults, hitCount);
