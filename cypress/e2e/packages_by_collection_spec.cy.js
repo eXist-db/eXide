@@ -48,4 +48,26 @@ context('GET /api/packages?collection=', () => {
       expect(r.body).to.not.have.property('packages')
     })
   })
+
+  it('reports a matching root so getProjectFor can match an open document', () => {
+    // root must be a prefix of where the app's documents live; getProjectFor
+    // matches doc.getBasePath().startsWith(project.root). It was "/db/<target>"
+    // (e.g. "/db/eXide"), which is not where files are, so nothing matched.
+    cy.request('/eXide/api/packages?collection=/db/apps/eXide/modules').then((r) => {
+      expect(r.body.root).to.eq('/db/apps/eXide')
+      expect('/db/apps/eXide/modules'.startsWith(r.body.root)).to.be.true
+    })
+  })
+})
+
+// End-to-end: opening a document inside an app lights up the toolbar's
+// current-app indicator. This exercises the whole chain — the by-collection
+// route, the corrected `root`, and getProjectFor — through the real UI.
+describe('Current-app detection in the toolbar', () => {
+  it('shows the owning app when a document inside an app is opened', () => {
+    cy.loginXHR('admin', '')
+    cy.visit('/eXide/index.html?open=/db/apps/eXide/expath-pkg.xml')
+    cy.get('#user', { timeout: 15000 }).should('not.have.text', 'Login')
+    cy.get('#toolbar-current-app', { timeout: 15000 }).should('have.text', 'eXide')
+  })
 })

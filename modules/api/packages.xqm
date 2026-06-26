@@ -119,8 +119,14 @@ declare function packages:get($request as map(*)) {
         if (exists($expath)) then
             let $user := sm:id()//sm:real/sm:username/string()
             let $is-admin := if ($user) then sm:is-dba($user) else false()
-            let $target-col := "/db/" || string($repo-meta/repo:target)
-            let $git-xml := doc($target-col || "/git.xml")
+            (: $col is the installed app collection (repo-root || abbrev), where
+               expath-pkg.xml was just resolved — i.e. where the app's documents
+               actually live. The editor's getProjectFor matches an open
+               document's collection against `root` with startsWith(), so `root`
+               must be this path. (It was "/db/" || repo:target, which drops the
+               repo root: e.g. "/db/eXide" instead of "/db/apps/eXide", a
+               collection that does not exist, so no document ever matched.) :)
+            let $git-xml := doc($col || "/git.xml")
             return map {
                 "abbrev": string($expath/@abbrev),
                 "name": string($expath/@name),
@@ -128,7 +134,7 @@ declare function packages:get($request as map(*)) {
                 "version": string($expath/@version),
                 "type": string(($repo-meta/repo:type, "application")[1]),
                 "target": string($repo-meta/repo:target),
-                "root": $target-col,
+                "root": $col,
                 "url": "/" || string($repo-meta/repo:target),
                 "deployed": string($repo-meta/repo:deployed),
                 "description": string($repo-meta/repo:description),
