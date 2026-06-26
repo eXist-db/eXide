@@ -1151,9 +1151,20 @@
                 "tags": [
                     "packages"
                 ],
+                "parameters": [
+                    {
+                        "name": "collection",
+                        "in": "query",
+                        "required": false,
+                        "description": "If given, return only the single package that owns this collection path (404 if none), instead of the full list.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
-                        "description": "Package list",
+                        "description": "Package list, or a single package descriptor when ?collection= is given",
                         "content": {
                             "application/json": {
                                 "schema": {

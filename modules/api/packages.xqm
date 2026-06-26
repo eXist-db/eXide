@@ -41,8 +41,24 @@ declare variable $packages:ANT_FILE :=
 
 (:~
  : GET /api/packages — List installed packages.
+ :
+ : With ?collection=<path>, resolve and return the single package that owns
+ : that collection (the same descriptor as GET /api/packages/{abbrev}), or
+ : 404 if the path is not inside any installed app. This is the by-collection
+ : lookup the editor uses to discover which app an open document belongs to;
+ : without it a non-empty ?collection= was silently ignored and the full list
+ : returned instead (discovered while investigating eXist-db/eXide#835).
  :)
 declare function packages:list($request as map(*)) {
+    let $collection := $request?parameters?collection
+    return
+        if (exists($collection) and $collection != "") then
+            packages:get($request)
+        else
+            packages:list-all()
+};
+
+declare function packages:list-all() {
     let $root := repo:get-root()
     let $apps :=
         for $app in xmldb:get-child-collections($root)
