@@ -12,7 +12,6 @@
 (function () {
     'use strict';
 
-    function init() {
     // ── Helpers ──────────────────────────────────────────────────────────────
     /**
      * Produce a short human-readable label from eXide's raw error string.
@@ -53,11 +52,12 @@
         return s;
     }
     /**
-     * Format a structured error object (from existdb-openapi:
-     * { code, description, line, column, module, value }) as a multi-field
-     * panel body. Renders only the fields that are present so we don't
-     * surface noise like "module: null" or empty values. Falls back to
-     * formatPanelHtml(raw) when no structured data is available.
+     * Format a structured error object as a multi-field panel body. The query
+     * error envelope is existdb-openapi#71's { code, message, line, column, raw }
+     * (the `QueryError` schema in its api.json). Current existdb-openapi releases
+     * (\u2264 v0.9.7) instead return a generic { error: "..." }; for that \u2014 or any
+     * payload without recognizable structured fields \u2014 fall back to the
+     * plain-text formatter so the panel is never blank.
      */
     function formatStructuredPanelHtml(errObj, raw) {
         if (!errObj) return formatPanelHtml(raw);
@@ -78,16 +78,10 @@
             if (errObj.column) loc += ', column ' + errObj.column;
         }
         if (loc) row('Location', loc, 'loc');
-        row('Description', errObj.description, 'desc');
-        if (errObj.module && errObj.module !== 'unknown' && !/^String\//.test(errObj.module)) {
-            // Skip synthetic module IDs from compile errors on inline source
-            // (e.g. "String/-3990248984871632423") \u2014 they're internal noise
-            // and confuse users; keep real module paths.
-            row('Module', errObj.module, 'module');
-        }
-        if (errObj.value !== null && errObj.value !== undefined && errObj.value !== '') {
-            row('Value', errObj.value, 'value');
-        }
+        row('Description', errObj.message, 'desc');
+        // Generic { error } (or anything without structured fields): show the
+        // plain text rather than an empty panel.
+        if (!rows.length) return formatPanelHtml(errObj.error || raw);
         return rows.join('');
     }
     /**
@@ -105,13 +99,16 @@
             if (errObj.column) l += ', column ' + errObj.column;
             lines.push(l);
         }
-        if (errObj.description) lines.push('Description: ' + errObj.description);
-        if (errObj.module) lines.push('Module:      ' + errObj.module);
-        if (errObj.value !== null && errObj.value !== undefined && errObj.value !== '') {
-            lines.push('Value:       ' + errObj.value);
+        if (errObj.message) lines.push('Description: ' + errObj.message);
+        // #71's `raw` is the full boilerplate behind the concise message; expose
+        // it in the hover dump when it adds detail beyond the message shown.
+        if (errObj.raw && errObj.raw !== errObj.message) {
+            lines.push('Raw:         ' + errObj.raw);
         }
-        return lines.length ? lines.join('\n') : raw;
+        return lines.length ? lines.join('\n') : (errObj.error || raw);
     }
+
+    function init() {
     // ── Element references ───────────────────────────────────────────────────
     var errSource  = document.getElementById('error-status');       // eXide writes here
     var pill       = document.getElementById('exide-err-pill');
@@ -265,10 +262,22 @@
     }
     } // end init()
 
-    // Script loads in <head>, so defer until DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
+    // Script loads in <head>, so defer until DOM is ready. Guarded so the
+    // module can be required in Node (no document) to unit-test the pure
+    // formatters exported below.
+    if (typeof document !== 'undefined') {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    }
+
+    if (typeof module !== 'undefined' && module.exports) {
+        module.exports = {
+            formatStructuredPanelHtml: formatStructuredPanelHtml,
+            formatTitleDump: formatTitleDump,
+            makeShortLabel: makeShortLabel
+        };
     }
 })();
