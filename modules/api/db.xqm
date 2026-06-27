@@ -209,6 +209,21 @@ declare %private function db:encode-path($path as xs:string) as xs:string {
 
 (: ── Internal helpers ─────────────────────────────────────── :)
 
+(: A degraded child entry for a collection/resource whose metadata can't be read
+   — typically guest hitting sm:get-permissions() on an unreadable sibling such as
+   /db/system/security (rwxrwx---). Carries the fields known without reading the
+   child's permissions, plus accessible=false and the error, so one locked child
+   can't 500 the whole listing. Mirrors existdb-openapi#72's inaccessible-entry. :)
+declare %private function db:inaccessible-entry($name, $is-collection, $path, $error) {
+    map {
+        "name": $name,
+        "isCollection": $is-collection,
+        "path": $path,
+        "accessible": false(),
+        "error": $error
+    }
+};
+
 declare %private function db:browse-collection($path, $request, $user) {
     let $start := ($request?parameters?start, 1)[1]
     let $count := ($request?parameters?count, 50)[1]
@@ -222,32 +237,48 @@ declare %private function db:browse-collection($path, $request, $user) {
         return
             let $child-path := $path || "/" || $child
             let $child-uri := xs:anyURI($child-path)
-            return map {
-                "name": xmldb:decode-uri(xs:anyURI($child)),
-                "isCollection": true(),
-                "path": xmldb:decode-uri(xs:anyURI($child-path)),
-                "writable": sm:has-access($child-uri, "w"),
-                "permissions": sm:get-permissions($child-uri)/sm:permission/string(@mode),
-                "owner": sm:get-permissions($child-uri)/sm:permission/string(@owner),
-                "group": sm:get-permissions($child-uri)/sm:permission/string(@group)
-            },
+            let $name := xmldb:decode-uri(xs:anyURI($child))
+            let $disp-path := xmldb:decode-uri(xs:anyURI($child-path))
+            return
+                try {
+                    map {
+                        "name": $name,
+                        "isCollection": true(),
+                        "path": $disp-path,
+                        "accessible": sm:has-access($child-uri, "r"),
+                        "writable": sm:has-access($child-uri, "w"),
+                        "permissions": sm:get-permissions($child-uri)/sm:permission/string(@mode),
+                        "owner": sm:get-permissions($child-uri)/sm:permission/string(@owner),
+                        "group": sm:get-permissions($child-uri)/sm:permission/string(@group)
+                    }
+                } catch * {
+                    db:inaccessible-entry($name, true(), $disp-path, $err:description)
+                },
         for $res in $resources
         where empty($filter) or contains($res, $filter)
         order by lower-case($res)
         return
             let $res-path := $path || "/" || $res
             let $res-uri := xs:anyURI($res-path)
-            return map {
-                "name": xmldb:decode-uri(xs:anyURI($res)),
-                "isCollection": false(),
-                "path": xmldb:decode-uri(xs:anyURI($res-path)),
-                "mime": xmldb:get-mime-type($res-path),
-                "writable": sm:has-access($res-uri, "w"),
-                "lastModified": string(xmldb:last-modified($path, $res)),
-                "permissions": sm:get-permissions($res-uri)/sm:permission/string(@mode),
-                "owner": sm:get-permissions($res-uri)/sm:permission/string(@owner),
-                "group": sm:get-permissions($res-uri)/sm:permission/string(@group)
-            }
+            let $name := xmldb:decode-uri(xs:anyURI($res))
+            let $disp-path := xmldb:decode-uri(xs:anyURI($res-path))
+            return
+                try {
+                    map {
+                        "name": $name,
+                        "isCollection": false(),
+                        "path": $disp-path,
+                        "mime": xmldb:get-mime-type($res-path),
+                        "accessible": sm:has-access($res-uri, "r"),
+                        "writable": sm:has-access($res-uri, "w"),
+                        "lastModified": string(xmldb:last-modified($path, $res)),
+                        "permissions": sm:get-permissions($res-uri)/sm:permission/string(@mode),
+                        "owner": sm:get-permissions($res-uri)/sm:permission/string(@owner),
+                        "group": sm:get-permissions($res-uri)/sm:permission/string(@group)
+                    }
+                } catch * {
+                    db:inaccessible-entry($name, false(), $disp-path, $err:description)
+                }
     )
     let $total := count($all-items)
     let $path-uri := xs:anyURI($path)

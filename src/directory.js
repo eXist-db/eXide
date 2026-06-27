@@ -734,7 +734,14 @@ eXide.edit.Directory = (function () {
 		list.innerHTML = '<li class="dir-flat-loading">Loading\u2026</li>';
 
 		fetch(apiPath(collection))
-			.then(function(r) { return r.json(); })
+			.then(function(r) {
+				if (!r.ok) {
+					return r.json().then(
+						function(e) { throw new Error(e && e.error ? e.error : "HTTP " + r.status); },
+						function() { throw new Error("HTTP " + r.status); });
+				}
+				return r.json();
+			})
 			.then(function(data) {
 				list.innerHTML = "";
 				var items = (data.items || []).map(mapItem);
@@ -782,8 +789,9 @@ eXide.edit.Directory = (function () {
 					list.appendChild(li);
 				});
 			})
-			.catch(function() {
-				list.innerHTML = '<li class="dir-flat-empty">Failed to load</li>';
+			.catch(function(err) {
+				list.innerHTML = '<li class="dir-flat-empty">Could not open collection: ' +
+					escapeHtml(err && err.message ? err.message : "Failed to load") + '</li>';
 			});
 	}
 
