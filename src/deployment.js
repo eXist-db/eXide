@@ -20,6 +20,36 @@ eXide.namespace("eXide.edit.Projects");
 
 eXide.edit.Projects = (function () {
 
+    // localStorage["eXide.projects"] is shared between eXide versions running
+    // against the same browser. eXide 3.x stores it as a flat map of
+    // abbrev -> project object, and its getProjectFor() reads
+    // `project.root.length` for EVERY entry with no guard (eXide <= 3.5.x,
+    // src/deployment.js). So any value lacking a string `root` crashes 3.x
+    // hard on load with "Cannot read properties of undefined (reading
+    // 'length')". To stay compatible when a user alternates between 3.x and
+    // 4.x against the same storage, every entry we keep — and everything we
+    // persist — must be a real project with a string `root`. In particular we
+    // must never write the malformed `{ "undefined": { packages: [...] } }`
+    // entry that a non-app `api/packages` response would otherwise produce.
+    function isProject(value) {
+        return value != null && typeof value === "object" &&
+            typeof value.root === "string" && value.root.length > 0;
+    }
+
+    // Keep only well-formed project entries (and drop the "undefined" key),
+    // so a malformed entry can neither be persisted nor survive a reload.
+    function sanitizeProjects(projects) {
+        const clean = {};
+        if (projects && typeof projects === "object") {
+            Object.keys(projects).forEach(function (key) {
+                if (key !== "undefined" && isProject(projects[key])) {
+                    clean[key] = projects[key];
+                }
+            });
+        }
+        return clean;
+    }
+
     Constr = function () {
         this.projects = {};
     };
@@ -45,7 +75,11 @@ eXide.edit.Projects = (function () {
             if (!response.ok) return null;
             return response.json();
         }).then(function (data) {
-            if (!data) {
+            // A non-app collection yields a response without an abbrev/root
+            // (e.g. the full `{ packages: [...] }` list). Treat that as "no
+            // project" rather than storing it under the key "undefined", which
+            // would poison eXide.projects (see isProject above).
+            if (!isProject(data) || !data.abbrev) {
                 cb(null);
                 return;
             }
@@ -64,21 +98,23 @@ eXide.edit.Projects = (function () {
 
     Constr.prototype.getProjectFor = function (collection) {
         const filteredProjects = Object.values(this.projects)
-            .filter(project => project &&  project.root && collection.startsWith(project.root));
+            .filter(project => isProject(project) && collection.startsWith(project.root));
 
         return filteredProjects[0] || null;
     };
 
     Constr.prototype.saveState = function () {
-        localStorage["eXide.projects"] = JSON.stringify(this.projects);
+        // Sanitize on the way out so a malformed in-memory entry can never be
+        // persisted — this is what keeps a later eXide 3.x load from crashing.
+        localStorage["eXide.projects"] = JSON.stringify(sanitizeProjects(this.projects));
     };
 
     Constr.prototype.restoreState = function () {
         const $this = this;
         if (localStorage["eXide.projects"]) {
-            this.projects = JSON.parse(localStorage["eXide.projects"]);
-            if (typeof this.projects != 'object')
-                this.projects = {};
+            // Sanitize on the way in so storage already poisoned by an earlier
+            // build self-heals on the next load.
+            this.projects = sanitizeProjects(JSON.parse(localStorage["eXide.projects"]));
         }
         // refresh state to see if app package config has chaged in the db (e.g added Git)
         const projects = this.projects;
@@ -419,3 +455,10 @@ eXide.edit.PackageEditor = (function () {
 
     return Constr;
 }());
+
+if (typeof module !== "undefined" && module.exports) {
+    module.exports = {
+        Projects: eXide.edit.Projects,
+        PackageEditor: eXide.edit.PackageEditor
+    };
+}
