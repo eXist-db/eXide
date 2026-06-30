@@ -62,7 +62,7 @@
 		"@codemirror/view": "^6.43.4",
 		"@lezer/highlight": "^1.2.1",
 		"@prettier/plugin-xml": "^3.4.2",
-		"prettier": "^3.9.1",
+		"prettier": "^3.9.4",
 		"prettier-plugin-xquery": "^1.6.2"
 	},
 	"overrides": {
