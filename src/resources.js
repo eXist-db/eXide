@@ -643,7 +643,14 @@ eXide.browse.ResourceBrowser = (function () {
 			params.set("filter", this._filter);
 		}
 		fetch(apiPath(this._collection) + "?" + params.toString())
-			.then(function(r) { return r.json(); })
+			.then(function(r) {
+				if (!r.ok) {
+					return r.json().then(
+						function(e) { throw new Error(e && e.error ? e.error : "HTTP " + r.status); },
+						function() { throw new Error("HTTP " + r.status); });
+				}
+				return r.json();
+			})
 			.then(function(json) {
 				self.loading = false;
 				if (!json || !json.items) return;
@@ -670,6 +677,11 @@ eXide.browse.ResourceBrowser = (function () {
 					self._updateSelectionDisplay();
 					self._fireSelectionChanged();
 				}
+			})
+			.catch(function(err) {
+				self.loading = false;
+				eXide.util.error("Could not list collection: " +
+					(err && err.message ? err.message : err));
 			});
 	};
 
