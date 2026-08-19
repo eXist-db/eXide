@@ -33,6 +33,30 @@
         }
     },
     "paths": {
+        "/index.html": {
+            "get": {
+                "summary": "eXide application shell (refused for disallowed guests)",
+                "operationId": "view:index",
+                "tags": [
+                    "view"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Application HTML",
+                        "content": {
+                            "text/html": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "302": {
+                        "description": "Redirect to login.html when guest access is not allowed"
+                    }
+                }
+            }
+        },
         "/api/auth/session": {
             "post": {
                 "summary": "Login and create session",
@@ -41,6 +65,33 @@
                     "auth"
                 ],
                 "security": [],
+                "requestBody": {
+                    "required": true,
+                    "description": "Credentials, as JSON (XHR) or form-encoded (login.html form).",
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["user", "password"],
+                                "properties": {
+                                    "user": { "type": "string" },
+                                    "password": { "type": "string", "format": "password" }
+                                }
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "required": ["user", "password"],
+                                "properties": {
+                                    "user": { "type": "string" },
+                                    "password": { "type": "string", "format": "password" },
+                                    "duration": { "type": "string" }
+                                }
+                            }
+                        }
+                    }
+                },
                 "responses": {
                     "200": {
                         "description": "Login successful",
@@ -91,7 +142,6 @@
                 "tags": [
                     "auth"
                 ],
-                "security": [],
                 "responses": {
                     "200": {
                         "description": "User info",

@@ -106,29 +106,68 @@
         }
         .submit-button::-moz-focus-inner { border-style: none; padding: 0; }
         .submit-button:-moz-focusring { outline: 1px dotted ButtonText }
+        .login-error { color: #c0392b; min-height: 1.2em; margin: 0 0 .5rem; font-size: .9rem; }
 
     </style>
 </head>
 <body class="login-page">
     <main class="login-box">
         <h1 class="header">Sign in</h1>
-        <form action="login" method="post">
+        <form id="login-form" action="api/auth/session" method="post">
             <input type="hidden" name="duration" value="P7D"/>
             <div class="form-group">
                 <label for="user">Username</label>
-                <input id="user" name="user" class="form-control" 
+                <input id="user" name="user" class="form-control"
                     placeholder="Username..." autofocus="autofocus" tab-index="0"/>
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
-                <input id="password" name="password" class="form-control" 
+                <input id="password" name="password" class="form-control"
                     type="password" placeholder="Password..." tab-index="1"/>
             </div>
+            <p id="login-error" class="login-error" role="alert"></p>
             <div class="form-group">
                 <input type="submit" class="submit-button" value="Login"
                     tab-index="2"/>
             </div>
         </form>
     </main>
+    <script>
+        // Authentication is handled by Roaster at /api/auth/session, which returns
+        // JSON. Submit via fetch and redirect on success rather than a full-page
+        // POST (which would render the raw JSON). The route also accepts this
+        // form-encoded body directly, so non-JS clients still authenticate.
+        (function () {
+            var form = document.getElementById("login-form");
+            var errorEl = document.getElementById("login-error");
+            // Already authenticated? Skip the login page.
+            fetch("api/auth/whoami")
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (data) {
+                    if (data && data.isLoggedIn) { window.location.replace("index.html"); }
+                })
+                .catch(function () {});
+            form.addEventListener("submit", function (event) {
+                event.preventDefault();
+                errorEl.textContent = "";
+                fetch("api/auth/session", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: new URLSearchParams(new FormData(form)).toString()
+                })
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    if (data && data.user) {
+                        window.location.href = "index.html";
+                    } else {
+                        errorEl.textContent = "Invalid user or password.";
+                    }
+                })
+                .catch(function () {
+                    errorEl.textContent = "Login failed. Please try again.";
+                });
+            });
+        })();
+    </script>
 </body>
 </html>

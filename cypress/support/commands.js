@@ -51,17 +51,23 @@ Cypress.Commands.add("dismissDialog", () => {
     })
 })
 
-// cy.execXQuery() -- run a setup/cleanup XQuery as the logged-in user, via eXide's
-// execute endpoint. NOTE: posting raw XQuery to /exist/rest as application/xquery does
-// NOT execute it -- eXist parses the body as XML and 400s ("Content is not allowed in
-// prolog"), so any such cleanup masked with failOnStatusCode:false silently no-ops.
-// /eXide/execute is the suite's proven path for running setup queries.
+// cy.execXQuery() -- run a setup/cleanup XQuery as admin, via eXist-db's REST
+// query envelope. NOTE: this PR retires eXide's /execute route (query execution
+// belongs to existdb-openapi's /api/query cursor now), so the helper posts an
+// <exist:query> envelope as application/xml instead. Posting raw XQuery text to
+// /exist/rest does NOT execute it -- eXist parses the body as XML and 400s
+// ("Content is not allowed in prolog") -- so the envelope, and the status
+// assertion below, are what keep a broken setup from silently no-opping.
 Cypress.Commands.add("execXQuery", (query) => {
     return cy.request({
         method: 'POST',
-        url: '/eXide/execute',
-        form: true,
-        body: { qu: query, base: 'xmldb:exist://__new__1', output: 'adaptive' }
+        url: '/exist/rest/db',
+        headers: { 'Content-Type': 'application/xml' },
+        auth: { user: 'admin', pass: '' },
+        body: `<query xmlns="http://exist.sourceforge.net/NS/exist"><text><![CDATA[${query}]]></text></query>`
+    }).then((response) => {
+        expect(response.status, 'setup/cleanup XQuery ran').to.be.within(200, 299)
+        return response
     })
 })
 

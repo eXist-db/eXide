@@ -12,6 +12,7 @@ import module namespace roaster="http://e-editiones.org/roaster";
 
 (: Handler modules — each provides functions referenced by operationId in api.json :)
 import module namespace auth="http://exist-db.org/apps/eXide/api/auth" at "auth.xqm";
+import module namespace view="http://exist-db.org/apps/eXide/api/view" at "view.xqm";
 import module namespace db="http://exist-db.org/apps/eXide/api/db" at "db.xqm";
 import module namespace query="http://exist-db.org/apps/eXide/api/query" at "query.xqm";
 import module namespace editor="http://exist-db.org/apps/eXide/api/editor" at "editor.xqm";

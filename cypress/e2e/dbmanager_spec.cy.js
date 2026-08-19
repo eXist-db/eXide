@@ -312,19 +312,9 @@ context('DB Manager', () => {
 
     describe('create resource', () => {
       it('should create resource using xmldb', () => {
-        cy.request({
-          method: 'POST',
-          url: `/eXide/execute`,
-          form: true,
-          body: {
-            qu: `xquery version "3.1";
-
-            xmldb:create-collection("/db","AéB"),
-            xmldb:store(xmldb:encode("/db/AéB"), xmldb:encode("AéB.xml"), <foo/>)`,
-            base: 'xmldb:exist://__new__1',
-            output: 'adaptive'
-          }
-        })
+        cy.execXQuery(`xquery version "3.1";
+          xmldb:create-collection("/db","AéB"),
+          xmldb:store(xmldb:encode("/db/AéB"), xmldb:encode("AéB.xml"), <foo/>)`)
       })
 
       it('should open resource', () => {
