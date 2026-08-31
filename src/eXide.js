@@ -908,6 +908,21 @@ eXide.app = (function(util) {
 		        if (timingEl) timingEl.style.display = "none";
 		    }
 
+		    // Build a display message from a query-error envelope. existdb-openapi#71
+		    // returns the QueryError shape { code, message, line, column, raw };
+		    // current releases (≤ v0.9.7) return a generic { error: "..." }. Prefer
+		    // the concise `message`, then `error`, then the verbose `raw`; fall back
+		    // to a serialized payload so the cause is never silently lost.
+		    function queryErrorMessage(err, fallback) {
+		        if (err == null) { return fallback || "Query failed."; }
+		        if (typeof err === "string") { return err; }
+		        var msg = err.message || err.error || err.raw
+		            || fallback || JSON.stringify(err);
+		        if (err.code) { msg = "[" + err.code + "] " + msg; }
+		        if (err.line > 0) { msg = "line " + err.line + ": " + msg; }
+		        return msg;
+		    }
+
 		    // Close previous cursor if any
 		    if (app._cursorId) {
 		        fetch("../existdb-openapi/api/query/" + app._cursorId, { method: "DELETE" }).catch(function() {});
@@ -936,27 +951,11 @@ eXide.app = (function(util) {
 		        hideCancel();
 		        if (!response.ok) {
 		            return response.json().then(function(err) {
-		                // existdb-openapi/cursor:eval errors come back as
-		                // { code, description, line, column, module, value }
-		                // (the standard XPathException → JSON shape). Older
-		                // code paths used { error: "..." } or { message: "..." }.
-		                // Coalesce so the user sees the real cause regardless
-		                // of which shape the server returns; fall back to a
-		                // serialized payload so the user can still copy/paste
-		                // the response if all known fields are missing.
-		                var msg = err.description || err.error || err.message
-		                    || (typeof err === "string" ? err : JSON.stringify(err));
-		                if (err.code) {
-		                    msg = "[" + err.code + "] " + msg;
-		                }
-		                if (err.line > 0) {
-		                    msg = "line " + err.line + ": " + msg;
-		                }
-		                // Pass the full structured error so the panel can
-		                // surface code/line/column/module/value separately
-		                // (request from @line-o on PR #794: the description
-		                // alone isn't enough — need all the info).
-		                editor.evalError(msg, !livePreview, err);
+		                // Pass the full structured error so the panel can surface
+		                // code/location/message/raw separately (request from
+		                // @line-o on PR #794: the message alone isn't enough —
+		                // need all the info).
+		                editor.evalError(queryErrorMessage(err), !livePreview, err);
 		            }, function () {
 		                // Body wasn't JSON — try to surface whatever the
 		                // server actually said (HTTP status + body text).
@@ -978,11 +977,9 @@ eXide.app = (function(util) {
 		            // success path shows neither results nor an error. Coalesce the
 		            // shapes the same way the !response.ok branch does.
 		            if (data.error || !data.cursor) {
-		                var emsg = data.description || data.error || data.message
-		                    || "Query failed: no cursor returned.";
-		                if (data.code) { emsg = "[" + data.code + "] " + emsg; }
-		                if (data.line > 0) { emsg = "line " + data.line + ": " + emsg; }
-		                editor.evalError(emsg, !livePreview, data);
+		                editor.evalError(
+		                    queryErrorMessage(data, "Query failed: no cursor returned."),
+		                    !livePreview, data);
 		                return;
 		            }
 		            app._cursorId = data.cursor;
