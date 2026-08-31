@@ -17,6 +17,12 @@ jobs:
          exist-version: [latest]
          # Node 22 is EOL; track current Node LTS (24).
          node-version: ['24']
+         # Two beds, two questions (eXide#821, eXide#865):
+         #   declared — do the dependency versions declared in expath-pkg.xml
+         #              actually run the app? Nothing else is installed.
+         #   bundled  — does the app work with what eXist-db ships by default?
+         #              The build under test is installed over the bundled copy.
+         deps: [declared, bundled]
 
     steps:
       - uses: actions/checkout@v7
@@ -42,18 +48,37 @@ jobs:
       - name: Build frontend Using node.js ${{ matrix.node-version }} and build EXPath Package
         run: npm run build
 
-      - name: Download Roaster dependency
-        run: gh release download v1.12.0 --repo eeditiones/roaster --pattern "roaster-1.12.0.xar" --output build/roaster-1.12.0.xar
+      # The versions come from expath-pkg.xml rather than being hardcoded here,
+      # so this bed tests the contract eXide publishes to the Package Manager.
+      # If a declared minimum is wrong, this leg fails and the declaration is
+      # what needs fixing.
+      - name: Resolve the declared dependencies
+        if: matrix.deps == 'declared'
+        id: declared
+        run: |
+          # Reads the semver-min values out of expath-pkg.xml; fails if any
+          # dependency declares none. Node, not xmllint — the runner image does
+          # not ship libxml2-utils.
+          eval "$(node tools/read-declared-deps.js)"
+          echo "Declared minimums: roaster $ROASTER, existdb-openapi $OPENAPI"
+          gh release download "v$ROASTER" --repo eeditiones/roaster \
+            --pattern "roaster-$ROASTER.xar" --output "build/roaster-$ROASTER.xar"
+          gh release download "v$OPENAPI" --repo eXist-db/existdb-openapi \
+            --pattern "existdb-openapi-*.xar" --dir build/
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: Download existdb-openapi dependency
-        run: gh release download v0.9.5 --repo eXist-db/existdb-openapi --pattern "existdb-openapi-*.xar" --dir build/
-        env:
-          GH_TOKEN: ${{ github.token }}
-
-      - name: Start eXist-db Docker Container
+      # declared: only the built xar and its declared dependencies are present.
+      - name: Start eXist-db with the declared dependencies
+        if: matrix.deps == 'declared'
         run: docker run --rm --name exist --volume $(pwd)/build:/exist/autodeploy:ro --publish 8080:8080 --detach existdb/existdb:${{ matrix.exist-version }}
+
+      # bundled: stock image, nothing removed or extracted; the freshly built
+      # xar is installed over the bundled eXide once the server is up, so the
+      # app under test is unambiguously the one this run compiled.
+      - name: Start eXist-db with its own bundled packages
+        if: matrix.deps == 'bundled'
+        run: docker run --rm --name exist --publish 8080:8080 --detach existdb/existdb:${{ matrix.exist-version }}
 
       - name: Wait for eXist-db Startup and Package Deployment
         run: |
@@ -69,6 +94,16 @@ jobs:
           echo "Timed out waiting for eXide"
           exit 1
 
+      - name: Install the freshly built eXide over the bundled one
+        if: matrix.deps == 'bundled'
+        run: |
+          npx --yes @existdb/xst package install local build/eXide-*.xar --force
+          npx --yes @existdb/xst list --extended | grep -E 'eXide|roaster|openapi' || true
+        env:
+          EXISTDB_SERVER: http://localhost:8080
+          EXISTDB_USER: admin
+          EXISTDB_PASS: ''
+
       - name: Run Cypress Integration Tests
         run: npx cypress run --spec 'cypress/e2e/*.cy.js'
 
@@ -76,7 +111,7 @@ jobs:
         uses: actions/upload-artifact@v7
         if: failure()
         with:
-          name: cypress-screenshots-${{ matrix.exist-version }}-${{ matrix.node-version }}
+          name: cypress-screenshots-${{ matrix.deps }}-${{ matrix.exist-version }}-${{ matrix.node-version }}
           path: cypress/screenshots
 
       # Test run video was always captured, so this action uses "always()" condition
@@ -84,7 +119,7 @@ jobs:
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: cypress-videos-${{ matrix.exist-version }}-${{ matrix.node-version }}
+          name: cypress-videos-${{ matrix.deps }}-${{ matrix.exist-version }}-${{ matrix.node-version }}
           path: cypress/videos
 
   # TODO: Add upload to dockerhub
