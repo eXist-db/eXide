@@ -81,7 +81,10 @@ declare function db:post($request as map(*)) {
         switch ($action)
             case "create" return
                 try {
-                    let $name := $body?name
+                    (: Encode the new collection name the same way every path in this module is
+                     : encoded. xmldb:create-collection rejects a raw space ("Illegal character
+                     : in path", FORG0001), so an un-encoded leaf name made e.g. "My Folder" fail. :)
+                    let $name := db:encode-path($body?name)
                     let $created := xmldb:create-collection($path, $name)
                     return map { "status": "ok", "path": $created }
                 } catch * {
@@ -126,7 +129,9 @@ declare function db:post($request as map(*)) {
                 }
             case "rename" return
                 try {
-                    let $target := $body?target
+                    (: Encode the new leaf name; xmldb:rename rejects a raw space (FORG0001),
+                     : so an un-encoded target made spaces in renames fail. :)
+                    let $target := db:encode-path($body?target)
                     return
                         if (xmldb:collection-available($path)) then (
                             xmldb:rename($path, $target),
