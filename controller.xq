@@ -17,8 +17,6 @@ declare variable $local:config := config:get-configuration();
 declare variable $local:method := request:get-method() => lower-case();
 declare variable $local:uri := request:get-uri();
 declare variable $local:forwarded-for := request:get-header("X-Forwarded-URI");
-declare variable $local:wants-json := tokenize(request:get-header('Accept'), ', ?') = 'application/json';
-declare variable $local:is-ajax-request := request:get-header("X-Requested-With") = "XMLHttpRequest";
 
 declare function local:get-user () as xs:string? {
     let $login := login:set-user($local:login-domain, xs:dayTimeDuration("P7D"), false())
@@ -38,6 +36,34 @@ declare function local:query-execution-allowed($user as xs:string?, $is-dba as x
         $local:config/restrictions/@execute-query = "yes" and
         local:user-allowed($user)
     )
+};
+
+declare function local:parse-accept-header() as map(xs:float, xs:string+) {
+    let $media-type-maps as map(xs:float, xs:string)*  := (
+        let $media-types-and-quality := tokenize(request:get-header('Accept'), ',\s*')
+        for $media-type-and-quality in $media-types-and-quality
+        let $parts :=  tokenize($media-type-and-quality, ';\s*q=')
+        let $weight := if ($parts[2]) then xs:float($parts[2]) else xs:float(1.0)
+        let $media-type := $parts[1]
+        return
+            map { $weight: $media-type }
+     )
+     return
+            map:merge($media-type-maps, map { "duplicates": "combine"})
+};
+
+declare function local:preferred-media-type($media-type-map as map(xs:float, xs:string+) ) as xs:string {
+    let $highest-weight := sort(map:keys($media-type-map))[last()]
+    return
+        map:get($media-type-map, $highest-weight)[1]
+};
+
+declare function local:accept-json($media-type-map as map(xs:float, xs:string+)) as xs:boolean {
+    let $contains-json-media-type-results := map:for-each($media-type-map, function($key, $value) {
+        $value = "application/json"
+    })
+    return
+        $contains-json-media-type-results = true()
 };
 
 let $user := local:get-user()
@@ -118,9 +144,13 @@ else if (starts-with($exist:path, "/api/")) then
 
 else if (not($user-allowed))
 then (
-    if ($local:wants-json or $local:is-ajax-request)
+    if (local:accept-json(local:parse-accept-header()))
     then (
-        util:declare-option("exist:serialize", "method=json media-type=application/json"),
+        util:declare-option("output:method", "json"),
+        util:declare-option("output:media-type", "application/json"), (: does not work due to bug in writeResultJSON :)
+        (: the response:set-header("Content-Type" is used as a workaround until https://github.com/evolvedbinary/elemental/pull/212
+         : is merged on Elemental and the same should be done for eXist-db
+         Then the we can use the output:media-type option as expected :)
         response:set-header("Content-Type", "application/json; charset=UTF-8"),
         response:set-status-code(401),
         <status>
@@ -138,12 +168,16 @@ then (
  : Login a user via AJAX. Just returns a 401 if login fails.
  :)
 else if (
-    ($local:wants-json or $local:is-ajax-request) and
+    local:accept-json(local:parse-accept-header()) and
     $local:method = 'post' and
     $exist:resource = 'login'
 )
 then (
-    util:declare-option("exist:serialize", "method=json media-type=application/json"),
+    util:declare-option("output:method", "json"),
+    util:declare-option("output:media-type", "application/json"), (: does not work due to bug in writeResultJSON :)
+    (: the response:set-header("Content-Type" is used as a workaround until https://github.com/evolvedbinary/elemental/pull/212
+     : is merged on Elemental and the same should be done for eXist-db
+     Then the we can use the output:media-type option as expected :)
     response:set-header("Content-Type", "application/json; charset=UTF-8"),
     <status>
         <user>{$user}</user>
