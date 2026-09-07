@@ -3,16 +3,21 @@
  * Inserts a new <change> entry into repo.xml.tmpl based on conventional commits
  * since the previous release tag.
  *
- * Usage: node scripts/update-repo-changelog.js --version=X.Y.Z --prev-tag=X.Y.Z
+ * Usage: node scripts/update-repo-changelog.mjs --version=X.Y.Z --prev-tag=X.Y.Z
  * Called by semantic-release via @semantic-release/exec prepareCmd.
  *
- * Ported from eXist-db/monex's scripts/update-repo-changelog.js.
+ * This is a fork, not the canonical copy: it was ported from eXist-db/monex's
+ * scripts/update-repo-changelog.js, which itself duplicates the same script
+ * out of function-documentation and semver.xq. The official, maintained
+ * version of this logic is the in-progress semantic-release plugin at
+ * https://github.com/eXist-db/repo-xml-changelog-generator
+ * (npm: @existdb/repo-xml-changelog-generator, not yet published).
  *
- * Slated to be replaced by @existdb/repo-xml-changelog-generator once that
- * plugin is published to npm: drop this script and the changelog part of the
- * exec prepareCmd in .releaserc, and add the plugin between the exec and git
- * entries. Keep any behavior change here in sync with that project
- * (https://github.com/eXist-db/repo-xml-changelog-generator).
+ * Once that package ships, delete this script, drop the changelog part of
+ * the exec prepareCmd in .releaserc, and add the plugin to the plugin chain
+ * between the exec and git entries instead. Until then, any behavior fix
+ * made here should be upstreamed there too, not just copied sideways to the
+ * other forks.
  */
 import { execSync } from 'child_process'
 import { readFileSync, writeFileSync } from 'fs'
