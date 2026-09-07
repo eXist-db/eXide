@@ -104,10 +104,19 @@ npm run cypress # this runs the tests in console
 
 If successful, the test runner should report, "All specs passed!"
 
+## Commit message conventions
+
+eXide uses [semantic-release](https://semantic-release.gitbook.io/) to automate versioning and releases from `develop`, so every commit message must follow [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): subject`, e.g. `fix(query): surface errors returned in a 200 body` or `feat(db): support renaming collections`. The `type` decides what happens on release — `fix:` bumps a patch version, `feat:` a minor version, and a `BREAKING CHANGE:` footer (or `!` after the type/scope) bumps a major version; other types (`chore:`, `ci:`, `docs:`, `refactor:`, `test:`, ...) don't trigger a release at all.
+
+This is enforced, not just a suggestion: a [commitlint](https://commitlint.js.org/) GitHub Action rejects any PR containing a non-conforming commit message, and once you run `npm install` locally, a [husky](https://typicode.github.io/husky/) `commit-msg` hook checks it before the commit is even made.
+
 ## Publishing
 
-eXist-db.org Community administrators publish eXide releases by uploading the eXide `.xar` file to the [public repo](https://exist-db.org/exist/apps/public-repo/index.html). 
+Releases are fully automated from `develop` via semantic-release — no manual tagging or uploads. On every push to `develop` that passes CI, semantic-release inspects the commits since the last release, and if any are release-worthy (see above):
 
-Releases are also published to the eXide GitHub repository's [Releases](https://github.com/eXist-db/eXide/releases) page. To do so, either use the Releases page or add a tag in the form: 'vX.X.X' to the repo (where `X` corresponds to the semantic version number of the new release). 
+1. Bumps the version, builds the `.xar`, and inserts a changelog entry into `repo.xml`'s `<changelog>` (visible in eXist-db's Package Manager).
+2. Tags the release and pushes the version bump back to `develop`.
+3. Publishes a [GitHub Release](https://github.com/eXist-db/eXide/releases) with the `.xar` attached.
+4. Mirrors that `.xar` to the [public repo](https://exist-db.org/exist/apps/public-repo/index.html), so it's immediately installable via the Package Manager.
 
 If you need help with a release of eXide, post a note in the [eXist-db Community Slack](https://exist-db.slack.com). 
