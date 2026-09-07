@@ -9,6 +9,7 @@
 
 build/*
 expath-pkg.xml
+repo.xml
 
 resources/scripts/xqlint.min.js
 resources/scripts/prettier-bundle.js

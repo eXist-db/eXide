@@ -18,14 +18,14 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "npm version ${nextRelease.version} --no-git-tag-version --allow-same-version",
+        "prepareCmd": "npm version ${nextRelease.version} --no-git-tag-version --allow-same-version && node scripts/update-repo-changelog.mjs --version=${nextRelease.version} --prev-tag=${lastRelease.version}",
         "publishCmd": "npm run build"
       }
     ],
     [
       "@semantic-release/git",
       {
-        "assets": ["package.json", "package-lock.json"],
+        "assets": ["package.json", "package-lock.json", "repo.xml.tmpl"],
         "message": "chore(release): ${nextRelease.version} [skip ci]"
       }
     ],
