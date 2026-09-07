@@ -1,6 +1,6 @@
 {
   "branches": [
-    "main"
+    "develop"
   ],
   "plugins": [
     [
@@ -13,6 +13,20 @@
       "@semantic-release/release-notes-generator",
       {
         "preset": "conventionalcommits"
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "npm version ${nextRelease.version} --no-git-tag-version --allow-same-version",
+        "publishCmd": "npm run build"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": ["package.json", "package-lock.json"],
+        "message": "chore(release): ${nextRelease.version} [skip ci]"
       }
     ],
     [
