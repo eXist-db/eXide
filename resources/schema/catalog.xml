@@ -1,4 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--
+  OASIS catalog for eXist grammars bundled under resources/schema/.
+
+  editor:validate prefers validation:jaxv-report against
+  $EXIST_HOME/schema/<file>.xsd when present (exist#6528), else the sibling
+  copies in this directory (eXide#842). Catalog-based jaxp resolution for these
+  native XSD 1.1 grammars is not yet reliable (exist#6686); this catalog is kept
+  for tooling and for a future switch back to system/OASIS catalog validation.
+
+  Fallback XSDs are synced from exist's schema/ tree and will be removed once
+  older servers without $EXIST_HOME/schema/ are out of support.
+-->
 <catalog xmlns="urn:oasis:names:tc:entity:xmlns:xml:catalog">
     <uri name="http://exist-db.org/collection-config/1.0" uri="collection.xconf.xsd"/>
+    <uri name="http://exist.sourceforge.net/NS/exist" uri="controller-config.xsd"/>
+    <uri name="http://expath.org/ns/pkg" uri="expath-pkg.xsd"/>
+    <uri name="http://exist-db.org/Configuration" uri="security-manager.xsd"/>
+    <!-- No-namespace configs: resolve by system id / tooling, not by uri name -->
+    <systemSuffix systemIdSuffix="conf.xsd" uri="conf.xsd"/>
+    <systemSuffix systemIdSuffix="descriptor.xsd" uri="descriptor.xsd"/>
+    <systemSuffix systemIdSuffix="mime-types.xsd" uri="mime-types.xsd"/>
+    <systemSuffix systemIdSuffix="users.xsd" uri="users.xsd"/>
+    <systemSuffix systemIdSuffix="server.xsd" uri="server.xsd"/>
+    <systemSuffix systemIdSuffix="schema-version-type.xsd" uri="schema-version-type.xsd"/>
 </catalog>

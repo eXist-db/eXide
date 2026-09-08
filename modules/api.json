@@ -832,7 +832,7 @@
         },
         "/api/editor/validate": {
             "post": {
-                "summary": "Validate XML against schema catalog",
+                "summary": "Validate XML against native eXist grammars when available (XSD 1.1)",
                 "operationId": "editor:validate",
                 "tags": [
                     "editor"
