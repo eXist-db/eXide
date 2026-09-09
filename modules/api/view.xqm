@@ -14,6 +14,7 @@ module namespace view="http://exist-db.org/apps/eXide/api/view";
 import module namespace roaster="http://e-editiones.org/roaster";
 import module namespace auth="http://exist-db.org/apps/eXide/api/auth" at "auth.xqm";
 import module namespace config="http://exist-db.org/xquery/apps/config" at "../config.xqm";
+import module namespace request="http://exist-db.org/xquery/request";
 
 declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
 
