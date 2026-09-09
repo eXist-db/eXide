@@ -3,7 +3,8 @@
  :
  :  Serves the eXide HTML through Roaster so access is gated by Roaster's
  :  authorization rather than the controller. When the current user is not
- :  allowed (e.g. a guest while restrictions/@guest = "no"), the app is refused
+ :  allowed (e.g. a guest while the `restrictions` element's `guest` attribute
+ :  is "no"), the app is refused
  :  and the request is redirected to the login page — the hard guest gate.
  :)
 xquery version "3.1";
@@ -20,9 +21,10 @@ declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
  : GET /index.html — the eXide application shell.
  :
  : Identity comes from `$request?user` (Roaster's standard-authorization). The
- : guest gate is config-driven (restrictions/@guest), so it can't be a static
- : x-constraint; the handler checks auth:is-allowed and, when the user is not
- : allowed, redirects to login.html instead of serving the app.
+ : guest gate is config-driven (the `restrictions` element's `guest` attribute),
+ : so it can't be a static x-constraint; the handler checks auth:is-allowed
+ : and, when the user is not allowed, redirects to login.html instead of
+ : serving the app.
  :)
 declare function view:index($request as map(*)) {
     if (auth:is-allowed($request?user?name)) then
