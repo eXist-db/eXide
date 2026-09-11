@@ -1,0 +1,19 @@
+scripts/build.js
+  s_eb2503df4f3b37::t_efc28d9f16170a 2,37,222
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "d4b6a6252071c8c3d818af2d59719db0ba7ccb42",
+  "prompts": {},
+  "sessions": {
+    "s_eb2503df4f3b37": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9d244bc1-747f-4862-9849-a00fb3bcf0be",
+        "model": "default"
+      },
+      "human_author": "duncdrum <d.paterson@me.com>"
+    }
+  }
+}
