@@ -1,5 +1,5 @@
 const esbuild = require("esbuild");
-const chalk = require("chalk");
+const chalk = require("chalk").default;
 const path = require("path");
 const fs = require('fs');
 const fsp = require('fs').promises;
@@ -34,7 +34,7 @@ function deploy() {
 			sendImmediately: true,
 		},
 	};
-	console.log(chalk`Uploading xar {cyan ${sourcePath}} to ${servers[args.deploy].server}`);
+	console.log(`Uploading xar ${chalk.cyan(sourcePath)} to ${servers[args.deploy].server}`);
 	fs.createReadStream(sourcePath).pipe(
 		request(
 			options,
@@ -219,7 +219,7 @@ function replace(path, outPath, data) {
 
     await bundle();    
 
-    console.log(chalk`Creating xar {cyan eXide-${version}.xar}`);
+    console.log(`Creating xar ${chalk.cyan(`eXide-${version}.xar`)}`);
     zipFiles(
 		[
 			"*.*",
