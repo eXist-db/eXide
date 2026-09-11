@@ -1,10 +1,11 @@
 const esbuild = require("esbuild");
 const chalk = require("chalk");
-const mfs = require("micro-fs");
 const path = require("path");
 const fs = require('fs');
+const fsp = require('fs').promises;
 const request = require("request");
 const commandLineArgs = require("command-line-args");
+const globStream = require("glob-stream");
 const yazl = require("yazl");
 const { version } = require("../package.json");
 const { servers } = require('../.existdb.json');
@@ -116,14 +117,27 @@ async function prepare() {
 	}
 }
 
+function collectGlobs (globs, options) {
+    return new Promise((resolve, reject) => {
+        const list = [];
+        const stream = globStream(globs, options || {});
+        stream.on('data', (file) => list.push(file));
+        stream.on('error', reject);
+        stream.on('end', () => resolve(list));
+    });
+}
+
 async function clean() {
     console.log(chalk.blue('Cleaning files ...'));
-    await mfs.delete([
+    const files = await collectGlobs([
         'resources/scripts/eXide.min.*',
-'resources/scripts/prettier-bundle.js',
+        'resources/scripts/prettier-bundle.js',
         'index.html',
         'expath-pkg.xml'
-    ], { allowEmpty: true, silent: false });
+    ], { allowEmpty: true });
+    for (const file of files) {
+        await fsp.rm(file.path, { force: true });
+    }
 }
 
 async function bundle() {
@@ -165,10 +179,9 @@ async function bundle() {
 }
 
 
-// glob-stream 8 no longer honors nodir; micro-fs.zip still assumes it.
 function zipFiles (globs, dest, options) {
     const zip = new yazl.ZipFile();
-    return mfs.glob(globs, options || {}).then((files) => {
+    return collectGlobs(globs, options).then((files) => {
         files.forEach((file) => {
             if (!fs.statSync(file.path).isFile()) return;
             const relative = path.relative(file.base, file.path);
