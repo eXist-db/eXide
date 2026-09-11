@@ -1,0 +1,89 @@
+.github/workflows/ci.yml
+  s_eb2503df4f3b37::t_84c6c64d222e8a 20-25,28,34,51-67,71-73,76-82,97-106,114,122
+controller.xq
+  s_eb2503df4f3b37::t_2e61adb4751b69 12-15,23,25,32,42-44
+cypress.config.js
+  s_eb2503df4f3b37::t_357be38ac2353a 7-11
+cypress/e2e/apply_configuration.cy.js
+  s_eb2503df4f3b37::t_ad65e7e7a39256 1-7,9-10,23-24,102,107-113,155-158
+cypress/e2e/auth_spec.cy.js
+  s_eb2503df4f3b37::t_adc479338356da 12,14,60-63,67-74,147-200
+cypress/e2e/db_names_with_spaces_spec.cy.js
+  s_eb2503df4f3b37::t_c6c7065bdde1cb 1-162
+cypress/e2e/dbmanager_spec.cy.js
+  s_eb2503df4f3b37::t_7b9dc2c591027c 1-17,24,27-28,32-62,64-69,82-85,98-99,101-105,108-112,114,116-118,120-122,124-132,135-137,139-152,154,156-158,160-161,163-175,177,179-193,195-204
+cypress/e2e/file_save_spec.cy.js
+  s_eb2503df4f3b37::t_5b6448eea4c111 1-7,9,11-23,26,34-37,40,65,84,97-101,105-108,140-143,146,148
+cypress/e2e/packages_by_collection_spec.cy.js
+  s_eb2503df4f3b37::t_99a31c4da3120c 1-73
+cypress/e2e/query_error_display_spec.cy.js
+  s_eb2503df4f3b37::t_c6b7ade2c1c677 93,111-128
+cypress/e2e/query_error_structured_spec.cy.js
+  s_eb2503df4f3b37::t_495354edb9592a 35-39,44,48,57-96
+cypress/e2e/storage_listing_resilience_spec.cy.js
+  s_eb2503df4f3b37::t_d85fc082d38684 1-40
+cypress/support/commands.js
+  s_eb2503df4f3b37::t_04762aa0ce14d9 54-60,64-70
+expath-pkg.xml
+  s_eb2503df4f3b37::t_bc1b981a4b619a 2,5-6
+expath-pkg.xml.tmpl
+  s_eb2503df4f3b37::t_2f39d6cb4de76c 5-6
+index.html.tmpl
+  s_eb2503df4f3b37::t_049470166329b1 629
+login.html
+  s_eb2503df4f3b37::t_ede0a32b383da4 109,116,119,124,127-131,134,138-174
+modules/api.json
+  s_eb2503df4f3b37::t_ad4bdd252fb06d 36-59,68-95,1032-1042,1045
+modules/api/auth.xqm
+  s_eb2503df4f3b37::t_1562b0e7097642 9,12-23,32-60,63-69,72-77,79-84,86-87,92,94-95,98-99,106-107,110-114
+modules/api/db.xqm
+  s_eb2503df4f3b37::t_73be02c57358aa 84-87,132-134,217-231,245-261,268-286
+modules/api/packages.xqm
+  s_eb2503df4f3b37::t_b250250b8866e6 44-50,53-61,122-129,137
+modules/api/query.xqm
+  s_eb2503df4f3b37::t_77634909ed8cb7 2-8
+modules/api/router.xq
+  s_eb2503df4f3b37::t_47a7d82330ef6b 15
+modules/api/view.xqm
+  s_eb2503df4f3b37::t_be6753bfdab5f8 2,4-7,9,11,13-15,17-43,56-60
+package-lock.json
+  s_eb2503df4f3b37::t_1a4ffa4767d352 13,15,18,20,22,24-25,27,30-31,36-37,41-42,58-60,64,120-122,217-219,350-352,395-397,415-417,426-428,447-449,452,509-511,526-528,543-545,560-562,577-579,594-596,611-613,628-630,645-647,662-664,679-681,696-698,713-715,730-732,747-749,764-766,781-783,798-800,815-817,832-834,849-851,866-868,883-885,900-902,917-919,934-936,1265-1267,1365-1367,1533-1575,1782-1784,1794,1800,1805,1833,1866-1868,2006-2008,2019-2044,2147-2149,2841-2850,3041-3043,3056-3058,3062,3520-3522,3906-3908,3928-3930,3948-3950,3954-3964
+package.json
+  s_eb2503df4f3b37::t_a6d11883353e2a 39-40,44-45,49,51,54,56,58,60-61,63,66-67
+scripts/build.js
+  s_eb2503df4f3b37::t_f838a236a11967 8,167-186,210
+src/deployment.js
+  s_eb2503df4f3b37::t_287589db91a3bd 23-52,78-82,101,107-109,115-117,457-464
+src/directory.js
+  s_eb2503df4f3b37::t_8cfa5951b2db94 737-744,792-794
+src/eXide.js
+  s_eb2503df4f3b37::t_10989460b1352d 911-925,954-958,972-984,1207,1224,1235,1246,1876-1880
+src/error-status-ui.js
+  s_eb2503df4f3b37::t_50bd59c974e5b5 55-60,81-84,102-106,108,110-111,265-281
+src/resources.js
+  s_eb2503df4f3b37::t_a3f0a726aaa10f 646-653,680-684
+src/ws-eval.js
+  s_eb2503df4f3b37::t_a7a56b2472fd55 15-16
+test/deployment-test.js
+  s_eb2503df4f3b37::t_292300b6bea9f4 1-137
+test/error-status-ui-test.js
+  s_eb2503df4f3b37::t_d150d4c87221fd 1-67
+tools/read-declared-deps.js
+  s_eb2503df4f3b37::t_05ca31a8687362 1-43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "af5ac77b03a8e8696a5e6c4cc870df3c2f180a4f",
+  "prompts": {},
+  "sessions": {
+    "s_eb2503df4f3b37": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9d244bc1-747f-4862-9849-a00fb3bcf0be",
+        "model": "default"
+      },
+      "human_author": "duncdrum <d.paterson@me.com>"
+    }
+  }
+}
