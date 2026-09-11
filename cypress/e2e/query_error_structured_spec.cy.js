@@ -32,41 +32,64 @@ describe('Query error display — structured fields', () => {
     })
   }
 
-  it('exposes structured fields in pill title and panel body', () => {
-    // Type error — guaranteed to come back with code, line, column, description
+  it('surfaces a real failing query as an error pill with the cause', () => {
+    // Version-robust: works whether the bed's existdb-openapi returns the
+    // #71 QueryError shape or the current-release generic { error }. The
+    // structured-panel detail and the message/raw split are asserted
+    // deterministically by the cy.intercept test below.
     setEditorContent('1 + "oops"')
     cy.get('#run').click()
 
-    // Wait until the error pill is set
     cy.get('#exide-err-pill.has-error', { timeout: 10000 }).should('exist')
-
-    // (1) Pill carries a `title` attribute with the structured dump
-    cy.get('#exide-err-pill')
-      .should('have.attr', 'title')
-      .and('include', 'Code:')
-      .and('include', 'err:XPTY0004')
-      .and('include', 'Location:')
-      .and('include', 'line 1')
-      .and('include', 'Description:')
-
-    // (2) The auto-opened panel body shows the structured rows.
-    cy.get('#exide-err-panel-body.ep-structured').should('exist')
-    cy.get('#exide-err-panel-body .ep-field-code .ep-field-value')
-      .should('contain.text', 'err:XPTY0004')
-    cy.get('#exide-err-panel-body .ep-field-loc .ep-field-value')
-      .should('contain.text', 'line 1')
-      .and('contain.text', 'column 3')
-    cy.get('#exide-err-panel-body .ep-field-desc .ep-field-value')
-      .should('contain.text', 'type error')
-
-    // (3) Pill label is still concise — shouldn't dump the whole thing.
+    // The pill shows the cause, concisely.
     cy.get('#exide-err-pill-label')
       .invoke('text')
       .then((label) => {
+        expect(label.trim().length).to.be.greaterThan(0)
         expect(label.length).to.be.at.most(60)
       })
 
     // Cleanup so subsequent tests don't see this error sticky
+    cy.get('#exide-err-panel-dismiss').click()
+    cy.get('#exide-err-pill').should('not.have.class', 'has-error')
+  })
+
+  it('prefers message over raw and exposes raw in the hover dump (existdb-openapi#71 envelope)', () => {
+    // Stub a #71 envelope so this is deterministic regardless of the bed's
+    // existdb-openapi version: { code, message, line, column, raw }, HTTP 400.
+    // Exercises the full client path: runQueryCursor's coalesce →
+    // editor.evalError → the structured panel.
+    cy.intercept('POST', '**/existdb-openapi/api/query', {
+      statusCode: 400,
+      body: {
+        code: 'err:XPTY0004',
+        message: "'xs:string(oops)' can not be an operand for +",
+        line: 1,
+        column: 3,
+        raw: 'It is a type error if, during the static analysis phase, an expression is found to have a static type that is not appropriate.'
+      }
+    }).as('q71')
+
+    setEditorContent('1 + "oops"')
+    cy.get('#run').click()
+    cy.wait('@q71')
+
+    cy.get('#exide-err-pill.has-error', { timeout: 10000 }).should('exist')
+
+    // Panel Description shows the *concise* message, not the verbose raw boilerplate.
+    cy.get('#exide-err-panel-body .ep-field-desc .ep-field-value')
+      .should('contain.text', 'can not be an operand')
+      .and('not.contain.text', 'It is a type error if')
+    // Code and location still surface.
+    cy.get('#exide-err-panel-body .ep-field-code .ep-field-value').should('contain.text', 'err:XPTY0004')
+    cy.get('#exide-err-panel-body .ep-field-loc .ep-field-value')
+      .should('contain.text', 'line 1').and('contain.text', 'column 3')
+    // The verbose detail is preserved under Raw in the hover dump.
+    cy.get('#exide-err-pill')
+      .should('have.attr', 'title')
+      .and('include', 'Raw:')
+      .and('include', 'It is a type error if')
+
     cy.get('#exide-err-panel-dismiss').click()
     cy.get('#exide-err-pill').should('not.have.class', 'has-error')
   })

@@ -1,22 +1,72 @@
-const collectionName = 'abc'
+/**
+ * Each test drives one DB Manager workflow end to end and owns the collections
+ * it touches: unique names per test, and an afterEach sweep so a failure cannot
+ * leave residue for the next test to trip over.
+ *
+ * Previously each workflow was split across several `it`s — "create", then
+ * "rename", then "delete" — so the later ones depended on the earlier ones
+ * having run, and the copy and cut blocks even shared two collection names, so
+ * a failure in copy's cleanup broke cut. With retries enabled (#866) Cypress
+ * re-runs only the failing test and not the ones that built its state, which
+ * makes that shape actively misleading.
+ */
+const PREFIX = 'cypress-dbmgr-'
+
+function uniqueName(label) {
+  return `${PREFIX}${label}-${Cypress._.random(1000, 9999)}`
+}
 
 function openDbManager() {
   cy.get('#fullscreen > div.editor-header > div > ul > li:nth-child(1) > a').click()
   cy.get('#fullscreen > div.editor-header > div > ul > li:nth-child(1) > ul').find('#menu-file-manager').click()
 }
 
-function cleanupTestCollections() {
+function removeTestCollections() {
   cy.loginXHR('admin', '')
   cy.execXQuery(`xquery version "3.1";
-    for $col in ("${collectionName}", "def", "AéB")
-    where xmldb:collection-available("/db/" || $col)
+    for $col in xmldb:get-child-collections("/db")
+    where starts-with($col, "${PREFIX}")
     return xmldb:remove("/db/" || $col)`)
 }
 
-context('DB Manager', () => {
-  before(() => { cleanupTestCollections() })
-  after(() => { cleanupTestCollections() })
+// ── DB Manager UI helpers ──────────────────────────────────────────────────
+function createCollection(name) {
+  cy.get('#eXide-browse-toolbar-create').click()
+  cy.get('#eXide-browse-collection-name').type(name)
+  cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
+  shouldList(name)
+}
 
+function shouldList(name) {
+  cy.get('div.eXide-browse-main').within(() => {
+    cy.contains('.browse-table tbody td.col-name', name, { timeout: 5000 }).should('exist')
+  })
+}
+
+function shouldNotList(name) {
+  cy.get('div.eXide-browse-main').within(() => {
+    cy.contains('.browse-table tbody td.col-name', name, { timeout: 5000 }).should('not.exist')
+  })
+}
+
+function select(name) {
+  cy.get('div.eXide-browse-main').within(() => {
+    cy.contains('.browse-table tbody td.col-name', name).click()
+  })
+}
+
+function openCollection(name) {
+  cy.get('div.eXide-browse-main').within(() => {
+    cy.contains('.browse-table tbody td.col-name', name).dblclick()
+  })
+}
+
+function deleteSelected() {
+  cy.get('#eXide-browse-toolbar-delete-resource').click()
+  cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
+}
+
+context('DB Manager', () => {
   describe('DB Manager operations', () => {
     beforeEach(() => {
       cy.loginXHR('admin', '')
@@ -27,6 +77,10 @@ context('DB Manager', () => {
       })
       cy.dismissDialog()
       openDbManager()
+    })
+
+    afterEach(() => {
+      removeTestCollections()
     })
 
     it('should open the db manager', () => {
@@ -40,98 +94,114 @@ context('DB Manager', () => {
         cy.get('.browse-table tbody tr').first().should('have.attr', 'aria-selected', 'true')
       })
     })
-    describe('collection creation', () => {
-      it('should create a new collection', () => {
-        cy.get('#eXide-browse-toolbar-create').click()
-        cy.get('#eXide-browse-collection-name').type(collectionName)
-        cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
 
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', collectionName).should('exist')
-        })
-      })
+    it('creates a collection and deletes it again', () => {
+      const name = uniqueName('abc')
 
-      it('should delete the created collection', () => {
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', collectionName).click()
-        })
-        cy.get('#eXide-browse-toolbar-delete-resource').click()
-        cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', collectionName).should('not.exist')
-        })
+      createCollection(name)
+
+      select(name)
+      deleteSelected()
+      shouldNotList(name)
+    })
+
+    it('renames a collection', () => {
+      // The new name carries non-ASCII deliberately: the xmldb:* functions
+      // escape those internally, so a rename exercises the encoding round trip.
+      const name = uniqueName('toBeRenamed')
+      const renamed = uniqueName('AéB')
+
+      createCollection(name)
+
+      select(name)
+      cy.get('#eXide-browse-toolbar-rename').click()
+      cy.focused().clear().type(`${renamed}{enter}`)
+
+      shouldList(renamed)
+      shouldNotList(name)
+    })
+
+    it('shows properties for a collection', () => {
+      const name = uniqueName('AéB')
+
+      createCollection(name)
+
+      select(name)
+      cy.get('#eXide-browse-toolbar-properties').click()
+
+      cy.contains('Resource/collection properties').should('be.visible')
+    })
+
+    it('copies a collection into another collection', () => {
+      const source = uniqueName('toBeCopiedAéB')
+      const target = uniqueName('toBeCopiedInAéB')
+
+      createCollection(source)
+      createCollection(target)
+
+      select(source)
+      cy.get('#eXide-browse-toolbar-copy').click()
+
+      openCollection(target)
+      cy.get('#eXide-browse-toolbar-paste').click()
+
+      // The copy landed inside the target…
+      shouldList(source)
+      // …and the original is still where it was.
+      cy.request('/eXide/api/storage/db').then((response) => {
+        expect(response.body.items.map((item) => item.name)).to.include(source)
       })
     })
 
-    describe('renaming operation', () => {
-      it('should create a new collection', () => {
-        cy.get('#eXide-browse-toolbar-create').click()
-        cy.get('#eXide-browse-collection-name').type('toBeRenamed')
-        cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
+    it('cuts a collection into another collection', () => {
+      const source = uniqueName('toBeCutAéB')
+      const target = uniqueName('toBeCutInAéB')
 
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeRenamed').should('exist')
-        })
-      })
+      createCollection(source)
+      createCollection(target)
 
-      it('should rename selected', () => {
-        //click on file by name
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeRenamed').click()
-        })
-        //click on toolbar action
-        cy.get('#eXide-browse-toolbar-rename').click()
-        cy.focused().type('AéB{enter}')
+      select(source)
+      cy.get('#eXide-browse-toolbar-cut').click()
 
-        //check for modification
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'AéB', { timeout: 5000 }).should('exist')
-        })
-      })
+      openCollection(target)
+      cy.get('#eXide-browse-toolbar-paste').click()
 
-      it('should delete the created collection', () => {
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'AéB').click()
-        })
-        cy.get('#eXide-browse-toolbar-delete-resource').click()
-        cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'AéB').should('not.exist')
-        })
+      shouldList(source)
+      // …and unlike a copy, the original is gone from where it came from.
+      // Asserted against the storage API rather than by navigating back up,
+      // since the browser has no "up" control — parent navigation is bound to
+      // backspace on the table.
+      cy.request('/eXide/api/storage/db').then((response) => {
+        expect(response.body.items.map((item) => item.name)).to.not.include(source)
       })
     })
 
-    describe('properties operation', () => {
-      it('should create a new collection', () => {
-        cy.get('#eXide-browse-toolbar-create').click()
-        cy.get('#eXide-browse-collection-name').type('AéB')
-        cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
+    it('opens a resource created outside the UI, then deletes its collection', () => {
+      const name = uniqueName('AéB')
 
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'AéB').should('exist')
-        })
+      cy.execXQuery(`xquery version "3.1";
+        xmldb:create-collection("/db", "${name}"),
+        xmldb:store(xmldb:encode("/db/${name}"), xmldb:encode("AéB.xml"), <foo/>)`)
+
+      // Re-open the manager so the new collection is listed.
+      cy.visit('/eXide/index.html')
+      cy.dismissDialog()
+      openDbManager()
+
+      openCollection(name)
+      cy.get('div.eXide-browse-main').within(() => {
+        cy.contains('.browse-table tbody td.col-name', 'AéB.xml').dblclick()
       })
 
-      it('should check for properties', () => {
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'AéB').click()
-        })
+      cy.contains(`/db/${name}/AéB.xml`).should('be.visible')
+      cy.get('#close').click()
 
-        cy.get('#eXide-browse-toolbar-properties').click()
-
-        cy.contains('Resource/collection properties').should('be.visible')
-      })
-
-      it('should delete the created collection', () => {
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'AéB').click()
-        })
-        cy.get('#eXide-browse-toolbar-delete-resource').click()
-        cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'AéB').should('not.exist')
-        })
-      })
+      cy.visit('/eXide/index.html')
+      cy.dismissDialog()
+      openDbManager()
+      select(name)
+      deleteSelected()
+      shouldNotList(name)
     })
 
     describe('resource properties for README.md', () => {
@@ -177,185 +247,6 @@ context('DB Manager', () => {
           // Confirm owner/group selects exist
           cy.get('select[name="owner"]').should('exist')
           cy.get('select[name="group"]').should('exist')
-        })
-      })
-    })
-
-    describe('copy operation', () => {
-      it('should create collection to be copied', () => {
-        cy.get('#eXide-browse-toolbar-create').click()
-        cy.get('#eXide-browse-collection-name').type('toBeCopiedAéB')
-        cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
-
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').should('exist')
-        })
-      })
-
-      it('should create collection to be copied in', () => {
-        cy.get('#eXide-browse-toolbar-create').click()
-        cy.get('#eXide-browse-collection-name').type('toBeCopiedInAéB')
-        cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
-
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB').should('exist')
-        })
-      })
-
-      it('should copy the collection', () => {
-        //click on file by name
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').click()
-        })
-        //click on toolbar action
-        cy.get('#eXide-browse-toolbar-copy').click()
-
-        //navigate into collection
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB').dblclick()
-        })
-
-        //paste the collection
-        cy.get('#eXide-browse-toolbar-paste').click()
-
-        //check for modification
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').should('exist')
-        })
-      })
-
-      it('should delete the created collection', () => {
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB').click()
-        })
-        cy.get('#eXide-browse-toolbar-delete-resource').click()
-        cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
-
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB', { timeout: 5000 }).should('not.exist')
-        })
-
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').click()
-        })
-
-        cy.get('#eXide-browse-toolbar-delete-resource').click()
-        cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB').should('not.exist')
-        })
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').should('not.exist')
-        })
-      })
-    })
-
-    describe('cut operation', () => {
-      it('should create collection to be copied', () => {
-        cy.get('#eXide-browse-toolbar-create').click()
-        cy.get('#eXide-browse-collection-name').type('toBeCopiedAéB')
-        cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
-
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').should('exist')
-        })
-      })
-
-      it('should create collection to be copied in', () => {
-        cy.get('#eXide-browse-toolbar-create').click()
-        cy.get('#eXide-browse-collection-name').type('toBeCopiedInAéB')
-        cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
-
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB').should('exist')
-        })
-      })
-
-      it('should cut the collection', () => {
-        //click on file by name
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').click()
-        })
-        //click on toolbar action
-        cy.get('#eXide-browse-toolbar-cut').click()
-
-        //navigate into collection
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB').dblclick()
-        })
-
-        //paste the collection
-        cy.get('#eXide-browse-toolbar-paste').click()
-
-        //check for modification
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').should('exist')
-        })
-      })
-
-      it('should delete the created collection', () => {
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB').click()
-        })
-        cy.get('#eXide-browse-toolbar-delete-resource').click()
-        cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
-
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedInAéB').should('not.exist')
-        })
-        // check the collection is removed by cutting it
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'toBeCopiedAéB').should('not.exist')
-        })
-      })
-    })
-
-    describe('create resource', () => {
-      it('should create resource using xmldb', () => {
-        cy.request({
-          method: 'POST',
-          url: `/eXide/execute`,
-          form: true,
-          body: {
-            qu: `xquery version "3.1";
-
-            xmldb:create-collection("/db","AéB"),
-            xmldb:store(xmldb:encode("/db/AéB"), xmldb:encode("AéB.xml"), <foo/>)`,
-            base: 'xmldb:exist://__new__1',
-            output: 'adaptive'
-          }
-        })
-      })
-
-      it('should open resource', () => {
-        cy.visit(`/eXide/index.html`)
-        cy.dismissDialog()
-        cy.get('#fullscreen > div.editor-header > div > ul > li:nth-child(1) > a').click()
-        cy.get('#fullscreen > div.editor-header > div > ul > li:nth-child(1) > ul').find('#menu-file-manager').click()
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'AéB').dblclick()
-          cy.contains('.browse-table tbody td.col-name', 'AéB.xml').dblclick()
-        })
-
-        cy.contains('/db/AéB/AéB.xml').should('exist')
-        cy.contains('/db/AéB/AéB.xml').should('be.visible')
-
-        cy.get('#close').click()
-      })
-
-      it('should delete the created collection', () => {
-        cy.visit(`/eXide/index.html`)
-        cy.dismissDialog()
-        cy.get('#fullscreen > div.editor-header > div > ul > li:nth-child(1) > a').click()
-        cy.get('#fullscreen > div.editor-header > div > ul > li:nth-child(1) > ul').find('#menu-file-manager').click()
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'AéB').click()
-        })
-        cy.get('#eXide-browse-toolbar-delete-resource').click()
-        cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
-
-        cy.get('div.eXide-browse-main').within(() => {
-          cy.contains('.browse-table tbody td.col-name', 'AéB').should('not.exist')
         })
       })
     })

@@ -908,6 +908,21 @@ eXide.app = (function(util) {
 		        if (timingEl) timingEl.style.display = "none";
 		    }
 
+		    // Build a display message from a query-error envelope. existdb-openapi#71
+		    // returns the QueryError shape { code, message, line, column, raw };
+		    // current releases (≤ v0.9.7) return a generic { error: "..." }. Prefer
+		    // the concise `message`, then `error`, then the verbose `raw`; fall back
+		    // to a serialized payload so the cause is never silently lost.
+		    function queryErrorMessage(err, fallback) {
+		        if (err == null) { return fallback || "Query failed."; }
+		        if (typeof err === "string") { return err; }
+		        var msg = err.message || err.error || err.raw
+		            || fallback || JSON.stringify(err);
+		        if (err.code) { msg = "[" + err.code + "] " + msg; }
+		        if (err.line > 0) { msg = "line " + err.line + ": " + msg; }
+		        return msg;
+		    }
+
 		    // Close previous cursor if any
 		    if (app._cursorId) {
 		        fetch("../existdb-openapi/api/query/" + app._cursorId, { method: "DELETE" }).catch(function() {});
@@ -936,27 +951,11 @@ eXide.app = (function(util) {
 		        hideCancel();
 		        if (!response.ok) {
 		            return response.json().then(function(err) {
-		                // existdb-openapi/cursor:eval errors come back as
-		                // { code, description, line, column, module, value }
-		                // (the standard XPathException → JSON shape). Older
-		                // code paths used { error: "..." } or { message: "..." }.
-		                // Coalesce so the user sees the real cause regardless
-		                // of which shape the server returns; fall back to a
-		                // serialized payload so the user can still copy/paste
-		                // the response if all known fields are missing.
-		                var msg = err.description || err.error || err.message
-		                    || (typeof err === "string" ? err : JSON.stringify(err));
-		                if (err.code) {
-		                    msg = "[" + err.code + "] " + msg;
-		                }
-		                if (err.line > 0) {
-		                    msg = "line " + err.line + ": " + msg;
-		                }
-		                // Pass the full structured error so the panel can
-		                // surface code/line/column/module/value separately
-		                // (request from @line-o on PR #794: the description
-		                // alone isn't enough — need all the info).
-		                editor.evalError(msg, !livePreview, err);
+		                // Pass the full structured error so the panel can surface
+		                // code/location/message/raw separately (request from
+		                // @line-o on PR #794: the message alone isn't enough —
+		                // need all the info).
+		                editor.evalError(queryErrorMessage(err), !livePreview, err);
 		            }, function () {
 		                // Body wasn't JSON — try to surface whatever the
 		                // server actually said (HTTP status + body text).
@@ -970,6 +969,19 @@ eXide.app = (function(util) {
 		            });
 		        }
 		        return response.json().then(function(data) {
+		            // Defend against a query error reported in a 200 body rather
+		            // than an error status — e.g. existdb-openapi before
+		            // eXist-db/existdb-openapi#46 returned a compile error as
+		            // HTTP 200 { error: ... } (eXist-db/eXide#828). Without this the
+		            // error is swallowed: data.cursor/items are undefined and the
+		            // success path shows neither results nor an error. Coalesce the
+		            // shapes the same way the !response.ok branch does.
+		            if (data.error || !data.cursor) {
+		                editor.evalError(
+		                    queryErrorMessage(data, "Query failed: no cursor returned."),
+		                    !livePreview, data);
+		                return;
+		            }
 		            app._cursorId = data.cursor;
 		            hitCount = data.items;
 		            endOffset = Math.min(numberOfResults, hitCount);
@@ -1183,76 +1195,6 @@ eXide.app = (function(util) {
 			editor.validator.triggerNow(editor.getActiveDocument());
 		},
 
-		/** If there are more query results to load, retrieve
-		 *  the next result.
-		 */
-		retrieveNext: function() {
-			console.log("retrieveNext: %d", currentOffset);
-		    if (currentOffset > 0 && currentOffset <= endOffset) {
-		        document.getElementById("serialization-mode").removeAttribute("disabled");
-		        var serializationMode = document.getElementById("serialization-mode").value;
-		        var autoExpandMatches = document.getElementById("auto-expand-matches").checked;
-		        var indentResults = document.getElementById("indent-results").checked;
-		        var url = 'results/' + currentOffset;
-				currentOffset++;
-				var params = new URLSearchParams({
-				    "output": serializationMode,
-				    "auto-expand-matches": autoExpandMatches,
-				    "indent": indentResults
-				});
-				fetch(url + "?" + params.toString())
-				    .then(function(response) {
-				        if (!response.ok) throw new Error(response.statusText);
-				        return response.text();
-				    })
-				    .then(function(data) {
-                        var temp = document.createElement("div");
-                        temp.innerHTML = data;
-                        var resultNode = temp.firstElementChild;
-                        if (resultNode) {
-                            var firstChild = resultNode.querySelector(":first-child");
-                            if (firstChild) {
-                                firstChild.style.width = (Math.ceil(Math.log(endOffset + 1) / Math.LN10)) + 'ch';
-                            }
-                            document.querySelectorAll('.results-container .results').forEach(function(el) {
-                                el.appendChild(resultNode);
-                            });
-                            var contentDiv = resultNode.querySelector('.content');
-                            if (contentDiv) {
-                                highlightResultContent(contentDiv);
-                            }
-                            document.querySelectorAll('.results-container .current').forEach(function(el) {
-                                el.textContent = 'Showing results ' + startOffset + ' to ' + (currentOffset - 1) + ' of ' + hitCount;
-                            });
-                            var posLinks = resultNode.querySelectorAll('.pos a');
-                            posLinks.forEach(function(link) {
-                                link.addEventListener("click", function(e) {
-                                    e.preventDefault();
-                                    app.findDocument(this.dataset.path);
-                                });
-                            });
-                            var copyBtns = resultNode.querySelectorAll('.copy-result');
-                            copyBtns.forEach(function(btn) {
-                                btn.addEventListener("click", function() {
-                                    var sibling = btn.parentNode.querySelector('.content');
-                                    var text = sibling ? sibling.textContent : "";
-                                    navigator.clipboard.writeText(text).then(function() {
-                                        btn.classList.remove('fa-clipboard');
-                                        btn.classList.add('fa-check', 'copied');
-                                        setTimeout(function() {
-                                            btn.classList.remove('fa-check', 'copied');
-                                            btn.classList.add('fa-clipboard');
-                                        }, 1200);
-                                    });
-                                });
-                            });
-                            app.retrieveNext();
-                        }
-				    });
-			} else {
-		    }
-		},
-
 		/** Called if user clicks on "forward" link in query results. */
 		browseNext: function() {
 			if (currentOffset > 0 && endOffset < hitCount) {
@@ -1262,12 +1204,7 @@ eXide.app = (function(util) {
 				if (hitCount < endOffset)
 					endOffset = hitCount;
 				activeResultIdx = -1;
-				if (app._cursorId) {
-					app.fetchCursorPage(startOffset, endOffset);
-				} else {
-					document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
-					app.retrieveNext();
-				}
+				app.fetchCursorPage(startOffset, endOffset);
 			}
 			return false;
 		},
@@ -1284,12 +1221,7 @@ eXide.app = (function(util) {
 				if (hitCount < endOffset)
 					endOffset = hitCount;
 				activeResultIdx = -1;
-				if (app._cursorId) {
-					app.fetchCursorPage(startOffset, endOffset);
-				} else {
-					document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
-					app.retrieveNext();
-				}
+				app.fetchCursorPage(startOffset, endOffset);
 			}
 			return false;
 		},
@@ -1300,12 +1232,7 @@ eXide.app = (function(util) {
 				currentOffset = 1;
 				endOffset = Math.min(numberOfResults, hitCount);
 				activeResultIdx = -1;
-				if (app._cursorId) {
-					app.fetchCursorPage(startOffset, endOffset);
-				} else {
-					document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
-					app.retrieveNext();
-				}
+				app.fetchCursorPage(startOffset, endOffset);
 			}
 			return false;
 		},
@@ -1316,12 +1243,7 @@ eXide.app = (function(util) {
 				currentOffset = startOffset;
 				endOffset = hitCount;
 				activeResultIdx = -1;
-				if (app._cursorId) {
-					app.fetchCursorPage(startOffset, endOffset);
-				} else {
-					document.querySelectorAll(".results-container .results").forEach(function(el) { el.innerHTML = ""; });
-					app.retrieveNext();
-				}
+				app.fetchCursorPage(startOffset, endOffset);
 			}
 			return false;
 		},
@@ -1951,9 +1873,11 @@ eXide.app = (function(util) {
                     var formData = new URLSearchParams();
                     formData.append("user", user);
                     formData.append("password", password);
-                    var durationEl = document.querySelector("#login-form input[name=\"duration\"]");
-                    if (durationEl && durationEl.checked) {
-                        formData.append("duration", "P14D");
+                    // The server decides how long a remembered session lasts; the
+                    // client only says whether the box was ticked.
+                    var rememberEl = document.querySelector("#login-form input[name=\"remember-me\"]");
+                    if (rememberEl && rememberEl.checked) {
+                        formData.append("remember-me", "true");
                     }
 					fetch("api/auth/session", {
 					    method: "POST",

@@ -90,7 +90,7 @@ describe('Query error display', () => {
       )
     })
 
-    cy.get('#exide-err-panel-dismiss').click()
+    clearError()
   })
 
   it('syntax error — shows real cause, not "Unknown error"', () => {
@@ -108,6 +108,23 @@ describe('Query error display', () => {
       )
     })
 
-    cy.get('#exide-err-panel-dismiss').click()
+    clearError()
+  })
+
+  it('static arity error (XPST0017) — surfaced even when reported in a 200 body', () => {
+    // Reproduction from eXist-db/eXide#828: concat() with one argument. Older
+    // existdb-openapi returns this compile error as HTTP 200 { error: ... }
+    // instead of an error status; the run path must still surface it.
+    setEditorContent('concat("test")')
+    runAndCaptureError().should((text) => {
+      expect(text).not.to.contain('Unknown error')
+      expect(text).to.satisfy((t) =>
+        /XPST0017/.test(t) ||
+        /at least two arguments/i.test(t) ||
+        /concat/i.test(t)
+      )
+    })
+
+    clearError()
   })
 })

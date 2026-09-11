@@ -5,6 +5,7 @@ const path = require("path");
 const fs = require('fs');
 const request = require("request");
 const commandLineArgs = require("command-line-args");
+const yazl = require("yazl");
 const { version } = require("../package.json");
 const { servers } = require('../.existdb.json');
 
@@ -163,6 +164,26 @@ async function bundle() {
     }
 }
 
+
+// glob-stream 8 no longer honors nodir; micro-fs.zip still assumes it.
+function zipFiles (globs, dest, options) {
+    const zip = new yazl.ZipFile();
+    return mfs.glob(globs, options || {}).then((files) => {
+        files.forEach((file) => {
+            if (!fs.statSync(file.path).isFile()) return;
+            const relative = path.relative(file.base, file.path);
+            zip.addFile(file.path, relative);
+        });
+        return new Promise((resolve, reject) => {
+            const stream = fs.createWriteStream(dest);
+            stream.on('close', resolve);
+            stream.on('error', reject);
+            zip.outputStream.pipe(stream);
+            zip.end();
+        });
+    });
+}
+
 function replace(path, outPath, data) {
     const content = fs.readFileSync(`${__dirname}/../${path}`, "utf-8");
     const replaced = content.toString().replace(/{{(.*)?}}/g, function (match, p1) {
@@ -186,7 +207,7 @@ function replace(path, outPath, data) {
     await bundle();    
 
     console.log(chalk`Creating xar {cyan eXide-${version}.xar}`);
-    mfs.zip(
+    zipFiles(
 		[
 			"*.*",
 			"modules/**/*",

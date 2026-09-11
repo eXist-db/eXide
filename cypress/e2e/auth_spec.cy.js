@@ -9,9 +9,9 @@ describe('with guest=yes (default)', function() {
     })
 
     describe('as guest user', function() {
-        it('login page should redirect guest to index.html', function() {
+        it('login page shows the login form for an unauthenticated visitor', function() {
             cy.visit('/eXide/login.html')
-            cy.url().should('eq', indexPage)
+            cy.url().should('eq', loginPage)
         })
 
         it('index page should show editor', function () {
@@ -57,9 +57,20 @@ describe('with guest=no', function() {
             cy.url().should('eq', loginPage)
         })
 
-        it('index page should redirect to login', function () {
+        // Hard guest gate: the app shell is served by a Roaster route (view:index)
+        // that refuses a disallowed guest and redirects to login — so under
+        // guest=no the editor never loads for an anonymous visitor.
+        it('index page refuses a guest and redirects to login', function () {
             cy.visit('/eXide/index.html')
             cy.url().should('eq', loginPage)
+        })
+
+        it('index page returns 302 -> login.html for a guest (no app HTML served)', function () {
+            cy.clearCookies()
+            cy.request({ url: '/eXide/index.html', followRedirect: false }).then((res) => {
+                expect(res.status).to.eq(302)
+                expect(res.redirectedToUrl).to.match(/login\.html$/)
+            })
         })
     })
 
@@ -132,4 +143,58 @@ describe('login using form', function () {
         })
     })
 
+})
+
+// (The controller /execute route — and its authorization gate — has been retired;
+// query execution now goes through the existdb-openapi /api/query cursor, which
+// owns that authorization. See the guest-gate tests above for the page-level gate.)
+
+// GET /api/auth/whoami must report identity from the eXist subject (sm:id()),
+// not the persistent-login request attribute. The attribute is only populated
+// by the cookie/param flow, so before this fix a request authenticated with the
+// HTTP Basic header reported as "guest" even though it executed as the real
+// user. These assert identity is consistent across all three auth mechanisms.
+describe('whoami identity source (sm:id, not the login attribute)', function () {
+    const whoami = '/eXide/api/auth/whoami'
+
+    it('reports the real user under HTTP Basic auth (regression)', function () {
+        cy.request({
+            url: whoami,
+            auth: { user: 'admin', pass: '' }
+        }).then((res) => {
+            expect(res.body.user).to.eq('admin')
+            expect(res.body.isLoggedIn).to.eq(true)
+            expect(res.body.isAdmin).to.eq(true)
+        })
+    })
+
+    it('reports guest when unauthenticated', function () {
+        // Cypress shares a cookie jar across requests; clear it so no
+        // remember-me cookie leaks into this assertion.
+        cy.clearCookies()
+        cy.request({ url: whoami }).then((res) => {
+            expect(res.body.user).to.eq('guest')
+            expect(res.body.isLoggedIn).to.eq(false)
+            expect(res.body.isAdmin).to.eq(false)
+        })
+    })
+
+    it('reports the real user via the persistent-login cookie', function () {
+        cy.clearCookies()
+        // Mint the cookie the way the login form does (form params).
+        cy.request({
+            method: 'POST',
+            url: '/eXide/api/auth/session',
+            form: true,
+            body: { user: 'admin', password: '' }
+        }).then((res) => {
+            expect(res.body.user).to.eq('admin')
+        })
+        // Subsequent request carries the cookie; whoami must agree.
+        cy.request({ url: whoami }).then((res) => {
+            expect(res.body.user).to.eq('admin')
+            expect(res.body.isLoggedIn).to.eq(true)
+            expect(res.body.isAdmin).to.eq(true)
+        })
+    })
 })

@@ -1,13 +1,29 @@
+/**
+ * Each test here owns its state: it seeds whatever file it needs and cleans up
+ * after itself, so no test depends on one that ran before it. That matters now
+ * that the suite runs with retries (#866) — Cypress retries only the failing
+ * test, not the ones that set up its state, so a chained spec retried against
+ * a half-built fixture can pass or fail for reasons unrelated to the failure.
+ */
 describe('File save', () => {
-  // Use /db which always exists; clean up test files after
-  var testCollection = '/db'
-  var testFile = 'cypress-test-' + Date.now() + '.xq'
+  const testCollection = '/db'
 
-  before(() => {
-    cy.cleanupTestFiles()
-  })
+  // Unique per test, so a leftover from an earlier run can never satisfy an
+  // assertion here. The `cypress-test-` prefix is what cleanupTestFiles sweeps.
+  function newFileName() {
+    return `cypress-test-${Date.now()}-${Cypress._.random(1000, 9999)}.xq`
+  }
+
+  // Seed a file server-side rather than by driving the UI, so tests that are
+  // about *opening* or *re-saving* a file do not silently depend on the test
+  // that is about saving one.
+  function seedFile(name, content) {
+    cy.execXQuery(`xquery version "3.1";
+      xmldb:store("${testCollection}", "${name}", "${content}", "application/xquery")`)
+  }
 
   beforeEach(() => {
+    cy.cleanupTestFiles()
     cy.loginXHR('admin', '')
     cy.visit('/eXide/index.html')
     cy.reload(true)
@@ -15,9 +31,13 @@ describe('File save', () => {
     cy.get('#user', { timeout: 10000 }).should('not.have.text', 'Login')
   })
 
+  afterEach(() => {
+    cy.cleanupTestFiles()
+  })
+
   function setEditorContent(text) {
     cy.window().then((win) => {
-      var doc = win.eXide.app.getEditor().getActiveDocument()
+      const doc = win.eXide.app.getEditor().getActiveDocument()
       doc.setText(text)
     })
   }
@@ -42,15 +62,11 @@ describe('File save', () => {
   }
 
   function openFileDirectly(path) {
-    var name = path.split('/').pop()
+    const name = path.split('/').pop()
     cy.window().then((win) => {
       win.eXide.app.$doOpenDocument({ path: path, name: name })
     })
   }
-
-  after(() => {
-    cy.cleanupTestFiles()
-  })
 
   it('opens the save dialog for a new document', () => {
     setEditorContent('1 + 1')
@@ -65,6 +81,7 @@ describe('File save', () => {
   })
 
   it('saves a new XQuery file to the database', () => {
+    const testFile = newFileName()
     setEditorContent('(: test file :)\n1 + 1')
     cy.get('#save').click()
 
@@ -77,11 +94,18 @@ describe('File save', () => {
     // Dialog should close and path should update
     saveDialogShouldBeClosed()
     cy.get('.path', { timeout: 5000 }).should('contain', testFile)
+
+    // …and the resource is really in the database, not just in the tab label.
+    cy.request(`/eXide/api/storage${testCollection}`).then((response) => {
+      expect(response.body.items.map((item) => item.name)).to.include(testFile)
+    })
   })
 
   it('saves an existing document without opening dialog', () => {
-    // Open the file we saved in the previous test directly
-    openFileDirectly(testCollection + '/' + testFile)
+    const testFile = newFileName()
+    seedFile(testFile, '(: seeded :)&#10;1 + 1')
+
+    openFileDirectly(`${testCollection}/${testFile}`)
     cy.get('.path', { timeout: 10000 }).should('contain', testFile)
 
     // Modify the content
@@ -113,13 +137,15 @@ describe('File save', () => {
   })
 
   it('can open a saved file and verify content', () => {
-    // Open the file we saved and modified earlier
-    openFileDirectly(testCollection + '/' + testFile)
+    const testFile = newFileName()
+    seedFile(testFile, '(: modified :)&#10;2 + 2')
+
+    openFileDirectly(`${testCollection}/${testFile}`)
     cy.get('.path', { timeout: 10000 }).should('contain', testFile)
 
-    // Verify the document was loaded with the modified content
+    // The editor holds what the database holds.
     cy.window().then((win) => {
-      var text = win.eXide.app.getEditor().getActiveDocument().getText()
+      const text = win.eXide.app.getEditor().getActiveDocument().getText()
       expect(text).to.contain('modified')
     })
   })

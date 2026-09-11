@@ -12,7 +12,8 @@
  *   Client → { action: "cancel", id }
  *   Server → { type: "cancelled", id }
  *
- * Falls back to HTTP POST /execute when the WebSocket endpoint is unavailable.
+ * When the WebSocket endpoint is unavailable, execute() returns null and the
+ * caller falls back to the existdb-openapi /api/query cursor.
  */
 eXide.namespace("eXide.wsEval");
 

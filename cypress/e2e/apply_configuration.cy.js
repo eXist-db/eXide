@@ -1,6 +1,13 @@
+/**
+ * Each test owns its collection: it is created before the test and removed
+ * after, and any file a test needs is seeded rather than inherited from the
+ * test before it. With retries enabled (#866) Cypress re-runs only the failing
+ * test, not the ones that built its fixture, so shared state makes a retry
+ * meaningless.
+ */
 describe('Apply configuration', () => {
-  // Use /db which always exists; clean up test files after
-  const testCollection = '/db/test-collection-' + Date.now()
+  // Assigned per test in beforeEach, so no two tests share a collection.
+  let testCollection
   const testFile = 'testcontent.xml'
   const testConfigFile = 'collection.xconf'
   const testConfig = `<collection xmlns="http://exist-db.org/collection-config/1.0">
@@ -11,13 +18,10 @@ describe('Apply configuration', () => {
     </index>
 </collection>`
 
-  before(() => {
-    cy.loginXHR('admin', '')
-    createTestCollection(testCollection)
-  })
-
   beforeEach(() => {
     cy.loginXHR('admin', '')
+    testCollection = `/db/test-collection-${Date.now()}-${Cypress._.random(1000, 9999)}`
+    createTestCollection(testCollection)
     cy.visit('/eXide/index.html')
     cy.reload(true)
     cy.get('.path', { timeout: 10000 }).should('contain', 'untitled-1')
@@ -95,10 +99,17 @@ describe('Apply configuration', () => {
       .find('.eXide-dialog-buttons button').contains("Create").click()
   }
 
-  after(() => {
+  afterEach(() => {
     cy.loginXHR('admin', '')
     cleanTestCollection(testCollection)
   })
+
+  // Seed a resource server-side, so a test about *applying* a configuration
+  // does not depend on the test that is about *saving* one.
+  function seedResource(collection, name, content) {
+    cy.execXQuery(`xquery version "3.1";
+      xmldb:store("${collection}", "${name}", ${content})`)
+  }
 
   it('saves a new test file to the database', () => {
     openNewXMLFile()
@@ -141,7 +152,10 @@ describe('Apply configuration', () => {
   })
 
   it('saves the configuration and shows the apply configuration dialog', () => {
-    // Open the file we saved in the previous test directly
+    // Seed the configuration this test is about saving, rather than relying on
+    // the previous test having saved one.
+    seedResource(testCollection, testConfigFile, `document {${testConfig}}`)
+
     openFileDirectly(testCollection + '/' + testConfigFile)
     cy.get('.path', { timeout: 10000 }).should('contain', testConfigFile)
 
