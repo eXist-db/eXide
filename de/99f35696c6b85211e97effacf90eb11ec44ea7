@@ -1,0 +1,19 @@
+scripts/build.js
+  s_eb2503df4f3b37::t_0fe5da19c63a75 5,8,120-129,132,134,137-140,184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.4",
+  "base_commit_sha": "de99f35696c6b85211e97effacf90eb11ec44ea7",
+  "prompts": {},
+  "sessions": {
+    "s_eb2503df4f3b37": {
+      "agent_id": {
+        "tool": "cursor",
+        "id": "9d244bc1-747f-4862-9849-a00fb3bcf0be",
+        "model": "default"
+      },
+      "human_author": "duncdrum <d.paterson@me.com>"
+    }
+  }
+}
