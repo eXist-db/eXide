@@ -12,6 +12,34 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="4.1.0">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>New: auth: serve the eXide shell via a Roaster route with a hard guest gate</li>
+                <li>New: ci: publish released XARs to the eXist-db public repo</li>
+                <li>New: release: auto-populate repo.xml's changelog on release</li>
+                <li>New: release: push release commit via exist-bot and target develop</li>
+                <li>Fix: auth: delegate login fully to Roaster; strip auth from controller.xq</li>
+                <li>Fix: auth: derive identity from sm:id(), not the persistent-login attribute</li>
+                <li>Fix: auth: drop dead "guest" fallback per review</li>
+                <li>Fix: auth: fold /api/auth routes into Roaster authorization ($request?user)</li>
+                <li>Fix: auth: make "remember me" set the session lifetime</li>
+                <li>Fix: auth: retire /execute + /results; controller is now fully auth-free</li>
+                <li>Fix: build: load chalk 6 via CJS default export</li>
+                <li>Fix: ci: drop duplicate test workflow shadowing exist-db CI</li>
+                <li>Fix: db: encode new leaf names in create/rename so spaces are accepted</li>
+                <li>Fix: db: honor expand-xincludes on open</li>
+                <li>Fix: db: tolerate an unreadable child in the storage listing; surface browse errors</li>
+                <li>Fix: deployment: stop poisoning eXide.projects localStorage (<a href="https://github.com/eXist-db/eXide/issues/835">#835</a>)</li>
+                <li>Fix: husky: migrate off the deprecated v8 hook API</li>
+                <li>Fix: package: declare the dependency versions eXide actually needs</li>
+                <li>Fix: packages: report the app's real collection as `root`</li>
+                <li>Fix: packages: resolve GET /api/packages?collection= to the owning package</li>
+                <li>Fix: query: align error display with existdb-openapi<a href="https://github.com/eXist-db/eXide/issues/71">#71</a> envelope</li>
+                <li>Fix: query: surface query errors returned in a 200 body</li>
+                <li>Fix: release: keep the real package.json version like Monex</li>
+                <li>Fix: release: serialize release runs</li>
+            </ul>
+        </change>
         <change version="4.0.0">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li><strong>Modernization release.</strong> Requires eXist-db 7.0+.</li>
@@ -48,7 +76,7 @@
         </change>
         <change version="3.5.2">
             <ul xmlns="http://www.w3.org/1999/xhtml">
-                <li>Fixed: Downloads via Application > Download app and via DB Manager - <a href="https://github.com/eXist-db/eXide/pull/650">#650</a></li>
+                <li>Fixed: Downloads via Application &gt; Download app and via DB Manager - <a href="https://github.com/eXist-db/eXide/pull/650">#650</a></li>
             </ul>
         </change>
         <change version="3.5.1">
@@ -59,7 +87,7 @@
         </change>
         <change version="3.5.0">
             <ul xmlns="http://www.w3.org/1999/xhtml">
-                <li>Fixed: Login dialog should focus on User input field with File > Manage - <a href="https://github.com/eXist-db/eXide/pull/468">#468</a></li>
+                <li>Fixed: Login dialog should focus on User input field with File &gt; Manage - <a href="https://github.com/eXist-db/eXide/pull/468">#468</a></li>
                 <li>New: Save as uses current file's collection - <a href="https://github.com/eXist-db/eXide/pull/469">#469</a></li>
                 <li>New: Add preference to toggle auto-pairing of comments and brackets, and improve auto-pairing - <a href="https://github.com/eXist-db/eXide/pull/471">#471</a>, <a href="https://github.com/eXist-db/eXide/pull/475">#475</a></li>
                 <li>New: Add download button to DB Manager view - <a href="https://github.com/eXist-db/eXide/pull/484">#484</a></li>
@@ -93,7 +121,7 @@
         </change>
         <change version="3.2.0">
             <ul xmlns="http://www.w3.org/1999/xhtml">
-                <li>Feature: Restored v3.1.0 serialization preferences (accessed via Edit > Preferences) and expanded them with separate settings governing serialization when opening documents in the editor, downloading documents to disk, and downloading EXPath applications; these settings now control 3 serialization parameters: indent, XInclude expansion, and XML declarations - <a href="https://github.com/eXist-db/eXide/pull/335">#335</a></li>
+                <li>Feature: Restored v3.1.0 serialization preferences (accessed via Edit &gt; Preferences) and expanded them with separate settings governing serialization when opening documents in the editor, downloading documents to disk, and downloading EXPath applications; these settings now control 3 serialization parameters: indent, XInclude expansion, and XML declarations - <a href="https://github.com/eXist-db/eXide/pull/335">#335</a></li>
                 <li>Fixed: Preferences added in new versions of eXide were not picked up when upgrading from old versions - <a href="https://github.com/eXist-db/eXide/issues/334">#334</a></li>
                 <li>Fixed: Bug caused by lingering references to the shared-resources package after it was removed from the list of declared dependencies - <a href="https://github.com/eXist-db/eXide/issues/333">#333</a></li>
                 <li>Fixed: Long lines in output area not wrapped - <a href="https://github.com/eXist-db/eXide/issues/326">#326</a></li>
@@ -142,7 +170,7 @@
         <change version="2.4.10">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fixed: Update collection.xconf schema with support for eXist 5 field and facets; update xconf template - <a href="https://github.com/eXist-db/eXide/pull/279">#279</a></li>
-                <li>Fixed: Application > Download introduced whitespace into XML documents - <a href="https://github.com/eXist-db/eXide/issues/271">#271</a></li>
+                <li>Fixed: Application &gt; Download introduced whitespace into XML documents - <a href="https://github.com/eXist-db/eXide/issues/271">#271</a></li>
                 <li>Fixed: Capture errors without description - <a href="https://github.com/eXist-db/eXide/pull/261">#261</a></li>                
                 <li>Fixed: Additional eXist 5 compatibility - <a href="https://github.com/eXist-db/eXide/pull/247">#247</a></li>
                 <li>Fixed: Remove unused dates.xqm module - <a href="https://github.com/eXist-db/eXide/pull/241">#241</a></li>
@@ -152,7 +180,7 @@
         <change version="2.4.9">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fixed: An issue in the xqlint library caused silent errors when using legacy map constructor syntax - <a href="https://github.com/eXist-db/eXide/issues/224">#224</a></li>
-                <li>Fixed: An bug affecting copying, cutting, and pasting of resources in the File > DB Manager pane - <a href="https://github.com/eXist-db/eXide/pull/225">#225</a></li>
+                <li>Fixed: An bug affecting copying, cutting, and pasting of resources in the File &gt; DB Manager pane - <a href="https://github.com/eXist-db/eXide/pull/225">#225</a></li>
                 <li>Security: When logging in, credentials are now submitted via HTTP POST instead of GET  - <a href="https://github.com/eXist-db/eXide/pull/227">#227</a></li>
             </ul>
         </change>
@@ -203,7 +231,7 @@
         </change>
         <change version="2.4.1">
             <ul xmlns="http://www.w3.org/1999/xhtml">
-                <li>Fixed: Restored the SetGID, SetUID, and sticky bit checkboxes in File > Manage permissions dialog</li>
+                <li>Fixed: Restored the SetGID, SetUID, and sticky bit checkboxes in File &gt; Manage permissions dialog</li>
             </ul>
         </change>
         <change version="2.4.0">
@@ -220,7 +248,7 @@
         <change version="2.3.3">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>Fix serialization of query results with strings containing escaped characters</li>
-                <li>Fix the column that "Navigate" > "Go to line" goes to</li>
+                <li>Fix the column that "Navigate" &gt; "Go to line" goes to</li>
                 <li>Improve download app to prevent expansion of XIncludes</li>
                 <li>Improve error reported when trying to run tests not stored in the database</li>
                 <li>Removed package's semver-max to ensure compatibility with all eXist 3.x releases</li>
