@@ -1,0 +1,35 @@
+name: Publish to public-repo
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing release tag to (re)publish, e.g. v5.1.1"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Upload XAR to exist-db.org
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download XAR from the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.xar' --dir dist
+      - name: Publish to https://exist-db.org/exist/apps/public-repo
+        env:
+          USERNAME: ${{ vars.PUBLIC_REPO_USERNAME }}
+          PASSWORD: ${{ secrets.PUBLIC_REPO_PASSWORD }}
+        run: |
+          response=$(curl --fail-with-body -sS \
+            -u "$USERNAME:$PASSWORD" \
+            -F "files[]=@$(ls dist/*.xar)" \
+            https://exist-db.org/exist/apps/public-repo/publish)
+          echo "$response"
+          echo "$response" | jq -e '.files[0].name' > /dev/null

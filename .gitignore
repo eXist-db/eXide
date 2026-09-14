@@ -1,7 +1,15 @@
-.DS_Store
-.env
+.*
+!.gitignore
+!.existdb.json
+!.gitmodules
+!.github
+!.releaserc
+!.commitlintrc.js
+!.husky
+
 build/*
 expath-pkg.xml
+repo.xml
 
 resources/scripts/xqlint.min.js
 resources/scripts/prettier-bundle.js
@@ -22,9 +30,3 @@ cypress/videos/*.mp4
 cypress/screenshots/**/*.png
 
 CLAUDE.md
-
-.*
-!.gitignore
-!.existdb.json
-!.gitmodules
-!.github
