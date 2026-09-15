@@ -109,28 +109,286 @@ declare function editor:modules($request as map(*)) {
     }
 };
 
+declare variable $editor:XSD_11 :=
+    "http://www.w3.org/XML/XMLSchema/v1.1";
+
+declare variable $editor:XSI_NS :=
+    "http://www.w3.org/2001/XMLSchema-instance";
+
+declare variable $editor:SCHEMA_DIR_DB :=
+    "/db/apps/eXide/resources/schema/";
+
+(:~
+ : Known eXist grammars keyed by target namespace (exist#6528 native set).
+ :)
+declare variable $editor:SCHEMA_BY_NS := map {
+    "http://exist-db.org/collection-config/1.0": "collection.xconf.xsd",
+    "http://exist.sourceforge.net/NS/exist": "controller-config.xsd",
+    "http://expath.org/ns/pkg": "expath-pkg.xsd",
+    "http://exist-db.org/Configuration": "security-manager.xsd"
+};
+
+(:~
+ : No-namespace eXist config roots → grammar filename.
+ :)
+declare variable $editor:SCHEMA_BY_ROOT := map {
+    "exist": "conf.xsd",
+    "xquery-app": "descriptor.xsd",
+    "mime-types": "mime-types.xsd",
+    "auth": "users.xsd",
+    "server": "server.xsd"
+};
+
+(:~
+ : True when the given filesystem path exists. File module namespace varies by
+ : eXist-db version — same approach as admin:status.
+ :)
+declare function editor:file-exists($path as xs:string) as xs:boolean {
+    let $escaped := replace($path, "'", "''")
+    return
+        try {
+            if ("http://expath.org/ns/file" = util:registered-modules()) then
+                util:eval(
+                    "import module namespace file='http://expath.org/ns/file'; " ||
+                    "file:exists('" || $escaped || "')"
+                )
+            else if ("http://exist-db.org/xquery/file" = util:registered-modules()) then
+                util:eval(
+                    "import module namespace file='http://exist-db.org/xquery/file' " ||
+                    "at 'java:org.exist.xquery.modules.file.FileModule'; " ||
+                    "file:exists('" || $escaped || "')"
+                )
+            else
+                false()
+        } catch * {
+            false()
+        }
+};
+
+(:~
+ : Convert an absolute filesystem path to a file: URI (Unix and Windows).
+ :)
+declare function editor:path-to-file-uri($path as xs:string) as xs:anyURI {
+    let $normalized := replace($path, "\\", "/")
+    let $with-slashes :=
+        if (matches($normalized, "^[A-Za-z]:/")) then
+            "file:///" || $normalized
+        else if (starts-with($normalized, "/")) then
+            "file://" || $normalized
+        else
+            "file:///" || $normalized
+    return
+        xs:anyURI(replace($with-slashes, " ", "%20"))
+};
+
+(:~
+ : Resolve a known grammar filename to native `$EXIST_HOME/schema/` when
+ : present (exist#6528), else the app-bundled fallback (eXide#842).
+ : Returns map { "uri", "source" ("native"|"bundled"), "name" }.
+ :)
+declare function editor:resolve-grammar-file($name as xs:string) as map(*) {
+    let $native := system:get-exist-home() || "/schema/" || $name
+    return
+        if (editor:file-exists($native)) then
+            map {
+                "uri": editor:path-to-file-uri($native),
+                "source": "native",
+                "name": $name
+            }
+        else
+            map {
+                "uri": xs:anyURI($editor:SCHEMA_DIR_DB || $name),
+                "source": "bundled",
+                "name": $name
+            }
+};
+
+(:~
+ : If $hint is a known grammar basename (optionally with path), return it.
+ :)
+declare function editor:known-grammar-name($hint as xs:string?) as xs:string? {
+    if (empty($hint) or $hint eq "") then
+        ()
+    else
+        let $base := replace($hint, "^.*/", "")
+        return
+            if (
+                $base = (
+                    map:keys($editor:SCHEMA_BY_NS) ! $editor:SCHEMA_BY_NS(.),
+                    map:keys($editor:SCHEMA_BY_ROOT) ! $editor:SCHEMA_BY_ROOT(.)
+                )
+            ) then
+                $base
+            else
+                ()
+};
+
+(:~
+ : Prefer xsi:schemaLocation / xsi:noNamespaceSchemaLocation when present,
+ : then namespace map, then no-namespace root map.
+ : Returns map { "uri", "source", "name" } or the empty sequence.
+ :
+ : Interim: uses validation:jaxv-report with an explicit schema URI because
+ : jaxp + system/OASIS catalog does not yet apply native XSD 1.1 grammars
+ : (exist#6686). When that lands, prefer catalog resolution again.
+ :)
+declare function editor:resolve-schema($root as element()) as map(*)? {
+    let $schema-loc-attr :=
+        $root/@*[namespace-uri(.) eq $editor:XSI_NS and local-name(.) eq "schemaLocation"]
+    let $no-ns-loc-attr :=
+        $root/@*[namespace-uri(.) eq $editor:XSI_NS and local-name(.) eq "noNamespaceSchemaLocation"]
+    let $schema-loc :=
+        if (exists($schema-loc-attr)) then normalize-space($schema-loc-attr) else ""
+    let $no-ns-loc :=
+        if (exists($no-ns-loc-attr)) then normalize-space($no-ns-loc-attr) else ""
+    let $from-schema-location :=
+        if ($schema-loc ne "") then
+            let $tokens := tokenize($schema-loc, "\s+")
+            let $pairs :=
+                for $i in (1 to (count($tokens) idiv 2))
+                let $ns := $tokens[($i - 1) * 2 + 1]
+                let $loc := $tokens[($i - 1) * 2 + 2]
+                return
+                    if ($ns eq namespace-uri($root)) then $loc else ()
+            let $loc := head($pairs)
+            return
+                if (empty($loc)) then
+                    ()
+                else if (matches($loc, "^(file:|/db/)")) then
+                    map {
+                        "uri": xs:anyURI($loc),
+                        "source": "instance",
+                        "name": replace($loc, "^.*/", "")
+                    }
+                else
+                    let $known := editor:known-grammar-name($loc)
+                    return
+                        if (exists($known)) then
+                            editor:resolve-grammar-file($known)
+                        else if (map:contains($editor:SCHEMA_BY_NS, namespace-uri($root))) then
+                            editor:resolve-grammar-file($editor:SCHEMA_BY_NS(namespace-uri($root)))
+                        else
+                            ()
+        else
+            ()
+    let $from-no-ns :=
+        if (exists($from-schema-location)) then
+            ()
+        else if ($no-ns-loc ne "") then
+            if (matches($no-ns-loc, "^(file:|/db/)")) then
+                map {
+                    "uri": xs:anyURI($no-ns-loc),
+                    "source": "instance",
+                    "name": replace($no-ns-loc, "^.*/", "")
+                }
+            else
+                let $known := editor:known-grammar-name($no-ns-loc)
+                return
+                    if (exists($known)) then
+                        editor:resolve-grammar-file($known)
+                    else
+                        ()
+        else
+            ()
+    let $from-ns :=
+        if (exists(($from-schema-location, $from-no-ns))) then
+            ()
+        else if (map:contains($editor:SCHEMA_BY_NS, namespace-uri($root))) then
+            editor:resolve-grammar-file($editor:SCHEMA_BY_NS(namespace-uri($root)))
+        else
+            ()
+    let $from-root :=
+        if (exists(($from-schema-location, $from-no-ns, $from-ns))) then
+            ()
+        else if (namespace-uri($root) eq "" and map:contains($editor:SCHEMA_BY_ROOT, local-name($root))) then
+            editor:resolve-grammar-file($editor:SCHEMA_BY_ROOT(local-name($root)))
+        else
+            ()
+    return
+        ($from-schema-location, $from-no-ns, $from-ns, $from-root)[1]
+};
+
+declare function editor:validation-result(
+    $report as element(),
+    $grammar as map(*)?
+) as map(*) {
+    let $base :=
+        if (exists($grammar)) then
+            map {
+                "grammar": $grammar?source,
+                "schema": $grammar?name
+            }
+        else
+            map {
+                "grammar": "none",
+                "schema": ()
+            }
+    return
+        if ($report/status eq "valid") then
+            map:merge(($base, map { "status": "valid" }))
+        else
+            map:merge((
+                $base,
+                map {
+                    "status": "invalid",
+                    "errors": array {
+                        for $msg in $report/message
+                        return map {
+                            "line": (xs:integer($msg/@line), 0)[1],
+                            "message": string($msg)
+                        }
+                    }
+                }
+            ))
+};
+
 (:~
  : POST /api/editor/validate — XML validation.
  : Migrated from validate-xml.xq.
+ :
+ : Resolves a grammar for known eXist/EXPath documents (native
+ : `$EXIST_HOME/schema/` when present — exist#6528 — else bundled copies under
+ : resources/schema/; see eXide#842). Instance xsi:schemaLocation /
+ : noNamespaceSchemaLocation is honoured when it points at a known grammar or
+ : an absolute file:/db URI. Validation uses validation:jaxv-report + XSD 1.1
+ : (interim until exist#6686 restores reliable catalog-based jaxp).
+ :
+ : XML without a resolvable grammar is checked for well-formedness only.
  :)
 declare function editor:validate($request as map(*)) {
     let $xml := $request?body
     let $validate := ($request?parameters?validate, true())[1]
     return
         try {
-            let $parsed :=
-                if ($validate) then
-                    validation:jaxp-parse($xml, true(),
-                        doc("/db/apps/eXide/resources/schema/catalog.xml"))
-                else
-                    parse-xml($xml)
-            return map { "status": "valid" }
+            if (not($validate)) then
+                let $_ :=
+                    if ($xml instance of node()) then $xml
+                    else parse-xml($xml)
+                return map { "status": "valid", "grammar": "none", "schema": () }
+            else
+                let $node :=
+                    if ($xml instance of node()) then $xml
+                    else parse-xml($xml)
+                let $root :=
+                    if ($node instance of document-node()) then $node/*
+                    else $node
+                let $grammar := editor:resolve-schema($root)
+                return
+                    if (exists($grammar)) then
+                        editor:validation-result(
+                            validation:jaxv-report($node, $grammar?uri, $editor:XSD_11),
+                            $grammar
+                        )
+                    else
+                        map { "status": "valid", "grammar": "none", "schema": () }
         } catch * {
             map {
                 "status": "invalid",
+                "grammar": "none",
+                "schema": (),
                 "errors": array {
                     map {
-                        "line": $err:line-number,
+                        "line": ($err:line-number, 0)[1],
                         "message": $err:description
                     }
                 }
