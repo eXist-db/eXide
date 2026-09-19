@@ -81,18 +81,11 @@ describe('CDATA sections survive a save', () => {
     })
   })
 
-  // The write path is fixed; the read path is not. db:load-document builds its JSON
-  // `content` with fn:serialize(doc(...), map { "method": "xml" }), and fn:serialize is
-  // defined to escape unless the element is named in cdata-section-elements -- so a stored
-  // CDATA section comes back as `&gt;` even when the database holds it intact. (Fetching
-  // the same resource over REST returns `<![CDATA[ ... ]]>`, which is how we know the loss
-  // is in this serialization and not in storage.)
-  //
-  // eXide cannot fix that on its own: naming script/style in cdata-section-elements would
-  // *impose* CDATA on elements that never had it, which is the same kind of silent rewrite
-  // this spec exists to prevent. It needs a serializer option in eXist that preserves the
-  // CDATA nodes already in the stored document -- tracked separately. Unskip when that lands.
-  it.skip('round-trips a CDATA section through the database unescaped', () => {
+  // Round trip: the write path sends the buffer as bytes, and the read path asks the
+  // serializer to keep stored CDATA sections (exist:preserve-cdata). Both halves are needed
+  // -- without the read-path parameter fn:serialize escapes the section back into `&gt;`
+  // even when the database holds it intact.
+  it('round-trips a CDATA section through the database unescaped', () => {
     const testFile = newFileName()
     cy.intercept('PUT', '**/api/storage/**').as('put')
 
