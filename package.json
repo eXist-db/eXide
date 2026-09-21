@@ -38,7 +38,7 @@
 	"devDependencies": {
 		"chalk": "^6.0.0",
 		"command-line-args": "^6.0.2",
-		"cypress": "^16.0.0",
+		"cypress": "^16.1.0",
 		"esbuild": "^0.28.2",
 		"glob-stream": "^8.0.3",
 		"request": "^2.88.2",
