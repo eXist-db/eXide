@@ -6,13 +6,15 @@
            xmlns:dcterms="http://purl.org/dc/terms/"
            elementFormDefault="qualified"
            targetNamespace="http://exist-db.org/collection-config/1.0"
-           version="1.0.0">
+           version="1.2.2">
+
+    <xs:include schemaLocation="schema-version-type.xsd"/>
 
     <xs:annotation>
         <xs:documentation>Schema for eXist-db Collection Configuration files /db/system/config/db/**/collection.xconf</xs:documentation>
         <xs:appinfo>
             <dcterms:title>Schema for eXist-db Collection Configuration Files</dcterms:title>
-            <dcterms:created xsi:type="dcterms:W3CDTF">2011-10-09T18:47:21.319+01:00</dcterms:created>
+            <dcterms:created>2011-10-09T18:47:21.319+01:00</dcterms:created>
             <dcterms:creator>Adam Retter</dcterms:creator>
         </xs:appinfo>
     </xs:annotation>
@@ -28,6 +30,7 @@
             <xs:element ref="cc:triggers" minOccurs="0"/>
             <xs:element ref="cc:validation" minOccurs="0"/>
         </xs:all>
+        <xs:attribute name="schemaVersion" type="cc:schemaVersionType" use="optional"/>
         <xs:assert test="count(*) ge 1"/>
     </xs:complexType>
     <xs:element name="index" type="cc:indexType"/>
@@ -56,15 +59,15 @@
     </xs:complexType>
 
     <xs:element name="range" type="cc:newRangeIndexType"/>
-
+    
     <xs:complexType name="newRangeIndexType">
         <xs:sequence>
             <xs:element ref="cc:create" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
     </xs:complexType>
-
+    
     <xs:element name="create" type="cc:rangeIndexCreateType"/>
-
+    
     <xs:complexType name="rangeIndexCreateType">
         <xs:group ref="cc:fieldDefinitions"/>
         <xs:attributeGroup ref="cc:qnameOpt"/>
@@ -75,14 +78,14 @@
         <xs:attributeGroup ref="cc:caseOpt"/>
         <xs:attributeGroup ref="cc:collationOpt"/>
     </xs:complexType>
-
+    
     <xs:group name="fieldDefinitions">
         <xs:all>
             <xs:element name="condition" type="cc:newRangeIndexConditionType" minOccurs="0" maxOccurs="unbounded"/>
             <xs:element name="field" type="cc:newRangeIndexFieldType" minOccurs="0" maxOccurs="unbounded"/>
         </xs:all>
     </xs:group>
-
+    
     <xs:complexType name="newRangeIndexConditionType">
         <xs:attributeGroup ref="cc:attributeReq"/>
         <xs:attributeGroup ref="cc:operatorOpt"/>
@@ -90,7 +93,7 @@
         <xs:attributeGroup ref="cc:caseOpt"/>
         <xs:attributeGroup ref="cc:numericOpt"/>
     </xs:complexType>
-
+    
     <xs:complexType name="newRangeIndexFieldType">
         <xs:attributeGroup ref="cc:nameReq"/>
         <xs:attributeGroup ref="cc:matchOpt"/>
@@ -99,7 +102,7 @@
         <xs:attributeGroup ref="cc:whitespaceOpt"/>
         <xs:attributeGroup ref="cc:typeOpt"/>
     </xs:complexType>
-
+    
     <xs:element name="lucene" type="cc:luceneType"/>
 
     <xs:complexType name="luceneType">
@@ -143,9 +146,9 @@
         <xs:attribute name="type" type="xs:string" use="optional" default="java.lang.String"/>
         <xs:attributeGroup ref="cc:valueOpt"/>
     </xs:complexType>
-
+    
     <xs:element name="module" type="cc:moduleType"/>
-
+    
     <xs:complexType name="moduleType">
         <xs:attributeGroup ref="cc:uriReq"/>
         <xs:attributeGroup ref="cc:prefixReq"/>
@@ -226,7 +229,7 @@
         <xs:attributeGroup ref="cc:expressionReq"/>
         <xs:attributeGroup ref="cc:hierarchicalOpt"/>
     </xs:complexType>
-
+    
     <xs:complexType name="fieldAttrType">
         <xs:attributeGroup ref="cc:nameReq"/>
         <xs:attributeGroup ref="cc:ifOpt"/>
@@ -267,7 +270,7 @@
             <xs:documentation>Trigger Configuration</xs:documentation>
         </xs:annotation>
         <xs:sequence>
-            <xs:element ref="cc:trigger" maxOccurs="unbounded"/>
+            <xs:element ref="cc:trigger" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
     </xs:complexType>
 
@@ -319,14 +322,14 @@
     </xs:complexType>
 
     <!--
-        We are hiding attributes in attributeGroup to manage their namespaces as
+        We are hiding attributes in attributeGroup to manage their namespaces as 
         described here: http://docstore.mik.ua/orelly/xml/schema/ch10_04.htm.
-        A side benefit of this is centralized definitions attributes that may be
+        A side benefit of this is centralized definitions attributes that may be 
         used by different elements.
         Please keep the entries arranged in alphabetical order for easy lookup.
-        Note that there are -Opt and -Req pairs of many attributes.
-        Ideally we could have just one definition of each attribute, but this
-        is not possible because of form restrictions in XML Schema, so
+        Note that there are -Opt and -Req pairs of many attributes. 
+        Ideally we could have just one definition of each attribute, but this 
+        is not possible because of form restrictions in XML Schema, so 
         @use=required|optional has to be hardcoded in the xs:attributeGroup
         definition.
     -->
@@ -338,7 +341,7 @@
         <xs:attribute name="at" type="xs:anyURI" use="required" form="unqualified"/>
     </xs:attributeGroup>
     <xs:attributeGroup name="attributeReq">
-        <xs:attribute name="attribute" type="xs:NCName" use="required"/>
+        <xs:attribute name="attribute" type="xs:string" use="required"/>
     </xs:attributeGroup>
     <xs:attributeGroup name="binaryOpt">
         <xs:attribute name="binary" use="optional">
@@ -488,7 +491,7 @@
                     </xs:enumeration>
                 </xs:restriction>
             </xs:simpleType>
-        </xs:attribute>
+        </xs:attribute>    
     </xs:attributeGroup>
     <xs:attributeGroup name="ifOpt">
         <xs:attribute name="if" type="xs:string" use="optional" form="unqualified"/>
@@ -509,7 +512,7 @@
                     </xs:enumeration>
                 </xs:restriction>
             </xs:simpleType>
-        </xs:attribute>
+        </xs:attribute>    
     </xs:attributeGroup>
     <xs:attributeGroup name="numericOpt">
         <xs:attribute name="numeric" use="optional" default="no">
@@ -618,7 +621,7 @@
                     </xs:enumeration>
                 </xs:restriction>
             </xs:simpleType>
-        </xs:attribute>
+        </xs:attribute>    
     </xs:attributeGroup>
     <xs:attributeGroup name="typeOpt">
         <xs:attribute name="type" type="xs:QName" use="optional" form="unqualified"/>
