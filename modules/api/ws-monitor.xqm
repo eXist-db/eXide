@@ -127,25 +127,45 @@ declare function wsmon:push-status($request as map(*)) {
 
 (:~
  : Get the JMX servlet authentication token.
+ :
+ : Prefers the built-in system:get-jmx-token() accessor, looked up
+ : dynamically via function-lookup() -- a static call would be an
+ : uncatchable XPST0017 on eXist-db versions that predate it, which would
+ : break every function in this module, not just this one.
+ :
+ : Falls back to reading the token file directly for those versions.
+ : get-exist-home() is used to locate it, but on some installs (notably
+ : outside Docker) it returns "", which is why this used to always come up
+ : empty there.
+ :
+ : @return the JMX token, or the empty sequence if it can't be resolved
+ : @see http://exist-db.org/apps/eXide/api/admin;admin:get-jmx-token equivalent resolver used by the HTTP polling endpoint
+ : @see https://github.com/eXist-db/eXide/issues/821
+ : @see https://github.com/eXist-db/exist/issues/6582 get-exist-home() returning "" on non-Docker installs
  :)
 declare %private function wsmon:get-jmx-token() as xs:string? {
-    try {
-        let $file-read := function-lookup(QName("http://expath.org/ns/file", "read-text"), 1)
-        let $file-exists := function-lookup(QName("http://expath.org/ns/file", "exists"), 1)
-        return
-            if (exists($file-read) and exists($file-exists)) then
-                let $path := system:get-exist-home() || "/data/jmxservlet.token"
+    let $get-token := function-lookup(QName("http://exist-db.org/xquery/system", "get-jmx-token"), 0)
+    return
+        if (exists($get-token)) then
+            try { $get-token() } catch * { () }
+        else
+            try {
+                let $file-read := function-lookup(QName("http://expath.org/ns/file", "read-text"), 1)
+                let $file-exists := function-lookup(QName("http://expath.org/ns/file", "exists"), 1)
                 return
-                    if ($file-exists($path)) then
-                        let $content := $file-read($path)
-                        let $lines := tokenize($content, "\n")
-                        for $line in $lines
-                        let $trimmed := normalize-space($line)
-                        where starts-with($trimmed, "token=")
-                        return substring-after($trimmed, "token=")
+                    if (exists($file-read) and exists($file-exists)) then
+                        let $path := system:get-exist-home() || "/data/jmxservlet.token"
+                        return
+                            if ($file-exists($path)) then
+                                let $content := $file-read($path)
+                                let $lines := tokenize($content, "\n")
+                                for $line in $lines
+                                let $trimmed := normalize-space($line)
+                                where starts-with($trimmed, "token=")
+                                return substring-after($trimmed, "token=")
+                            else ()
                     else ()
-            else ()
-    } catch * { () }
+            } catch * { () }
 };
 
 (:~
