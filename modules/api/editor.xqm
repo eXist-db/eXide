@@ -140,6 +140,21 @@ declare variable $editor:SCHEMA_BY_ROOT := map {
 };
 
 (:~
+ : Required first child (no namespace) for each $editor:SCHEMA_BY_ROOT root —
+ : a cheap corroborating signal so a generic root name alone (e.g. <auth>,
+ : <server> — plausible root names for unrelated documents) doesn't
+ : force-match an unrelated document onto an eXist config grammar and report
+ : it invalid.
+ :)
+declare variable $editor:SCHEMA_BY_ROOT_CHILD := map {
+    "exist": "db-connection",
+    "xquery-app": "allow-source",
+    "mime-types": "mime-type",
+    "auth": "groups",
+    "server": "listener"
+};
+
+(:~
  : True when the given filesystem path exists. File module namespace varies by
  : eXist-db version — same approach as admin:status.
  :)
@@ -259,7 +274,7 @@ declare function editor:resolve-schema($root as element()) as map(*)? {
             return
                 if (empty($loc)) then
                     ()
-                else if (matches($loc, "^(file:|/db/)")) then
+                else if (matches($loc, "^/db/")) then
                     map {
                         "uri": xs:anyURI($loc),
                         "source": "instance",
@@ -280,7 +295,7 @@ declare function editor:resolve-schema($root as element()) as map(*)? {
         if (exists($from-schema-location)) then
             ()
         else if ($no-ns-loc ne "") then
-            if (matches($no-ns-loc, "^(file:|/db/)")) then
+            if (matches($no-ns-loc, "^/db/")) then
                 map {
                     "uri": xs:anyURI($no-ns-loc),
                     "source": "instance",
@@ -305,7 +320,12 @@ declare function editor:resolve-schema($root as element()) as map(*)? {
     let $from-root :=
         if (exists(($from-schema-location, $from-no-ns, $from-ns))) then
             ()
-        else if (namespace-uri($root) eq "" and map:contains($editor:SCHEMA_BY_ROOT, local-name($root))) then
+        else if (
+            namespace-uri($root) eq "" and
+            map:contains($editor:SCHEMA_BY_ROOT, local-name($root)) and
+            exists($root/*[namespace-uri(.) eq "" and
+                local-name(.) eq $editor:SCHEMA_BY_ROOT_CHILD(local-name($root))])
+        ) then
             editor:resolve-grammar-file($editor:SCHEMA_BY_ROOT(local-name($root)))
         else
             ()
@@ -355,9 +375,10 @@ declare function editor:validation-result(
  : `$EXIST_HOME/schema/` when present — exist#6528 — else bundled copies under
  : resources/schema/; see eXide#842). Instance xsi:schemaLocation /
  : noNamespaceSchemaLocation is honoured when it points at a known grammar or
- : an absolute file:/db URI. Validation uses validation:jaxv-report + XSD 1.1
- : against the resolved URI; see editor:resolve-schema for why this isn't
- : validation:jaxp-report + catalog.
+ : an absolute /db/ URI — never a raw file: URI, which would let a client
+ : force the server to open an arbitrary local file as a schema. Validation
+ : uses validation:jaxv-report + XSD 1.1 against the resolved URI; see
+ : editor:resolve-schema for why this isn't validation:jaxp-report + catalog.
  :
  : XML without a resolvable grammar is checked for well-formedness only.
  :)
