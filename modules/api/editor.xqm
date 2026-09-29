@@ -228,9 +228,14 @@ declare function editor:known-grammar-name($hint as xs:string?) as xs:string? {
  : then namespace map, then no-namespace root map.
  : Returns map { "uri", "source", "name" } or the empty sequence.
  :
- : Interim: uses validation:jaxv-report with an explicit schema URI because
- : jaxp + system/OASIS catalog does not yet apply native XSD 1.1 grammars
- : (exist#6686). When that lands, prefer catalog resolution again.
+ : Uses validation:jaxv-report with an explicit schema URI rather than
+ : validation:jaxp-report + catalog. jaxp's catalog resolution of native XSD
+ : 1.1 grammars by namespace was fixed upstream (exist#6686, exist-core#6687,
+ : eXist 7.0.0-beta4+) but stable releases predating that fix still hit the
+ : old gap, and an explicit URI also covers grammars outside the WEB-INF
+ : system catalog (expath-pkg, security-manager, users, server). Revisit once
+ : the fix is in a stable release and/or the system catalog covers the full
+ : SCHEMA_BY_NS/SCHEMA_BY_ROOT set.
  :)
 declare function editor:resolve-schema($root as element()) as map(*)? {
     let $schema-loc-attr :=
@@ -351,7 +356,8 @@ declare function editor:validation-result(
  : resources/schema/; see eXide#842). Instance xsi:schemaLocation /
  : noNamespaceSchemaLocation is honoured when it points at a known grammar or
  : an absolute file:/db URI. Validation uses validation:jaxv-report + XSD 1.1
- : (interim until exist#6686 restores reliable catalog-based jaxp).
+ : against the resolved URI; see editor:resolve-schema for why this isn't
+ : validation:jaxp-report + catalog.
  :
  : XML without a resolvable grammar is checked for well-formedness only.
  :)
