@@ -36,7 +36,7 @@
 	},
 	"homepage": "https://github.com/eXist-db/eXide#readme",
 	"devDependencies": {
-		"chalk": "^6.0.0",
+		"chalk": "^6.0.1",
 		"command-line-args": "^6.0.2",
 		"cypress": "^16.1.0",
 		"esbuild": "^0.28.2",
