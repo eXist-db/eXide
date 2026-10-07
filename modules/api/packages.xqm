@@ -63,8 +63,8 @@ declare function packages:list-all() {
     let $apps :=
         for $app in xmldb:get-child-collections($root)
         let $col := $root || $app
-        let $expath := doc($col || "/expath-pkg.xml")/expath:package
-        let $repo-meta := doc($col || "/repo.xml")/repo:meta
+        let $expath := packages:doc-if-available($col || "/expath-pkg.xml")/expath:package
+        let $repo-meta := packages:doc-if-available($col || "/repo.xml")/repo:meta
         where exists($expath)
         order by lower-case($app)
         return map {
@@ -113,8 +113,8 @@ declare function packages:get($request as map(*)) {
                 map { "error": "No package found for collection: " || ($collection, $abbrev)[1] })
         else
     let $col := repo:get-root() || $resolved-abbrev
-    let $expath := doc($col || "/expath-pkg.xml")/expath:package
-    let $repo-meta := doc($col || "/repo.xml")/repo:meta
+    let $expath := packages:doc-if-available($col || "/expath-pkg.xml")/expath:package
+    let $repo-meta := packages:doc-if-available($col || "/repo.xml")/repo:meta
     return
         if (exists($expath)) then
             let $user := sm:id()//sm:real/sm:username/string()
@@ -126,7 +126,7 @@ declare function packages:get($request as map(*)) {
                must be this path. (It was "/db/" || repo:target, which drops the
                repo root: e.g. "/db/eXide" instead of "/db/apps/eXide", a
                collection that does not exist, so no document ever matched.) :)
-            let $git-xml := doc($col || "/git.xml")
+            let $git-xml := packages:doc-if-available($col || "/git.xml")
             return map {
                 "abbrev": string($expath/@abbrev),
                 "name": string($expath/@name),
@@ -163,7 +163,7 @@ declare function packages:get($request as map(*)) {
 declare function packages:uninstall($request as map(*)) {
     let $abbrev := $request?parameters?abbrev
     let $col := repo:get-root() || $abbrev
-    let $expath := doc($col || "/expath-pkg.xml")/expath:package
+    let $expath := packages:doc-if-available($col || "/expath-pkg.xml")/expath:package
     return
         if (empty($expath)) then
             roaster:response(404, "application/json",
@@ -184,7 +184,7 @@ declare function packages:uninstall($request as map(*)) {
 declare function packages:build($request as map(*)) {
     let $abbrev := $request?parameters?abbrev
     let $col := repo:get-root() || $abbrev
-    let $expath := doc($col || "/expath-pkg.xml")/expath:package
+    let $expath := packages:doc-if-available($col || "/expath-pkg.xml")/expath:package
     return
         if (empty($expath)) then
             roaster:response(404, "application/json",
@@ -209,7 +209,7 @@ declare function packages:build($request as map(*)) {
 declare function packages:deploy($request as map(*)) {
     let $abbrev := $request?parameters?abbrev
     let $col := repo:get-root() || $abbrev
-    let $expath := doc($col || "/expath-pkg.xml")/expath:package
+    let $expath := packages:doc-if-available($col || "/expath-pkg.xml")/expath:package
     return
         if (empty($expath)) then
             roaster:response(404, "application/json",
@@ -241,9 +241,9 @@ declare function packages:config($request as map(*)) {
     let $abbrev := $request?parameters?abbrev
     let $body := $request?body
     let $collection := ($body?collection, repo:get-root() || $abbrev)[1]
-    let $config-xml := doc($collection || "/" || $body?config)
     return
         try {
+            let $config-xml := doc($collection || "/" || $body?config)
             let $config-col := "/db/system/config" || $collection
             let $_ := packages:mkcol($config-col, (), ())
             let $_ := xmldb:store($config-col, "collection.xconf", $config-xml, "application/xml")
@@ -397,7 +397,7 @@ declare %private function packages:abbrev-for-collection($path as xs:string) as 
     return
         (for $app in xmldb:get-child-collections($root)
          let $col := $root || $app
-         let $expath := doc($col || "/expath-pkg.xml")/expath:package
+         let $expath := packages:doc-if-available($col || "/expath-pkg.xml")/expath:package
          where exists($expath) and starts-with($path, $col)
          return string($expath/@abbrev)
         )[1]
@@ -427,4 +427,12 @@ declare %private function packages:copy-templates($target as xs:string, $source 
                 concat($source, "/", $childColl),
                 $userData, $permissions)
         ) else ()
+};
+
+(:~
+ : Return the document at $path, or the empty sequence if it is not available.
+ : fn:doc raises err:FODC0002 for a missing document.
+ :)
+declare %private function packages:doc-if-available($path as xs:string) as document-node()? {
+    if (doc-available($path)) then doc($path) else ()
 };

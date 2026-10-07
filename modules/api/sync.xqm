@@ -77,7 +77,7 @@ declare %private function sync:has-legacy-file-module() as xs:boolean {
 declare %private function sync:working-dir-from-descriptor($collection as xs:string) as xs:string? {
     let $root := sync:get-app-root($collection)
     return
-        if (exists($root)) then
+        if (exists($root) and doc-available($root || "/git.xml")) then
             doc($root || "/git.xml")/git:git/git:workingDir/string()
         else ()
 };
