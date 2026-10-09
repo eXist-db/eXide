@@ -54,7 +54,7 @@
 		"@semantic-release/release-notes-generator": "^14.1.1",
 		"@xmldom/xmldom": "^0.9.12",
 		"conventional-changelog-conventionalcommits": "^10.4.0",
-		"conventional-changelog-writer": "^9.2.1",
+		"conventional-changelog-writer": "^9.3.0",
 		"conventional-commits-parser": "^7.1.2",
 		"semantic-release": "^25.0.3"
 	},
