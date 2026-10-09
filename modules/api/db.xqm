@@ -352,11 +352,16 @@ declare %private function db:load-document($path, $request, $user) {
                     if ($content) then map { "content": $content } else ()
                 ))
         else
+            (: preserve-cdata keeps a stored CDATA section in the form it was stored in.
+             : fn:serialize otherwise escapes it -- XDM has no CDATA node kind -- so a
+             : <script> or <style> block came back with `>` as `&gt;`, and the next save
+             : wrote that escaped text back. See eXist-db/exist#2081. :)
             let $content := serialize(doc($path), map {
                 "method": "xml",
                 "indent": $indent,
                 "omit-xml-declaration": $omit-xml-decl,
-                QName("http://exist.sourceforge.net/NS/exist", "expand-xincludes"): $expand-xincludes
+                QName("http://exist.sourceforge.net/NS/exist", "expand-xincludes"): $expand-xincludes,
+                QName("http://exist.sourceforge.net/NS/exist", "preserve-cdata"): true()
             })
             return
                 if ($download) then
