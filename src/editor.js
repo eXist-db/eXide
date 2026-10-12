@@ -917,7 +917,23 @@ eXide.edit.Editor = (function () {
         fetch("api/storage/" + encodedPath, {
             method: "PUT",
             headers: {
-                "Content-Type": $this.activeDoc.mime ? $this.activeDoc.mime : "application/octet-stream"
+                // Always send the editor buffer as opaque bytes.
+                //
+                // The body is already a plain string (getText()), and the server stores it
+                // verbatim. Labelling it with the document's own media type instead makes
+                // roaster parse it into a node first -- an entirely wasted round trip, and
+                // one that used to be lossy: request:get-data() discarded CDATA sections,
+                // so `<![CDATA[ ... ]]>` in a <script> or <style> block came back escaped,
+                // turning `>` into `&gt;` (eXist-db/exist#2081).
+                //
+                // That underlying defect is fixed in eXist core, but sending the buffer as
+                // bytes is correct regardless: there is nothing to gain from parsing and
+                // re-serializing content we already hold as text.
+                //
+                // The stored resource's media type is derived from the file name by the
+                // server, not from this header, so sending octet-stream changes nothing
+                // else about how the resource is stored.
+                "Content-Type": "application/octet-stream"
             },
             body: $this.activeDoc.getText()
         })
