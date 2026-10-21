@@ -107,4 +107,13 @@ describe('XML validation (api/editor/validate)', () => {
       expect(res.body).to.have.property('grammar', 'none')
     })
   })
+
+  it('does not force-match other documents in the shared eXist namespace', () => {
+    const xml = `<?xml version="1.0"?>
+<query xmlns="http://exist.sourceforge.net/NS/exist"><text>1</text></query>`
+    validate(xml).then((res) => {
+      expect(res.body).to.have.property('status', 'valid')
+      expect(res.body).to.have.property('grammar', 'none')
+    })
+  })
 })

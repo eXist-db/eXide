@@ -129,6 +129,32 @@ declare variable $editor:SCHEMA_BY_NS := map {
 };
 
 (:~
+ : Namespaces shared by unrelated eXist documents (REST <query> envelopes,
+ : controller <dispatch> fragments, …) → the only root element that identifies
+ : the grammar. Namespaces not listed here match on namespace alone.
+ :)
+declare variable $editor:SCHEMA_NS_ROOT := map {
+    "http://exist.sourceforge.net/NS/exist": "configuration"
+};
+
+(:~
+ : Grammar filename for the root's namespace, or the empty sequence when the
+ : namespace is unknown or is shared and the root name doesn't corroborate it.
+ :)
+declare function editor:grammar-by-ns($root as element()) as xs:string? {
+    let $ns := namespace-uri($root)
+    return
+        if (
+            map:contains($editor:SCHEMA_BY_NS, $ns) and
+            (not(map:contains($editor:SCHEMA_NS_ROOT, $ns)) or
+                local-name($root) eq $editor:SCHEMA_NS_ROOT($ns))
+        ) then
+            $editor:SCHEMA_BY_NS($ns)
+        else
+            ()
+};
+
+(:~
  : No-namespace eXist config roots → grammar filename.
  :)
 declare variable $editor:SCHEMA_BY_ROOT := map {
@@ -285,8 +311,8 @@ declare function editor:resolve-schema($root as element()) as map(*)? {
                     return
                         if (exists($known)) then
                             editor:resolve-grammar-file($known)
-                        else if (map:contains($editor:SCHEMA_BY_NS, namespace-uri($root))) then
-                            editor:resolve-grammar-file($editor:SCHEMA_BY_NS(namespace-uri($root)))
+                        else if (exists(editor:grammar-by-ns($root))) then
+                            editor:resolve-grammar-file(editor:grammar-by-ns($root))
                         else
                             ()
         else
@@ -313,8 +339,8 @@ declare function editor:resolve-schema($root as element()) as map(*)? {
     let $from-ns :=
         if (exists(($from-schema-location, $from-no-ns))) then
             ()
-        else if (map:contains($editor:SCHEMA_BY_NS, namespace-uri($root))) then
-            editor:resolve-grammar-file($editor:SCHEMA_BY_NS(namespace-uri($root)))
+        else if (exists(editor:grammar-by-ns($root))) then
+            editor:resolve-grammar-file(editor:grammar-by-ns($root))
         else
             ()
     let $from-root :=
