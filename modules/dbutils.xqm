@@ -1,6 +1,6 @@
 xquery version "3.0";
 
-module namespace dbutil="http://exist-db.org/xquery/dbutil";
+module namespace dbutil="http://exist-db.org/apps/eXide/dbutils";
 
 import module namespace sm="http://exist-db.org/xquery/securitymanager";
 import module namespace xmldb="http://exist-db.org/xquery/xmldb";

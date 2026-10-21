@@ -7,7 +7,7 @@ xquery version "3.1";
 module namespace search="http://exist-db.org/apps/eXide/api/search";
 
 import module namespace roaster="http://e-editiones.org/roaster";
-import module namespace dbutil="http://exist-db.org/xquery/dbutil" at "../dbutils.xqm";
+import module namespace dbutil="http://exist-db.org/apps/eXide/dbutils" at "../dbutils.xqm";
 
 declare variable $search:MIME_MAP := map {
     "javascript": ("text/javascript", "application/x-javascript", "application/javascript"),

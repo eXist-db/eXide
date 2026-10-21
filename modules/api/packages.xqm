@@ -8,7 +8,7 @@ module namespace packages="http://exist-db.org/apps/eXide/api/packages";
 
 import module namespace roaster="http://e-editiones.org/roaster";
 import module namespace config="http://exist-db.org/xquery/apps/config" at "../config.xqm";
-import module namespace dbutil="http://exist-db.org/xquery/dbutil" at "../dbutils.xqm";
+import module namespace dbutil="http://exist-db.org/apps/eXide/dbutils" at "../dbutils.xqm";
 import module namespace tmpl="http://exist-db.org/xquery/template" at "../tmpl.xqm";
 
 declare namespace expath="http://expath.org/ns/pkg";

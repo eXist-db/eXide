@@ -7,7 +7,7 @@ xquery version "3.1";
 module namespace db="http://exist-db.org/apps/eXide/api/db";
 
 import module namespace roaster="http://e-editiones.org/roaster";
-import module namespace dbutil="http://exist-db.org/xquery/dbutil" at "../dbutils.xqm";
+import module namespace dbutil="http://exist-db.org/apps/eXide/dbutils" at "../dbutils.xqm";
 import module namespace config="http://exist-db.org/xquery/apps/config" at "../config.xqm";
 
 (: Handle difference between 4.x.x and 5.x.x releases of eXist :)
