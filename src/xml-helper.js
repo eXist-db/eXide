@@ -211,6 +211,59 @@ eXide.edit.XMLModeHelper = (function () {
         .catch(function() {});
     }
 
+    /**
+     * Locate a well-formedness error in the document itself.
+     *
+     * The server cannot help with the position: Roaster rejects an unparseable
+     * body before the handler runs, and the line it reports belongs to its own
+     * module. The browser's parser knows where the document broke, so take the
+     * line from there — but not the wording, which is written for rendering a
+     * page ("This page contains the following errors ... Below is a rendering
+     * of the page up to the first error") and reads oddly in an editor.
+     *
+     * Returns { line, message }, falling back to line 1 and the server's own
+     * message when no position can be recovered.
+     */
+    function wellFormednessError(code, serverMessage) {
+        var line = 1;
+        var browserDetail = null;
+        try {
+            var parsed = new DOMParser().parseFromString(code, "application/xml");
+            var failure = parsed.querySelector("parsererror");
+            if (failure) {
+                var text = (failure.textContent || "").replace(/\s+/g, " ").trim();
+                var at = text.match(/line\s+(\d+)/i);
+                if (at) { line = parseInt(at[1], 10); }
+                // Keep the diagnosis, drop the page-rendering boilerplate.
+                var detail = text
+                    .replace(/^.*?following errors:\s*/i, "")
+                    .replace(/\s*Below is a rendering of the page.*$/i, "")
+                    .trim();
+                if (detail) { browserDetail = detail; }
+            }
+        } catch (e) {
+            // Fall through to the server's message at line 1.
+        }
+        return {
+            line: line,
+            message: cleanParseMessage(serverMessage) || browserDetail || "Document is not well-formed."
+        };
+    }
+
+    /**
+     * Strip the fn:parse-xml wrapper from the server's message, keeping the
+     * parser's actual diagnosis.
+     */
+    function cleanParseMessage(message) {
+        if (!message) { return null; }
+        var cleaned = String(message)
+            .replace(/^String passed to fn:parse-xml is not a well-formed XML document\.\s*/i, "")
+            .replace(/^parse-xml failed with:?\s*/i, "")
+            .replace(/\s+/g, " ")
+            .trim();
+        return cleaned || null;
+    }
+
     Constr.prototype.validate = function(doc, code, onComplete) {
         var $this = this;
         fetch("api/editor/validate", {
@@ -218,7 +271,25 @@ eXide.edit.XMLModeHelper = (function () {
             headers: { "Content-Type": "application/xml" },
             body: code
         })
-        .then(function(response) { return response.json(); })
+        .then(function(response) {
+            return response.json().then(function(data) {
+                // A body that isn't well-formed never reaches the handler:
+                // Roaster fails to parse it and answers with its own error
+                // envelope, which carries no `status`. Treated as a normal
+                // response that just wasn't "invalid", the editor would clear
+                // the error list and report the document as clean.
+                if (!response.ok || !data.status) {
+                    var reported = data.value || data.description;
+                    var located = wellFormednessError(code, reported);
+                    return {
+                        status: "invalid",
+                        grammar: "none",
+                        errors: [{ line: located.line, message: located.message }]
+                    };
+                }
+                return data;
+            });
+        })
         .then(function(data) {
             $this.compileError(data, doc);
             onComplete.call(null, true);
