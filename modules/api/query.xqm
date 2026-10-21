@@ -12,6 +12,7 @@ xquery version "3.1";
 module namespace query="http://exist-db.org/apps/eXide/api/query";
 
 import module namespace lang="http://exist-db.org/xquery/langservice";
+import module namespace apputil="http://exist-db.org/apps/eXide/apputil" at "../util.xqm";
 
 (:~
  : POST /api/query/compile — Compile-check XQuery without executing.
@@ -123,7 +124,7 @@ declare function query:completions($request as map(*)) {
  :)
 declare %private function query:uri-for-prefix($prefix as xs:string) as xs:string? {
     (
-        for $uri in distinct-values((util:registered-modules(), util:mapped-modules()))
+        for $uri in apputil:inspectable-modules()
         let $module := try { inspect:inspect-module-uri(xs:anyURI($uri)) } catch * { () }
         where $module/@prefix = $prefix
         return $uri

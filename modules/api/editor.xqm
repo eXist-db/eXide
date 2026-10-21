@@ -7,7 +7,8 @@ xquery version "3.1";
 module namespace editor="http://exist-db.org/apps/eXide/api/editor";
 
 import module namespace roaster="http://e-editiones.org/roaster";
-import module namespace dbutil="http://exist-db.org/xquery/dbutil" at "../dbutils.xqm";
+import module namespace apputil="http://exist-db.org/apps/eXide/apputil" at "../util.xqm";
+import module namespace dbutil="http://exist-db.org/apps/eXide/dbutils" at "../dbutils.xqm";
 
 declare namespace expath="http://expath.org/ns/pkg";
 
@@ -95,7 +96,7 @@ declare function editor:symbols($request as map(*)) {
 declare function editor:modules($request as map(*)) {
     let $prefix := $request?parameters?prefix
     return array {
-        for $uri in (util:registered-modules(), util:mapped-modules())
+        for $uri in apputil:inspectable-modules()
         let $module :=
             try { inspect:inspect-module-uri(xs:anyURI($uri)) } catch * { () }
         where exists($module) and
@@ -190,7 +191,7 @@ declare function editor:imports($request as map(*)) {
 
     (: Global registered/mapped modules :)
     let $global-modules := editor:sort-modules(
-        for $uri in (util:registered-modules(), util:mapped-modules())
+        for $uri in apputil:inspectable-modules()
         where not($uri = $imported)
         return
             try {
@@ -240,7 +241,7 @@ declare %private function editor:get-built-in-functions($q as xs:string) {
         if ($supplied-prefix eq 'fn') then
             inspect:inspect-module-uri(xs:anyURI('http://www.w3.org/2005/xpath-functions'))
         else
-            let $all := (util:registered-modules(), util:mapped-modules()) !
+            let $all := apputil:inspectable-modules() !
                 (try { inspect:inspect-module-uri(xs:anyURI(.)) } catch * { () })
             return
                 if ($supplied-prefix) then $all[starts-with(@prefix, $supplied-prefix)]
