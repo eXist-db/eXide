@@ -318,7 +318,7 @@ eXide.edit.XMLModeHelper = (function () {
             editorUtils.setAnnotations(this.editor, annotations);
         } else {
             this.parent.clearErrors();
-            this.parent.updateStatus("");
+            this.parent.updateStatus(data.schema ? "Validated against " + data.schema : "Well-formed only");
         }
     };
 
