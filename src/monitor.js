@@ -141,6 +141,7 @@ eXide.app.Monitor = (function () {
 
         var self = this;
         this._useWs = false;
+        this._tokenRetries = 0;
 
         // Register WebSocket listener regardless of current connection state
         if (typeof eXide.ws !== "undefined") {
@@ -286,23 +287,47 @@ eXide.app.Monitor = (function () {
         }
     };
 
+    // Right after a page reload the monitor is started (from restored panel
+    // state) before eXide.ws has reconnected, so this HTTP path is always
+    // tried first even on setups where the WebSocket will shortly take over.
+    // A single failed attempt used to call showError() immediately, which
+    // permanently destroys the panel markup (see showError) -- so a token
+    // that's merely not ready yet looked identical to a truly broken setup.
+    // Retry a few times first; if the WebSocket takes over in the meantime,
+    // start()'s "connected" handler clears this timer and _useWs short-
+    // circuits any in-flight retry.
+    var TOKEN_FETCH_MAX_RETRIES = 5;
+
     Constr.prototype.fetchToken = function () {
         var self = this;
         if (self._useWs) return; // WebSocket took over
         fetch("api/admin/status")
             .then(function (r) { return r.json(); })
             .then(function (data) {
+                if (self._useWs) return; // WebSocket took over while this was in flight
                 if (data.jmxToken) {
+                    self._tokenRetries = 0;
                     self.token = data.jmxToken;
                     self.poll();
                 } else {
-                    self.showError("Could not obtain JMX token. DBA login required.");
+                    self._retryTokenOrFail("Could not obtain JMX token. DBA login required.");
                 }
             })
             .catch(function (err) {
                 console.error("Monitor: fetchToken failed", err);
-                self.showError("Failed to connect to monitor endpoint.");
+                self._retryTokenOrFail("Failed to connect to monitor endpoint.");
             });
+    };
+
+    Constr.prototype._retryTokenOrFail = function (msg) {
+        if (!this.polling || this._useWs) return;
+        this._tokenRetries = (this._tokenRetries || 0) + 1;
+        if (this._tokenRetries > TOKEN_FETCH_MAX_RETRIES) {
+            this.showError(msg);
+            return;
+        }
+        var self = this;
+        this.timer = setTimeout(function () { self.fetchToken(); }, 2000);
     };
 
     Constr.prototype.poll = function () {
