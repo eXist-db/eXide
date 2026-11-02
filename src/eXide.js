@@ -1867,6 +1867,10 @@ eXide.app = (function(util) {
 			    }
 			});
 			dialogs["login-dialog"].setButtons({
+			    "Cancel": function() {
+			        dialogs["login-dialog"].close();
+			        editor.focus();
+			    },
 			    "Login": function() {
                     var user = document.querySelector("#login-form input[name=\"user\"]").value;
                     var password = document.querySelector("#login-form input[name=\"password\"]").value;
@@ -1907,10 +1911,6 @@ eXide.app = (function(util) {
 					    var firstInput = document.querySelector("#login-dialog input:first-of-type");
 					    if (firstInput) firstInput.focus();
 					});
-			    },
-			    "Cancel": function() {
-			        dialogs["login-dialog"].close();
-			        editor.focus();
 			    }
 			});
 			var origLoginOpen = dialogs["login-dialog"].open;
@@ -1925,7 +1925,9 @@ eXide.app = (function(util) {
 			    inputs.forEach(function(input) {
 			        input.addEventListener("keyup", function(e) {
 			            if (e.keyCode == 13) {
-			                var loginBtn = dialogs["login-dialog"].dialog.querySelector(".eXide-dialog-buttons button:first-of-type");
+			                var loginBtn = Array.prototype.find.call(
+						    dialogs["login-dialog"].dialog.querySelectorAll(".eXide-dialog-buttons button"),
+						    function(btn) { return btn.textContent === "Login"; });
 			                if (loginBtn) loginBtn.click();
 			            }
 			        });
