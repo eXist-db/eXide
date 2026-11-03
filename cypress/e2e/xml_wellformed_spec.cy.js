@@ -49,13 +49,17 @@ describe('XML well-formedness reporting', () => {
       .and('match', /oops|well-formed|terminated|error/i)
   })
 
-  it('clears the error once the document is well-formed again', () => {
+  it('replaces the error with a well-formed status once the document is fixed', () => {
     openNewXMLFile()
 
     validateNow('<collection>\n  <index>\n    <oops>\n</collection>')
     cy.get('#error-status', { timeout: 10000 }).invoke('text').should('not.be.empty')
 
+    // No matching grammar → informational "Well-formed only" (not an empty
+    // status). Schema hits show "Validated against …" instead.
     validateNow('<collection>\n  <index/>\n</collection>')
-    cy.get('#error-status', { timeout: 10000 }).invoke('text').should('be.empty')
+    cy.get('#error-status', { timeout: 10000 })
+      .invoke('text')
+      .should('match', /Well-formed only/i)
   })
 })
