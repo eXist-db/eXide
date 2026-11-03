@@ -138,6 +138,11 @@ declare function wsmon:push-status($request as map(*)) {
  : outside Docker) it returns "", which is why this used to always come up
  : empty there.
  :
+ : Duplicated deliberately with admin:get-jmx-token() (same algorithm, two
+ : call sites). Keep them in sync by hand for now — do not fold into
+ : modules/util.xqm while #901 (deletes it) and #910 (extends it) are in
+ : flight; extract to a small shared module once that settles.
+ :
  : @return the JMX token, or the empty sequence if it can't be resolved
  : @see http://exist-db.org/apps/eXide/api/admin;admin:get-jmx-token equivalent resolver used by the HTTP polling endpoint
  : @see https://github.com/eXist-db/eXide/issues/821

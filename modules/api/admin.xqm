@@ -41,6 +41,11 @@ declare function admin:status($request as map(*)) {
  : different namespaces depending on the eXist-db version, so we try both
  : dynamically.
  :
+ : Duplicated deliberately with wsmon:get-jmx-token() (same algorithm, two
+ : call sites). Keep them in sync by hand for now — do not fold into
+ : modules/util.xqm while #901 (deletes it) and #910 (extends it) are in
+ : flight; extract to a small shared module once that settles.
+ :
  : @return the JMX token, or the empty sequence if it can't be resolved
  : @see http://exist-db.org/apps/eXide/api/ws-monitor;wsmon:get-jmx-token equivalent resolver used by the WebSocket push endpoint
  : @see https://github.com/eXist-db/eXide/issues/821
