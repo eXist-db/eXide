@@ -1106,6 +1106,19 @@ Sub level menu list items (undo style from Top level List Items)
     font-weight: 600;
 }
 
+/* Calm XML validation outcome — not an error; kept off the #error-status channel */
+#validation-status {
+    color: #c6f6d5;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 360px;
+    flex-shrink: 1;
+}
+#validation-status[hidden] {
+    display: none !important;
+}
+
 /* Hidden — error text is mirrored into #exide-err-pill by error-status-ui.js */
 #error-status {
     display: none;
@@ -3840,6 +3853,9 @@ body.dark #status-bar {
 }
 body.dark #status-bar .status-separator {
     color: #2c5282;
+}
+body.dark #validation-status {
+    color: #9ae6b4;
 }
 body.dark #status a:link, body.dark #status a:visited {
     color: #90cdf4;

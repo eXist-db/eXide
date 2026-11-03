@@ -313,12 +313,15 @@ eXide.edit.XMLModeHelper = (function () {
                 });
             }
             if (errors.length > 0) {
+                this.parent.clearValidationStatus();
                 this.parent.updateStatus(errors[0].message, doc.getPath() + "#" + errors[0].line);
             }
             editorUtils.setAnnotations(this.editor, annotations);
         } else {
             this.parent.clearErrors();
-            this.parent.updateStatus(data.schema ? "Validated against " + data.schema : "Well-formed only");
+            this.parent.setValidationStatus(
+                data.schema ? "Validated against " + data.schema : "Well-formed only"
+            );
         }
     };
 

@@ -469,6 +469,7 @@ eXide.edit.Editor = (function () {
 
         // Set up the status bar
         this.status = document.getElementById("error-status");
+        this.validationStatus = document.getElementById("validation-status");
         this.status.addEventListener("click", function (ev) {
             ev.preventDefault();
             var path = this.pathname;
@@ -740,6 +741,7 @@ eXide.edit.Editor = (function () {
         $this.editor.focus();
 
         eXide.app.toggleRunStatus(doc);
+        this.clearValidationStatus();
         if (doc.getModeHelper()) {
             doc.getModeHelper().activate(doc);
         }
@@ -1235,6 +1237,7 @@ eXide.edit.Editor = (function () {
             }
         });
         this.updateStatus("");
+        this.clearValidationStatus();
         this.$triggerEvent("activate", [doc]);
 
         eXide.app.toggleRunStatus(doc);
@@ -1294,13 +1297,44 @@ eXide.edit.Editor = (function () {
     };
 
     /**
-     * Update the status bar.
+     * Update the status bar error channel (#error-status → red pill).
+     * Non-empty messages clear the calm validation segment so valid and
+     * invalid never share the same chrome.
      */
     Constr.prototype.updateStatus = function(msg, href) {
         this.status.textContent = msg;
         if (href) {
             this.status.href = href;
         }
+        if (msg) {
+            this.clearValidationStatus();
+        }
+    };
+
+    /**
+     * Show a non-error XML validation outcome in #validation-status
+     * ("Well-formed only" / "Validated against …"). Clears the error
+     * channel so the red pill does not linger over a successful result.
+     */
+    Constr.prototype.setValidationStatus = function(msg) {
+        if (!this.validationStatus) {
+            return;
+        }
+        var text = msg || "";
+        this.validationStatus.textContent = text;
+        if (text) {
+            this.validationStatus.hidden = false;
+            this.status.textContent = "";
+            if (this.status.dataset) {
+                delete this.status.dataset.error;
+            }
+        } else {
+            this.validationStatus.hidden = true;
+        }
+    };
+
+    Constr.prototype.clearValidationStatus = function() {
+        this.setValidationStatus("");
     };
 
     Constr.prototype.evalError = function(msg, gotoLine, errObj) {
