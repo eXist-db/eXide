@@ -1107,16 +1107,34 @@ Sub level menu list items (undo style from Top level List Items)
 }
 
 /* Calm XML validation outcome — not an error; kept off the #error-status channel */
+#validation-status-sep[hidden],
+#validation-status[hidden] {
+    display: none !important;
+}
 #validation-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 1px 8px;
+    border-radius: 10px;
+    background: rgba(154, 230, 180, 0.22);
     color: #c6f6d5;
+    font-size: 11px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width: 360px;
     flex-shrink: 1;
+    user-select: none;
 }
-#validation-status[hidden] {
-    display: none !important;
+#validation-status .fa {
+    font-size: 11px;
+    color: #9ae6b4;
+    flex-shrink: 0;
+}
+#validation-status-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Hidden — error text is mirrored into #exide-err-pill by error-status-ui.js */
@@ -3855,6 +3873,10 @@ body.dark #status-bar .status-separator {
     color: #2c5282;
 }
 body.dark #validation-status {
+    background: rgba(154, 230, 180, 0.15);
+    color: #c6f6d5;
+}
+body.dark #validation-status .fa {
     color: #9ae6b4;
 }
 body.dark #status a:link, body.dark #status a:visited {

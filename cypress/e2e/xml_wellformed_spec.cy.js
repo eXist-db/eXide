@@ -63,10 +63,9 @@ describe('XML well-formedness reporting', () => {
     cy.get('#exide-err-pill').should('not.have.class', 'has-error')
     // Assert text on the element itself — .should('not.have.attr') yields
     // undefined, so chaining .invoke('text') after it is unsafe.
-    cy.get('#validation-status', { timeout: 10000 })
-      .should('be.visible')
-      .and(($el) => {
-        expect($el.text()).to.match(/Well-formed only/i)
-      })
+    cy.get('#validation-status', { timeout: 10000 }).should('be.visible')
+    cy.get('#validation-status-label')
+      .invoke('text')
+      .should('match', /Well-formed only/i)
   })
 })
