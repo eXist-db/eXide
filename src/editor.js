@@ -470,6 +470,8 @@ eXide.edit.Editor = (function () {
         // Set up the status bar
         this.status = document.getElementById("error-status");
         this.validationStatus = document.getElementById("validation-status");
+        this.validationStatusLabel = document.getElementById("validation-status-label");
+        this.validationStatusSep = document.getElementById("validation-status-sep");
         this.status.addEventListener("click", function (ev) {
             ev.preventDefault();
             var path = this.pathname;
@@ -1321,15 +1323,22 @@ eXide.edit.Editor = (function () {
             return;
         }
         var text = msg || "";
-        this.validationStatus.textContent = text;
+        var label = this.validationStatusLabel || this.validationStatus;
+        label.textContent = text;
         if (text) {
             this.validationStatus.hidden = false;
+            if (this.validationStatusSep) {
+                this.validationStatusSep.hidden = false;
+            }
             this.status.textContent = "";
             if (this.status.dataset) {
                 delete this.status.dataset.error;
             }
         } else {
             this.validationStatus.hidden = true;
+            if (this.validationStatusSep) {
+                this.validationStatusSep.hidden = true;
+            }
         }
     };
 
