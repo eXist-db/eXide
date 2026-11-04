@@ -325,15 +325,24 @@ body {
 .mon-chip b {
     color: #2b6cb0;
 }
-.mon-error {
-    padding: 12px 8px;
-    color: #e53e3e;
+/* Overlay banner — never replace .mon-body markup (that nukes #mon-mem-nums). */
+.mon-banner {
+    display: none;
+    margin: 0 0 8px;
+    padding: 8px;
+    border-radius: 3px;
     font-size: 11px;
 }
-.mon-message {
-    padding: 12px 8px;
-    color: #333;
-    font-size: 11px;
+.mon-banner:not([hidden]) {
+    display: block;
+}
+.mon-banner-error {
+    color: #e53e3e;
+    background: rgba(229, 62, 62, 0.08);
+}
+.mon-banner-info {
+    color: #2d3748;
+    background: rgba(45, 55, 72, 0.06);
 }
 
 .panel-south {
@@ -4905,8 +4914,14 @@ body.dark .mon-chip {
     background: #2d3a56;
 }
 body.dark .mon-chip b { color: #7bb3e8; }
-body.dark .mon-error { color: #fc8181; }
-body.dark .mon-message { color: #cbd5e0; }
+body.dark .mon-banner-error {
+    color: #fc8181;
+    background: rgba(252, 129, 129, 0.12);
+}
+body.dark .mon-banner-info {
+    color: #cbd5e0;
+    background: rgba(203, 213, 224, 0.08);
+}
 body.dark .mon-kill { background: #c53030; }
 body.dark .mon-kill:hover { background: #e53e3e; }
 
