@@ -71,3 +71,47 @@ describe('Current-app detection in the toolbar', () => {
     cy.get('#toolbar-current-app', { timeout: 15000 }).should('have.text', 'eXide')
   })
 })
+
+// Optional package descriptors: a collection under /db/apps without an
+// expath-pkg.xml, or an app without a git.xml, is a normal state. Since
+// eXist-db 7 (eXist-db/exist#6812) fn:doc raises err:FODC0002 for a missing
+// document, so every read of an optional descriptor has to be guarded by
+// doc-available(). Without the guard these requests answer 500.
+context('GET /api/packages with missing optional descriptors', () => {
+  let nonPackage
+
+  beforeEach(() => {
+    cy.loginXHR('admin', '')
+    nonPackage = `cypress-not-a-package-${Date.now()}-${Cypress._.random(1000, 9999)}`
+    cy.execXQuery(`xmldb:create-collection("/db/apps", "${nonPackage}")`)
+  })
+
+  afterEach(() => {
+    cy.execXQuery(`xmldb:remove("/db/apps/${nonPackage}")`)
+  })
+
+  it('lists packages and skips a collection without expath-pkg.xml', () => {
+    cy.request('/eXide/api/packages').then((r) => {
+      expect(r.status).to.eq(200)
+      expect(r.body.packages).to.be.an('array').that.is.not.empty
+      const paths = r.body.packages.map((p) => p.path)
+      expect(paths).to.not.include(`/db/apps/${nonPackage}`)
+    })
+  })
+
+  it('returns info for an app without git.xml', () => {
+    cy.request('/eXide/api/packages/eXide').then((r) => {
+      expect(r.status).to.eq(200)
+      expect(r.body).to.have.property('abbrev', 'eXide')
+    })
+  })
+
+  it('returns 404 for an unknown abbrev', () => {
+    cy.request({
+      url: '/eXide/api/packages/zz-nope-' + Date.now(),
+      failOnStatusCode: false
+    }).then((r) => {
+      expect(r.status).to.eq(404)
+    })
+  })
+})
