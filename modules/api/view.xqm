@@ -27,10 +27,6 @@ declare namespace output="http://www.w3.org/2010/xslt-xquery-serialization";
  : and, when the user is not allowed, redirects to login.html instead of
  : serving the app.
  :
- : Description prose must not contain an at-sign: eXist's XQDoc lexer treats it
- : as a tag boundary and truncates or errors. Spell out attribute names instead
- : of XPath attribute steps (e.g. write "guest attribute", never the path form).
- :
  : @param $request Roaster request map; caller identity is in `$request?user`
  : @return HTML app shell (200) or redirect to login.html (302)
  : @see https://github.com/eXist-db/exist/issues/1386;;eXist XQDoc at-sign lexer bug
