@@ -18,7 +18,13 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "npm version ${nextRelease.version} --no-git-tag-version --allow-same-version && node scripts/update-repo-changelog.mjs --version=${nextRelease.version} --prev-tag=${lastRelease.version}",
+        "prepareCmd": "npm version ${nextRelease.version} --no-git-tag-version --allow-same-version"
+      }
+    ],
+    "@existdb/repo-xml-changelog-generator",
+    [
+      "@semantic-release/exec",
+      {
         "publishCmd": "npm run build"
       }
     ],
