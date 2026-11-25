@@ -35,3 +35,10 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # conventional-changelog-conventionalcommits@10 needs conventional-changelog-writer@9,
+      # but @semantic-release/release-notes-generator@14 still bundles writer@8, so a v10
+      # preset breaks the "generateNotes" release step. Lift this once the notes generator
+      # ships with writer@9.
+      - dependency-name: "conventional-changelog-conventionalcommits"
+        update-types: ["version-update:semver-major"]
