@@ -211,16 +211,7 @@ eXide.util.Dialog = (function () {
 		document.body.appendChild(el);
 		inputDlg = eXide.util.DialogManager.create(el, {
 			modal: true,
-			width: 420,
-			buttons: {
-				"OK": function() {
-					this.close();
-					if (callback != null) {
-						callback.call(null);
-					}
-				},
-				"Cancel": function() { this.close(); }
-			}
+			width: 420
 		});
 	}
 
@@ -248,9 +239,31 @@ eXide.util.Dialog = (function () {
 			msgDlg.open();
 		},
 
-		input: function (title, msg, okCallback) {
+		/**
+		 * Ask the user to confirm an action (or to enter a value, when msg holds an input).
+		 *
+		 * @param options.action label of the confirming button -- name the action
+		 *   ("Delete", "Reload"), avoid a generic "OK". Defaults to "OK".
+		 * @param options.destructive style the action as destructive; Cancel then
+		 *   keeps the focus, so Enter does not delete by accident.
+		 */
+		input: function (title, msg, okCallback, options) {
+			options = options || {};
 			ensureInputDialog();
 			callback = okCallback;
+			var buttons = {
+				"Cancel": function() { this.close(); }
+			};
+			buttons[options.action || "OK"] = {
+				destructive: !!options.destructive,
+				click: function() {
+					this.close();
+					if (callback != null) {
+						callback.call(null);
+					}
+				}
+			};
+			inputDlg.setButtons(buttons);
 			inputDlg.setTitle(title);
 			document.getElementById("eXide-dialog-input-body").innerHTML = msg || "";
 			inputDlg.open();

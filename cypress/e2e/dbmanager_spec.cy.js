@@ -33,7 +33,7 @@ function removeTestCollections() {
 function createCollection(name) {
   cy.get('#eXide-browse-toolbar-create').click()
   cy.get('#eXide-browse-collection-name').type(name)
-  cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
+  cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button').contains('Create').click()
   shouldList(name)
 }
 
@@ -63,7 +63,7 @@ function openCollection(name) {
 
 function deleteSelected() {
   cy.get('#eXide-browse-toolbar-delete-resource').click()
-  cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
+  cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button').contains('Delete').click()
 }
 
 context('DB Manager', () => {
@@ -129,7 +129,8 @@ context('DB Manager', () => {
       select(name)
       cy.get('#eXide-browse-toolbar-properties').click()
 
-      cy.contains('Resource/collection properties').should('be.visible')
+      cy.get('#resource-properties-dialog').closest('dialog.eXide-dialog[open]')
+        .find('.eXide-dialog-title').should('have.text', 'Properties')
     })
 
     it('copies a collection into another collection', () => {
@@ -224,7 +225,7 @@ context('DB Manager', () => {
         // Confirm properties dialog is visible with correct title
         cy.get('#resource-properties-dialog').closest('dialog.eXide-dialog[open]').should('be.visible')
         cy.get('#resource-properties-dialog').closest('dialog.eXide-dialog[open]')
-          .find('.eXide-dialog-title').should('contain', 'Resource/collection properties')
+          .find('.eXide-dialog-title').should('have.text', 'Properties')
 
         // Confirm the permissions fieldset with legend exists
         cy.get('#resource-properties-content').within(() => {

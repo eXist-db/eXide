@@ -74,96 +74,6 @@ eXide.find.IncrementalSearch = (function () {
     return Constr;
 }());
 
-eXide.namespace("eXide.find.SearchReplace");
-
-eXide.find.SearchReplace = (function () {
-
-    function setSearch(view, needle, options, replaceStr) {
-        if (!needle) return;
-        var query = new CM6.SearchQuery({
-            search: needle,
-            replace: replaceStr || "",
-            caseSensitive: options && options.caseSensitive,
-            regexp: options && options.regExp,
-            wholeWord: options && options.wholeWord
-        });
-        view.dispatch({ effects: CM6.setSearchQuery.of(query) });
-        CM6.findNext(view);
-    }
-
-    Constr = function (editor) {
-        var self = this;
-        self.editor = editor;
-        self.needleSet = false;
-        self.lastSearch = null;
-        self.containerEl = document.getElementById("find-replace-dialog");
-        self.dlg = eXide.util.DialogManager.create(self.containerEl, {
-            modal: false,
-            title: "Find / Replace",
-            height: 300,
-            width: 600,
-            buttons: {
-                "Find Previous": function() { self.find(-1); },
-                "Find Next": function() { self.find(1); },
-                "Replace": function() { self.replace(false); },
-                "Replace All": function() { self.replace(true); },
-                "Close": function() { this.close(); self.editor.focus(); }
-            }
-        });
-    };
-
-    Constr.prototype.open = function() {
-        this.dlg.open();
-        this.containerEl.querySelector("input[name='search']").focus();
-    };
-
-    Constr.prototype.find = function(direction) {
-        var search = this.containerEl.querySelector("input[name='search']").value;
-        console.log("Searching for %s", search);
-        if (search && search.length > 0) {
-            if (this.lastSearch != null && this.lastSearch == search) {
-                if (direction == -1)
-                    CM6.findPrevious(this.editor);
-                else
-                    CM6.findNext(this.editor);
-            } else {
-                setSearch(this.editor, search, this.getOptions());
-                this.needleSet = true;
-            }
-            this.editor.focus();
-        }
-    };
-
-    Constr.prototype.replace = function(all) {
-        var search = this.containerEl.querySelector("input[name='search']").value;
-        if (search && search.length > 0) {
-            var replace = this.containerEl.querySelector("input[name='replace']").value || "";
-            setSearch(this.editor, search, this.getOptions(), replace);
-            this.needleSet = true;
-            if (replace.length > 0) {
-                if (all) {
-                    CM6.replaceAll(this.editor);
-                } else {
-                    CM6.replaceNext(this.editor);
-                    CM6.findNext(this.editor);
-                }
-            }
-        }
-    };
-
-    Constr.prototype.getOptions = function() {
-        var caseSensitive = this.containerEl.querySelector("input[name='case']").checked;
-        var regex = this.containerEl.querySelector("input[name='regex']").checked;
-        return {
-            wrap: true,
-            caseSensitive: caseSensitive,
-            regExp: regex
-        };
-    };
-
-    return Constr;
-}());
-
 eXide.namespace("eXide.find.Files");
 
 eXide.find.Files = (function() {
@@ -174,7 +84,7 @@ eXide.find.Files = (function() {
         if (dlg) return;
         dialogEl = document.getElementById("find-dialog");
         dlg = eXide.util.DialogManager.create(dialogEl, {
-            title: "Search Binary Files",
+            title: "Find in Files",
             modal: false,
             height: 400,
             width: 600
@@ -194,13 +104,13 @@ eXide.find.Files = (function() {
             }
             dialogEl.querySelector("input[name='collection']").value = doc.getBasePath();
             dlg.setButtons({
+                "Close": function() { dlg.close(); },
                 "Search": function() {
                     var form = dialogEl.querySelector("form");
                     var params = new URLSearchParams(new FormData(form)).toString();
                     callback(params);
                     dlg.close();
-                },
-                "Close": function() { dlg.close(); }
+                }
             });
             dlg.open();
         }

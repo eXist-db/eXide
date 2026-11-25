@@ -238,7 +238,7 @@ eXide.browse.ResourceBrowser = (function () {
         var propsContentEl = document.getElementById("resource-properties-content");
         var propsDialogEl = document.getElementById("resource-properties-dialog");
         this.propertiesDialog = eXide.util.DialogManager.create(propsDialogEl, {
-            title: "Resource/collection properties",
+            title: "Properties",
             modal: true,
             height: 380,
             width: 460,
@@ -917,7 +917,8 @@ eXide.browse.ResourceBrowser = (function () {
 						self.reload();
 					}
 				});
-			}
+			},
+			{ action: "Create" }
 		);
 	};
 
@@ -937,7 +938,7 @@ eXide.browse.ResourceBrowser = (function () {
 						self.reload();
 					}
 				});
-		});
+		}, { action: "Delete", destructive: true });
 	};
 
 	Constr.prototype.deleteResource = function(row) {
@@ -967,7 +968,7 @@ eXide.browse.ResourceBrowser = (function () {
 							eXide.util.Dialog.warning("Delete Resource Error", err.error);
 						}
 					});
-		});
+		}, { action: "Delete", destructive: true });
 	};
 
     Constr.prototype.properties = function() {

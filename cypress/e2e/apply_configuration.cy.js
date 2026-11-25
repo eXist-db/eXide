@@ -69,7 +69,7 @@ describe('Apply configuration', () => {
       .get('.eXide-dialog-title').should('contain', 'Apply Configuration?')
 
     cy.get('.eXide-dialog[open]')
-      .closest('.eXide-dialog').find('.eXide-dialog-buttons button').contains("OK").click()
+      .closest('.eXide-dialog').find('.eXide-dialog-buttons button').contains("Apply").click()
 
     // cy.get('[open=""] > .eXide-dialog-buttons > :nth-child(2)').click()
   }

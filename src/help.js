@@ -40,11 +40,26 @@ eXide.util.Help = (function () {
             width: 600,
             height: 400,
             buttons: {
+                "Close": function() { this.close(); },
                 "Previous": function() { eXide.util.Help.previous(); },
-                "Next": function() { eXide.util.Help.next(); },
-                "OK": function() { this.close(); }
+                "Next": function() {
+                    if (sections && currentPage + 1 >= sections.length) {
+                        this.close();
+                    } else {
+                        eXide.util.Help.next();
+                    }
+                }
             }
         });
+    }
+
+    // The primary button reads "Done" on the last page, where it closes the tour,
+    // and "Next" everywhere else. "Previous" is disabled on the first page.
+    function updateButtons() {
+        var buttons = helpDlg.dialog.querySelectorAll(".eXide-dialog-buttons button");
+        var previousBtn = buttons[1], nextBtn = buttons[2];
+        if (previousBtn) previousBtn.disabled = currentPage <= 0;
+        if (nextBtn) nextBtn.textContent = sections && currentPage + 1 >= sections.length ? "Done" : "Next";
     }
 
     return {
@@ -64,6 +79,7 @@ eXide.util.Help = (function () {
                 currentPage++;
                 document.getElementById("eXide-dialog-help-body").innerHTML = sections[currentPage];
             }
+            updateButtons();
         },
 
         previous: function() {
@@ -71,6 +87,7 @@ eXide.util.Help = (function () {
                 currentPage--;
                 document.getElementById("eXide-dialog-help-body").innerHTML = sections[currentPage];
             }
+            updateButtons();
         },
 
         showFirstTime: function() {

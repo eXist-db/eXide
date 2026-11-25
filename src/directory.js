@@ -378,7 +378,8 @@ eXide.edit.Directory = (function () {
 						eXide.app.syncManager(d.key);
 					}
 				});
-			}
+			},
+			{ action: "Create" }
 		);
 	}
 
@@ -492,7 +493,8 @@ eXide.edit.Directory = (function () {
 						eXide.app.syncManager(parentKey);
 					}
 				});
-			}
+			},
+			{ action: "Delete", destructive: true }
 		);
 	}
 
@@ -501,6 +503,9 @@ eXide.edit.Directory = (function () {
 			navigator.clipboard.writeText(d.key);
 		}
 	}
+
+	var propertiesDialog = null;
+	var propertiesTarget = null;
 
 	function showProperties(d) {
 		if (!eXide.app.$checkLogin()) return;
@@ -515,23 +520,23 @@ eXide.edit.Directory = (function () {
 		});
 
 		var dialog = document.getElementById("resource-properties-dialog");
-		if (dialog && dialog._eXideDialog) {
-			dialog._eXideDialog.open();
-		} else if (typeof eXide.util.DialogManager !== "undefined") {
-			// Create the dialog if it hasn't been initialized yet
-			var dlg = eXide.util.DialogManager.create(dialog, {
+		if (!dialog) return;
+		propertiesTarget = d;
+		if (!propertiesDialog) {
+			// Created once and reused; Apply acts on whichever item it was last opened for.
+			propertiesDialog = eXide.util.DialogManager.create(dialog, {
 				title: "Properties",
 				modal: true,
 				width: 500,
 				buttons: {
+					"Cancel": function() { this.close(); },
 					"Apply": function() {
-						applyProperties(d, dialog, this);
-					},
-					"Close": function() { this.close(); }
+						applyProperties(propertiesTarget, dialog, this);
+					}
 				}
 			});
-			dlg.open();
 		}
+		propertiesDialog.open();
 	}
 
 	function applyProperties(d, dialog, dlg) {

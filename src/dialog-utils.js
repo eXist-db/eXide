@@ -10,6 +10,12 @@
  *
  * buttons is an object: { "Label": function() { ... }, ... }
  * The callback receives the dialog controller as `this`.
+ *
+ * Order matters: the bar is right-aligned and the LAST button is the primary
+ * action (highlighted, and focused on open). List the safe choice (Cancel/Close)
+ * first and the action last. Instead of a function, a button may be given as
+ * { click: fn, destructive: true } (red primary; Cancel gets focus instead) or
+ * { click: fn, separate: true } (pushed to the far left, away from the others).
  */
 eXide.namespace("eXide.util.DialogManager");
 
@@ -139,6 +145,10 @@ eXide.util.DialogManager = (function() {
             dialog: dialog,
             content: el,
             open: function() {
+                // The same content element may be wrapped by more than one dialog
+                // (e.g. resource properties, from both the DB manager and the
+                // sidebar tree); take it back if another wrapper holds it.
+                if (el.parentNode !== content) content.appendChild(el);
                 // Reset drag position so dialog re-centers each time
                 if (dragResolved) {
                     dialog.style.left = "";
@@ -154,8 +164,14 @@ eXide.util.DialogManager = (function() {
                 if (isModal) {
                     dialog.showModal();
                     if (options.height) dialog.style.display = "flex";
-                    // Focus the first action button, not the title bar close ×
-                    var primaryBtn = buttonBar.querySelector("button");
+                    // Focus the primary action (the last button) so Enter does what the
+                    // highlighted button says. A destructive primary is not focused:
+                    // focus falls back to the first button (the safe choice) instead.
+                    var buttons = buttonBar.querySelectorAll("button");
+                    var primaryBtn = buttons[buttons.length - 1];
+                    if (primaryBtn && primaryBtn.classList.contains("destructive")) {
+                        primaryBtn = buttons[0];
+                    }
                     if (primaryBtn) primaryBtn.focus();
                 } else {
                     dialog.style.display = "flex";
@@ -183,10 +199,13 @@ eXide.util.DialogManager = (function() {
                 if (!buttons) return;
                 for (var label in buttons) {
                     if (buttons.hasOwnProperty(label)) {
-                        (function(fn) {
+                        (function(spec) {
+                            var fn = typeof spec === "function" ? spec : spec.click;
                             var btn = document.createElement("button");
                             btn.type = "button";
                             btn.textContent = label;
+                            if (spec.destructive) btn.classList.add("destructive");
+                            if (spec.separate) btn.classList.add("separate");
                             btn.addEventListener("click", function() {
                                 fn.call(controller);
                             });
