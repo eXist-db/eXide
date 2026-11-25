@@ -29,7 +29,9 @@
 		"xquery",
 		"ide"
 	],
-	"author": "Wolfgang Meier",
+	"author": {
+		"name": "eXist-db community"
+	},
 	"license": "GPL-3.0",
 	"bugs": {
 		"url": "https://github.com/eXist-db/eXide/issues"
