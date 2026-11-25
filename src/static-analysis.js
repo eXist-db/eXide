@@ -20,50 +20,50 @@ export const staticAnalysis = (function () {
     let registeredModulePrefixes = {};
 
     function warningMarker(pos, msg) {
-        return { pos: pos, lang: LANG, type: WARNING, level: WARNING, message: msg };
+        return { pos, lang: LANG, type: WARNING, level: WARNING, message: msg };
     }
     function unusedVarMarker(pos, name) {
         return {
-            pos: pos, lang: LANG, type: WARNING, level: WARNING,
-            message: "$" + name + ": unused variable.",
+            pos, lang: LANG, type: WARNING, level: WARNING,
+            message: `$${name}: unused variable.`,
             hasResolution: true
         };
     }
     function XPST0008(pos, varname) {
         return {
-            pos: pos, lang: LANG, type: ERROR, level: ERROR,
-            message: '[XPST0008] "' + varname + '": undeclared variable.'
+            pos, lang: LANG, type: ERROR, level: ERROR,
+            message: `[XPST0008] "${varname}": undeclared variable.`
         };
     }
     function XQST0033(pos, prefix, ns) {
         return {
-            pos: pos, lang: LANG, type: ERROR, level: ERROR,
-            message: '[XQST0033] "' + prefix + '": namespace prefix already bound to "' + ns + '".'
+            pos, lang: LANG, type: ERROR, level: ERROR,
+            message: `[XQST0033] "${prefix}": namespace prefix already bound to "${ns}".`
         };
     }
     function XPST0081(pos, prefix, localName) {
         return {
-            pos: pos, lang: LANG, type: ERROR, level: ERROR,
-            prefix: prefix, localName: localName,
-            message: '[XPST0081] "' + prefix + '": can not expand namespace prefix to URI.'
+            pos, lang: LANG, type: ERROR, level: ERROR,
+            prefix, localName,
+            message: `[XPST0081] "${prefix}": can not expand namespace prefix to URI.`
         };
     }
     function XQST0039(pos, varname) {
         return {
-            pos: pos, lang: LANG, type: ERROR, level: ERROR,
-            message: '[XQST0039] "' + varname + '": duplicate parameter name.'
+            pos, lang: LANG, type: ERROR, level: ERROR,
+            message: `[XQST0039] "${varname}": duplicate parameter name.`
         };
     }
     function XQST0049(pos, varname) {
         return {
-            pos: pos, lang: LANG, type: ERROR, level: ERROR,
-            message: '[XQST0049] "' + varname + '": duplicate variable declaration.'
+            pos, lang: LANG, type: ERROR, level: ERROR,
+            message: `[XQST0049] "${varname}": duplicate variable declaration.`
         };
     }
     function XQST0034(pos, functionName) {
         return {
-            pos: pos, lang: LANG, type: ERROR, level: ERROR,
-            message: '[XQST0034] "' + functionName + '": duplicate function declaration.'
+            pos, lang: LANG, type: ERROR, level: ERROR,
+            message: `[XQST0034] "${functionName}": duplicate function declaration.`
         };
     }
 
@@ -106,12 +106,11 @@ export const staticAnalysis = (function () {
             "fn": { ns: "http://www.w3.org/2005/xpath-functions", pos: { sl: 0, sc: 0, el: 0, ec: 0 }, type: "module", auto: true }
         };
         const referencedPrefixes = {};
-        let defaultFnNs = "http://www.w3.org/2005/xpath-functions";
 
         // -- Variable scoping (simple scope stack, no StaticContext class) --
         function makeScope(pos, parent) {
             return { pos: { sl: pos.sl, sc: pos.sc, el: pos.el, ec: pos.ec },
-                     parent: parent, children: [], varDecls: {}, varRefs: {} };
+                     parent, children: [], varDecls: {}, varRefs: {} };
         }
 
         const rootSctx = makeScope(ast.pos, undefined);
@@ -174,8 +173,6 @@ export const staticAnalysis = (function () {
         let decl = {};
 
         // -- FunctionCall state --
-        let fnCall = false;
-        let fnName = "";
         let arity = 0;
 
         // ---- VarHandler (for bindings) ----
@@ -246,14 +243,14 @@ export const staticAnalysis = (function () {
                 const pos = declaredNS[prefix].pos;
                 const type = declaredNS[prefix].type;
                 if (referencedPrefixes[prefix] === undefined && declaredNS[prefix].auto === undefined) {
-                    const err = warningMarker(pos, '"' + prefix + '": unused namespace prefix.');
+                    const err = warningMarker(pos, `"${prefix}": unused namespace prefix.`);
                     err.prefix = prefix;
                     err.ns = ns;
                     err.nsType = type;
                     markers.push(err);
                 }
                 if (dNS[ns] === undefined) {
-                    dNS[ns] = { prefix: prefix, positions: [pos] };
+                    dNS[ns] = { prefix, positions: [pos] };
                 } else if (type !== "schema") {
                     dNS[ns].positions.push(pos);
                 }
@@ -265,7 +262,7 @@ export const staticAnalysis = (function () {
                 if (positions.length > 1) {
                     for (let i = 1; i < positions.length; i++) {
                         markers.push(warningMarker(positions[i],
-                            '"' + ns + '": is already available with the prefix "' + prefix + '".'));
+                            `"${ns}": is already available with the prefix "${prefix}".`));
                     }
                 }
             }
@@ -354,19 +351,9 @@ export const staticAnalysis = (function () {
             return true;
         };
 
-        visitor.DefaultNamespaceDecl = function (node) {
-            const Handler = function () {
-                let fn = false;
-                this.TOKEN = function (token) {
-                    fn = fn ? true : (token.value === "function");
-                };
-                this.URILiteral = function (uri) {
-                    let ns = getNodeValue(uri);
-                    ns = ns.substring(1, ns.length - 1);
-                    if (fn) { defaultFnNs = ns; }
-                };
-            };
-            visitor.visitChildren(node, new Handler());
+        // The default element/function namespace is not checked; returning true keeps
+        // the visitor out of the declaration's children.
+        visitor.DefaultNamespaceDecl = function () {
             return true;
         };
 
@@ -533,7 +520,7 @@ export const staticAnalysis = (function () {
                 visitor.visitChildren(node, new VarHandler(node));
             }
             fnParams.push({
-                name: "$" + getNodeValue(node.children[1])
+                name: `$${getNodeValue(node.children[1])}`
             });
             return true;
         };
@@ -575,7 +562,7 @@ export const staticAnalysis = (function () {
 
             visitor.visitChildren(node, new VarDeclHandler(decls));
 
-            varNames.forEach(function (curName) {
+            varNames.forEach((curName) => {
                 const newDecl = { pos: node.pos, kind: node.name };
                 decls[curName] = decls[curName] || newDecl;
                 if (!isStmt) {
@@ -609,7 +596,7 @@ export const staticAnalysis = (function () {
                     popSctx();
 
                     const fnArity = fnParams.length;
-                    fnode.arity = "" + fnArity;
+                    fnode.arity = `${fnArity}`;
                     if (declaredFunctions[eQName] &&
                         declaredFunctions[eQName][fnArity] !== undefined) {
                         markers.push(XQST0034(fnode.pos, eQName));
@@ -629,11 +616,8 @@ export const staticAnalysis = (function () {
 
         // -- FunctionCall --
         visitor.FunctionCall = function (node) {
-            fnCall = true;
             arity = 0;
-            fnName = "";
             visitor.visitChildren(node);
-            fnCall = false;
             node.arity = arity;
             return true;
         };
@@ -646,9 +630,6 @@ export const staticAnalysis = (function () {
         // -- EQName --
         visitor.EQName = function (node) {
             const value = getNodeValue(node);
-            if (fnCall) {
-                fnName = value;
-            }
             if (value.substring(0, 2) !== "Q{" && value.indexOf(":") !== -1) {
                 const prefix = value.substring(0, value.indexOf(":"));
                 const localName = value.substring(value.indexOf(":") + 1);
@@ -687,7 +668,7 @@ export const staticAnalysis = (function () {
                     sctx.varRefs[value] = [];
                 }
                 const pos = { sl: node.pos.sl, sc: node.pos.sc + 1, el: node.pos.el, ec: node.pos.ec };
-                sctx.varRefs[value].push({ pos: pos });
+                sctx.varRefs[value].push({ pos });
             }
             visitor.visitChildren(node);
             return true;
@@ -701,15 +682,15 @@ export const staticAnalysis = (function () {
         // -- Run --
         visitor.visit(ast);
 
-        return { markers: markers };
+        return { markers };
     }
 
     // Full module records from startup fetch (prefix, uri, at)
     let registeredModules = [];
 
     return {
-        analyze: analyze,
-        setRegisteredModules: function (modules) {
+        analyze,
+        setRegisteredModules (modules) {
             registeredModulePrefixes = {};
             registeredModules = modules || [];
             for (let i = 0; i < modules.length; i++) {
@@ -718,7 +699,7 @@ export const staticAnalysis = (function () {
                 }
             }
         },
-        getModuleByPrefix: function (prefix) {
+        getModuleByPrefix (prefix) {
             for (let i = 0; i < registeredModules.length; i++) {
                 if (registeredModules[i].prefix === prefix) {
                     return registeredModules[i];

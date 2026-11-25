@@ -76,14 +76,14 @@ export const QuickPicker = (function () {
         const titleBar = dialog.querySelector(".quick-picker-titlebar");
         titleBar.style.cursor = "move";
         let dragState = null;
-        titleBar.addEventListener("mousedown", function(e) {
+        titleBar.addEventListener("mousedown", (e) => {
             if (e.target.classList.contains("quick-picker-close")) return;
             e.preventDefault();
             dragState = { startX: e.clientX, startY: e.clientY, origLeft: dialog.offsetLeft, origTop: dialog.offsetTop };
             function onMove(e) {
                 if (!dragState) return;
-                dialog.style.left = (dragState.origLeft + e.clientX - dragState.startX) + "px";
-                dialog.style.top = (dragState.origTop + e.clientY - dragState.startY) + "px";
+                dialog.style.left = `${dragState.origLeft + e.clientX - dragState.startX}px`;
+                dialog.style.top = `${dragState.origTop + e.clientY - dragState.startY}px`;
                 dialog.style.transform = "none";
             }
             function onUp() {
@@ -99,11 +99,11 @@ export const QuickPicker = (function () {
         listEl = dialog.querySelector(".quick-picker-list");
         detailPane = dialog.querySelector(".quick-picker-detail");
 
-        filterInput.addEventListener("input", function () {
+        filterInput.addEventListener("input", () => {
             applyFilter(filterInput.value);
         });
 
-        dialog.addEventListener("keydown", function (ev) {
+        dialog.addEventListener("keydown", (ev) => {
             if (ev.key === "ArrowDown") {
                 ev.preventDefault();
                 moveSelection(1);
@@ -119,7 +119,7 @@ export const QuickPicker = (function () {
             }
         });
 
-        dialog.addEventListener("close", function () {
+        dialog.addEventListener("close", () => {
             // Browser-initiated close (e.g. Escape on <dialog>)
             if (onSelect) {
                 const cb = onSelect;
@@ -129,7 +129,7 @@ export const QuickPicker = (function () {
             returnFocus();
         });
 
-        listEl.addEventListener("click", function (ev) {
+        listEl.addEventListener("click", (ev) => {
             const li = ev.target.closest("li");
             if (!li) return;
             const idx = Array.prototype.indexOf.call(listEl.children, li);
@@ -145,7 +145,7 @@ export const QuickPicker = (function () {
         options = options || {};
         ensureDOM();
 
-        items = (itemsIn || []).slice().sort(function (a, b) {
+        items = (itemsIn || []).slice().sort((a, b) => {
             const la = Array.isArray(a.label) ? a.label[0] : a.label;
             const lb = Array.isArray(b.label) ? b.label[0] : b.label;
             return la < lb ? -1 : la > lb ? 1 : 0;
@@ -177,7 +177,7 @@ export const QuickPicker = (function () {
             filteredItems = items;
         } else {
             const regex = new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
-            filteredItems = items.filter(function (item) {
+            filteredItems = items.filter((item) => {
                 const label = Array.isArray(item.label) ? item.label.join(" ") : item.label;
                 return regex.test(label);
             });
@@ -272,7 +272,7 @@ export const QuickPicker = (function () {
     }
 
     return {
-        show: show
+        show
     };
 }());
 

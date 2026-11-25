@@ -57,13 +57,13 @@ function loadParser40() {
         return Promise.resolve(XQueryParser40);
     }
     parser40Promise ??= import("./XQueryParser40.js")
-        .then(function (module) {
+        .then((module) => {
             XQueryParser40 = module.default;
             return XQueryParser40;
         })
-        .catch(function (err) {
+        .catch((err) => {
             parser40Promise = null; // allow retry
-            throw new Error("Failed to load XQuery 4.0 parser: " + err.message);
+            throw new Error(`Failed to load XQuery 4.0 parser: ${err.message}`);
         });
     return parser40Promise;
 }
@@ -76,10 +76,10 @@ function preload40() {
 }
 
 export const parserRegistry = {
-    detectVersion: detectVersion,
-    getParser: getParser,
-    loadParser40: loadParser40,
-    preload40: preload40
+    detectVersion,
+    getParser,
+    loadParser40,
+    preload40
 };
 
 // Register on the global `eXide` object (see namespace.js)

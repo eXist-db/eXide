@@ -112,8 +112,8 @@ export const ws = (function () {
         const id = ++requestId;
         const msg = {
             jsonrpc: "2.0",
-            id: id,
-            method: method,
+            id,
+            method,
             params: params || {}
         };
 
@@ -132,7 +132,7 @@ export const ws = (function () {
 
         const msg = {
             jsonrpc: "2.0",
-            method: method,
+            method,
             params: params || {}
         };
 
@@ -154,7 +154,7 @@ export const ws = (function () {
      */
     function off(method, callback) {
         if (!listeners[method]) return;
-        listeners[method] = listeners[method].filter(function (cb) {
+        listeners[method] = listeners[method].filter((cb) => {
             return cb !== callback;
         });
     }
@@ -176,7 +176,7 @@ export const ws = (function () {
         if (reconnectTimer) return;
         if (!url) return;
 
-        reconnectTimer = setTimeout(function () {
+        reconnectTimer = setTimeout(() => {
             reconnectTimer = null;
             console.log("[ws] Reconnecting...");
             connect(url);
@@ -209,19 +209,19 @@ export const ws = (function () {
         const loc = window.location;
         const rootContext = loc.pathname.replace(/^(.*?)\/apps\/.*$/, "$1");
         const wsProtocol = loc.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = wsProtocol + "//" + loc.host + rootContext + "/ws";
+        const wsUrl = `${wsProtocol}//${loc.host}${rootContext}/ws`;
         connect(wsUrl);
     }
 
     return {
-        connect: connect,
-        disconnect: disconnect,
-        autoConnect: autoConnect,
-        send: send,
-        notify: notify,
-        on: on,
-        off: off,
-        isConnected: function () { return connected; }
+        connect,
+        disconnect,
+        autoConnect,
+        send,
+        notify,
+        on,
+        off,
+        isConnected () { return connected; }
     };
 }());
 

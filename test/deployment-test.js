@@ -15,8 +15,8 @@ const assert = require("node:assert/strict");
 const path = require("path");
 
 // Projects reads preferences through the eXide.app singleton at runtime.
-globalThis.eXide = { app: { getPreference: function () { return false; } } };
-global.document = { getElementById: function () { return null; } };
+globalThis.eXide = { app: { getPreference () { return false; } } };
+global.document = { getElementById () { return null; } };
 
 const { Projects } = require(path.join(__dirname, "..", "src", "deployment.js"));
 
@@ -24,23 +24,23 @@ const { Projects } = require(path.join(__dirname, "..", "src", "deployment.js"))
 const POISON = { packages: [{ abbrev: "dashboard", path: "/db/apps/dashboard" }] };
 const APP = { root: "/db/apps/my-app", abbrev: "my-app", title: "My App" };
 
-beforeEach(function () {
+beforeEach(() => {
     global.localStorage = {};
     global.fetch = function () { return Promise.resolve({ ok: false }); };
 });
 
-describe("eXide.edit.Projects — localStorage poisoning (#835)", function () {
+describe("eXide.edit.Projects — localStorage poisoning (#835)", () => {
 
-    it("getProjectFor tolerates a malformed entry and still resolves the real project", function () {
+    it("getProjectFor tolerates a malformed entry and still resolves the real project", () => {
         const p = new Projects();
         p.projects = { "my-app": APP, "undefined": POISON };
-        assert.doesNotThrow(function () {
+        assert.doesNotThrow(() => {
             assert.equal(p.getProjectFor("/db/apps/my-app/data.xml").abbrev, "my-app");
             assert.equal(p.getProjectFor("/db/other/thing.xml"), null);
         });
     });
 
-    it("saveState never persists a malformed entry", function () {
+    it("saveState never persists a malformed entry", () => {
         const p = new Projects();
         p.projects = { "my-app": APP, "undefined": POISON };
         p.saveState();
@@ -49,7 +49,7 @@ describe("eXide.edit.Projects — localStorage poisoning (#835)", function () {
         assert.ok(!("undefined" in saved), "the 'undefined' key must not be persisted");
     });
 
-    it("restoreState heals storage already poisoned by an earlier build", function () {
+    it("restoreState heals storage already poisoned by an earlier build", () => {
         global.localStorage["eXide.projects"] = JSON.stringify({
             "my-app": APP,
             "undefined": POISON
@@ -59,31 +59,31 @@ describe("eXide.edit.Projects — localStorage poisoning (#835)", function () {
         assert.deepEqual(Object.keys(p.projects), ["my-app"]);
     });
 
-    it("getProject does not store an abbrev-less (package-list) response as 'undefined'", async function () {
+    it("getProject does not store an abbrev-less (package-list) response as 'undefined'", async () => {
         const p = new Projects();
         global.fetch = function () {
-            return Promise.resolve({ ok: true, json: function () { return Promise.resolve(POISON); } });
+            return Promise.resolve({ ok: true, json () { return Promise.resolve(POISON); } });
         };
-        const result = await new Promise(function (resolve) {
+        const result = await new Promise((resolve) => {
             p.getProject("/db/apps/not-an-app", resolve);
         });
         assert.equal(result, null);
         assert.deepEqual(p.projects, {}, "no 'undefined' key may be created");
     });
 
-    it("getProject still stores a well-formed project response", async function () {
+    it("getProject still stores a well-formed project response", async () => {
         const p = new Projects();
         global.fetch = function () {
-            return Promise.resolve({ ok: true, json: function () { return Promise.resolve(APP); } });
+            return Promise.resolve({ ok: true, json () { return Promise.resolve(APP); } });
         };
-        const result = await new Promise(function (resolve) {
+        const result = await new Promise((resolve) => {
             p.getProject("/db/apps/my-app", resolve);
         });
         assert.equal(result.abbrev, "my-app");
         assert.deepEqual(Object.keys(p.projects), ["my-app"]);
     });
 
-    it("eXide 3.x can read 4.x's persisted state without crashing (cross-version)", function () {
+    it("eXide 3.x can read 4.x's persisted state without crashing (cross-version)", () => {
         // Exact getProjectFor from eXide 3.5.4 (src/deployment.js) — no guard,
         // reads project.root.length for every entry. Reproduces the #835 crash.
         function getProjectFor_3x(projects, collection) {
@@ -106,7 +106,7 @@ describe("eXide.edit.Projects — localStorage poisoning (#835)", function () {
         // app forces getProjectFor to iterate every entry: with the old
         // saveState the persisted poison entry made it throw "Cannot read
         // properties of undefined (reading 'length')" — exactly the #835 crash.
-        assert.doesNotThrow(function () {
+        assert.doesNotThrow(() => {
             assert.equal(getProjectFor_3x(asSeenBy3x, "/db/other/note.xml"), null);
         });
         // and a document under the real app still resolves

@@ -95,14 +95,14 @@ export const commands = (function () {
         if (nameLabels[id]) return nameLabels[id];
         // gotoTab1 → "Go to Tab 1"
         const tabMatch = id.match(/^gotoTab(\d)$/);
-        if (tabMatch) return "Go to Tab " + tabMatch[1];
+        if (tabMatch) return `Go to Tab ${tabMatch[1]}`;
         // fallback: camelCase → "Camel Case"
         return id.replace(/([a-z])([A-Z])/g, "$1 $2")
-                  .replace(/^./, function(c) { return c.toUpperCase(); });
+                  .replace(/^./, (c) => { return c.toUpperCase(); });
     }
 
     function addCommand(name, key, exec) {
-        const cmd = { name: name, key: key, exec: exec };
+        const cmd = { name, key, exec };
         commandList.push(cmd);
         if (key) {
             bindings[name] = key;
@@ -111,7 +111,7 @@ export const commands = (function () {
 
     return {
 
-        init: function (parent) {
+        init (parent) {
             // Synchronous load — keybindings must be configured before editor is interactive
             const xhr = new XMLHttpRequest();
             xhr.open("GET", "keybindings.js", false);
@@ -123,150 +123,150 @@ export const commands = (function () {
                     addCommand("undo", getKeyBinding(kb, "undo"), null);
                     addCommand("redo", getKeyBinding(kb, "redo"), null);
 
-                    addCommand("gotoLine", getKeyBinding(kb, "gotoLine"), function() {
+                    addCommand("gotoLine", getKeyBinding(kb, "gotoLine"), () => {
                         parent.gotoLine();
                         return true;
                     });
-                    addCommand("historyBack", getKeyBinding(kb, "historyBack"), function() {
+                    addCommand("historyBack", getKeyBinding(kb, "historyBack"), () => {
                         parent.historyBack();
                         return true;
                     });
-                    addCommand("toggleDiagnostics", getKeyBinding(kb, "toggleDiagnostics"), function() {
+                    addCommand("toggleDiagnostics", getKeyBinding(kb, "toggleDiagnostics"), () => {
                         parent.toggleDiagnostics();
                         return true;
                     });
-                    addCommand("fold", getKeyBinding(kb, "fold"), function(view) {
+                    addCommand("fold", getKeyBinding(kb, "fold"), (view) => {
                         // CM6 fold is handled by foldKeymap
                         return false;
                     });
-                    addCommand("saveDocument", getKeyBinding(kb, "saveDocument"), function() {
+                    addCommand("saveDocument", getKeyBinding(kb, "saveDocument"), () => {
                         eXide.app.saveDocument();
                         return true;
                     });
-                    addCommand("runQuery", getKeyBinding(kb, "runQuery"), function() {
+                    addCommand("runQuery", getKeyBinding(kb, "runQuery"), () => {
                         eXide.app.runQuery();
                         return true;
                     });
-                    addCommand("runQueryOrApp", getKeyBinding(kb, "runQueryOrApp"), function() {
+                    addCommand("runQueryOrApp", getKeyBinding(kb, "runQueryOrApp"), () => {
                         eXide.app.runAppOrQuery();
                         return true;
                     });
-                    addCommand("openDocument", getKeyBinding(kb, "openDocument"), function() {
+                    addCommand("openDocument", getKeyBinding(kb, "openDocument"), () => {
                         eXide.app.openDocument();
                         return true;
                     });
-                    addCommand("newDocumentFromTemplate", getKeyBinding(kb, "newDocumentFromTemplate"), function() {
+                    addCommand("newDocumentFromTemplate", getKeyBinding(kb, "newDocumentFromTemplate"), () => {
                         eXide.app.newDocumentFromTemplate();
                         return true;
                     });
-                    addCommand("closeDocument", getKeyBinding(kb, "closeDocument"), function() {
+                    addCommand("closeDocument", getKeyBinding(kb, "closeDocument"), () => {
                         eXide.app.closeDocument();
                         return true;
                     });
-                    addCommand("closeAll", getKeyBinding(kb, "closeAll"), function() {
+                    addCommand("closeAll", getKeyBinding(kb, "closeAll"), () => {
                         eXide.app.closeAll();
                         return true;
                     });
-                    addCommand("autocomplete", getKeyBinding(kb, "autocomplete"), function(view) {
+                    addCommand("autocomplete", getKeyBinding(kb, "autocomplete"), (view) => {
                         CM6.startCompletion(view);
                         return true;
                     });
-                    addCommand("nextTab", getKeyBinding(kb, "nextTab"), function() {
+                    addCommand("nextTab", getKeyBinding(kb, "nextTab"), () => {
                         parent.nextTab();
                         return true;
                     });
-                    addCommand("previousTab", getKeyBinding(kb, "previousTab"), function() {
+                    addCommand("previousTab", getKeyBinding(kb, "previousTab"), () => {
                         parent.previousTab();
                         return true;
                     });
-                    addCommand("xquery-format", getKeyBinding(kb, "xqueryFormat"), function() {
+                    addCommand("xquery-format", getKeyBinding(kb, "xqueryFormat"), () => {
                         parent.exec("format");
                         return true;
                     });
-                    addCommand("functionDoc", getKeyBinding(kb, "functionDoc"), function() {
+                    addCommand("functionDoc", getKeyBinding(kb, "functionDoc"), () => {
                         parent.exec("showFunctionDoc");
                         return true;
                     });
-                    addCommand("gotoDefinition", getKeyBinding(kb, "gotoDefinition"), function() {
+                    addCommand("gotoDefinition", getKeyBinding(kb, "gotoDefinition"), () => {
                         parent.exec("gotoDefinition");
                         return true;
                     });
-                    addCommand("findReferences", getKeyBinding(kb, "findReferences"), function() {
+                    addCommand("findReferences", getKeyBinding(kb, "findReferences"), () => {
                         parent.exec("findReferences");
                         return true;
                     });
-                    addCommand("gotoSymbol", getKeyBinding(kb, "gotoSymbol"), function() {
+                    addCommand("gotoSymbol", getKeyBinding(kb, "gotoSymbol"), () => {
                         parent.exec("gotoSymbol");
                         return true;
                     });
-                    addCommand("searchReplace", getKeyBinding(kb, "searchReplace"), function() {
+                    addCommand("searchReplace", getKeyBinding(kb, "searchReplace"), () => {
                         parent.search.open();
                         return true;
                     });
-                    addCommand("escape", getKeyBinding(kb, "escape"), function() {
+                    addCommand("escape", getKeyBinding(kb, "escape"), () => {
                         const doc = parent.getActiveDocument();
                         doc.template = null;
                         const head = parent.editor.state.selection.main.head;
                         parent.editor.dispatch({ selection: { anchor: head } });
                         return true;
                     });
-                    addCommand("dbManager", getKeyBinding(kb, "dbManager"), function() {
+                    addCommand("dbManager", getKeyBinding(kb, "dbManager"), () => {
                         eXide.app.manage();
                         return true;
                     });
-                    addCommand("toggleComment", getKeyBinding(kb, "toggleComment"), function(view) {
+                    addCommand("toggleComment", getKeyBinding(kb, "toggleComment"), (view) => {
                         CM6.toggleComment(view);
                         return true;
                     });
-                    addCommand("synchronize", getKeyBinding(kb, "synchronize"), function() {
+                    addCommand("synchronize", getKeyBinding(kb, "synchronize"), () => {
                         eXide.app.synchronize();
                         return true;
                     });
-                    addCommand("preferences", getKeyBinding(kb, "preferences"), function() {
+                    addCommand("preferences", getKeyBinding(kb, "preferences"), () => {
                         eXide.app.showPreferences();
                         return true;
                     });
-                    addCommand("openApp", getKeyBinding(kb, "openApp"), function() {
+                    addCommand("openApp", getKeyBinding(kb, "openApp"), () => {
                         eXide.app.openApp();
                         return true;
                     });
-                    addCommand("quickfix", getKeyBinding(kb, "quickfix"), function() {
+                    addCommand("quickfix", getKeyBinding(kb, "quickfix"), () => {
                         parent.exec("quickFix");
                         return true;
                     });
-                    addCommand("expandSelection", getKeyBinding(kb, "expandSelection"), function() {
+                    addCommand("expandSelection", getKeyBinding(kb, "expandSelection"), () => {
                         parent.exec("expandSelection");
                         return true;
                     });
-                    addCommand("renameSymbol", getKeyBinding(kb, "renameSymbol"), function() {
+                    addCommand("renameSymbol", getKeyBinding(kb, "renameSymbol"), () => {
                         parent.exec("rename");
                         return true;
                     });
-                    addCommand("removeTags", getKeyBinding(kb, "removeTags"), function() {
+                    addCommand("removeTags", getKeyBinding(kb, "removeTags"), () => {
                         parent.exec("removeTags");
                         return true;
                     });
-                    addCommand("extractFunction", getKeyBinding(kb, "extractFunction"), function() {
+                    addCommand("extractFunction", getKeyBinding(kb, "extractFunction"), () => {
                         parent.exec("extractFunction");
                         return true;
                     });
-                    addCommand("extractVariable", getKeyBinding(kb, "extractVariable"), function() {
+                    addCommand("extractVariable", getKeyBinding(kb, "extractVariable"), () => {
                         parent.exec("extractVariable");
                         return true;
                     });
-                    addCommand("openTab", getKeyBinding(kb, "openTab"), function() {
+                    addCommand("openTab", getKeyBinding(kb, "openTab"), () => {
                         parent.selectTab();
                         return true;
                     });
-                    addCommand("toggleQueryResults", getKeyBinding(kb, "toggleQueryResults"), function() {
+                    addCommand("toggleQueryResults", getKeyBinding(kb, "toggleQueryResults"), () => {
                         eXide.app.toggleResultsPanel();
                         return true;
                     });
-                    addCommand("commandPalette", getKeyBinding(kb, "commandPalette"), function() {
+                    addCommand("commandPalette", getKeyBinding(kb, "commandPalette"), () => {
                         eXide.app.getMenu().commandPalette();
                         return true;
                     });
-                    addCommand("findFiles", getKeyBinding(kb, "findFiles"), function() {
+                    addCommand("findFiles", getKeyBinding(kb, "findFiles"), () => {
                         eXide.app.findFiles();
                         return true;
                     });
@@ -280,7 +280,7 @@ export const commands = (function () {
 
                     for (let i = 1; i < 10; i++) {
                         const tab = i;
-                        addCommand("gotoTab" + tab, getKeyBinding(kb, "gotoTab" + tab), createExec(tab));
+                        addCommand(`gotoTab${tab}`, getKeyBinding(kb, `gotoTab${tab}`), createExec(tab));
                     }
 
                     // Build CM6 keymap from collected commands
@@ -306,7 +306,7 @@ export const commands = (function () {
             }
         },
 
-        help: function (container, editor) {
+        help (container, editor) {
             const el = typeof container === "string" ? document.querySelector(container) : container;
             const tbody = el.querySelector("#keybindings tbody");
             if (!tbody) return;
@@ -336,7 +336,7 @@ export const commands = (function () {
                 newInput.addEventListener("input", function() {
                     const q = this.value.trim().toLowerCase();
                     const trs = tbody.querySelectorAll("tr");
-                    trs.forEach(function(tr) {
+                    trs.forEach((tr) => {
                         const text = tr.textContent.toLowerCase();
                         tr.style.display = (!q || text.indexOf(q) >= 0) ? "" : "none";
                     });
@@ -344,7 +344,7 @@ export const commands = (function () {
             }
         },
 
-        getShortcut: function(key) {
+        getShortcut(key) {
             return displayKey(bindings[key]);
         }
 

@@ -39,7 +39,7 @@ export const util = (function () {
 	function showToast(message, type, title) {
 		const container = getToastContainer();
 		const el = document.createElement("div");
-		el.className = "eXide-toast eXide-toast-" + (type || "info");
+		el.className = `eXide-toast eXide-toast-${type || "info"}`;
 		if (title) {
 			const titleEl = document.createElement("strong");
 			titleEl.textContent = title;
@@ -50,19 +50,19 @@ export const util = (function () {
 		const closer = document.createElement("span");
 		closer.className = "eXide-toast-close";
 		closer.textContent = "\u00d7";
-		closer.addEventListener("click", function() { removeToast(el); });
+		closer.addEventListener("click", () => { removeToast(el); });
 		el.appendChild(closer);
 		container.insertBefore(el, container.firstChild);
 		// trigger reflow then animate in
 		el.offsetHeight;
 		el.classList.add("eXide-toast-show");
-		setTimeout(function() { removeToast(el); }, 5000);
+		setTimeout(() => { removeToast(el); }, 5000);
 	}
 
 	function removeToast(el) {
 		if (!el.parentNode) return;
 		el.classList.remove("eXide-toast-show");
-		el.addEventListener("transitionend", function() {
+		el.addEventListener("transitionend", () => {
 			if (el.parentNode) el.parentNode.removeChild(el);
 		});
 	}
@@ -72,19 +72,19 @@ export const util = (function () {
 		/**
 		 * Check if browser supports HTML5 local storage
 		 */
-		supportsHtml5Storage: function () {
+		supportsHtml5Storage () {
 			try {
 				return 'localStorage' in window && window['localStorage'] !== null;
-			} catch (e) {
+			} catch {
 				return false;
 			}
 		},
 
-		supportsFullScreen: function() {
+		supportsFullScreen() {
 			return !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
 		},
 
-		requestFullScreen: function(el) {
+		requestFullScreen(el) {
 			if (document.fullscreenElement || document.webkitFullscreenElement) {
 				(document.exitFullscreen || document.webkitExitFullscreen).call(document);
 			} else {
@@ -95,7 +95,7 @@ export const util = (function () {
 		/**
 		 * Normalize a collection path. Remove xmldb: part, resolve ..
 		 */
-		normalizePath: function (path) {
+		normalizePath (path) {
             if (!path)
                 return path;
             path = path.replace(/^xmldb:exist:\/\//, "");
@@ -117,17 +117,17 @@ export const util = (function () {
 		 * Parse a function signature and transform it into function call.
 		 * Removes type declarations.
 		 */
-		parseSignature: function (signature) {
+		parseSignature (signature) {
 			const p = signature.indexOf("(");
 			if (p > -1) {
 				let parsed = signature.substring(0, p + 1);
 				signature = signature.substring(p);
-				const vars = signature.match(/\$[^\s,\)]+/g);
+				const vars = signature.match(/\$[^\s,)]+/g);
 				if (vars) {
 					for (let i = 0; i < vars.length; i++) {
 						if (i > 0)
 							parsed += ", ";
-						parsed += "${" + (i + 1) + ":$" + vars[i].substring(1) + "}";
+						parsed += `\${${i + 1}:$${vars[i].substring(1)}}`;
 					}
 				}
 				parsed += ")";
@@ -136,15 +136,15 @@ export const util = (function () {
 			return signature;
 		},
 
-		message: function(message) {
+		message(message) {
 			showToast(message, "info");
 		},
 
-		success: function(message) {
+		success(message) {
 			showToast(message, "success");
 		},
 
-		error: function(message, title) {
+		error(message, title) {
 			showToast(message, "error", title);
 		}
 	};
@@ -175,7 +175,7 @@ export const Dialog = (function () {
 			modal: true,
 			width: 420,
 			appendTo: "#layout-container",
-			buttons: { "OK": function() { this.close(); } }
+			buttons: { "OK"() { this.close(); } }
 		});
 	}
 
@@ -194,7 +194,7 @@ export const Dialog = (function () {
 
 	return {
 
-		message: function (title, msg) {
+		message (title, msg) {
 			ensureMessageDialog();
 			msgDlg.setTitle(title);
 			document.getElementById("eXide-dialog-message-body").innerHTML = msg || "";
@@ -205,7 +205,7 @@ export const Dialog = (function () {
 			msgDlg.open();
 		},
 
-		warning: function (title, msg) {
+		warning (title, msg) {
 			ensureMessageDialog();
 			msgDlg.setTitle(title);
 			document.getElementById("eXide-dialog-message-body").innerHTML = msg || "";
@@ -224,16 +224,16 @@ export const Dialog = (function () {
 		 * @param options.destructive style the action as destructive; Cancel then
 		 *   keeps the focus, so Enter does not delete by accident.
 		 */
-		input: function (title, msg, okCallback, options) {
+		input (title, msg, okCallback, options) {
 			options = options || {};
 			ensureInputDialog();
 			callback = okCallback;
 			const buttons = {
-				"Cancel": function() { this.close(); }
+				"Cancel"() { this.close(); }
 			};
 			buttons[options.action || "OK"] = {
 				destructive: !!options.destructive,
-				click: function() {
+				click() {
 					this.close();
 					if (callback != null) {
 						callback.call(null);
@@ -284,14 +284,14 @@ export const mimeTypes = (function () {
 
     return {
     
-    	getMime: function (mimeType) {
+    	getMime (mimeType) {
 	    	const p = mimeType.indexOf(";");
 	    	if (p > -1)
 	    		mimeType = mimeType.substring(0, p);
 	    	return mimeType;
 	    },
     
-		getLangFromMime: function (mimeType) {
+		getLangFromMime (mimeType) {
 	        for (const lang in TYPES) {
 				const info = TYPES[lang];
 				for (let i = 0; i < info.length; i++) {

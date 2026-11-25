@@ -23,11 +23,10 @@ import { editorUtils } from "./editor-utils.js";
 /**
  * Represents the last inserted template. Cycles through parameters.
  */
-export const Template = (function () {
-	
-	const LINE_REGEX = /\n/;
-	
-	const Constr = function(editor, range, code, type) {
+const LINE_REGEX = /\n/;
+
+export class Template {
+    constructor(editor, range, code, type) {
 		const lines = code.split(LINE_REGEX).length;
 		this.code = code;
 		this.editor = editor.editor;
@@ -49,83 +48,79 @@ export const Template = (function () {
 		if (this.startColumn > 0)
 			this.regex.lastIndex = this.startColumn;
 	}
-	
-	Constr.prototype = {
-		
-		/**
-		 * Insert the template code into the edited document.
-		 */
-		insert: function() {
-            if (this.range) {
-                const from = editorUtils.rowColToOffset(this.editor.state, this.range.start.row, this.range.start.column);
-                const to = editorUtils.rowColToOffset(this.editor.state, this.range.end.row, this.range.end.column);
-                this.editor.dispatch({ changes: { from: from, to: to } });
-            }
-            const pos = this.editor.state.selection.main.head;
-            this.editor.dispatch({
-                changes: { from: pos, insert: this.code },
-                selection: { anchor: pos + this.code.length }
-            });
-			const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
-			if (this.code.substring(0, 1) !== "$" && lead.column > 0) {
-				const head = this.editor.state.selection.main.head;
-				this.editor.dispatch({ selection: { anchor: head - 1 } });
-			}
-			if (this.type !== "variable")
-				this.nextParam();
-			this.editor.focus();
-		},
-		
-		/**
-		 * Cycle through parameters. Returns true if another parameter was found,
-		 * false to stop template mode.
-		 */
-		nextParam: function() {
-			const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
 
-			console.log("lead.row = %i startLine = %i", lead.row, this.startLine);
-			// return immediately if the cursor is outside the template
-			if (lead.row < this.startLine || lead.row > this.endLine)
-				return false;
-
-			let loop = false;
-			let found = false;
-			while (this.currentLine <= this.endLine) {
-				const lineNum = this.currentLine + 1;
-				const line = (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) ? this.editor.state.doc.line(lineNum).text : "";
-				console.log("Checking line %s", line);
-				const match = this.regex.exec(line);
-				if (match) {
-					console.log("Matched %s", match[0]);
-					const from = editorUtils.rowColToOffset(this.editor.state, this.currentLine, match.index);
-					const to = editorUtils.rowColToOffset(this.editor.state, this.currentLine, match.index + match[0].length);
-                    if (match[0].length === 1) {
-                        this.editor.dispatch({ changes: { from: from, to: to } });
-                    } else {
-                        this.editor.dispatch({ selection: { anchor: from, head: to } });
-                    }
-					this.lineOffset = match.index;
-					found = true;
-					break;
-				} else {
-					this.lineOffset = 0;
-					this.currentLine++;
-				}
-				if (this.currentLine > this.endLine && !loop) {
-					console.log("loop %i", this.startColumn);
-					this.currentLine = this.startLine;
-					if (this.startColumn > 0) {
-						this.lineOffset = this.startColumn;
-						this.regex.lastIndex = this.lineOffset;
-					}
-					loop = true;
-				}
-			}
-			return found;
+    /**
+     * Insert the template code into the edited document.
+     */
+    insert() {
+        if (this.range) {
+            const from = editorUtils.rowColToOffset(this.editor.state, this.range.start.row, this.range.start.column);
+            const to = editorUtils.rowColToOffset(this.editor.state, this.range.end.row, this.range.end.column);
+            this.editor.dispatch({ changes: { from, to } });
+        }
+        const pos = this.editor.state.selection.main.head;
+        this.editor.dispatch({
+            changes: { from: pos, insert: this.code },
+            selection: { anchor: pos + this.code.length }
+        });
+		const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
+		if (this.code.substring(0, 1) !== "$" && lead.column > 0) {
+			const head = this.editor.state.selection.main.head;
+			this.editor.dispatch({ selection: { anchor: head - 1 } });
 		}
-	};
-	return Constr;
-}());
+		if (this.type !== "variable")
+			this.nextParam();
+		this.editor.focus();
+	}
+
+    /**
+     * Cycle through parameters. Returns true if another parameter was found,
+     * false to stop template mode.
+     */
+    nextParam() {
+		const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
+
+		console.log("lead.row = %i startLine = %i", lead.row, this.startLine);
+		// return immediately if the cursor is outside the template
+		if (lead.row < this.startLine || lead.row > this.endLine)
+			return false;
+
+		let loop = false;
+		let found = false;
+		while (this.currentLine <= this.endLine) {
+			const lineNum = this.currentLine + 1;
+			const line = (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) ? this.editor.state.doc.line(lineNum).text : "";
+			console.log("Checking line %s", line);
+			const match = this.regex.exec(line);
+			if (match) {
+				console.log("Matched %s", match[0]);
+				const from = editorUtils.rowColToOffset(this.editor.state, this.currentLine, match.index);
+				const to = editorUtils.rowColToOffset(this.editor.state, this.currentLine, match.index + match[0].length);
+                if (match[0].length === 1) {
+                    this.editor.dispatch({ changes: { from, to } });
+                } else {
+                    this.editor.dispatch({ selection: { anchor: from, head: to } });
+                }
+				this.lineOffset = match.index;
+				found = true;
+				break;
+			} else {
+				this.lineOffset = 0;
+				this.currentLine++;
+			}
+			if (this.currentLine > this.endLine && !loop) {
+				console.log("loop %i", this.startColumn);
+				this.currentLine = this.startLine;
+				if (this.startColumn > 0) {
+					this.lineOffset = this.startColumn;
+					this.regex.lastIndex = this.lineOffset;
+				}
+				loop = true;
+			}
+		}
+		return found;
+	}
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").Template = Template;

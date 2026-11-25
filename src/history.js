@@ -4,13 +4,12 @@
 
 import { namespace } from "./namespace.js";
 
-export const History = (function () {
-    
-    const Constr = function() {
+export class History {
+    constructor() {
         this.history = [];
-    };
-    
-    Constr.prototype.push = function(path, line) {
+    }
+
+    push(path, line) {
         if (this.history.length > 0) {
             const last = this.history[this.history.length - 1];
             if (last.path === path && last.line === line) {
@@ -19,22 +18,20 @@ export const History = (function () {
         }
 
         this.history.push({
-            path: path, line: line
+            path, line
         });
         if (this.history.length > 50) {
             this.history.shift();
         }
-    };
-    
-    Constr.prototype.pop = function() {
+    }
+
+    pop() {
         if (this.history.length === 0) {
             return null;
         }
         return this.history.pop();
-    };
-    
-    return Constr;
-}());
+    }
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").History = History;

@@ -9,25 +9,18 @@ const pageLibraries = {
     prettierBundle: "readonly",
 };
 
-// Recommended rules the code base does not meet yet; cleaned up in a later stage.
-const pendingCleanup = {
-    "no-unused-vars": "warn",
-    "no-useless-escape": "warn",
-    "no-empty": "warn",
-    "no-cond-assign": "warn",
-    "no-prototype-builtins": "warn",
-    "no-fallthrough": "warn",
-    "no-control-regex": "warn",
-    "no-useless-assignment": "warn",
-};
-
 // Rules that keep the code base on modern, strict-mode-safe JavaScript.
 const modernRules = {
+    // Parameters are often part of an interface (visitor methods, callbacks).
+    "no-unused-vars": ["error", { args: "none" }],
     "no-var": "error",
     "prefer-const": "error",
     eqeqeq: ["error", "always", { null: "ignore" }],
     "no-implicit-globals": "error",
     "no-undef": "error",
+    "prefer-arrow-callback": "error",
+    "prefer-template": "error",
+    "object-shorthand": "error",
 };
 
 export default [
@@ -57,7 +50,7 @@ export default [
                 ...pageLibraries,
             },
         },
-        rules: { ...pendingCleanup, ...modernRules },
+        rules: modernRules,
     },
     {
         files: ["scripts/**/*.js", "tools/**/*.js", "test/**/*.js", "cypress.config.js", "cypress/plugins/**/*.js", ".commitlintrc.js"],
@@ -66,12 +59,12 @@ export default [
             sourceType: "commonjs",
             globals: { ...globals.node },
         },
-        rules: { ...pendingCleanup, ...modernRules },
+        rules: modernRules,
     },
     {
         files: ["scripts/bundle.js", "**/*.mjs"],
         languageOptions: { ecmaVersion: 2022, sourceType: "module", globals: { ...globals.node } },
-        rules: { ...pendingCleanup, ...modernRules },
+        rules: modernRules,
     },
     {
         files: ["cypress/e2e/**/*.js", "cypress/support/**/*.js"],
@@ -80,6 +73,6 @@ export default [
             sourceType: "module",
             globals: { ...globals.browser, ...globals.mocha, cy: "readonly", Cypress: "readonly", expect: "readonly" },
         },
-        rules: { ...pendingCleanup, ...modernRules },
+        rules: modernRules,
     },
 ];

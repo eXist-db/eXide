@@ -20,28 +20,16 @@
 import { namespace } from "./namespace.js";
 import { Document } from "./document.js";
 import { ModeHelper } from "./mode-helper.js";
-import { oop } from "./oop.js";
 
 /**
  * Markdown specific helper methods.
  */
-export const MarkdownModeHelper = (function () {
-
-    const Constr = function(editor) {
-        this.parent = editor;
-        this.editor = this.parent.editor;
-        this.addCommand("locate", this.locate);
-        this.addCommand("format", this.format);
-        this.addCommand("gotoSymbol", this.gotoSymbol);
-    };
-
-    oop.inherit(Constr, ModeHelper);
-
-    Constr.prototype.createOutline = function(doc, onComplete) {
+export class MarkdownModeHelper extends ModeHelper {
+    createOutline(doc, onComplete) {
         const state = this.editor.state;
         const tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
         tree.iterate({
-            enter: function(node) {
+            enter(node) {
                 let level = 0;
                 if (node.name === "ATXHeading1") level = 1;
                 else if (node.name === "ATXHeading2") level = 2;
@@ -58,7 +46,7 @@ export const MarkdownModeHelper = (function () {
                         name: text,
                         indent: level - 1,
                         source: doc.getPath(),
-                        signature: "h" + level + ": " + text,
+                        signature: `h${level}: ${text}`,
                         sort: String(line.number).padStart(6, "0"),
                         row: line.number - 1,
                         from: node.from,
@@ -70,10 +58,8 @@ export const MarkdownModeHelper = (function () {
         });
         this.collectErrors(doc);
         if (onComplete) onComplete(doc);
-    };
-
-    return Constr;
-}());
+    }
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").MarkdownModeHelper = MarkdownModeHelper;

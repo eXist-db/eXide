@@ -28,9 +28,8 @@ import { util } from "./util.js";
 /**
  * Base class for helper methods needed by specific editing modes (like XQuery, XML...)
  */
-export const ModeHelper = (function () {
-
-    const Constr = function(editor) {
+export class ModeHelper {
+    constructor(editor) {
         this.parent = editor;
         this.editor = this.parent.editor;
 
@@ -40,165 +39,161 @@ export const ModeHelper = (function () {
         this.addCommand("gotoSymbol", this.gotoSymbol);
     }
 
-    Constr.prototype = {
+    activate() {
+    }
 
-        activate: function() {
-        },
+    deactivate() {
+    }
 
-        deactivate: function() {
-        },
-
-        addCommand: function (name, func) {
-            if (!this.commands) {
-                this.commands = {};
-            }
-            this.commands[name] = func;
-        },
-
-        exec: function (command, doc, args) {
-            const fn = (this.commands && this.commands[command]) || this[command];
-            if (typeof fn === "function") {
-                const nargs = [doc];
-                for (let i = 0; i < args.length; i++) {
-                    nargs.push(args[i]);
-                }
-                fn.apply(this, nargs);
-            } else {
-                util.message(command + " not supported in this mode.")
-            }
-        },
-
-        validate: function(doc, code, onComplete) {
-            if (onComplete)
-                onComplete(doc);
-        },
-
-        createOutline: function(doc, onComplete) {
-            const outline = document.getElementById("outline");
-            if (outline) outline.innerHTML = "";
-        },
-
-        collectErrors: function(doc) {
-            const state = this.editor.state;
-            const tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
-            tree.iterate({
-                enter: function(node) {
-                    if (node.type.isError) {
-                        const line = state.doc.lineAt(node.from);
-                        let context = state.sliceDoc(
-                            Math.max(0, node.from - 10),
-                            Math.min(state.doc.length, node.to + 20)
-                        ).replace(/\n/g, " ").trim();
-                        if (context.length > 40) context = context.substring(0, 40) + "…";
-                        doc.functions.push({
-                            type: Document.TYPE_FUNCTION,
-                            name: "Error at line " + line.number,
-                            outlineClass: "outline-error",
-                            source: doc.getPath(),
-                            signature: "Syntax error near: " + context,
-                            sort: "000000",
-                            row: line.number - 1,
-                            from: node.from,
-                            to: node.to
-                        });
-                        return false;
-                    }
-                }
-            });
-        },
-
-        documentSaved: function(doc) {
-        },
-
-        locate: function(doc, type, row) {
-            if (typeof row === "number") {
-                editorUtils.gotoLine(this.editor, row + 1);
-                this.editor.focus();
-            }
-            return false;
-        },
-
-        format: function(doc) {
-            if (typeof prettierFormat === "undefined") {
-                util.message("format not supported in this mode.");
-                return;
-            }
-            const self = this;
-            const sel = this.editor.state.selection.main;
-            let code = this.editor.state.sliceDoc(sel.from, sel.to);
-            const isSelection = code.length > 0;
-            if (!isSelection) {
-                code = doc.getText();
-            }
-            const mode = doc.getSyntax();
-            prettierFormat.format(code, mode).then(function (formatted) {
-                formatted = formatted.replace(/\n$/, "");
-                if (isSelection) {
-                    self.editor.dispatch({
-                        changes: { from: sel.from, to: sel.to, insert: formatted }
-                    });
-                } else {
-                    const cursorOffset = self.editor.state.selection.main.head;
-                    self.editor.dispatch({
-                        changes: { from: 0, to: self.editor.state.doc.length, insert: formatted },
-                        selection: { anchor: Math.min(cursorOffset, formatted.length) }
-                    });
-                }
-            }).catch(function (e) {
-                console.log("Error formatting code: %s", e.message);
-                util.error("Code could not be formatted: " + e.message);
-            });
-        },
-
-        gotoSymbol: function(doc) {
-            const self = this;
-            if (!doc.functions || doc.functions.length === 0) {
-                util.message("No symbols found.");
-                return;
-            }
-            const items = doc.functions.map(function(f) {
-                return {
-                    label: f.signature || f.name,
-                    name: f.name,
-                    row: f.row,
-                    from: f.from
-                };
-            });
-            QuickPicker.show(items, function(selected) {
-                if (selected) {
-                    if (selected.from !== undefined) {
-                        self.editor.dispatch({
-                            selection: { anchor: selected.from }
-                        });
-                        self.editor.dispatch({
-                            effects: CM6.EditorView.scrollIntoView(selected.from, { y: "center" })
-                        });
-                        editorUtils.flashLine(self.editor, selected.from);
-                        self.editor.focus();
-                    } else if (selected.row !== undefined) {
-                        editorUtils.gotoLine(self.editor, selected.row + 1, 0, true);
-                    }
-                }
-            }, { placeholder: "Go to symbol\u2026", parentEditor: self.editor });
-        },
-
-        getTemplates: function (doc, prefix, popupItems) {
-            const templates = Snippets.getTemplates(doc, prefix);
-            for (let i = 0; i < templates.length; i++) {
-                const item = {
-                    type: "template",
-                    label: "[S] " + templates[i].name,
-                    template: templates[i].template,
-                    completion: templates[i].completion
-                };
-                popupItems.push(item);
-            }
-            return popupItems;
+    addCommand(name, func) {
+        if (!this.commands) {
+            this.commands = {};
         }
-    };
+        this.commands[name] = func;
+    }
 
-    return Constr;
-}());
+    exec(command, doc, args) {
+        const fn = (this.commands && this.commands[command]) || this[command];
+        if (typeof fn === "function") {
+            const nargs = [doc];
+            for (let i = 0; i < args.length; i++) {
+                nargs.push(args[i]);
+            }
+            fn.apply(this, nargs);
+        } else {
+            util.message(`${command} not supported in this mode.`)
+        }
+    }
+
+    validate(doc, code, onComplete) {
+        if (onComplete)
+            onComplete(doc);
+    }
+
+    createOutline(doc, onComplete) {
+        const outline = document.getElementById("outline");
+        if (outline) outline.innerHTML = "";
+    }
+
+    collectErrors(doc) {
+        const state = this.editor.state;
+        const tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
+        tree.iterate({
+            enter(node) {
+                if (node.type.isError) {
+                    const line = state.doc.lineAt(node.from);
+                    let context = state.sliceDoc(
+                        Math.max(0, node.from - 10),
+                        Math.min(state.doc.length, node.to + 20)
+                    ).replace(/\n/g, " ").trim();
+                    if (context.length > 40) context = `${context.substring(0, 40)}…`;
+                    doc.functions.push({
+                        type: Document.TYPE_FUNCTION,
+                        name: `Error at line ${line.number}`,
+                        outlineClass: "outline-error",
+                        source: doc.getPath(),
+                        signature: `Syntax error near: ${context}`,
+                        sort: "000000",
+                        row: line.number - 1,
+                        from: node.from,
+                        to: node.to
+                    });
+                    return false;
+                }
+            }
+        });
+    }
+
+    documentSaved(doc) {
+    }
+
+    locate(doc, type, row) {
+        if (typeof row === "number") {
+            editorUtils.gotoLine(this.editor, row + 1);
+            this.editor.focus();
+        }
+        return false;
+    }
+
+    async format(doc) {
+        if (typeof prettierFormat === "undefined") {
+            util.message("format not supported in this mode.");
+            return;
+        }
+        const self = this;
+        const sel = this.editor.state.selection.main;
+        let code = this.editor.state.sliceDoc(sel.from, sel.to);
+        const isSelection = code.length > 0;
+        if (!isSelection) {
+            code = doc.getText();
+        }
+        const mode = doc.getSyntax();
+        try {
+            let formatted = await prettierFormat.format(code, mode);
+            formatted = formatted.replace(/\n$/, "");
+            if (isSelection) {
+                self.editor.dispatch({
+                    changes: { from: sel.from, to: sel.to, insert: formatted }
+                });
+            } else {
+                const cursorOffset = self.editor.state.selection.main.head;
+                self.editor.dispatch({
+                    changes: { from: 0, to: self.editor.state.doc.length, insert: formatted },
+                    selection: { anchor: Math.min(cursorOffset, formatted.length) }
+                });
+            }
+        } catch (e) {
+            console.log("Error formatting code: %s", e.message);
+            util.error(`Code could not be formatted: ${e.message}`);
+        }
+    }
+
+    gotoSymbol(doc) {
+        const self = this;
+        if (!doc.functions || doc.functions.length === 0) {
+            util.message("No symbols found.");
+            return;
+        }
+        const items = doc.functions.map((f) => {
+            return {
+                label: f.signature || f.name,
+                name: f.name,
+                row: f.row,
+                from: f.from
+            };
+        });
+        QuickPicker.show(items, (selected) => {
+            if (selected) {
+                if (selected.from !== undefined) {
+                    self.editor.dispatch({
+                        selection: { anchor: selected.from }
+                    });
+                    self.editor.dispatch({
+                        effects: CM6.EditorView.scrollIntoView(selected.from, { y: "center" })
+                    });
+                    editorUtils.flashLine(self.editor, selected.from);
+                    self.editor.focus();
+                } else if (selected.row !== undefined) {
+                    editorUtils.gotoLine(self.editor, selected.row + 1, 0, true);
+                }
+            }
+        }, { placeholder: "Go to symbol\u2026", parentEditor: self.editor });
+    }
+
+    getTemplates(doc, prefix, popupItems) {
+        const templates = Snippets.getTemplates(doc, prefix);
+        for (let i = 0; i < templates.length; i++) {
+            const item = {
+                type: "template",
+                label: `[S] ${templates[i].name}`,
+                template: templates[i].template,
+                completion: templates[i].completion
+            };
+            popupItems.push(item);
+        }
+        return popupItems;
+    }
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").ModeHelper = ModeHelper;

@@ -26,65 +26,64 @@ import { CompletionSource } from "./xquery-completion.js";
  * Singleton object: Preferences dialog.
  *
  */
-export const Preferences = (function () {
+const defaultPreferences = {
+    theme: "light",
+	fontSize: 14,
+    font: "Default",
+	showInvisibles: false,
+    autoPair: true,
+    autocompleteOnType: false,
+	showPrintMargin: true,
+	showHScroll: false,
+    indent: -1,
+    indentSize: 4,
+    indentOnOpen: true,
+    indentOnDownload: true,
+    indentOnDownloadPackage: false,
+    expandXIncludesOnOpen: false,
+    expandXIncludesOnDownload: false,
+    expandXIncludesOnDownloadPackage: false,
+    omitXMLDeclarationOnOpen: true,
+    omitXMLDeclarationOnDownload: true,
+    omitXMLDeclarationOnDownloadPackage: true,
+    softWrap: -1,
+    emmet: false,
+    prettierPrintWidth: 80,
+    prettierSingleQuote: false,
+    prettierXmlWhitespaceSensitivity: "ignore",
+    prettierXmlSelfClosingSpace: true,
+    prettierXmlSortAttributesByKey: false,
+    prettierXmlQuoteAttributes: "preserve",
+    prettierSingleAttributePerLine: false,
+    prettierBracketSameLine: true,
+    prettierBracketSpacing: true,
+    prettierSemi: true,
+    prettierTrailingComma: "all",
+    prettierArrowParens: "always",
+    prettierProseWrap: "preserve",
+    prettierHtmlWhitespaceSensitivity: "css",
+    xqueryVersion: "auto",
+    splitPane: false,
+    showWestPanel: true,
+    showSouthPanel: false,
+    showEastPanel: false,
+    collectionsView: "tree"
+};
 
-    const defaultPreferences = {
-        theme: "light",
-		fontSize: 14,
-        font: "Default",
-		showInvisibles: false,
-        autoPair: true,
-        autocompleteOnType: false,
-		showPrintMargin: true,
-		showHScroll: false,
-        indent: -1,
-        indentSize: 4,
-        indentOnOpen: true,
-        indentOnDownload: true,
-        indentOnDownloadPackage: false,
-        expandXIncludesOnOpen: false,
-        expandXIncludesOnDownload: false,
-        expandXIncludesOnDownloadPackage: false,
-        omitXMLDeclarationOnOpen: true,
-        omitXMLDeclarationOnDownload: true,
-        omitXMLDeclarationOnDownloadPackage: true,
-        softWrap: -1,
-        emmet: false,
-        prettierPrintWidth: 80,
-        prettierSingleQuote: false,
-        prettierXmlWhitespaceSensitivity: "ignore",
-        prettierXmlSelfClosingSpace: true,
-        prettierXmlSortAttributesByKey: false,
-        prettierXmlQuoteAttributes: "preserve",
-        prettierSingleAttributePerLine: false,
-        prettierBracketSameLine: true,
-        prettierBracketSpacing: true,
-        prettierSemi: true,
-        prettierTrailingComma: "all",
-        prettierArrowParens: "always",
-        prettierProseWrap: "preserve",
-        prettierHtmlWhitespaceSensitivity: "css",
-        xqueryVersion: "auto",
-        splitPane: false,
-        showWestPanel: true,
-        showSouthPanel: false,
-        showEastPanel: false,
-        collectionsView: "tree"
-	};
-    
-    const Constr = function(editor) {
+export class Preferences {
+    constructor(editor) {
         this.editor = editor;
         this.preferences = Object.assign({}, defaultPreferences);
         const $this = this;
 
         const container = document.getElementById("preferences-dialog");
-        container.querySelectorAll("select, input").forEach(function(el) {
-            el.addEventListener("change", function() {
+        container.querySelectorAll("select, input").forEach((el) => {
+            el.addEventListener("change", () => {
                 $this.updatePreferences();
             });
         });
 
-        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function() {
+        window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
             if ($this.preferences.theme === "system") {
                 $this.applyPreferences();
                 $this.save();
@@ -100,22 +99,22 @@ export const Preferences = (function () {
 			buttons: {
                 "Reset to Defaults": {
                     separate: true,
-                    click: function () {
+                    click () {
                         $this.preferences = Object.assign({}, defaultPreferences);
                         $this.updateForm();
                     }
                 },
-				"Close": function () { this.close(); editor.focus(); }
+				"Close" () { this.close(); editor.focus(); }
 			}
 		});
-    };
-    
-    Constr.prototype.show = function() {
+    }
+
+    show() {
         this.updateForm();
 		this._dialog.open();
-    };
-    
-    Constr.prototype.updateForm = function() {
+    }
+
+    updateForm() {
         const form = document.querySelector("#preferences-dialog form");
         form.querySelector('select[name="theme"]').value = this.preferences.theme;
 		form.querySelector('select[name="font-size"]').value = this.preferences.fontSize;
@@ -181,9 +180,9 @@ export const Preferences = (function () {
             wrap = "free";
         }
         form.querySelector('select[name="soft-wrap"]').value = wrap;
-    };
-    
-    Constr.prototype.updatePreferences = function() {
+    }
+
+    updatePreferences() {
         const form = document.querySelector("#preferences-dialog form");
         this.preferences.theme = form.querySelector('select[name="theme"]').value;
 		this.preferences.fontSize = parseInt(form.querySelector('select[name="font-size"]').value);
@@ -241,32 +240,9 @@ export const Preferences = (function () {
         }
         this.preferences.softWrap = parseInt(wrap, 10);
 	this.applyPreferences();
-    };
-    
-    // Map old Ace theme names to "light" or "dark"
-    const ACE_DARK_THEMES = {
-        ambiance: true, chaos: true, clouds_midnight: true, cobalt: true,
-        dracula: true, idle_fingers: true, kr_theme: true, merbivore: true,
-        merbivore_soft: true, mono_industrial: true, monokai: true,
-        pastel_on_dark: true, solarized_dark: true, terminal: true,
-        tomorrow_night: true, tomorrow_night_blue: true,
-        tomorrow_night_bright: true, tomorrow_night_eighties: true,
-        twilight: true, vibrant_ink: true
-    };
-
-    function migrateTheme(theme) {
-        if (theme === "light" || theme === "dark" || theme === "system") return theme;
-        return ACE_DARK_THEMES[theme] ? "dark" : "light";
     }
 
-    function resolveTheme(theme) {
-        if (theme === "system") {
-            return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-        }
-        return theme;
-    }
-
-    Constr.prototype.applyPreferences = function () {
+    applyPreferences() {
         this.preferences.theme = migrateTheme(this.preferences.theme);
 		this.editor.setTheme(resolveTheme(this.preferences.theme));
 		// Sync the toolbar dark-mode icon with the resolved theme
@@ -282,14 +258,14 @@ export const Preferences = (function () {
         // Indent/tab settings are applied when building extensions
 
         if (this.preferences.font && this.preferences.font !== "Default") {
-            const font = this.preferences.font + ", monospace";
-            document.querySelectorAll("#editor .cm-editor, #editor .cm-content").forEach(function(el) {
+            const font = `${this.preferences.font}, monospace`;
+            document.querySelectorAll("#editor .cm-editor, #editor .cm-content").forEach((el) => {
                 el.style.fontFamily = font;
             });
             document.getElementById("outline").style.fontFamily = font;
             document.getElementById("results-body").style.fontFamily = font;
         } else {
-            document.querySelectorAll("#editor .cm-editor, #editor .cm-content").forEach(function(el) {
+            document.querySelectorAll("#editor .cm-editor, #editor .cm-content").forEach((el) => {
                 el.style.fontFamily = "";
             });
             document.getElementById("outline").style.fontFamily = "";
@@ -337,14 +313,14 @@ export const Preferences = (function () {
             }
 
             if (effects.length > 0) {
-                this.editor.editor.dispatch({ effects: effects });
+                this.editor.editor.dispatch({ effects });
             }
         }
 
         // Font size via CSS on the CM6 container
-        document.querySelectorAll(".cm-editor").forEach(function(el) {
-            el.style.fontSize = this.preferences.fontSize + "px";
-        }.bind(this));
+        document.querySelectorAll(".cm-editor").forEach((el) => {
+            el.style.fontSize = `${this.preferences.fontSize}px`;
+        });
         // Split pane
         const pw = document.querySelector('.panel-west');
         const btn = document.getElementById('toggle-split-pane');
@@ -378,13 +354,13 @@ export const Preferences = (function () {
         }
 
 		this.editor.resize();
-	};
-	
-    Constr.prototype.get = function(key) {
+	}
+
+    get(key) {
         return this.preferences[key];
-    };
-    
-    Constr.prototype.read = function() {
+    }
+
+    read() {
         let sameVersion = true;
         if (localStorage["eXide.preferences"]) {
             const loaded = JSON.parse(localStorage.getItem("eXide.preferences"));
@@ -397,15 +373,36 @@ export const Preferences = (function () {
 		this.applyPreferences();
 		this.updateForm();
 		return sameVersion;
-    };
-    
-    Constr.prototype.save = function() {
+    }
+
+    save() {
         localStorage.setItem("eXide.preferences", JSON.stringify(this.preferences));
         localStorage.setItem("eXide.firstTime", 0);
-    };
-    
-    return Constr;
-}());
+    }
+}
+
+// Map old Ace theme names to "light" or "dark"
+const ACE_DARK_THEMES = {
+    ambiance: true, chaos: true, clouds_midnight: true, cobalt: true,
+    dracula: true, idle_fingers: true, kr_theme: true, merbivore: true,
+    merbivore_soft: true, mono_industrial: true, monokai: true,
+    pastel_on_dark: true, solarized_dark: true, terminal: true,
+    tomorrow_night: true, tomorrow_night_blue: true,
+    tomorrow_night_bright: true, tomorrow_night_eighties: true,
+    twilight: true, vibrant_ink: true
+};
+
+function migrateTheme(theme) {
+    if (theme === "light" || theme === "dark" || theme === "system") return theme;
+    return ACE_DARK_THEMES[theme] ? "dark" : "light";
+}
+
+function resolveTheme(theme) {
+    if (theme === "system") {
+        return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    return theme;
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.util").Preferences = Preferences;

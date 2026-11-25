@@ -43,9 +43,9 @@ export const Help = (function () {
             width: 600,
             height: 400,
             buttons: {
-                "Close": function() { this.close(); },
-                "Previous": function() { Help.previous(); },
-                "Next": function() {
+                "Close"() { this.close(); },
+                "Previous"() { Help.previous(); },
+                "Next"() {
                     if (sections && currentPage + 1 >= sections.length) {
                         this.close();
                     } else {
@@ -67,7 +67,7 @@ export const Help = (function () {
 
     return {
 
-        show: function () {
+        show () {
             ensureDialog();
             helpDlg.open();
             if (!sections) {
@@ -77,7 +77,7 @@ export const Help = (function () {
             }
         },
 
-        next: function() {
+        next() {
             if (sections && currentPage + 1 < sections.length) {
                 currentPage++;
                 document.getElementById("eXide-dialog-help-body").innerHTML = sections[currentPage];
@@ -85,7 +85,7 @@ export const Help = (function () {
             updateButtons();
         },
 
-        previous: function() {
+        previous() {
             if (currentPage > 0) {
                 currentPage--;
                 document.getElementById("eXide-dialog-help-body").innerHTML = sections[currentPage];
@@ -93,7 +93,7 @@ export const Help = (function () {
             updateButtons();
         },
 
-        showFirstTime: function() {
+        showFirstTime() {
             if (!util.supportsHtml5Storage)
                 return;
             const showHints = localStorage.getItem("eXide.hints");
@@ -102,13 +102,11 @@ export const Help = (function () {
             }
         },
 
-        load: function() {
-            fetch("help.html")
-            .then(function(response) {
+        async load() {
+            try {
+                const response = await fetch("help.html");
                 if (!response.ok) throw response;
-                return response.text();
-            })
-            .then(function(html) {
+                const html = await response.text();
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, "text/html");
                 const sectionEls = doc.querySelectorAll("section");
@@ -117,8 +115,7 @@ export const Help = (function () {
                     sections.push(sectionEls[i].innerHTML);
                 }
                 Help.show();
-            })
-            .catch(function(err) {
+            } catch (err) {
                 if (err.status === 404) {
                     util.error("Failed to open help texts.");
                 } else {
@@ -126,7 +123,7 @@ export const Help = (function () {
                         "<p>An error has been reported by the database.</p>");
                 }
                 if (helpDlg) helpDlg.close();
-            });
+            }
         }
     };
 }());

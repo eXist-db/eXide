@@ -20,28 +20,17 @@
 import { namespace } from "./namespace.js";
 import { ModeHelper } from "./mode-helper.js";
 import { Snippets } from "./snippets.js";
-import { oop } from "./oop.js";
 
 /**
  * XML specific helper methods.
  */
-export const SnippetModeHelper = (function () {
-    
-    const Constr = function(editor) {
-		this.parent = editor;
-		this.editor = this.parent.editor;
-	};
-	
-	oop.inherit(Constr, ModeHelper);
-
-    Constr.prototype.documentSaved = function(doc) {
+export class SnippetModeHelper extends ModeHelper {
+    documentSaved(doc) {
         const code = doc.getText();
         const mode = doc.getName().replace(/\.snippets/, "");
         Snippets.reload(mode, code);
-    };
-    
-	return Constr;
-}());
+    }
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").SnippetModeHelper = SnippetModeHelper;

@@ -34,11 +34,11 @@ import { Dialog, mimeTypes, util } from "./util.js";
 import { ws } from "./ws-transport.js";
 
 function apiPath(dbPath) {
-	return "api/storage/" + dbPath.replace(/^\//, "").split("/").map(encodeURIComponent).join("/");
+	return `api/storage/${dbPath.replace(/^\//, "").split("/").map(encodeURIComponent).join("/")}`;
 }
 
 // main entry point
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", () => {
     window.name = "eXide";
 
     // parse query parameters passed in by URL:
@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", function() {
     })(window.location.search.substr(1).split('&'));
 
     // check parameters passed in GET request
-    eXide.app.init(function (restored) {
+    eXide.app.init((restored) => {
         const openDoc = qs["open"];
         const snippet = qs["snip"];
         if (openDoc) {
@@ -90,8 +90,6 @@ export const app = (function(util) {
 	let endOffset = 0;
     let numberOfResults = 10;
     let activeResultIdx = -1;
-
-	const login = null;
 
     const allowDnd = true;
 
@@ -133,7 +131,7 @@ export const app = (function(util) {
                 // Sniff content: XML starts with < or whitespace+<
                 if (/^\s*</.test(text)) {
                     langSupport = CM6.xml();
-                } else if (/^\s*[\[{]/.test(text)) {
+                } else if (/^\s*[[{]/.test(text)) {
                     langSupport = CM6.json();
                 } else {
                     return; // plain text, no highlighting
@@ -143,7 +141,7 @@ export const app = (function(util) {
         const tree = lang.parser.parse(text);
         const parts = [];
         let pos = 0;
-        CM6.highlightTree(tree, CM6.classHighlighter, function(from, to, classes) {
+        CM6.highlightTree(tree, CM6.classHighlighter, (from, to, classes) => {
             if (from > pos) {
                 parts.push(document.createTextNode(text.slice(pos, from)));
             }
@@ -173,7 +171,7 @@ export const app = (function(util) {
 
 	const app = {
 
-		init: function(afterInitCallback) {
+		init(afterInitCallback) {
 		    if (!("flex" in document.documentElement.style)) {
 		        document.getElementById("startup-error").style.display = "";
 		        return;
@@ -197,9 +195,9 @@ export const app = (function(util) {
 			dnd.addEventListener("drop", app.dropFile);
 
             // save restored paths for later
-            app.getLogin(function() {
+            app.getLogin(() => {
                 app.initStatus("Restoring state");
-                app.restoreState(function(restored) {
+                app.restoreState((restored) => {
                     app.updateLayoutTop();
                     editor.init();
 
@@ -208,7 +206,7 @@ export const app = (function(util) {
                         ws.autoConnect();
 
                         // Listen for pushed diagnostics from the server
-                        ws.on("textDocument/publishDiagnostics", function (data) {
+                        ws.on("textDocument/publishDiagnostics", (data) => {
                             if (!data || !data.uri) return;
                             const doc = editor.getDocument(data.uri);
                             if (!doc) return;
@@ -225,7 +223,7 @@ export const app = (function(util) {
                             if (doc === editor.getActiveDocument()) {
                                 const err = diagnostics[0];
                                 if (err && err.message) {
-                                    editor.updateStatus(err.message, doc.getPath() + "#" + err.line);
+                                    editor.updateStatus(err.message, `${doc.getPath()}#${err.line}`);
                                 }
                             }
                         });
@@ -253,7 +251,7 @@ export const app = (function(util) {
                     if (eXide.configuration.allowGuest) {
                         document.getElementById("splash").style.display = "none";
                     } else {
-                        app.requireLogin(function() {
+                        app.requireLogin(() => {
                             document.getElementById("splash").style.display = "none";
                         });
                     }
@@ -261,58 +259,57 @@ export const app = (function(util) {
             });
 
 		    editor.addEventListener("outlineChange", app.onOutlineChange);
-            editor.validator.addEventListener("documentValid", function(doc) {
+            editor.validator.addEventListener("documentValid", (doc) => {
                 if (doc.isXQuery() && document.getElementById("live-preview").checked) {
                     app.runQuery(doc.getPath(), true);
                 }
             });
-            editor.addEventListener("saved", function(doc) {
+            editor.addEventListener("saved", (doc) => {
                 if (document.getElementById("live-preview").checked && webResources[doc.getSyntax()]) {
                     document.getElementById("results-iframe").contentDocument.location.reload(true);
                 }
             });
 
-			window.addEventListener("resize", function() {
+			window.addEventListener("resize", () => {
 			    app.updateLayoutTop();
 			    app.resize();
 			});
 
-			window.addEventListener("unload", function () {
+			window.addEventListener("unload", () => {
 				app.saveState();
 			});
 		},
 
-        version: function() {
+        version() {
             return document.getElementById("eXide-version").textContent;
         },
 
-        hasFocus: function() {
+        hasFocus() {
             return hasFocus;
         },
 
-        getEditor: function() {
+        getEditor() {
             return editor;
         },
 
-        getMenu: function() {
+        getMenu() {
             return menu;
         },
 
-        refreshModuleCache: function() {
-            return fetch("api/editor/modules")
-                .then(function(r) { return r.json(); })
-                .then(function(modules) {
-                    if (Array.isArray(modules) && typeof staticAnalysis !== "undefined") {
-                        staticAnalysis.setRegisteredModules(modules);
-                    }
-                })
-                .catch(function() {});
+        async refreshModuleCache() {
+            try {
+                const r = await fetch("api/editor/modules");
+                const modules = await r.json();
+                if (Array.isArray(modules) && typeof staticAnalysis !== "undefined") {
+                    staticAnalysis.setRegisteredModules(modules);
+                }
+            } catch { /* ignore */ }
         },
 
-		updateAuthStatus: function(user) {
+		updateAuthStatus(user) {
 		    const el = document.getElementById("user");
 		    if (user) {
-		        el.innerHTML = '<span class="auth-dot auth-dot-ok"></span>' + user;
+		        el.innerHTML = `<span class="auth-dot auth-dot-ok"></span>${user}`;
 		        el.title = "Click to logout";
 		    } else {
 		        el.textContent = "Login";
@@ -332,7 +329,7 @@ export const app = (function(util) {
 		    }
 		},
 
-		toggleMonitor: function() {
+		toggleMonitor() {
 		    if (!monitor) {
 		        monitor = new Monitor();
 		        monitor.init();
@@ -352,53 +349,52 @@ export const app = (function(util) {
 		    app.$savePanelPrefs();
 		},
 
-		updateLayoutTop: function() {
+		updateLayoutTop() {
 		    const toolbarBtns = document.querySelector(".toolbar-buttons");
 		    const layoutH = document.querySelector(".layout-horizontal");
 		    if (toolbarBtns && layoutH) {
 		        const fullscreen = document.getElementById("fullscreen");
 		        const top = toolbarBtns.getBoundingClientRect().bottom -
 		                  fullscreen.getBoundingClientRect().top + 2;
-		        layoutH.style.top = top + "px";
+		        layoutH.style.top = `${top}px`;
 		    }
 		},
 
-		resize: function(resizeIframe) {
-			const panel = document.getElementById("editor");
+		resize(resizeIframe) {
             if (resizeIframe) {
-                const resultsContainer = document.querySelector(".panel-" + resultPanel);
+                const resultsContainer = document.querySelector(`.panel-${resultPanel}`);
                 const resultsBody = document.getElementById("results-body");
                 const navbarEl = resultsContainer.querySelector(".navbar");
                 const navbarHeight = navbarEl ? navbarEl.offsetHeight : 0;
-                document.getElementById("results-iframe").style.width = resultsBody.clientWidth + "px";
-                document.getElementById("results-iframe").style.height = (resultsContainer.clientHeight - navbarHeight - 8) + "px";
-                resultsBody.style.height = (resultsContainer.clientHeight - navbarHeight - 8) + "px";
+                document.getElementById("results-iframe").style.width = `${resultsBody.clientWidth}px`;
+                document.getElementById("results-iframe").style.height = `${resultsContainer.clientHeight - navbarHeight - 8}px`;
+                resultsBody.style.height = `${resultsContainer.clientHeight - navbarHeight - 8}px`;
             }
 			editor.resize();
 		},
 
-        beforeResize: function() {
+        beforeResize() {
             if (document.getElementById("serialization-mode").value === "html") {
                 document.getElementById("results-iframe").style.display = "none";
             }
         },
 
-        afterResize: function() {
+        afterResize() {
             editor.resize();
             if (document.getElementById("serialization-mode").value === "html") {
                 document.getElementById("results-iframe").style.display = "";
             }
         },
 
-		newDocument: function(data, type) {
+		newDocument(data, type) {
 			editor.newDocument(data, type);
 		},
 
-        newDocumentFromTemplate: function() {
+        newDocumentFromTemplate() {
             dialogs["dialog-templates"].open();
         },
 
-        dropFile: function(files) {
+        dropFile(files) {
             if (!allowDnd) {
                 return;
             }
@@ -416,14 +412,14 @@ export const app = (function(util) {
             }
         },
 
-		findDocument: function(path, line) {
+		findDocument(path, line) {
 			const doc = editor.getDocument(path);
 			if (doc == null) {
 				const resource = {
-						name: path.match(/[^\/]+$/)[0],
-						path: path
+						name: path.match(/[^/]+$/)[0],
+						path
 				};
-				app.$doOpenDocument(resource, function() {
+				app.$doOpenDocument(resource, () => {
 				    if (line) {
         			    editorUtils.gotoLine(editor.editor, line);
         			}
@@ -436,17 +432,17 @@ export const app = (function(util) {
 			}
 		},
 
-		locate: function(type, path, symbol) {
+		locate(type, path, symbol) {
 			if (path == null) {
 				editor.exec("locate", type, symbol);
 			} else {
 				const doc = editor.getDocument(path);
 				if (doc == null) {
 					const resource = {
-							name: path.match(/[^\/]+$/)[0],
-							path: path
+							name: path.match(/[^/]+$/)[0],
+							path
 					};
-					app.$doOpenDocument(resource, function(doc) {
+					app.$doOpenDocument(resource, (doc) => {
                         if (doc) {
                             editor.exec("locate", type, symbol);
                         }
@@ -458,17 +454,17 @@ export const app = (function(util) {
 			}
 		},
 
-		openDocument: function() {
+		openDocument() {
 			dbBrowser.reload(["reload"], "open");
 			dialogs["open-dialog"].setTitle("Open Document");
 			dialogs["open-dialog"].setButtons({
-			    "Cancel": function() { dialogs["open-dialog"].close(); editor.focus(); },
-			    "Open": function(){ app.openSelectedDocument(null, true);}
+			    "Cancel"() { dialogs["open-dialog"].close(); editor.focus(); },
+			    "Open"(){ app.openSelectedDocument(null, true);}
 			});
 			dialogs["open-dialog"].open();
 		},
 
-		openSelectedDocument: function(doc, close) {
+		openSelectedDocument(doc, close) {
 			const resource = doc || dbBrowser.getSelection();
 			if (resource) {
 				app.$doOpenDocument(resource);
@@ -477,7 +473,7 @@ export const app = (function(util) {
 				dialogs["open-dialog"].close();
 		},
 
-        downloadSelectedResources: function(resources, close) {
+        downloadSelectedResources(resources, close) {
 			if (resources) {
                 resources.forEach(resource => {
                     app.download(resource.key);
@@ -489,7 +485,7 @@ export const app = (function(util) {
 				dialogs["open-dialog"].close();
 		},
 
-		$doOpenDocument: function(resource, callback, reload, forceText) {
+		async $doOpenDocument(resource, callback, reload, forceText) {
 			resource.path = util.normalizePath(resource.path);
             const indentOnOpen = document.getElementById("indent-on-open").checked;
             const expandXIncludesOnOpen = document.getElementById("expand-xincludes-on-open").checked;
@@ -507,48 +503,44 @@ export const app = (function(util) {
 			    "expand-xincludes": expandXIncludesOnOpen,
 			    "omit-xml-decl": omitXMLDeclatarionOnOpen
 			});
-			fetch(apiPath(resource.path) + "?" + params.toString())
-			    .then(function(response) {
-			        if (!response.ok) {
-			            throw { status: response.status, statusText: response.statusText };
-			        }
-			        return response.json();
-			    })
-			    .then(function(data) {
-			        const baseMime = data.mime || "";
-			        const externalPath = data.externalPath;
-			        // Show binary files in a preview overlay
-			        if (!reload && !forceText && data.binary &&
-			            /^image\/|^audio\/|^video\/|^application\/pdf|^application\/octet-stream|^application\/zip/.test(baseMime)) {
-			            const fileUrl = externalPath || ("rest" + resource.path);
-			            const fileName = resource.name || resource.path.replace(/^.*\//, "");
-			            app.$showBinaryPreview(fileUrl, fileName, baseMime, resource, callback);
-			            if (callback) { callback(null); }
-			            return true;
-			        }
-			        const content = data.content || "";
-			        if (reload) {
-			            editor.reload(content);
-			        } else {
-			            const mime = forceText ? "text/text" : mimeTypes.getMime(baseMime);
-			            editor.openDocument(content, mime, resource, externalPath);
-			        }
-			        if (callback) {
-			            callback(resource);
-			        }
+			try {
+			    const response = await fetch(`${apiPath(resource.path)}?${params.toString()}`);
+			    if (!response.ok) {
+			        throw { status: response.status, statusText: response.statusText };
+			    }
+			    const data = await response.json();
+			    const baseMime = data.mime || "";
+			    const externalPath = data.externalPath;
+			    // Show binary files in a preview overlay
+			    if (!reload && !forceText && data.binary &&
+			        /^image\/|^audio\/|^video\/|^application\/pdf|^application\/octet-stream|^application\/zip/.test(baseMime)) {
+			        const fileUrl = externalPath || (`rest${resource.path}`);
+			        const fileName = resource.name || resource.path.replace(/^.*\//, "");
+			        app.$showBinaryPreview(fileUrl, fileName, baseMime, resource, callback);
+			        if (callback) { callback(null); }
 			        return true;
-			    })
-			    .catch(function(err) {
-			        util.error("Failed to load document " + encodeURI(resource.path) + ": " +
-			            (err.status || "") + " " + (err.statusText || err.message || ""));
-			        if (callback) {
-			            callback(null);
-			        }
-			        return false;
-			    });
+			    }
+			    const content = data.content || "";
+			    if (reload) {
+			        editor.reload(content);
+			    } else {
+			        const mime = forceText ? "text/text" : mimeTypes.getMime(baseMime);
+			        editor.openDocument(content, mime, resource, externalPath);
+			    }
+			    if (callback) {
+			        callback(resource);
+			    }
+			    return true;
+			} catch (err) {
+			    util.error(`Failed to load document ${encodeURI(resource.path)}: ${err.status || ""} ${err.statusText || err.message || ""}`);
+			    if (callback) {
+			        callback(null);
+			    }
+			    return false;
+			}
 		},
 
-		$showBinaryPreview: function(fileUrl, fileName, mime, resource, callback) {
+		$showBinaryPreview(fileUrl, fileName, mime, resource, callback) {
 		    // Remove existing overlay
 		    const existing = document.getElementById("binary-preview-overlay");
 		    if (existing) existing.remove();
@@ -605,7 +597,7 @@ export const app = (function(util) {
 		    } else {
 		        const msg = document.createElement("div");
 		        msg.className = "binary-preview-nopreview";
-		        msg.innerHTML = '<i class="fa fa-file-o" style="font-size:48px;margin-bottom:12px;display:block"></i>No preview available<br><small>' + mime + '</small>';
+		        msg.innerHTML = `<i class="fa fa-file-o" style="font-size:48px;margin-bottom:12px;display:block"></i>No preview available<br><small>${mime}</small>`;
 		        content.appendChild(msg);
 		    }
 		    panel.appendChild(content);
@@ -615,12 +607,12 @@ export const app = (function(util) {
 		    footer.className = "binary-preview-footer";
 		    const openBtn = document.createElement("button");
 		    openBtn.textContent = "Open in New Tab";
-		    openBtn.addEventListener("click", function() {
+		    openBtn.addEventListener("click", () => {
 		        window.open(fileUrl, fileName);
 		    });
 		    const dlBtn = document.createElement("button");
 		    dlBtn.textContent = "Download";
-		    dlBtn.addEventListener("click", function() {
+		    dlBtn.addEventListener("click", () => {
 		        const a = document.createElement("a");
 		        a.href = fileUrl;
 		        a.download = fileName;
@@ -629,7 +621,7 @@ export const app = (function(util) {
 		    const openTextBtn = document.createElement("button");
 		    openTextBtn.textContent = "Open Anyway";
 		    openTextBtn.title = "Open as plain text in the editor";
-		    openTextBtn.addEventListener("click", function() {
+		    openTextBtn.addEventListener("click", () => {
 		        close();
 		        app.$doOpenDocument(resource, callback, false, true);
 		    });
@@ -649,7 +641,7 @@ export const app = (function(util) {
 		        overlay.remove();
 		    }
 		    closeBtn.addEventListener("click", close);
-		    overlay.addEventListener("click", function(e) {
+		    overlay.addEventListener("click", (e) => {
 		        if (e.target === overlay) close();
 		    });
 		    document.addEventListener("keydown", function onKey(e) {
@@ -660,18 +652,18 @@ export const app = (function(util) {
 		    });
 		},
 
-        reloadDocument: function() {
+        reloadDocument() {
             const doc = editor.getActiveDocument();
             if (doc.isSaved()) {
                 app.$reloadDocument(doc);
             } else {
-                Dialog.input("Reload Document", "Do you really want to reload the document?", function() {
+                Dialog.input("Reload Document", "Do you really want to reload the document?", () => {
                     app.$reloadDocument(doc);
                 }, { action: "Reload" });
             }
         },
 
-        $reloadDocument: function(doc) {
+        $reloadDocument(doc) {
             const resource = {
                 name: doc.getName(),
                 path: doc.getPath()
@@ -679,7 +671,7 @@ export const app = (function(util) {
             app.$doOpenDocument(resource, null, true);
         },
 
-		closeDocument: function() {
+		closeDocument() {
 			if (!editor.getActiveDocument().isSaved()) {
 				if (!dialogs["dialog-confirm-close"]) {
 				    dialogs["dialog-confirm-close"] = DialogManager.create(
@@ -691,17 +683,17 @@ export const app = (function(util) {
 				            buttons: {
 				                "Close Without Saving": {
 				                    separate: true,
-				                    click: function() {
+				                    click() {
 				                        dialogs["dialog-confirm-close"].close();
 				                        editor.closeDocument();
 				                    }
 				                },
-				                "Cancel": function() {
+				                "Cancel"() {
 				                    dialogs["dialog-confirm-close"].close();
 				                },
-				                "Save": function() {
+				                "Save"() {
 				                    dialogs["dialog-confirm-close"].close();
-				                    app.saveDocument(function() {
+				                    app.saveDocument(() => {
 				                        editor.closeDocument();
 				                    });
 				                }
@@ -715,12 +707,12 @@ export const app = (function(util) {
 			}
 		},
 
-        closeAll: function() {
-            editor.forEachDocument(function(doc) {
+        closeAll() {
+            editor.forEachDocument((doc) => {
                 if (doc.isSaved()) {
                     editor.closeDocument(doc);
                 } else {
-                    util.message("Not closing unsaved document " + doc.getName());
+                    util.message(`Not closing unsaved document ${doc.getName()}`);
                 }
             });
         },
@@ -729,18 +721,18 @@ export const app = (function(util) {
 		 * @param onSaved optional function, called once the document was stored.
 		 *   (Also used as a click handler, so anything but a function is ignored.)
 		 */
-		saveDocument: function(onSaved) {
+		saveDocument(onSaved) {
             const afterSave = typeof onSaved === "function" ? onSaved : function() {};
-            app.requireLogin(function () {
+            app.requireLogin(() => {
                 if (editor.getActiveDocument().getPath().match('^__new__')) {
                     dbBrowser.changeToCollection("/db");
         			dbBrowser.reload(["reload", "create"], "save");
     				dialogs["open-dialog"].setTitle("Save Document");
     				dialogs["open-dialog"].setButtons({
-    					"Cancel": function() {
+    					"Cancel"() {
                             dialogs["open-dialog"].close();
         				},
-    					"Save": function() {
+    					"Save"() {
                             if(editor.getActiveDocument().isXQuery() && !/([^\s\\])*\.xq.?/.test(dbBrowser.getSelection().name)) {
                                 Dialog.warning("Failed to Save Document", "Your current file is an XQuery file, but you are trying to save it with a non-XQuery file extension (.xq, .xqm etc).  If you intended this to be another file type such as XML, copy and paste the content into a New file created using the \u201cNew\u201d button.");
                                 return;
@@ -753,7 +745,7 @@ export const app = (function(util) {
 								app.syncDirectory(this.getBasePath())
                                 app.liveReload();
                                 afterSave();
-    						}, function (msg) {
+    						}, (msg) => {
     							Dialog.warning("Failed to Save Document", msg);
     						});
     					}
@@ -762,20 +754,20 @@ export const app = (function(util) {
 					const nameInput = document.querySelector("#open-dialog input[name='resource']");
 					if (nameInput) nameInput.focus();
     			} else {
-    				editor.saveDocument(null, function () {
-    					util.message(editor.getActiveDocument().getName() + " stored.");
+    				editor.saveDocument(null, () => {
+    					util.message(`${editor.getActiveDocument().getName()} stored.`);
                         deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
                         app.liveReload();
                         afterSave();
-    				}, function (msg) {
+    				}, (msg) => {
     					Dialog.warning("Failed to Save Document", msg);
     				});
     			}
             });
 		},
 
-        saveDocumentAs: function() {
-            app.requireLogin(function () {
+        saveDocumentAs() {
+            app.requireLogin(() => {
                 if (editor.getActiveDocument().getPath().match('^__new__')) {
                     dbBrowser.changeToCollection("/db");
                 }else {
@@ -784,10 +776,10 @@ export const app = (function(util) {
                 dbBrowser.reload(["reload", "create"], "save");
     			dialogs["open-dialog"].setTitle("Save As\u2026");
     			dialogs["open-dialog"].setButtons({
-    				"Cancel": function() {
+    				"Cancel"() {
                         dialogs["open-dialog"].close();
     				},
-    				"Save": function() {
+    				"Save"() {
                          if(editor.getActiveDocument().isXQuery() && !/([^\s\\])*\.xq.?/.test(dbBrowser.getSelection().name)) {
                             Dialog.warning("Failed to Save Document", "Your current file is an XQuery file, but you are trying to save it with a non-XQuery file extension (.xq, .xqm etc).  If you intended this to be another file type such as XML, copy and paste the content into a New file created using the \u201cNew\u201d button.");
                             return;
@@ -799,7 +791,7 @@ export const app = (function(util) {
                             app.updateStatus(this);
 							app.syncDirectory(this.getBasePath())
                             app.liveReload();
-    					}, function (msg) {
+    					}, (msg) => {
     						Dialog.warning("Failed to Save Document", msg);
     					});
     				}
@@ -810,11 +802,11 @@ export const app = (function(util) {
             });
         },
 
-        exec: function() {
+        exec() {
             editor.exec(arguments);
         },
 
-        download: function(path) {
+        async download(path) {
             const indentOnDownload = document.getElementById("indent-on-download").checked;
             const expandXIncludesOnDownload = document.getElementById("expand-xincludes-on-download").checked;
             const omitXMLDeclatarionOnDownload = document.getElementById("omit-xml-decl-on-download").checked;
@@ -830,22 +822,20 @@ export const app = (function(util) {
                 "expand-xincludes": expandXIncludesOnDownload,
                 "omit-xml-decl": omitXMLDeclatarionOnDownload
             });
-            const url = apiPath(path) + "?" + dlParams.toString();
-            fetch(url)
-            .then(resp => resp.blob())
-            .then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = decodeURI(path.split("/").slice(-1)[0]);;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-            })
+            const url = `${apiPath(path)}?${dlParams.toString()}`;
+            const resp = await fetch(url);
+            const blob = await resp.blob();
+            const blobUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = blobUrl;
+            a.download = decodeURI(path.split("/").slice(-1)[0]);;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(blobUrl);
 		},
 
-		runQuery: function(path, livePreview) {
+		runQuery(path, livePreview) {
             function showResultsPanel() {
                 editor.updateStatus("");
 				editor.clearErrors();
@@ -879,7 +869,7 @@ export const app = (function(util) {
                     const iframe = document.getElementById("results-iframe");
                     iframe.style.display = "";
                     let code = editor.getText();
-                    code = "<script type=\"text/javascript\">" + code + "</script>";
+                    code = `<script type="text/javascript">${code}</script>`;
                     iframe.contentDocument.documentElement.innerHTML = code;
                     document.getElementById("serialization-mode").setAttribute("disabled", "disabled");
                     document.getElementById("serialization-mode").value = "html";
@@ -905,8 +895,8 @@ export const app = (function(util) {
                     // the server treats it as "no location" rather than a malformed xmldb URI
                     // (xmldb:exist://__new__1), which previously crashed module imports server-side.
                     const activeDoc = editor.getActiveDocument();
-        			const moduleLoadPath = activeDoc.isNew() ? "." : "xmldb:exist://" + activeDoc.getBasePath();
-        			document.querySelectorAll('.results-container .results').forEach(function(el) { el.innerHTML = ""; });
+        			const moduleLoadPath = activeDoc.isNew() ? "." : `xmldb:exist://${activeDoc.getBasePath()}`;
+        			document.querySelectorAll('.results-container .results').forEach((el) => { el.innerHTML = ""; });
 
                     app.runQueryCursor(code, moduleLoadPath, serializationMode, livePreview);
                     break;
@@ -930,7 +920,7 @@ export const app = (function(util) {
 		 * Calls existdb-openapi directly (not eXide's own /api/query routes).
 		 * Cookie auth works because both apps share the org.exist.login domain.
 		 */
-		runQueryCursor: function(code, moduleLoadPath, serializationMode, livePreview) {
+		async runQueryCursor(code, moduleLoadPath, serializationMode, livePreview) {
 		    const btnCancel = document.getElementById("cancel-query");
 		    const timingEl = document.getElementById("query-timing");
 
@@ -951,14 +941,14 @@ export const app = (function(util) {
 		        if (typeof err === "string") { return err; }
 		        let msg = err.message || err.error || err.raw
 		            || fallback || JSON.stringify(err);
-		        if (err.code) { msg = "[" + err.code + "] " + msg; }
-		        if (err.line > 0) { msg = "line " + err.line + ": " + msg; }
+		        if (err.code) { msg = `[${err.code}] ${msg}`; }
+		        if (err.line > 0) { msg = `line ${err.line}: ${msg}`; }
 		        return msg;
 		    }
 
 		    // Close previous cursor if any
 		    if (app._cursorId) {
-		        fetch("../existdb-openapi/api/query/" + app._cursorId, { method: "DELETE" }).catch(function() {});
+		        fetch(`../existdb-openapi/api/query/${app._cursorId}`, { method: "DELETE" }).catch(() => {});
 		        app._cursorId = null;
 		    }
 
@@ -973,85 +963,87 @@ export const app = (function(util) {
 		    showCancel();
 		    hideTiming();
 
-		    fetch("../existdb-openapi/api/query", {
-		        method: "POST",
-		        headers: { "Content-Type": "application/json" },
-		        body: JSON.stringify({ query: code, "module-load-path": moduleLoadPath }),
-		        signal: abortController.signal
-		    })
-		    .then(function(response) {
+		    try {
+		        const response = await fetch("../existdb-openapi/api/query", {
+		            method: "POST",
+		            headers: { "Content-Type": "application/json" },
+		            body: JSON.stringify({ query: code, "module-load-path": moduleLoadPath }),
+		            signal: abortController.signal
+		        });
 		        app._queryAbort = null;
 		        hideCancel();
 		        if (!response.ok) {
-		            return response.json().then(function(err) {
-		                // Pass the full structured error so the panel can surface
-		                // code/location/message/raw separately (request from
-		                // @line-o on PR #794: the message alone isn't enough —
-		                // need all the info).
-		                editor.evalError(queryErrorMessage(err), !livePreview, err);
-		            }, function () {
+		            let err;
+		            try {
+		                err = await response.json();
+		            } catch {
 		                // Body wasn't JSON — try to surface whatever the
 		                // server actually said (HTTP status + body text).
-		                return response.text().then(function (text) {
-		                    const msg = "HTTP " + response.status + ": " +
-		                        (text ? text.slice(0, 500) : response.statusText);
+		                try {
+		                    const text = await response.text();
+		                    const msg = `HTTP ${response.status}: ${text ? text.slice(0, 500) : response.statusText}`;
 		                    editor.evalError(msg, !livePreview);
-		                }).catch(function () {
-		                    editor.evalError("HTTP " + response.status + " " + response.statusText, !livePreview);
-		                });
-		            });
-		        }
-		        return response.json().then(function(data) {
-		            // Defend against a query error reported in a 200 body rather
-		            // than an error status — e.g. existdb-openapi before
-		            // eXist-db/existdb-openapi#46 returned a compile error as
-		            // HTTP 200 { error: ... } (eXist-db/eXide#828). Without this the
-		            // error is swallowed: data.cursor/items are undefined and the
-		            // success path shows neither results nor an error. Coalesce the
-		            // shapes the same way the !response.ok branch does.
-		            if (data.error || !data.cursor) {
-		                editor.evalError(
-		                    queryErrorMessage(data, "Query failed: no cursor returned."),
-		                    !livePreview, data);
+		                } catch {
+		                    editor.evalError(`HTTP ${response.status} ${response.statusText}`, !livePreview);
+		                }
 		                return;
 		            }
-		            app._cursorId = data.cursor;
-		            hitCount = data.items;
-		            endOffset = Math.min(numberOfResults, hitCount);
+		            // Pass the full structured error so the panel can surface
+		            // code/location/message/raw separately (request from
+		            // @line-o on PR #794: the message alone isn't enough —
+		            // need all the info).
+		            editor.evalError(queryErrorMessage(err), !livePreview, err);
+		            return;
+		        }
+		        const data = await response.json();
+		        // Defend against a query error reported in a 200 body rather
+		        // than an error status — e.g. existdb-openapi before
+		        // eXist-db/existdb-openapi#46 returned a compile error as
+		        // HTTP 200 { error: ... } (eXist-db/eXide#828). Without this the
+		        // error is swallowed: data.cursor/items are undefined and the
+		        // success path shows neither results nor an error. Coalesce the
+		        // shapes the same way the !response.ok branch does.
+		        if (data.error || !data.cursor) {
+		            editor.evalError(
+		                queryErrorMessage(data, "Query failed: no cursor returned."),
+		                !livePreview, data);
+		            return;
+		        }
+		        app._cursorId = data.cursor;
+		        hitCount = data.items;
+		        endOffset = Math.min(numberOfResults, hitCount);
 
-		            editor.updateStatus("");
-		            editor.clearErrors();
-		            app.showResultsPanel();
-		            document.getElementById("results-iframe").style.display = "none";
-		            startOffset = 1;
-		            currentOffset = 1;
-		            activeResultIdx = -1;
+		        editor.updateStatus("");
+		        editor.clearErrors();
+		        app.showResultsPanel();
+		        document.getElementById("results-iframe").style.display = "none";
+		        startOffset = 1;
+		        currentOffset = 1;
+		        activeResultIdx = -1;
 
-		            const elapsed = (data.elapsed / 1000).toFixed(3);
-		            util.message("Query returned " + hitCount.toLocaleString() + " item(s) in " + elapsed + "s");
+		        const elapsed = (data.elapsed / 1000).toFixed(3);
+		        util.message(`Query returned ${hitCount.toLocaleString()} item(s) in ${elapsed}s`);
 
-		            // Show timing breakdown
-		            if (timingEl) {
-		                const t = data.timing;
-		                if (t) {
-		                    timingEl.innerHTML =
-		                        '<span><span class="timing-label">Compile:</span> ' + t.compile + 'ms</span>' +
-		                        '<span><span class="timing-label">Eval:</span> ' + t.evaluate.toLocaleString() + 'ms</span>' +
-		                        '<span><span class="timing-label">Total:</span> ' + t.total.toLocaleString() + 'ms</span>' +
-		                        '<span><span class="timing-label">Items:</span> ' + hitCount.toLocaleString() + '</span>';
-		                } else {
-		                    timingEl.innerHTML =
-		                        '<span><span class="timing-label">Elapsed:</span> ' + data.elapsed + 'ms</span>' +
-		                        '<span><span class="timing-label">Items:</span> ' + hitCount.toLocaleString() + '</span>';
-		                }
-		                timingEl.style.display = "";
+		        // Show timing breakdown
+		        if (timingEl) {
+		            const t = data.timing;
+		            if (t) {
+		                timingEl.innerHTML =
+		                    `<span><span class="timing-label">Compile:</span> ${t.compile}ms</span>` +
+		                    `<span><span class="timing-label">Eval:</span> ${t.evaluate.toLocaleString()}ms</span>` +
+		                    `<span><span class="timing-label">Total:</span> ${t.total.toLocaleString()}ms</span>` +
+		                    `<span><span class="timing-label">Items:</span> ${hitCount.toLocaleString()}</span>`;
+		            } else {
+		                timingEl.innerHTML =
+		                    `<span><span class="timing-label">Elapsed:</span> ${data.elapsed}ms</span>` +
+		                    `<span><span class="timing-label">Items:</span> ${hitCount.toLocaleString()}</span>`;
 		            }
+		            timingEl.style.display = "";
+		        }
 
-		            // Fetch first page
-		            app.fetchCursorPage(startOffset, endOffset);
-		        });
-		    })
-		    .catch(function(err) {
+		        // Fetch first page
+		        app.fetchCursorPage(startOffset, endOffset);
+		    } catch (err) {
 		        app._queryAbort = null;
 		        hideCancel();
 		        if (err.name === "AbortError") {
@@ -1069,7 +1061,7 @@ export const app = (function(util) {
 		            return;
 		        }
 		        util.error(err.message || String(err), "Server Error");
-		    });
+		    }
 		},
 
 		/**
@@ -1077,7 +1069,7 @@ export const app = (function(util) {
 		 * Each item includes value, type, documentURI, and nodeId.
 		 * Passes current serialization settings from the results toolbar.
 		 */
-		fetchCursorPage: function(start, end) {
+		async fetchCursorPage(start, end) {
 		    if (!app._cursorId) return;
 
 		    const count = end - start + 1;
@@ -1085,19 +1077,17 @@ export const app = (function(util) {
 		    const indent = document.getElementById("indent-results").checked ? "yes" : "no";
 		    const autoExpand = document.getElementById("auto-expand-matches").checked ? "both" : "no";
 		    const params = new URLSearchParams({
-		        start: start,
-		        count: count,
+		        start,
+		        count,
 		        method: serializationMode,
-		        indent: indent,
+		        indent,
 		        "highlight-matches": autoExpand
 		    });
 
-		    fetch("../existdb-openapi/api/query/" + app._cursorId + "/results?" + params.toString())
-		    .then(function(response) {
+		    try {
+		        const response = await fetch(`../existdb-openapi/api/query/${app._cursorId}/results?${params.toString()}`);
 		        if (!response.ok) throw new Error("Cursor expired");
-		        return response.json();
-		    })
-		    .then(function(data) {
+		        const data = await response.json();
 		        const resultsDiv = document.querySelector('.results-container .results');
 		        if (!resultsDiv) return;
 		        resultsDiv.innerHTML = "";
@@ -1115,16 +1105,15 @@ export const app = (function(util) {
 		            // Build badge — clickable link if documentURI is available
 		            let badge;
 		            if (item.documentURI) {
-		                badge = '<a class="badge" href="#" data-path="' + item.documentURI +
-		                    '" title="Click to open source document" style="width:' + numWidth + 'ch">' + idx + '</a>';
+		                badge = `<a class="badge" href="#" data-path="${item.documentURI}" title="Click to open source document" style="width:${numWidth}ch">${idx}</a>`;
 		            } else {
-		                badge = '<span class="badge" style="width:' + numWidth + 'ch">' + idx + '</span>';
+		                badge = `<span class="badge" style="width:${numWidth}ch">${idx}</span>`;
 		            }
 
 		            div.innerHTML =
-		                '<div class="pos">' + badge + '</div>' +
-		                '<div class="item"><i class="fa fa-clipboard copy-result" title="Copy this item to clipboard"></i>' +
-		                '<div class="content" style="white-space: pre-wrap"></div></div>';
+		                `<div class="pos">${badge}</div>` +
+		                `<div class="item"><i class="fa fa-clipboard copy-result" title="Copy this item to clipboard"></i>` +
+		                `<div class="content" style="white-space: pre-wrap"></div></div>`;
 
 		            const contentDiv = div.querySelector('.content');
 		            contentDiv.textContent = item.value;
@@ -1140,18 +1129,17 @@ export const app = (function(util) {
 		            }
 
 		            // Copy button
-		            div.querySelector('.copy-result').addEventListener("click", function() {
+		            div.querySelector('.copy-result').addEventListener("click", async function() {
 		                const sibling = this.parentNode.querySelector('.content');
 		                const text = sibling ? sibling.textContent : "";
 		                const btn = this;
-		                navigator.clipboard.writeText(text).then(function() {
-		                    btn.classList.remove('fa-clipboard');
-		                    btn.classList.add('fa-check', 'copied');
-		                    setTimeout(function() {
-		                        btn.classList.remove('fa-check', 'copied');
-		                        btn.classList.add('fa-clipboard');
-		                    }, 1200);
-		                });
+		                await navigator.clipboard.writeText(text);
+		                btn.classList.remove('fa-clipboard');
+		                btn.classList.add('fa-check', 'copied');
+		                setTimeout(() => {
+		                    btn.classList.remove('fa-check', 'copied');
+		                    btn.classList.add('fa-clipboard');
+		                }, 1200);
 		            });
 
 		            resultsDiv.appendChild(div);
@@ -1159,22 +1147,21 @@ export const app = (function(util) {
 
 		        // Update status
 		        const actualEnd = start + items.length - 1;
-		        document.querySelectorAll('.results-container .current').forEach(function(el) {
-		            el.textContent = "Showing results " + start + " to " + actualEnd + " of " + hitCount;
+		        document.querySelectorAll('.results-container .current').forEach((el) => {
+		            el.textContent = `Showing results ${start} to ${actualEnd} of ${hitCount}`;
 		        });
 
 		        // Update pagination state
 		        startOffset = start;
 		        currentOffset = actualEnd + 1;
 		        endOffset = actualEnd;
-		    })
-		    .catch(function(err) {
-		        util.error("Failed to fetch results: " + err.message);
-		    });
+		    } catch (err) {
+		        util.error(`Failed to fetch results: ${err.message}`);
+		    }
 		},
 
 		/** Cancel the active query. */
-		cancelQuery: function() {
+		cancelQuery() {
 		    const code = editor.getText();
 		    // Detect queries that modify state: XQUF expressions, legacy update syntax,
 		    // xmldb store/remove/create, security manager changes, file system writes
@@ -1194,15 +1181,15 @@ export const app = (function(util) {
 		        //    Only admins can call this; guest users just abort the HTTP connection.
 		        //    Fetch running queries and kill any that are user-submitted
 		        //    (exclude eXide's own internal API queries).
-		        fetch("api/admin/queries").then(function(r) { return r.json(); }).then(function(data) {
+		        fetch("api/admin/queries").then((r) => { return r.json(); }).then((data) => {
 		            const running = data.queries || [];
 		            for (let i = 0; i < running.length; i++) {
 		                const q = running[i];
 		                if (q.sourceKey && !q.sourceKey.includes("/apps/eXide/modules/")) {
-		                    fetch("api/admin/queries/" + encodeURIComponent(q.id), { method: "DELETE" });
+		                    fetch(`api/admin/queries/${encodeURIComponent(q.id)}`, { method: "DELETE" });
 		                }
 		            }
-		        }).catch(function() {});
+		        }).catch(() => {});
 
 		        const btnCancel = document.getElementById("cancel-query");
 		        if (btnCancel) btnCancel.style.display = "none";
@@ -1224,12 +1211,12 @@ export const app = (function(util) {
 		    }
 		},
 
-		checkQuery: function() {
+		checkQuery() {
 			editor.validator.triggerNow(editor.getActiveDocument());
 		},
 
 		/** Called if user clicks on "forward" link in query results. */
-		browseNext: function() {
+		browseNext() {
 			if (currentOffset > 0 && endOffset < hitCount) {
 				startOffset = currentOffset;
 		        const howmany = numberOfResults;
@@ -1243,7 +1230,7 @@ export const app = (function(util) {
 		},
 
 		/** Called if user clicks on "previous" link in query results. */
-		browsePrevious: function() {
+		browsePrevious() {
 			if (currentOffset > 0 && startOffset > 1) {
 		        const count = numberOfResults;
 		        startOffset = startOffset - count;
@@ -1259,7 +1246,7 @@ export const app = (function(util) {
 			return false;
 		},
 
-		browseFirst: function() {
+		browseFirst() {
 			if (currentOffset > 0 && startOffset > 1) {
 				startOffset = 1;
 				currentOffset = 1;
@@ -1270,7 +1257,7 @@ export const app = (function(util) {
 			return false;
 		},
 
-		browseLast: function() {
+		browseLast() {
 			if (currentOffset > 0 && endOffset < hitCount) {
 				startOffset = Math.floor((hitCount - 1) / numberOfResults) * numberOfResults + 1;
 				currentOffset = startOffset;
@@ -1281,11 +1268,11 @@ export const app = (function(util) {
 			return false;
 		},
 
-		syncDirectory : function(collection) {
+		syncDirectory(collection) {
 			editor.directory.reload(collection)
 		},
 
-		syncManager : function(collection) {
+		syncManager(collection) {
 			const openDialogEl = document.getElementById("open-dialog");
 			if(openDialogEl && openDialogEl.style.display !== "none" && openDialogEl.offsetParent !== null){
 				dbBrowser.resources.collection = collection
@@ -1293,21 +1280,21 @@ export const app = (function(util) {
 			}
 		},
 
-		manage: function() {
-			app.requireLogin(function() {
+		manage() {
+			app.requireLogin(() => {
                 dbBrowser.reload(["reload", "create", "upload", "properties", "open", "download", "cut", "copy", "paste"], "manage");
                 dialogs["open-dialog"].setTitle("DB Manager");
                 dialogs["open-dialog"].setButtons({
-                    "Close": function() { dialogs["open-dialog"].close(); }
+                    "Close"() { dialogs["open-dialog"].close(); }
                 });
                 dialogs["open-dialog"].open();
 			});
 		},
 
-		deploy: function() {
-            app.requireLogin(function() {
+		deploy() {
+            app.requireLogin(() => {
     			const path = editor.getActiveDocument().getPath();
-    			const collection = /^(.*)\/[^\/]+$/.exec(path);
+    			const collection = /^(.*)\/[^/]+$/.exec(path);
     			if (!collection) {
     				util.error("The file open in the editor does not belong to an application package!");
     				return false;
@@ -1318,10 +1305,10 @@ export const app = (function(util) {
 			return false;
 		},
 
-		synchronize: function() {
-            app.requireLogin(function () {
+		synchronize() {
+            app.requireLogin(() => {
                 const path = editor.getActiveDocument().getPath();
-        		const collection = /^(.*)\/[^\/]+$/.exec(path);
+        		const collection = /^(.*)\/[^/]+$/.exec(path);
     			if (!collection) {
                     util.error("The file open in the editor does not belong to an application package!");
     				return;
@@ -1330,10 +1317,10 @@ export const app = (function(util) {
             });
 		},
 
-        gitCheckout: function() {
-            app.requireLogin(function () {
+        gitCheckout() {
+            app.requireLogin(() => {
                 const path = editor.getActiveDocument().getPath();
-        		const collection = /^(.*)\/[^\/]+$/.exec(path);
+        		const collection = /^(.*)\/[^/]+$/.exec(path);
     			if (!collection) {
                     util.error("The file open in the editor does not belong to an application package!");
     				return;
@@ -1341,10 +1328,10 @@ export const app = (function(util) {
     			deploymentEditor.gitCheckout(collection[1]);
             });
 		},
-        gitCommit: function() {
-            app.requireLogin(function () {
+        gitCommit() {
+            app.requireLogin(() => {
                 const path = editor.getActiveDocument().getPath();
-        		const collection = /^(.*)\/[^\/]+$/.exec(path);
+        		const collection = /^(.*)\/[^/]+$/.exec(path);
     			if (!collection) {
                     util.error("The file open in the editor does not belong to an application package!");
     				return;
@@ -1353,10 +1340,10 @@ export const app = (function(util) {
             });
 		},
 
-        downloadApp: function () {
-            app.requireLogin(function() {
+        downloadApp () {
+            app.requireLogin(() => {
                 const path = editor.getActiveDocument().getPath();
-            	const collection = /^(.*)\/[^\/]+$/.exec(path);
+            	const collection = /^(.*)\/[^/]+$/.exec(path);
                 console.log("downloading %s", collection);
     			if (!collection) {
                     util.error("The file open in the editor does not belong to an application package!");
@@ -1366,9 +1353,9 @@ export const app = (function(util) {
             });
         },
 
-		openApp: function (firstLoad) {
+		openApp (firstLoad) {
 			const path = editor.getActiveDocument().getPath();
-			const collection = /^(.*)\/[^\/]+$/.exec(path);
+			const collection = /^(.*)\/[^/]+$/.exec(path);
 			if (!collection) {
                 util.error("The file open in the editor does not belong to an application package!");
 				return;
@@ -1376,24 +1363,24 @@ export const app = (function(util) {
 			deploymentEditor.runApp(collection[1], firstLoad);
 		},
 
-        runAppOrQuery: function() {
+        runAppOrQuery() {
             const doc = editor.getActiveDocument();
             const project = projects.getProjectFor(doc.getPath());
             if (project) {
                 const url = project.url.replace(/\/{2,}/, "/");
-                const link = eXide.configuration.context + url + "/";
-                app.ensureSaved(function() {
+                const link = `${eXide.configuration.context + url}/`;
+                app.ensureSaved(() => {
                     project.win = window.open(link, project.abbrev);
                     project.win.focus();
                 });
             } else if (!doc.isNew() && (doc.getSyntax() === "xquery")) {
-                app.ensureSaved(function() {
+                app.ensureSaved(() => {
                     window.open(doc.getExternalLink(), doc.getName());
                 });
             }
         },
 
-        toggleRunStatus: function(doc) {
+        toggleRunStatus(doc) {
             const project = projects.getProjectFor(doc.getPath());
             const syntax = doc.getSyntax();
             let enable = ((syntax === "xquery" || syntax === "html") && (project || !doc.isNew()));
@@ -1402,14 +1389,14 @@ export const app = (function(util) {
             document.getElementById("run").disabled = !enable;
         },
 
-        ensureSaved: function(callback) {
+        ensureSaved(callback) {
             if (!editor.getActiveDocument().isSaved()) {
-                app.requireLogin(function () {
-                    Dialog.input("Save document?", "The current document has not been saved. Save now?", function() {
-                            editor.saveDocument(null, function () {
-                				util.message(editor.getActiveDocument().getName() + " stored.");
+                app.requireLogin(() => {
+                    Dialog.input("Save document?", "The current document has not been saved. Save now?", () => {
+                            editor.saveDocument(null, () => {
+                				util.message(`${editor.getActiveDocument().getName()} stored.`);
                                 callback();
-                			}, function (msg) {
+                			}, (msg) => {
                 				Dialog.warning("Failed to Save Document", msg);
                 			});
                     }, { action: "Save" });
@@ -1419,7 +1406,7 @@ export const app = (function(util) {
             }
         },
 
-		restoreState: function(callback) {
+		restoreState(callback) {
 			if (!util.supportsHtml5Storage)
 				return false;
 			const sameVersion = preferences.read();
@@ -1440,10 +1427,10 @@ export const app = (function(util) {
             const docsToLoad = [];
 			for (let i = 0; i < docCount; i++) {
 				const doc = {
-						path: localStorage["eXide." + i + ".path"],
-						name: localStorage["eXide." + i + ".name"],
-						writable: (localStorage["eXide." + i + ".writable"] === "true"),
-						line: parseInt(localStorage["eXide." + i + ".last-line"])
+						path: localStorage[`eXide.${i}.path`],
+						name: localStorage[`eXide.${i}.name`],
+						writable: (localStorage[`eXide.${i}.writable`] === "true"),
+						line: parseInt(localStorage[`eXide.${i}.last-line`])
 				};
 				// New documents always editable (writable not stored for __new__ docs)
 				if (doc.path && doc.path.match(/^__new__/)) {
@@ -1453,15 +1440,15 @@ export const app = (function(util) {
                     continue;
                 }
 				console.log("Restoring doc %s, going to line = %i", doc.path, doc.line);
-				const data = localStorage["eXide." + i + ".data"];
+				const data = localStorage[`eXide.${i}.data`];
 				if (data) {
-					editor.newDocumentWithText(data, localStorage["eXide." + i + ".mime"], doc);
+					editor.newDocumentWithText(data, localStorage[`eXide.${i}.mime`], doc);
 				} else {
                     docsToLoad.push(doc);
 				}
                 restoring[doc.path] = doc;
 			}
-            this.restoreDocs(docsToLoad, function() {
+            this.restoreDocs(docsToLoad, () => {
                 if (!editor.getActiveDocument()) {
                     app.newDocument("", "xquery");
                 } else {
@@ -1478,14 +1465,14 @@ export const app = (function(util) {
 			return restoring;
 		},
 
-        restoreDocs: function(docs, callback) {
+        restoreDocs(docs, callback) {
             if (docs.length === 0) {
                 callback();
                 return;
             }
             const self = this;
             const doc = docs.pop();
-            app.$doOpenDocument(doc, function() {
+            app.$doOpenDocument(doc, () => {
                 if (doc.line) {
                     editorUtils.gotoLine(editor.editor, doc.line + 1);
                 }
@@ -1493,7 +1480,7 @@ export const app = (function(util) {
             });
         },
 
-		saveState: function() {
+		saveState() {
 			if (!util.supportsHtml5Storage || app._skipSaveState)
 				return;
 			localStorage.clear();
@@ -1507,13 +1494,11 @@ export const app = (function(util) {
 			deploymentEditor.saveState();
 		},
 
-        getLogin: function(callback) {
-            fetch("api/auth/whoami")
-            .then(function(response) {
+        async getLogin(callback) {
+            try {
+                const response = await fetch("api/auth/whoami");
                 if (!response.ok) throw new Error(response.statusText);
-                return response.json();
-            })
-            .then(function(data) {
+                const data = await response.json();
                 if (data && data.isLoggedIn) {
                     app.login = data;
                     app.updateAuthStatus(app.login.user);
@@ -1523,30 +1508,29 @@ export const app = (function(util) {
                     app.updateAuthStatus(null);
                     if (callback) callback(null);
                 }
-            })
-            .catch(function(err) {
+            } catch {
                 app.login = null;
                 app.updateAuthStatus(null);
                 if (callback) callback(null);
-            });
+            }
         },
 
-        enforceLogin: function() {
-            app.requireLogin(function() {
+        enforceLogin() {
+            app.requireLogin(() => {
                 if (!app.login || app.login.user === "guest") {
                     app.enforceLogin();
                 }
             });
         },
 
-		$checkLogin: function () {
+		$checkLogin () {
 			if (app.login)
 				return true;
 			util.error("Warning: you are not logged in.");
 			return false;
 		},
 
-        requireLogin: function(callback) {
+        requireLogin(callback) {
             if (!app.login) {
                 dialogs["login-dialog"]._onClose = function () {
                     if (app.login) {
@@ -1562,31 +1546,31 @@ export const app = (function(util) {
                 callback();
         },
 
-        showPreferences: function() {
+        showPreferences() {
             preferences.show();
         },
 
-        getPreference: function(key) {
+        getPreference(key) {
             return preferences.get(key);
         },
 
-        startDebug: function() {
+        startDebug() {
             editor.exec("debug");
         },
 
-        stepOver: function() {
+        stepOver() {
             editor.exec("stepOver");
         },
 
-        stepInto: function() {
+        stepInto() {
             editor.exec("stepInto");
         },
 
-        setTheme: function(theme) {
+        setTheme(theme) {
             document.body.classList.toggle("dark", theme.isDark);
         },
 
-        updateDarkModeIcon: function(themeOrResolved) {
+        updateDarkModeIcon(themeOrResolved) {
             const icon = document.querySelector("#toggle-dark-mode i");
             if (!icon) return;
             // Show sun when dark (click to go light), moon when light (click to go dark)
@@ -1594,18 +1578,18 @@ export const app = (function(util) {
             icon.className = isDark ? "fa fa-sun-o" : "fa fa-moon-o";
         },
 
-        updateStatus: function(doc) {
+        updateStatus(doc) {
             const syntax = doc.getSyntax();
             // Update status bar type segment
             const typeLabels = {text:"Text",xml:"XML",html:"HTML",xquery:"XQuery",javascript:"Javascript",css:"CSS",less:"Less",json:"JSON",markdown:"Markdown"};
             const typeVal = document.getElementById("status-type-value");
             let label = typeLabels[syntax] || syntax;
             if (syntax === "xquery" && doc.xqueryVersion) {
-                label += " " + doc.xqueryVersion;
+                label += ` ${doc.xqueryVersion}`;
             }
             if (typeVal) typeVal.textContent = label;
             // Update popover active state
-            document.querySelectorAll("#type-popover .type-popover-item").forEach(function(el) {
+            document.querySelectorAll("#type-popover .type-popover-item").forEach((el) => {
                 el.classList.toggle("active", el.dataset.value === syntax);
             });
             let pathEl = document.querySelector("#status .path");
@@ -1615,7 +1599,7 @@ export const app = (function(util) {
             if (!extLink && !doc.isNew()) {
                 // Compute fallback external link from path
                 const ctx = eXide.configuration.context || "";
-                extLink = ctx + "/rest" + doc.getPath();
+                extLink = `${ctx}/rest${doc.getPath()}`;
             }
             if (!doc.isNew() && extLink) {
                 if (pathEl.tagName !== "A") {
@@ -1642,23 +1626,23 @@ export const app = (function(util) {
             }
         },
 
-        showResultsPanel: function() {
+        showResultsPanel() {
 			layout.show(resultPanel, true);
 			app.resize(true);
         },
 
-        toggleCollectionsPanel: function() {
+        toggleCollectionsPanel() {
             layout.toggle("west");
             app.$savePanelPrefs();
             app.resize(true);
         },
 
-        toggleResultsPanel: function() {
+        toggleResultsPanel() {
             layout.toggle(resultPanel);
 			app.resize(true);
         },
 
-        setWestPanel: function(visible) {
+        setWestPanel(visible) {
             if (visible) {
                 layout.show("west", true);
             } else {
@@ -1667,12 +1651,12 @@ export const app = (function(util) {
             app.resize(true);
         },
 
-        isWestPanelVisible: function() {
+        isWestPanelVisible() {
             const el = document.querySelector(".panel-west");
             return el && el.style.display !== "none" && el.offsetParent !== null;
         },
 
-        setSouthPanel: function(visible) {
+        setSouthPanel(visible) {
             if (visible) {
                 layout.show(resultPanel, true);
             } else {
@@ -1681,12 +1665,12 @@ export const app = (function(util) {
             app.resize(true);
         },
 
-        isSouthPanelVisible: function() {
-            const el = document.querySelector(".panel-" + resultPanel);
+        isSouthPanelVisible() {
+            const el = document.querySelector(`.panel-${resultPanel}`);
             return el && el.style.display !== "none" && el.offsetParent !== null;
         },
 
-        setEastPanel: function(visible) {
+        setEastPanel(visible) {
             const eastEl = document.querySelector(".panel-east");
             const isVisible = eastEl && eastEl.style.display !== "none";
             if (visible && !isVisible) {
@@ -1705,12 +1689,12 @@ export const app = (function(util) {
             app.resize(true);
         },
 
-        isEastPanelVisible: function() {
+        isEastPanelVisible() {
             const el = document.querySelector(".panel-east");
             return !!(el && el.style.display !== "none");
         },
 
-        setCollectionsView: function(view) {
+        setCollectionsView(view) {
             const treeView = document.getElementById("dir-tree-view");
             const flatView = document.getElementById("dir-flat-view");
             const toggleBtn = document.getElementById("toggle-dir-view");
@@ -1727,7 +1711,7 @@ export const app = (function(util) {
             }
         },
 
-        $savePanelPrefs: function() {
+        $savePanelPrefs() {
             try {
                 const eastEl = document.querySelector(".panel-east");
                 const eastVisible = !!(eastEl && eastEl.style.display !== "none");
@@ -1737,10 +1721,12 @@ export const app = (function(util) {
                 preferences.preferences.showSouthPanel = app.isSouthPanelVisible();
                 preferences.preferences.showEastPanel = eastVisible;
                 preferences.save();
-            } catch(e) {}
+            } catch {
+                // Preferences not initialized yet; nothing to save.
+            }
         },
 
-        initStatus: function(msg) {
+        initStatus(msg) {
             document.getElementById("splash-status").textContent = msg;
         },
 
@@ -1754,10 +1740,10 @@ export const app = (function(util) {
              }
         }(),
 
-        findFiles: function() {
+        findFiles() {
             const doc = editor.getActiveDocument();
-            projects.findProject(doc.getBasePath(), function(app) {
-                Files.open(doc, app, function(searchParams) {
+            projects.findProject(doc.getBasePath(), (app) => {
+                Files.open(doc, app, async (searchParams) => {
                     editor.updateStatus("");
 				    editor.clearErrors();
 				    startOffset = 1;
@@ -1779,65 +1765,61 @@ export const app = (function(util) {
                         (target || "/db");
                     const body = {
                         query: formParams.get("search"),
-                        collection: collection,
+                        collection,
                         type: formParams.get("type") || "all",
                         regex: formParams.has("regex"),
                         caseSensitive: formParams.has("case")
                     };
 
-                    fetch("api/search", {
+                    const response = await fetch("api/search", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(body)
-                    })
-                    .then(function(response) { return response.json(); })
-                    .then(function(data) {
-                        if (data.error) {
-                            iframe.contentWindow.document.open('text/html', 'replace');
-                            iframe.contentWindow.document.write("<html><body><p>" + data.error + "</p></body></html>");
-                            iframe.contentWindow.document.close();
-                            return;
-                        }
-                        const hits = data.hits || [];
-                        let html = '<html><head><link rel="stylesheet" type="text/css" href="resources/css/search.css"/></head><body>';
-                        html += '<div><h3>Search Results for ' + data.query + ' in ' + data.collection + '</h3><ul>';
-                        if (hits.length === 0) {
-                            html += '<li>No matches found.</li>';
-                        }
-                        for (let i = 0; i < hits.length; i++) {
-                            const hit = hits[i];
-                            html += '<li class="sourceinfo"><a class="resource" href="#" data-src="' +
-                                hit.resource + '" data-line="' + hit.line + '">' +
-                                hit.name + '</a><span class="line">line ' + hit.line + '</span></li>';
-                            html += '<li class="code">' + hit.text.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</li>';
-                        }
-                        html += '</ul></div></body></html>';
-                        iframe.contentWindow.document.open('text/html', 'replace');
-                        iframe.contentWindow.document.write(html);
-                        iframe.contentWindow.document.close();
-                        // Bind click handlers
-                        const links = iframe.contentDocument.querySelectorAll(".resource");
-                        for (let j = 0; j < links.length; j++) {
-                            links[j].addEventListener("click", function(ev) {
-                                ev.preventDefault();
-                                eXide.app.findDocument(this.dataset.src, parseInt(this.dataset.line));
-                            });
-                        }
                     });
+                    const data = await response.json();
+                    if (data.error) {
+                        iframe.contentWindow.document.open('text/html', 'replace');
+                        iframe.contentWindow.document.write(`<html><body><p>${data.error}</p></body></html>`);
+                        iframe.contentWindow.document.close();
+                        return;
+                    }
+                    const hits = data.hits || [];
+                    let html = '<html><head><link rel="stylesheet" type="text/css" href="resources/css/search.css"/></head><body>';
+                    html += `<div><h3>Search Results for ${data.query} in ${data.collection}</h3><ul>`;
+                    if (hits.length === 0) {
+                        html += '<li>No matches found.</li>';
+                    }
+                    for (let i = 0; i < hits.length; i++) {
+                        const hit = hits[i];
+                        html += `<li class="sourceinfo"><a class="resource" href="#" data-src="${hit.resource}" data-line="${hit.line}">${hit.name}</a><span class="line">line ${hit.line}</span></li>`;
+                        html += `<li class="code">${hit.text.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</li>`;
+                    }
+                    html += '</ul></div></body></html>';
+                    iframe.contentWindow.document.open('text/html', 'replace');
+                    iframe.contentWindow.document.write(html);
+                    iframe.contentWindow.document.close();
+                    // Bind click handlers
+                    const links = iframe.contentDocument.querySelectorAll(".resource");
+                    for (let j = 0; j < links.length; j++) {
+                        links[j].addEventListener("click", function(ev) {
+                            ev.preventDefault();
+                            eXide.app.findDocument(this.dataset.src, parseInt(this.dataset.line));
+                        });
+                    }
                 });
             });
         },
 
-        liveReload: function() {
+        liveReload() {
             const doc = editor.getActiveDocument();
-            projects.findProject(doc.getBasePath(), function(project) {
+            projects.findProject(doc.getBasePath(), (project) => {
                 if (project == null) {
                     return;
                 }
                 console.log("live reload: %s %s", project.liveReload, project.abbrev);
                 if (project.liveReload) {
                     const url = project.url.replace(/\/{2,}/, "/");
-                    const link = eXide.configuration.context + url + "/";
+                    const link = `${eXide.configuration.context + url}/`;
                     project.win = window.open(link, project.abbrev);
                     if (project.win && !project.win.closed) {
                         project.win.location.reload();
@@ -1848,9 +1830,9 @@ export const app = (function(util) {
             });
         },
 
-        toggleLiveReload: function() {
+        toggleLiveReload() {
             const doc = editor.getActiveDocument();
-            projects.findProject(doc.getBasePath(), function(project) {
+            projects.findProject(doc.getBasePath(), (project) => {
                 if (!project) {
                     return;
                 }
@@ -1862,7 +1844,7 @@ export const app = (function(util) {
             });
         },
 
-		initGUI: function(menu) {
+		initGUI(menu) {
             resultPanel = "south";
             layout = new app.Layout(editor);
             layout.hide("east");
@@ -1876,8 +1858,7 @@ export const app = (function(util) {
     		        width: 640
 			    }
 			);
-			const openDialogEl = document.getElementById("open-dialog");
-			dialogs["open-dialog"].dialog.addEventListener("close", function() {});
+			dialogs["open-dialog"].dialog.addEventListener("close", () => {});
 			const origOpenDialogOpen = dialogs["open-dialog"].open;
 			dialogs["open-dialog"].open = function() {
 			    origOpenDialogOpen.call(dialogs["open-dialog"]);
@@ -1893,18 +1874,18 @@ export const app = (function(util) {
 			    }
 			);
 			dialogs["login-dialog"]._onClose = null;
-			dialogs["login-dialog"].dialog.addEventListener("close", function() {
+			dialogs["login-dialog"].dialog.addEventListener("close", () => {
 			    if (dialogs["login-dialog"]._onClose) {
 			        dialogs["login-dialog"]._onClose();
 			        dialogs["login-dialog"]._onClose = null;
 			    }
 			});
 			dialogs["login-dialog"].setButtons({
-			    "Cancel": function() {
+			    "Cancel"() {
 			        dialogs["login-dialog"].close();
 			        editor.focus();
 			    },
-			    "Log in": function() {
+			    async "Log in"() {
                     const user = document.querySelector("#login-form input[name=\"user\"]").value;
                     const password = document.querySelector("#login-form input[name=\"password\"]").value;
                     const formData = new URLSearchParams();
@@ -1916,17 +1897,15 @@ export const app = (function(util) {
                     if (rememberEl && rememberEl.checked) {
                         formData.append("remember-me", "true");
                     }
-					fetch("api/auth/session", {
-					    method: "POST",
-					    headers: {
-					        "Content-Type": "application/x-www-form-urlencoded"
-					    },
-					    body: formData.toString()
-					})
-					.then(function(response) {
-					    return response.json();
-					})
-					.then(function(data) {
+					try {
+					    const response = await fetch("api/auth/session", {
+					        method: "POST",
+					        headers: {
+					            "Content-Type": "application/x-www-form-urlencoded"
+					        },
+					        body: formData.toString()
+					    });
+					    const data = await response.json();
 					    if (!data.user) {
 					        document.getElementById("login-error").textContent = "Login failed.";
 					        const firstInput = document.querySelector("#login-dialog input:first-of-type");
@@ -1938,12 +1917,11 @@ export const app = (function(util) {
 						    app.updateAuthStatus(app.login.user);
 						    editor.focus();
 					    }
-					})
-					.catch(function(err) {
-					    document.getElementById("login-error").textContent = "Login failed. " + (err.message || "");
+					} catch (err) {
+					    document.getElementById("login-error").textContent = `Login failed. ${err.message || ""}`;
 					    const firstInput = document.querySelector("#login-dialog input:first-of-type");
 					    if (firstInput) firstInput.focus();
-					});
+					}
 			    }
 			});
 			const origLoginOpen = dialogs["login-dialog"].open;
@@ -1951,16 +1929,16 @@ export const app = (function(util) {
 			    origLoginOpen.call(dialogs["login-dialog"]);
 			    const loginDialogEl = document.getElementById("login-dialog");
 			    const inputs = loginDialogEl.querySelectorAll("input");
-			    inputs.forEach(function(input) { input.value = ""; });
+			    inputs.forEach((input) => { input.value = ""; });
 			    const firstInput = loginDialogEl.querySelector("input:first-of-type");
 			    if (firstInput) firstInput.focus();
 			    document.getElementById("login-error").textContent = "";
-			    inputs.forEach(function(input) {
-			        input.addEventListener("keyup", function(e) {
+			    inputs.forEach((input) => {
+			        input.addEventListener("keyup", (e) => {
 			            if (e.keyCode === 13) {
 			                const loginBtn = Array.prototype.find.call(
 						    dialogs["login-dialog"].dialog.querySelectorAll(".eXide-dialog-buttons button"),
-						    function(btn) { return btn.textContent === "Log in"; });
+						    (btn) => { return btn.textContent === "Log in"; });
 			                if (loginBtn) loginBtn.click();
 			            }
 			        });
@@ -1975,7 +1953,7 @@ export const app = (function(util) {
     				height: 520,
                     width: 460,
     				buttons: {
-    					"Close": function () { dialogs["keyboard-help"].close(); }
+    					"Close" () { dialogs["keyboard-help"].close(); }
     				}
 			    }
 			);
@@ -1993,7 +1971,7 @@ export const app = (function(util) {
                     height: 300,
                     width: 450,
                     buttons: {
-    				    "Close": function () { dialogs["about-dialog"].close(); }
+    				    "Close" () { dialogs["about-dialog"].close(); }
 				    }
                 }
             );
@@ -2005,8 +1983,8 @@ export const app = (function(util) {
     		        height: 280,
     		        width: 550,
                     buttons: {
-				        "Cancel": function () { dialogs["dialog-templates"].close(); editor.focus(); },
-                        "Create": function() {
+				        "Cancel" () { dialogs["dialog-templates"].close(); editor.focus(); },
+                        "Create"() {
                             const templEl = document.getElementById("dialog-templates");
                             const mode = templEl.querySelector(".type-select").value;
                             const template = templEl.querySelector(".templates select").value;
@@ -2019,21 +1997,19 @@ export const app = (function(util) {
                 }
             );
             const origTemplOpen = dialogs["dialog-templates"].open;
-            dialogs["dialog-templates"].open = function() {
+            dialogs["dialog-templates"].open = async function() {
                 origTemplOpen.call(dialogs["dialog-templates"]);
-                fetch("api/templates")
-                .then(function(response) { return response.json(); })
-                .then(function(data) {
-                    templates = data;
-                    const templatesDiv = document.querySelector("#dialog-templates .templates");
-                    if (templatesDiv) templatesDiv.style.display = "none";
-                    const typeSelect = document.querySelector("#dialog-templates .type-select");
-                    if (typeSelect) {
-                        typeSelect.value = "xquery";
-                        typeSelect.dispatchEvent(new Event("change"));
-                        typeSelect.focus();
-                    }
-                });
+                const response = await fetch("api/templates");
+                const data = await response.json();
+                templates = data;
+                const templatesDiv = document.querySelector("#dialog-templates .templates");
+                if (templatesDiv) templatesDiv.style.display = "none";
+                const typeSelect = document.querySelector("#dialog-templates .type-select");
+                if (typeSelect) {
+                    typeSelect.value = "xquery";
+                    typeSelect.dispatchEvent(new Event("change"));
+                    typeSelect.focus();
+                }
             };
             document.querySelector("#dialog-templates .type-select").addEventListener("change", function() {
                 const templ = document.querySelector("#dialog-templates .templates");
@@ -2044,7 +2020,7 @@ export const app = (function(util) {
                 if (mode) {
                     let options = "<option value=''>None</option>";
                     for (let i = 0; i < mode.length; i++) {
-                        options += "<option value='" + mode[i].name + "'>" + mode[i].description + "</option>";
+                        options += `<option value='${mode[i].name}'>${mode[i].description}</option>`;
                     }
                     templSel.innerHTML = options;
                     templ.style.display = "";
@@ -2065,53 +2041,52 @@ export const app = (function(util) {
 			menu.click("#menu-file-close-all", app.closeAll);
 
             const btnNew = document.getElementById("new");
-			btnNew.addEventListener("click", function() {
+			btnNew.addEventListener("click", () => {
                 app.newDocumentFromTemplate();
 			});
 
             const btnNewXquery = document.getElementById("new-xquery");
-			btnNewXquery.addEventListener("click", function() {
+			btnNewXquery.addEventListener("click", () => {
                 app.newDocument(null, "xquery");
 			});
 			menu.click("#menu-file-new", app.newDocumentFromTemplate);
-    		menu.click("#menu-file-new-xquery", function() {
+    		menu.click("#menu-file-new-xquery", () => {
                 app.newDocument(null, "xquery");
     		});
 
             const btnRun = document.getElementById("run");
             btnRun.disabled = true;
-			btnRun.addEventListener("click", function(ev) { app.runQuery() });
+			btnRun.addEventListener("click", (ev) => { app.runQuery() });
 
             const btnCancel = document.getElementById("cancel-query");
             if (btnCancel) {
-                btnCancel.addEventListener("click", function() { app.cancelQuery(); });
+                btnCancel.addEventListener("click", () => { app.cancelQuery(); });
             }
 
             const btnLaunch = document.getElementById("launch");
-			btnLaunch.addEventListener("click", function(ev) { app.runAppOrQuery() });
+			btnLaunch.addEventListener("click", (ev) => { app.runAppOrQuery() });
 
             const statusCursor = document.getElementById("status-cursor");
             if (statusCursor) {
                 statusCursor.style.cursor = "pointer";
                 statusCursor.title = "Go to Line";
-                statusCursor.addEventListener("click", function() {
+                statusCursor.addEventListener("click", () => {
                     editor.gotoLine();
                 });
             }
 
-            document.getElementById("status-copy-url").addEventListener("click", function() {
+            document.getElementById("status-copy-url").addEventListener("click", async () => {
                 const pathEl = document.querySelector("#status .path");
                 const path = pathEl ? pathEl.textContent : null;
                 if (path) {
-                    navigator.clipboard.writeText(path).then(function() {
-                        app.showMessage("Path copied to clipboard");
-                    });
+                    await navigator.clipboard.writeText(path);
+                    app.showMessage("Path copied to clipboard");
                 }
             });
 
             const btnToggleSplitPane = document.getElementById("toggle-split-pane");
             if (btnToggleSplitPane) {
-                btnToggleSplitPane.addEventListener("click", function() {
+                btnToggleSplitPane.addEventListener("click", () => {
                     const prefs = preferences.preferences;
                     prefs.splitPane = !prefs.splitPane;
                     const pw = document.querySelector('.panel-west');
@@ -2127,7 +2102,7 @@ export const app = (function(util) {
                         // Restore tabbed mode: activate whichever tab is marked active
                         const tabs = document.querySelectorAll('#tabs-outline a.tab');
                         let activeIndex = 0;
-                        tabs.forEach(function(t, i) { if (t.classList.contains('active')) activeIndex = i; });
+                        tabs.forEach((t, i) => { if (t.classList.contains('active')) activeIndex = i; });
                         editor.directory.toggle(activeIndex === 0);
                         editor.outline.toggle(activeIndex === 1);
                     }
@@ -2137,14 +2112,14 @@ export const app = (function(util) {
 
             const btnToggleOutline = document.getElementById("toggle-outline");
             if (btnToggleOutline) {
-                btnToggleOutline.addEventListener("click", function() {
+                btnToggleOutline.addEventListener("click", () => {
                     layout.toggle("west");
                     app.$savePanelPrefs();
                 });
             }
             const btnToggleResults = document.getElementById("toggle-results");
             if (btnToggleResults) {
-                btnToggleResults.addEventListener("click", function() {
+                btnToggleResults.addEventListener("click", () => {
                     layout.toggle(resultPanel);
                     app.$savePanelPrefs();
                 });
@@ -2152,14 +2127,14 @@ export const app = (function(util) {
 
             const btnToggleMonitor = document.getElementById("toggle-monitor");
             if (btnToggleMonitor) {
-                btnToggleMonitor.addEventListener("click", function() {
+                btnToggleMonitor.addEventListener("click", () => {
                     app.toggleMonitor();
                 });
             }
 
             const btnMonitorClose = document.getElementById("monitor-close");
             if (btnMonitorClose) {
-                btnMonitorClose.addEventListener("click", function() {
+                btnMonitorClose.addEventListener("click", () => {
                     app.toggleMonitor();
                 });
             }
@@ -2167,7 +2142,7 @@ export const app = (function(util) {
             // delegate kill buttons in monitor
             const monRunning = document.getElementById("mon-running-body");
             if (monRunning) {
-                monRunning.addEventListener("click", function(ev) {
+                monRunning.addEventListener("click", (ev) => {
                     const btn = ev.target.closest(".mon-kill");
                     if (btn && monitor) {
                         monitor.killQuery(btn.dataset.id);
@@ -2209,99 +2184,99 @@ export const app = (function(util) {
             menu.click("#menu-git-checkout", app.gitCheckout);
             menu.click("#menu-git-commit", app.gitCommit);
 
-			menu.click("#menu-edit-undo", function () {
+			menu.click("#menu-edit-undo", () => {
 				CM6.undo(editor.editor);
 			});
-			menu.click("#menu-edit-redo", function () {
+			menu.click("#menu-edit-redo", () => {
 				CM6.redo(editor.editor);
 			});
-            menu.click("#menu-edit-find", function() {
+            menu.click("#menu-edit-find", () => {
                 CM6.openSearchPanel(editor.editor);
-                setTimeout(function() {
+                setTimeout(() => {
                     const searchInput = document.querySelector(".cm-search input[main-field]");
                     if (searchInput) searchInput.focus();
                 }, 0);
             });
-            menu.click("#menu-edit-find-replace", function() {
+            menu.click("#menu-edit-find-replace", () => {
                 CM6.openSearchPanel(editor.editor);
-                setTimeout(function() {
+                setTimeout(() => {
                     const searchInput = document.querySelector(".cm-search input[main-field]");
                     if (searchInput) searchInput.focus();
                 }, 0);
             });
-            menu.click("#menu-edit-find-files", function() {
+            menu.click("#menu-edit-find-files", () => {
                 app.findFiles();
             });
-            menu.click("#menu-edit-toggle-comment", function () {
+            menu.click("#menu-edit-toggle-comment", () => {
                 CM6.toggleComment(editor.editor);
             });
-			menu.click("#menu-edit-preferences", function() {
+			menu.click("#menu-edit-preferences", () => {
                 preferences.show();
 			});
-            menu.click("#menu-edit-format", function() {
+            menu.click("#menu-edit-format", () => {
                 editor.exec("format");
             });
-            menu.click("#menu-navigate-definition", function () {
+            menu.click("#menu-navigate-definition", () => {
                 editor.exec("gotoDefinition");
             });
-            menu.click("#menu-navigate-references", function () {
+            menu.click("#menu-navigate-references", () => {
                 editor.exec("findReferences");
             });
-            menu.click("#menu-navigate-info", function() {
+            menu.click("#menu-navigate-info", () => {
                 editor.exec("showFunctionDoc");
             });
-            menu.click("#menu-navigate-symbol", function() {
+            menu.click("#menu-navigate-symbol", () => {
                 editor.exec("gotoSymbol");
             });
-            menu.click("#menu-navigate-buffer", function() {
+            menu.click("#menu-navigate-buffer", () => {
                 editor.selectTab();
             });
-            menu.click("#menu-navigate-commands", function() {
+            menu.click("#menu-navigate-commands", () => {
                 app.getMenu().commandPalette();
             });
-            menu.click("#menu-navigate-line", function() {
+            menu.click("#menu-navigate-line", () => {
                 editor.gotoLine();
             });
-            menu.click("#menu-navigate-history", function() {
+            menu.click("#menu-navigate-history", () => {
                 editor.historyBack();
             });
-            menu.click("#menu-navigate-diagnostics", function() {
+            menu.click("#menu-navigate-diagnostics", () => {
                 editor.toggleDiagnostics();
             });
-            menu.click("#menu-view-toggle-collections", function() {
+            menu.click("#menu-view-toggle-collections", () => {
                 app.toggleCollectionsPanel();
             });
-            menu.click("#menu-view-toggle-results", function() {
+            menu.click("#menu-view-toggle-results", () => {
                 app.toggleResultsPanel();
             });
-            menu.click("#menu-view-toggle-monitor", function() {
+            menu.click("#menu-view-toggle-monitor", () => {
                 app.toggleMonitor();
             });
-            menu.click("#menu-view-reset", function() {
+            menu.click("#menu-view-reset", () => {
                 layout.reset();
             });
-            menu.click("#menu-view-reset-workspace", function() {
+            menu.click("#menu-view-reset-workspace", () => {
                 if (confirm("This will clear all saved tabs, preferences, and layout state, then reload. Continue?")) {
                     app._skipSaveState = true;
-                    Object.keys(localStorage).filter(function(k) { return k.startsWith("eXide."); }).forEach(function(k) { localStorage.removeItem(k); });
+                    Object.keys(localStorage).filter((k) => { return k.startsWith("eXide."); }).forEach((k) => { localStorage.removeItem(k); });
                     location.reload();
                 }
             });
-            menu.click("#menu-view-toggle-dark-mode", function() {
+            menu.click("#menu-view-toggle-dark-mode", () => {
                 document.getElementById("toggle-dark-mode").click();
             });
-            menu.click("#menu-view-toggle-fullscreen", function() {
+            menu.click("#menu-view-toggle-fullscreen", () => {
                 util.requestFullScreen(document.getElementById("fullscreen"));
             });
 			menu.click("#menu-deploy-run", app.runAppOrQuery);
 
-            menu.click("#menu-help-keyboard", function (ev) {
+            menu.click("#menu-help-keyboard", (ev) => {
 				dialogs["keyboard-help"].open();
 			});
-            menu.click("#menu-help-about", function (ev) {
+            menu.click("#menu-help-about", (ev) => {
 				dialogs["about-dialog"].open();
 			});
-            menu.click("#menu-help-documentation", function(ev) {
+            menu.click("#menu-help-documentation", (ev) => {
                 window.open("https://github.com/eXist-db/eXide#readme");
             });
 			// type popover in status bar
@@ -2310,12 +2285,12 @@ export const app = (function(util) {
 				const popover = document.getElementById("type-popover");
 				const arrow = typeBtn ? typeBtn.querySelector(".status-segment-arrow") : null;
 				if (typeBtn && popover) {
-					typeBtn.addEventListener("click", function(ev) {
+					typeBtn.addEventListener("click", (ev) => {
 						ev.stopPropagation();
 						const isOpen = popover.classList.toggle("open");
 						if (arrow) arrow.innerHTML = isOpen ? "&#x25BC;" : "&#x25B2;";
 					});
-					popover.addEventListener("click", function(ev) {
+					popover.addEventListener("click", (ev) => {
 						const item = ev.target.closest(".type-popover-item");
 						if (!item) return;
 						editor.setMode(item.dataset.value);
@@ -2324,25 +2299,25 @@ export const app = (function(util) {
 						popover.classList.remove("open");
 						if (arrow) arrow.innerHTML = "&#x25B2;";
 					});
-					document.addEventListener("click", function() {
+					document.addEventListener("click", () => {
 						popover.classList.remove("open");
 						if (arrow) arrow.innerHTML = "&#x25B2;";
 					});
 				}
 			})();
 			// register listener to update status bar segments
-			editor.addEventListener("activate", null, function (doc) {
+			editor.addEventListener("activate", null, (doc) => {
                 app.updateStatus(doc);
-                projects.findProject(doc.getBasePath(), function(app) {
+                projects.findProject(doc.getBasePath(), (app) => {
                     if (app) {
                         const appEl = document.getElementById("toolbar-current-app");
                         appEl.textContent = app.abbrev;
                         const appLink = document.getElementById("toolbar-current-app-link");
                         appLink.classList.remove("unknown");
-                        const appUrl = app.url ? (eXide.configuration.context + app.url.replace(/\/{2,}/, "/") + "/") : "#";
+                        const appUrl = app.url ? (`${eXide.configuration.context + app.url.replace(/\/{2,}/, "/")}/`) : "#";
                         appLink.href = appUrl;
                         const appIcon = document.getElementById("toolbar-current-app-icon");
-                        appIcon.src = eXide.configuration.context + "/apps/" + app.abbrev + "/icon.png";
+                        appIcon.src = `${eXide.configuration.context}/apps/${app.abbrev}/icon.png`;
                         appIcon.style.display = "";
                         appIcon.onerror = function() {
                             this.style.display = "none";
@@ -2352,12 +2327,12 @@ export const app = (function(util) {
                         document.querySelector("#menu-deploy-live span").setAttribute("class", app.liveReload ? "fa fa-check-square-o" : "fa fa-square-o");
                         // update show/hide git stuff
                         if(app.git === "true" || app.git === true) {
-                            document.querySelectorAll(".current-branch").forEach(function(el) { el.style.display = ""; });
+                            document.querySelectorAll(".current-branch").forEach((el) => { el.style.display = ""; });
                             document.getElementById("menu-git").style.display = "";
                             // update git-status
                             eXide.app.git.branch(app);
                         } else {
-                            document.querySelectorAll(".current-branch").forEach(function(el) { el.style.display = "none"; });
+                            document.querySelectorAll(".current-branch").forEach((el) => { el.style.display = "none"; });
                             document.getElementById("menu-git").style.display = "none";
                         }
 
@@ -2370,14 +2345,14 @@ export const app = (function(util) {
                         const appIcon2 = document.getElementById("toolbar-current-app-icon");
                         appIcon2.style.display = "none";
                         document.getElementById("menu-deploy-active").textContent = "unknown";
-                        document.querySelectorAll(".current-branch").forEach(function(el) { el.style.display = "none"; });
+                        document.querySelectorAll(".current-branch").forEach((el) => { el.style.display = "none"; });
                         document.getElementById("menu-git").style.display = "none";
                     }
                 });
 			});
 
 
-			document.getElementById("user").addEventListener("click", function (ev) {
+			document.getElementById("user").addEventListener("click", (ev) => {
 				ev.preventDefault();
 				if (app.login) {
 					// logout
@@ -2391,11 +2366,11 @@ export const app = (function(util) {
             if (!util.supportsFullScreen()) {
                 document.getElementById("toggle-fullscreen").style.display = "none";
             }
-            document.getElementById("toggle-fullscreen").addEventListener("click", function(ev) {
+            document.getElementById("toggle-fullscreen").addEventListener("click", (ev) => {
                 ev.preventDefault();
                 util.requestFullScreen(document.getElementById("fullscreen"));
             });
-            document.getElementById("toggle-dark-mode").addEventListener("click", function(ev) {
+            document.getElementById("toggle-dark-mode").addEventListener("click", (ev) => {
                 ev.preventDefault();
                 // Toggle between light/dark for the current session only (does not save to preferences)
                 const isDark = document.body.classList.contains("dark");
@@ -2403,8 +2378,8 @@ export const app = (function(util) {
                 app.setTheme({ isDark: newTheme === "dark" });
                 app.updateDarkModeIcon(newTheme);
             });
-            document.querySelectorAll('.navbar .toggle-btn[id$="-btn"]').forEach(function(btn) {
-                btn.addEventListener("click", function(e) {
+            document.querySelectorAll('.navbar .toggle-btn[id$="-btn"]').forEach((btn) => {
+                btn.addEventListener("click", (e) => {
                     e.preventDefault();
                     const cb = btn.querySelector('input[type="checkbox"]');
                     const checked = !cb.checked;
@@ -2415,56 +2390,58 @@ export const app = (function(util) {
                 });
             });
 
-			document.querySelectorAll('.results-container #copy-all-clipboard').forEach(function(btnEl) {
-			    btnEl.addEventListener("click", function(e) {
+			document.querySelectorAll('.results-container #copy-all-clipboard').forEach((btnEl) => {
+			    btnEl.addEventListener("click", async (e) => {
                     e.preventDefault();
                     const icon = btnEl.querySelector('.fa');
                     const texts = [];
-                    document.querySelectorAll("#results-body > div > div > div > div.item").forEach(function (item) { texts.push(item.innerText); });
+                    document.querySelectorAll("#results-body > div > div > div > div.item").forEach((item) => { texts.push(item.innerText); });
                     const res = texts.join('\n');
-                    navigator.clipboard.writeText(res).then(function() {
-                        icon.classList.remove('fa-clipboard');
-                        icon.classList.add('fa-check');
-                        btnEl.classList.add('copied');
-                        util.message("Copied results to clipboard");
-                        setTimeout(function () {
-                            icon.classList.remove('fa-check');
-                            icon.classList.add('fa-clipboard');
-                            btnEl.classList.remove('copied');
-                        }, 1200);
-                    }, function(err) {
+                    try {
+                        await navigator.clipboard.writeText(res);
+                    } catch (err) {
                         console.error('Could not copy text: ', err);
-                    });
+                        return;
+                    }
+                    icon.classList.remove('fa-clipboard');
+                    icon.classList.add('fa-check');
+                    btnEl.classList.add('copied');
+                    util.message("Copied results to clipboard");
+                    setTimeout(() => {
+                        icon.classList.remove('fa-check');
+                        icon.classList.add('fa-clipboard');
+                        btnEl.classList.remove('copied');
+                    }, 1200);
                 });
 			});
-			document.querySelectorAll('.results-container .next').forEach(function(el) { el.addEventListener("click", app.browseNext); });
-			document.querySelectorAll('.results-container .previous').forEach(function(el) { el.addEventListener("click", app.browsePrevious); });
-			document.querySelectorAll('.results-container .first-page').forEach(function(el) { el.addEventListener("click", app.browseFirst); });
-			document.querySelectorAll('.results-container .last-page').forEach(function(el) { el.addEventListener("click", app.browseLast); });
+			document.querySelectorAll('.results-container .next').forEach((el) => { el.addEventListener("click", app.browseNext); });
+			document.querySelectorAll('.results-container .previous').forEach((el) => { el.addEventListener("click", app.browsePrevious); });
+			document.querySelectorAll('.results-container .first-page').forEach((el) => { el.addEventListener("click", app.browseFirst); });
+			document.querySelectorAll('.results-container .last-page').forEach((el) => { el.addEventListener("click", app.browseLast); });
 
             function scrollToResult(idx) {
                 const items = document.querySelectorAll('.results-container .results > .even, .results-container .results > .uneven');
                 if (items.length === 0) return;
                 idx = Math.max(0, Math.min(idx, items.length - 1));
                 activeResultIdx = idx;
-                items.forEach(function(el) { el.classList.remove('result-active'); });
+                items.forEach((el) => { el.classList.remove('result-active'); });
                 const target = items[idx];
                 target.classList.add('result-active');
                 target.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-            document.querySelectorAll('.results-container .result-prev').forEach(function(el) {
-                el.addEventListener("click", function(e) {
+            document.querySelectorAll('.results-container .result-prev').forEach((el) => {
+                el.addEventListener("click", (e) => {
                     e.preventDefault();
                     scrollToResult(activeResultIdx <= 0 ? 0 : activeResultIdx - 1);
                 });
             });
-            document.querySelectorAll('.results-container .result-next').forEach(function(el) {
-                el.addEventListener("click", function(e) {
+            document.querySelectorAll('.results-container .result-next').forEach((el) => {
+                el.addEventListener("click", (e) => {
                     e.preventDefault();
                     scrollToResult(activeResultIdx < 0 ? 1 : activeResultIdx + 1);
                 });
             });
-            document.getElementById("number-of-results").addEventListener("change", function(ev) {
+            document.getElementById("number-of-results").addEventListener("change", (ev) => {
                 numberOfResults = +document.getElementById("number-of-results").value;
                 if (app._cursorId) {
                     startOffset = 1;
@@ -2473,7 +2450,7 @@ export const app = (function(util) {
                     app.fetchCursorPage(startOffset, endOffset);
                 }
             });
-            document.getElementById("serialization-mode").addEventListener("change", function(ev) {
+            document.getElementById("serialization-mode").addEventListener("change", (ev) => {
                 if (app._cursorId) {
                     // Re-fetch current page with new serialization settings
                     app.fetchCursorPage(startOffset, endOffset);
@@ -2482,10 +2459,10 @@ export const app = (function(util) {
                 }
             });
             // Re-fetch on indent/highlight toggle changes too
-            document.getElementById("indent-results").addEventListener("change", function() {
+            document.getElementById("indent-results").addEventListener("change", () => {
                 if (app._cursorId) app.fetchCursorPage(startOffset, endOffset);
             });
-            document.getElementById("auto-expand-matches").addEventListener("change", function() {
+            document.getElementById("auto-expand-matches").addEventListener("change", () => {
                 if (app._cursorId) app.fetchCursorPage(startOffset, endOffset);
             });
             document.getElementById("error-status").addEventListener("mouseover", function(ev) {
@@ -2499,19 +2476,19 @@ export const app = (function(util) {
             const errorStatus = document.getElementById("error-status");
             const extStatusBar = document.getElementById("ext-status-bar");
             if (extStatusBar) {
-                extStatusBar.addEventListener("mouseout", function(ev) {
+                extStatusBar.addEventListener("mouseout", (ev) => {
                     extStatusBar.style.display = "none";
                 });
             }
             if (errorStatus) {
-                errorStatus.addEventListener("mouseout", function(ev) {
+                errorStatus.addEventListener("mouseout", (ev) => {
                     if (extStatusBar) extStatusBar.style.display = "none";
                 });
             }
-            window.addEventListener("blur", function() {
+            window.addEventListener("blur", () => {
                 hasFocus = false;
             });
-            window.addEventListener("focus", function() {
+            window.addEventListener("focus", () => {
                 const checkLogin = !hasFocus;
                 hasFocus = true;
                 if (checkLogin) {
@@ -2527,7 +2504,7 @@ export const app = (function(util) {
                     width: 400,
                     height: 300,
     			    buttons: {
-                        "OK" : function() { dialogs["dialog-startup"].close(); }
+                        "OK"() { dialogs["dialog-startup"].close(); }
     			    }
     		    }
     		);

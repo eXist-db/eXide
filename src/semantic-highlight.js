@@ -33,10 +33,10 @@ export const SemanticHighlight = (function () {
 
     // --- StateField holding the decoration set ---
     const field = StateField.define({
-        create: function () {
+        create () {
             return Decoration.none;
         },
-        update: function (decos, tr) {
+        update (decos, tr) {
             for (let i = 0; i < tr.effects.length; i++) {
                 if (tr.effects[i].is(setTokens)) {
                     return tr.effects[i].value;
@@ -47,7 +47,7 @@ export const SemanticHighlight = (function () {
             }
             return decos;
         },
-        provide: function (f) {
+        provide (f) {
             return EditorView.decorations.from(f);
         }
     });
@@ -142,7 +142,7 @@ export const SemanticHighlight = (function () {
         visit(ast);
 
         // Sort by from-position (required by RangeSet)
-        ranges.sort(function (a, b) { return a.from - b.from || a.to - b.to; });
+        ranges.sort((a, b) => { return a.from - b.from || a.to - b.to; });
 
         // Remove overlapping ranges (keep first)
         const filtered = [];
@@ -161,7 +161,7 @@ export const SemanticHighlight = (function () {
         /**
          * CM6 extension — add to editor extensions array.
          */
-        extension: function () {
+        extension () {
             return field;
         },
 
@@ -172,7 +172,7 @@ export const SemanticHighlight = (function () {
          * @param {EditorView} editor - the CM6 editor view
          * @param {object} ast - the parsed AST
          */
-        update: function (editor, ast) {
+        update (editor, ast) {
             if (!editor || !ast) return;
             try {
                 const decos = buildDecorations(ast, editor.state.doc);

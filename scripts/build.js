@@ -38,7 +38,7 @@ function deploy() {
 	fs.createReadStream(sourcePath).pipe(
 		request(
 			options,
-			function (error, response) {
+			(error, response) => {
 				if (error || response.statusCode !== 201) {
 					console.error(`Upload failed with %s`, error);
 				}
@@ -98,7 +98,7 @@ function deploy() {
 					},
 				};
 				console.log(chalk.cyan('Installing xar ...'));
-				request(options, function (error, response, body) {
+				request(options, (error, response, body) => {
 					if (error || !(response.statusCode === 200 || response.statusCode === 201)) {
 						console.error(`Installation failed with %s`, error);
 					} else {
@@ -187,7 +187,7 @@ function zipFiles (globs, dest, options) {
 
 function replace(path, outPath, data) {
     const content = fs.readFileSync(`${__dirname}/../${path}`, "utf-8");
-    const replaced = content.toString().replace(/{{(.*)?}}/g, function (match, p1) {
+    const replaced = content.toString().replace(/{{(.*)?}}/g, (match, p1) => {
 		return data[p1] || "";
 	});
     fs.writeFileSync(`${__dirname}/../${outPath}`, replaced);

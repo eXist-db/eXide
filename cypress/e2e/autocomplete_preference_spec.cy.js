@@ -54,7 +54,7 @@ describe('Autocomplete-on-type preference', () => {
         const prefs = JSON.parse(win.localStorage.getItem('eXide.preferences') || '{}')
         prefs.autocompleteOnType = false
         win.localStorage.setItem('eXide.preferences', JSON.stringify(prefs))
-      } catch (e) { /* ignore */ }
+      } catch { /* ignore */ }
     })
   })
 
@@ -151,7 +151,7 @@ describe('Autocomplete-on-type preference', () => {
 
   // ── Persistence ─────────────────────────────────────────────────────────
 
-  it('persists toggled-on state across reload', function () {
+  it('persists toggled-on state across reload', () => {
     openPreferences()
     cy.get('#pref-autocomplete-on-type').check()
     closePreferences()

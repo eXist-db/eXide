@@ -43,13 +43,13 @@ export const prettierFormat = (function () {
          * @param {string} mode - eXide syntax mode name
          * @returns {Promise<string>} formatted code
          */
-        format: function (code, mode) {
+        format (code, mode) {
             if (typeof prettierBundle === "undefined") {
                 return Promise.reject(new Error("Prettier is not loaded."));
             }
             const config = MODE_CONFIG[mode];
             if (!config) {
-                return Promise.reject(new Error("No formatter available for mode: " + mode));
+                return Promise.reject(new Error(`No formatter available for mode: ${mode}`));
             }
             // TODO: remove this guard when prettier-plugin-xquery supports XQuery 4.0
             // See https://github.com/nickcollins/prettier-plugin-xquery
@@ -62,7 +62,7 @@ export const prettierFormat = (function () {
                 parser: config.parser,
                 plugins: prettierBundle.plugins,
                 tabWidth: prefs.indentSize || 4,
-                useTabs: useTabs,
+                useTabs,
                 printWidth: prefs.prettierPrintWidth || 80,
                 singleQuote: prefs.prettierSingleQuote || false
             };

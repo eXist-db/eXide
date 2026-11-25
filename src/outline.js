@@ -25,14 +25,12 @@ import { editorUtils } from "./editor-utils.js";
  * Outline view for functions, variables, elements, etc.
  * Supports three display modes: nested/document, flat/document, flat/alpha.
  */
-export const Outline = (function () {
+// View modes (anything other than these two is the flat/document mode)
+const MODE_NESTED_DOC = "nested-doc";
+const MODE_FLAT_ALPHA = "flat-alpha";
 
-    // View modes
-    const MODE_NESTED_DOC = "nested-doc";
-    const MODE_FLAT_DOC   = "flat-doc";
-    const MODE_FLAT_ALPHA = "flat-alpha";
-
-    const Constr = function() {
+export class Outline {
+    constructor() {
         this.currentDoc = null;
         this.__activated = false;
         this._viewMode = MODE_NESTED_DOC;
@@ -45,11 +43,11 @@ export const Outline = (function () {
         // Toolbar buttons
         const toolbar = document.getElementById("outline-toolbar");
         if (toolbar) {
-            toolbar.addEventListener("click", function(e) {
+            toolbar.addEventListener("click", (e) => {
                 const btn = e.target.closest("[data-outline-mode]");
                 if (!btn) return;
                 self._viewMode = btn.getAttribute("data-outline-mode");
-                toolbar.querySelectorAll("[data-outline-mode]").forEach(function(b) {
+                toolbar.querySelectorAll("[data-outline-mode]").forEach((b) => {
                     b.classList.toggle("active", b === btn);
                 });
                 if (self.currentDoc) {
@@ -57,262 +55,257 @@ export const Outline = (function () {
                 }
             });
             // Mark initial active
-            const initial = toolbar.querySelector('[data-outline-mode="' + this._viewMode + '"]');
+            const initial = toolbar.querySelector(`[data-outline-mode="${this._viewMode}"]`);
             if (initial) initial.classList.add("active");
         }
-    };
-
-    function docOrderSort(a, b) {
-        const ra = a.row !== undefined ? a.row : 999999;
-        const rb = b.row !== undefined ? b.row : 999999;
-        return ra - rb;
     }
 
-    function alphaSort(a, b) {
-        const na = (a.name || "").toLowerCase();
-        const nb = (b.name || "").toLowerCase();
-        return na > nb ? 1 : na < nb ? -1 : 0;
-    }
-
-    /**
-     * Create the <a> element for an outline item with click handler.
-     */
-    function makeLink(d) {
-        const a = document.createElement("a");
-        if (d.signature) a.title = d.signature;
-        a.href = "#" + (d.source ? d.source : "");
-
-        const text = d.type === Document.TYPE_VARIABLE ? "$" + d.name : d.name;
-        const nameSpan = document.createElement("span");
-        nameSpan.className = "outline-name";
-        nameSpan.textContent = text;
-        a.appendChild(nameSpan);
-
-        if (d.hint) {
-            const hintSpan = document.createElement("span");
-            hintSpan.className = "outline-hint";
-            hintSpan.textContent = " \u201C" + d.hint + "\u201D";
-            a.appendChild(hintSpan);
+    toggle(state) {
+        if(state || state === false) {this.__activated = !!state}
+        else {this.__activated = !this.__activated};
+        const body = document.getElementById("outline-body");
+        if (body) {
+            body.style.position = this.__activated ? "relative" : "absolute";
+            body.style.visibility = this.__activated ? "visible" : "hidden";
         }
-
-        a.addEventListener("click", function(e) {
-            e.preventDefault();
-            const path = this.hash.substring(1);
-            if (d.from !== undefined && d.to !== undefined) {
-                const ed = eXide.app.getEditor();
-                if (ed && ed.editor) {
-                    ed.editor.dispatch({
-                        selection: { anchor: d.to, head: d.from }
-                    });
-                    ed.editor.dispatch({
-                        effects: CM6.EditorView.scrollIntoView(d.from, { y: "center" })
-                    });
-                    editorUtils.flashLine(ed.editor, d.from);
-                    ed.editor.focus();
-                }
-            } else if(d.row !== undefined && d.row !== null) {
-                const ed = eXide.app.getEditor();
-                if (ed && ed.editor) {
-                    editorUtils.gotoLine(ed.editor, d.row + 1, d.column || 0, true);
-                }
-            } else if(d.type === Document.TYPE_FUNCTION) {
-                eXide.app.locate("function", path === '' ? null: path, d.name);
-            } else {
-                eXide.app.locate("variable", path === '' ? null: path, d.name);
-            }
-        });
-
-        a.style.opacity = "0";
-        requestAnimationFrame(function() {
-            a.style.transition = "opacity 0.4s";
-            a.style.opacity = "1";
-        });
-
-        return a;
-    }
-
-    /**
-     * Create a <li> element with the appropriate CSS classes.
-     */
-    function makeLi(d) {
-        const li = document.createElement("li");
-        let cl = d.type === Document.TYPE_FUNCTION ? "t_function" : "t_variable";
-        if (d.visibility === "private") cl += " private";
-        else if (d.visibility === "public") cl += " public";
-        if (d.outlineClass) cl += " " + d.outlineClass;
-        li.className = cl;
-        li.appendChild(makeLink(d));
-        return li;
-    }
-
-    /**
-     * Check whether any items have indent > 0 (i.e. the data is hierarchical).
-     */
-    function hasHierarchy(items) {
-        for (let i = 0; i < items.length; i++) {
-            if (items[i].indent > 0) return true;
+        if(this.__activated && this.currentDoc) {
+            this.updateOutline(this.currentDoc)
         }
-        return false;
     }
 
-    Constr.prototype = {
-
-        toggle : function(state) {
-            if(state || state === false) {this.__activated = !!state}
-            else {this.__activated = !this.__activated};
-            const body = document.getElementById("outline-body");
-            if (body) {
-                body.style.position = this.__activated ? "relative" : "absolute";
-                body.style.visibility = this.__activated ? "visible" : "hidden";
+    getTemplates(prefix) {
+        const re = new RegExp(`^${prefix}`);
+        const matches = [];
+        for (let i = 0; i < this.templates.length; i++) {
+            if (this.templates[i].name.match(re)) {
+                matches.push(this.templates[i]);
             }
-            if(this.__activated && this.currentDoc) {
-                this.updateOutline(this.currentDoc)
-            }
-        },
+        }
+        return matches;
+    }
 
-        getTemplates: function (prefix) {
-            const re = new RegExp("^" + prefix);
-            const matches = [];
-            for (let i = 0; i < this.templates.length; i++) {
-                if (this.templates[i].name.match(re)) {
-                    matches.push(this.templates[i]);
-                }
+    gotoDefinition(doc, name) {
+        let type = "function"
+        if (name.indexOf("$") === 0) {
+            name = name.substring(1);
+            type = "variable";
+        }
+        for (let i = 0; i < doc.functions.length; i++) {
+            const func = doc.functions[i];
+            if (name === func.name && type === func.type) {
+                eXide.app.locate(func.type, func.source === '' ? null : func.source, name);
+                break;
             }
-            return matches;
-        },
+        }
+    }
 
-        gotoDefinition: function(doc, name) {
-            let type = "function"
-            if (name.indexOf("$") === 0) {
-                name = name.substring(1);
-                type = "variable";
+    findDefinition(doc, name) {
+        for (let i = 0; i < doc.functions.length; i++) {
+            const func = doc.functions[i];
+            if (name === func.name) {
+                return func;
             }
-            for (let i = 0; i < doc.functions.length; i++) {
-                const func = doc.functions[i];
-                if (name === func.name && type === func.type) {
-                    eXide.app.locate(func.type, func.source === '' ? null : func.source, name);
-                    break;
-                }
-            }
-        },
+        }
+        return null;
+    }
 
-        findDefinition: function(doc, name) {
-            for (let i = 0; i < doc.functions.length; i++) {
-                const func = doc.functions[i];
-                if (name === func.name) {
-                    return func;
-                }
-            }
-            return null;
-        },
+    updateOutline(doc) {
+        const self = this;
+        self.currentDoc = doc;
 
-        updateOutline: function(doc) {
-            const self = this;
-            self.currentDoc = doc;
-
-            const helper = doc.getModeHelper();
-            if (helper != null && this.__activated) {
-                // Defer to let CM6 process language reconfiguration before
-                // walking the syntax tree (Lezer parses asynchronously)
-                requestAnimationFrame(function() {
-                    if (self.currentDoc !== doc) return;
-                    doc.functions = [];
-                    helper.createOutline(doc, function() {
-                        self.$outlineUpdate(doc);
-                    });
+        const helper = doc.getModeHelper();
+        if (helper != null && this.__activated) {
+            // Defer to let CM6 process language reconfiguration before
+            // walking the syntax tree (Lezer parses asynchronously)
+            requestAnimationFrame(() => {
+                if (self.currentDoc !== doc) return;
+                doc.functions = [];
+                helper.createOutline(doc, () => {
+                    self.$outlineUpdate(doc);
                 });
-            }
-        },
-
-        clearOutline: function() {
-            const el = document.getElementById("outline");
-            if (el) el.innerHTML = "";
-        },
-
-        filter: function(str) {
-            const regex = new RegExp(str, "i");
-            const links = document.querySelectorAll("#outline li a");
-            for (let i = 0; i < links.length; i++) {
-                const link = links[i];
-                link.parentNode.style.display = regex.test(link.textContent) ? "" : "none";
-            }
-        },
-
-        $outlineUpdate: function (doc) {
-            if (this.currentDoc !== doc)
-                return;
-
-            const mode = this._viewMode;
-            const nested = (mode === MODE_NESTED_DOC);
-
-            // Prepare sorted data
-            const items = doc.functions.slice();
-            if (mode === MODE_FLAT_ALPHA) {
-                items.sort(alphaSort);
-            } else {
-                items.sort(docOrderSort);
-            }
-
-            eXide.app.resize();
-
-            const outline = document.getElementById("outline");
-            outline.innerHTML = "";
-
-            // Use nested <ul> tree when in nested mode and data has hierarchy
-            if (nested && hasHierarchy(items)) {
-                this.$renderNested(outline, items);
-            } else {
-                this.$renderFlat(outline, items);
-            }
-        },
-
-        /**
-         * Render a flat list of <li> elements (for flat modes or non-hierarchical data).
-         */
-        $renderFlat: function(outline, items) {
-            items.forEach(function(d) {
-                outline.appendChild(makeLi(d));
-            });
-        },
-
-        /**
-         * Render a nested <ul> tree based on indent levels.
-         * Each item with children gets a child <ul> inside its <li>.
-         */
-        $renderNested: function(outline, items) {
-            // Stack tracks the current <ul> at each depth level
-            const stack = [outline];
-            let currentDepth = 0;
-
-            items.forEach(function(d) {
-                const depth = d.indent || 0;
-
-                // Go deeper: open new <ul> inside the last <li>
-                while (currentDepth < depth) {
-                    const ul = document.createElement("ul");
-                    const parentLi = stack[stack.length - 1].lastElementChild;
-                    if (parentLi) {
-                        parentLi.appendChild(ul);
-                    } else {
-                        stack[stack.length - 1].appendChild(ul);
-                    }
-                    stack.push(ul);
-                    currentDepth++;
-                }
-
-                // Go shallower: pop back up the stack
-                while (currentDepth > depth && stack.length > 1) {
-                    stack.pop();
-                    currentDepth--;
-                }
-
-                stack[stack.length - 1].appendChild(makeLi(d));
             });
         }
-    };
+    }
 
-    return Constr;
-}());
+    clearOutline() {
+        const el = document.getElementById("outline");
+        if (el) el.innerHTML = "";
+    }
+
+    filter(str) {
+        const regex = new RegExp(str, "i");
+        const links = document.querySelectorAll("#outline li a");
+        for (let i = 0; i < links.length; i++) {
+            const link = links[i];
+            link.parentNode.style.display = regex.test(link.textContent) ? "" : "none";
+        }
+    }
+
+    $outlineUpdate(doc) {
+        if (this.currentDoc !== doc)
+            return;
+
+        const mode = this._viewMode;
+        const nested = (mode === MODE_NESTED_DOC);
+
+        // Prepare sorted data
+        const items = doc.functions.slice();
+        if (mode === MODE_FLAT_ALPHA) {
+            items.sort(alphaSort);
+        } else {
+            items.sort(docOrderSort);
+        }
+
+        eXide.app.resize();
+
+        const outline = document.getElementById("outline");
+        outline.innerHTML = "";
+
+        // Use nested <ul> tree when in nested mode and data has hierarchy
+        if (nested && hasHierarchy(items)) {
+            this.$renderNested(outline, items);
+        } else {
+            this.$renderFlat(outline, items);
+        }
+    }
+
+    /**
+     * Render a flat list of <li> elements (for flat modes or non-hierarchical data).
+     */
+    $renderFlat(outline, items) {
+        items.forEach((d) => {
+            outline.appendChild(makeLi(d));
+        });
+    }
+
+    /**
+     * Render a nested <ul> tree based on indent levels.
+     * Each item with children gets a child <ul> inside its <li>.
+     */
+    $renderNested(outline, items) {
+        // Stack tracks the current <ul> at each depth level
+        const stack = [outline];
+        let currentDepth = 0;
+
+        items.forEach((d) => {
+            const depth = d.indent || 0;
+
+            // Go deeper: open new <ul> inside the last <li>
+            while (currentDepth < depth) {
+                const ul = document.createElement("ul");
+                const parentLi = stack[stack.length - 1].lastElementChild;
+                if (parentLi) {
+                    parentLi.appendChild(ul);
+                } else {
+                    stack[stack.length - 1].appendChild(ul);
+                }
+                stack.push(ul);
+                currentDepth++;
+            }
+
+            // Go shallower: pop back up the stack
+            while (currentDepth > depth && stack.length > 1) {
+                stack.pop();
+                currentDepth--;
+            }
+
+            stack[stack.length - 1].appendChild(makeLi(d));
+        });
+    }
+}
+
+function docOrderSort(a, b) {
+    const ra = a.row !== undefined ? a.row : 999999;
+    const rb = b.row !== undefined ? b.row : 999999;
+    return ra - rb;
+}
+
+function alphaSort(a, b) {
+    const na = (a.name || "").toLowerCase();
+    const nb = (b.name || "").toLowerCase();
+    return na > nb ? 1 : na < nb ? -1 : 0;
+}
+
+/**
+ * Create the <a> element for an outline item with click handler.
+ */
+function makeLink(d) {
+    const a = document.createElement("a");
+    if (d.signature) a.title = d.signature;
+    a.href = `#${d.source ? d.source : ""}`;
+
+    const text = d.type === Document.TYPE_VARIABLE ? `$${d.name}` : d.name;
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "outline-name";
+    nameSpan.textContent = text;
+    a.appendChild(nameSpan);
+
+    if (d.hint) {
+        const hintSpan = document.createElement("span");
+        hintSpan.className = "outline-hint";
+        hintSpan.textContent = ` \u201C${d.hint}\u201D`;
+        a.appendChild(hintSpan);
+    }
+
+    a.addEventListener("click", function(e) {
+        e.preventDefault();
+        const path = this.hash.substring(1);
+        if (d.from !== undefined && d.to !== undefined) {
+            const ed = eXide.app.getEditor();
+            if (ed && ed.editor) {
+                ed.editor.dispatch({
+                    selection: { anchor: d.to, head: d.from }
+                });
+                ed.editor.dispatch({
+                    effects: CM6.EditorView.scrollIntoView(d.from, { y: "center" })
+                });
+                editorUtils.flashLine(ed.editor, d.from);
+                ed.editor.focus();
+            }
+        } else if(d.row !== undefined && d.row !== null) {
+            const ed = eXide.app.getEditor();
+            if (ed && ed.editor) {
+                editorUtils.gotoLine(ed.editor, d.row + 1, d.column || 0, true);
+            }
+        } else if(d.type === Document.TYPE_FUNCTION) {
+            eXide.app.locate("function", path === '' ? null: path, d.name);
+        } else {
+            eXide.app.locate("variable", path === '' ? null: path, d.name);
+        }
+    });
+
+    a.style.opacity = "0";
+    requestAnimationFrame(() => {
+        a.style.transition = "opacity 0.4s";
+        a.style.opacity = "1";
+    });
+
+    return a;
+}
+
+/**
+ * Create a <li> element with the appropriate CSS classes.
+ */
+function makeLi(d) {
+    const li = document.createElement("li");
+    let cl = d.type === Document.TYPE_FUNCTION ? "t_function" : "t_variable";
+    if (d.visibility === "private") cl += " private";
+    else if (d.visibility === "public") cl += " public";
+    if (d.outlineClass) cl += ` ${d.outlineClass}`;
+    li.className = cl;
+    li.appendChild(makeLink(d));
+    return li;
+}
+
+/**
+ * Check whether any items have indent > 0 (i.e. the data is hierarchical).
+ */
+function hasHierarchy(items) {
+    for (let i = 0; i < items.length; i++) {
+        if (items[i].indent > 0) return true;
+    }
+    return false;
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").Outline = Outline;

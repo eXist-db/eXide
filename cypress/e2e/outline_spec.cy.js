@@ -1,5 +1,5 @@
 describe('Outline view', () => {
-  it('should show XQuery functions after opening a library module via collections pane', function () {
+  it('should show XQuery functions after opening a library module via collections pane', () => {
 
     cy.loginXHR('admin', '')
     cy.visit('/eXide/index.html')

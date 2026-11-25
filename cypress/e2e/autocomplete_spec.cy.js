@@ -38,7 +38,7 @@ describe('Autocomplete', () => {
       editor.validator.setEnabled(false)
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: text },
-        selection: { anchor: anchor }
+        selection: { anchor }
       })
       doc.lastValidation = 0
       doc.getModeHelper().parseXQuery(doc)
@@ -57,7 +57,7 @@ describe('Autocomplete', () => {
       editor.validator.setEnabled(false)
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: text },
-        selection: { anchor: anchor }
+        selection: { anchor }
       })
       doc.lastValidation = 0
       doc.getModeHelper().parseXQuery(doc)

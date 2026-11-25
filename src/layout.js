@@ -1,17 +1,14 @@
 import { eXide, namespace } from "./namespace.js";
 import { Sender } from "./events.js";
-import { oop } from "./oop.js";
 
-export const FlexboxSplitter = (function () {
-
-    const Constr = function(layout, resizable, region, min, preferred) {
+export class FlexboxSplitter extends Sender {
+    constructor(layout, resizable, region, min, preferred) {
+        super();
         const self = this;
         self.el = document.querySelector(resizable);
         self.isHorizontal = region === "west" || region === "east";
         self.min = min;
         const splitter = self.el.querySelector(".resize-handle");
-        const toggle = splitter.querySelector("span");
-        const container = self.el.closest(".layout");
 
         self.prevSize = preferred;
         let hasMoved = false;
@@ -27,13 +24,13 @@ export const FlexboxSplitter = (function () {
                     const w = self.el.offsetWidth;
                     const d = region === "west" ? -diff : diff;
                     if ((w < min && d > 0) || w + d >= min) {
-                        self.el.style.width = (w + d) + "px";
-                        self.el.style.minWidth = (w + d) + "px";
+                        self.el.style.width = `${w + d}px`;
+                        self.el.style.minWidth = `${w + d}px`;
                     }
                 } else {
                     const h = self.el.offsetHeight;
                     if ((h < min && diff > 0) || h + diff >= min) {
-                        self.el.style.height = (h + diff) + "px";
+                        self.el.style.height = `${h + diff}px`;
                     }
                 }
                 layout.resize();
@@ -61,7 +58,7 @@ export const FlexboxSplitter = (function () {
             self.$triggerEvent("afterResize");
         }
 
-        splitter.addEventListener("mousedown", function(e) {
+        splitter.addEventListener("mousedown", (e) => {
             e.preventDefault();
             pos = (self.isHorizontal ? e.pageX : e.pageY);
             hasMoved = false;
@@ -69,23 +66,16 @@ export const FlexboxSplitter = (function () {
             document.addEventListener("mousemove", onMouseMove);
             document.addEventListener("mouseup", onMouseUp);
         });
-    };
-
-    // Extend eXide.events.Sender for event support
-    oop.inherit(Constr, Sender);
-
-    function isHidden(el) {
-        return el.style.display === "none" || el.offsetParent === null;
     }
 
-    Constr.prototype.getSize = function() {
+    getSize() {
         if (isHidden(this.el)) {
             return 0;
         }
         return this.isHorizontal ? this.el.offsetWidth : this.el.offsetHeight;
-    };
+    }
 
-    Constr.prototype.setSize = function(size, preferred) {
+    setSize(size, preferred) {
         if (preferred) {
             this.prevSize = preferred;
         }
@@ -94,10 +84,10 @@ export const FlexboxSplitter = (function () {
             return;
         }
         if (this.isHorizontal) {
-            this.el.style.width = size + "px";
-            this.el.style.minWidth = size + "px";
+            this.el.style.width = `${size}px`;
+            this.el.style.minWidth = `${size}px`;
         } else {
-            this.el.style.height = size + "px";
+            this.el.style.height = `${size}px`;
         }
 
         // Find the splitter element (may have either class)
@@ -109,7 +99,7 @@ export const FlexboxSplitter = (function () {
                 splitter.classList.add("minimized");
                 splitter.classList.remove("resize-handle");
             }
-            Array.prototype.forEach.call(this.el.children, function(child) {
+            Array.prototype.forEach.call(this.el.children, (child) => {
                 if (!child.classList.contains("minimized")) child.style.display = "none";
             });
         } else {
@@ -118,21 +108,21 @@ export const FlexboxSplitter = (function () {
                 splitter.classList.add("resize-handle");
                 splitter.classList.remove("minimized");
             }
-            Array.prototype.forEach.call(this.el.children, function(child) {
+            Array.prototype.forEach.call(this.el.children, (child) => {
                 child.style.display = "";
             });
         }
         if (isHidden(this.el)) {
             this.el.style.display = "";
         }
-    };
+    }
 
-    Constr.prototype.hide = function() {
+    hide() {
         this.prevSize = this.isHorizontal ? this.el.offsetWidth : this.el.offsetHeight;
         this.el.style.display = "none";
-    };
+    }
 
-    Constr.prototype.show = function(resize) {
+    show(resize) {
         if (isHidden(this.el)) {
             this.el.style.display = "";
             const size = this.prevSize > this.min ? this.prevSize : this.min;
@@ -141,28 +131,29 @@ export const FlexboxSplitter = (function () {
             const size = this.prevSize > this.min ? this.prevSize : this.min;
             this.setSize(size);
         }
-    };
+    }
 
-    Constr.prototype.toggle = function() {
+    toggle() {
         if (isHidden(this.el)) {
             this.show();
         } else {
             this.hide();
         }
-    };
+    }
+}
 
-    return Constr;
-}());
+function isHidden(el) {
+    return el.style.display === "none" || el.offsetParent === null;
+}
 
-export const Layout = (function () {
+const PANEL_DEFAULTS = {
+    "west": { size: 200, preferred: 200 },
+    "south": { size: 10, preferred: 200 },
+    "east": { size: 0, preferred: 220 }
+};
 
-    const PANEL_DEFAULTS = {
-        "west": { size: 200, preferred: 200 },
-        "south": { size: 10, preferred: 200 },
-        "east": { size: 0, preferred: 220 }
-    };
-
-    const Constr = function(editor) {
+export class Layout {
+    constructor(editor) {
         this.editor = editor;
         this.regions = {
             "west": new FlexboxSplitter(this, ".panel-west", "west", 100, 200),
@@ -171,36 +162,36 @@ export const Layout = (function () {
         };
         this.regions["east"].addEventListener("beforeResize", eXide.app.beforeResize);
         this.regions["east"].addEventListener("afterResize", eXide.app.afterResize);
-    };
+    }
 
-    Constr.prototype.resize = function() {
+    resize() {
         eXide.app.resize(true);
-    };
+    }
 
-    Constr.prototype.hide = function(region) {
+    hide(region) {
         this.regions[region].hide();
-    };
+    }
 
-    Constr.prototype.show = function(region, resize) {
+    show(region, resize) {
         this.regions[region].show(resize);
-    };
+    }
 
-    Constr.prototype.toggle = function(region) {
+    toggle(region) {
         this.regions[region].toggle();
-    };
+    }
 
-    Constr.prototype.saveState = function() {
+    saveState() {
         localStorage["eXide.layout.south"] = this.regions.south.getSize();
         localStorage["eXide.layout.west"] = this.regions.west.getSize();
         localStorage["eXide.layout.east"] = this.regions.east.getSize();
-    };
+    }
 
-    Constr.prototype.restoreState = function(sameVersion) {
+    restoreState(sameVersion) {
         if (!sameVersion) {
             this.reset();
         } else {
             for (const region in this.regions) {
-                const size = localStorage["eXide.layout." + region];
+                const size = localStorage[`eXide.layout.${region}`];
                 if (size != null) {
                     const parsed = parseInt(size);
                     if (!isNaN(parsed)) {
@@ -209,18 +200,16 @@ export const Layout = (function () {
                 }
             }
         }
-    };
+    }
 
-    Constr.prototype.reset = function() {
+    reset() {
         for (const region in this.regions) {
             const settings = PANEL_DEFAULTS[region];
             this.regions[region].setSize(settings.size, settings.preferred);
         }
         eXide.app.afterResize();
-    };
-
-    return Constr;
-}());
+    }
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.app").FlexboxSplitter = FlexboxSplitter;

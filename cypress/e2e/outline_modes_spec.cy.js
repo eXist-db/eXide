@@ -16,7 +16,7 @@ describe('Outline modes and filter', () => {
     cy.get('#outline li', { timeout: 10000 }).should('have.length.at.least', 2)
   }
 
-  it('shows toolbar with three mode buttons', function () {
+  it('shows toolbar with three mode buttons', () => {
     setup()
     cy.get('#outline-toolbar').should('exist')
     cy.get('[data-outline-mode="nested-doc"]').should('exist')
@@ -24,14 +24,14 @@ describe('Outline modes and filter', () => {
     cy.get('[data-outline-mode="flat-alpha"]').should('exist')
   })
 
-  it('nested-doc mode is active by default', function () {
+  it('nested-doc mode is active by default', () => {
     setup()
     cy.get('[data-outline-mode="nested-doc"]').should('have.class', 'active')
     cy.get('[data-outline-mode="flat-doc"]').should('not.have.class', 'active')
     cy.get('[data-outline-mode="flat-alpha"]').should('not.have.class', 'active')
   })
 
-  it('switches to flat-doc mode', function () {
+  it('switches to flat-doc mode', () => {
     setup()
     cy.get('[data-outline-mode="flat-doc"]').click()
     cy.get('[data-outline-mode="flat-doc"]').should('have.class', 'active')
@@ -40,7 +40,7 @@ describe('Outline modes and filter', () => {
     cy.get('#outline li', { timeout: 5000 }).should('have.length.at.least', 2)
   })
 
-  it('switches to flat-alpha mode and sorts alphabetically', function () {
+  it('switches to flat-alpha mode and sorts alphabetically', () => {
     setup()
     cy.get('[data-outline-mode="flat-alpha"]').click()
     cy.get('[data-outline-mode="flat-alpha"]').should('have.class', 'active')
@@ -52,12 +52,12 @@ describe('Outline modes and filter', () => {
           names.push(Cypress.$(this).text().trim().replace(/^\$/, '').toLowerCase())
         })
         for (let i = 1; i < names.length; i++) {
-          expect(names[i] >= names[i - 1], names[i - 1] + ' <= ' + names[i]).to.be.true
+          expect(names[i] >= names[i - 1], `${names[i - 1]} <= ${names[i]}`).to.be.true
         }
       })
   })
 
-  it('flat-doc mode preserves document order', function () {
+  it('flat-doc mode preserves document order', () => {
     setup()
     const nestedOrder = []
     cy.get('#outline li a .outline-name').then(($names) => {
@@ -78,7 +78,7 @@ describe('Outline modes and filter', () => {
     })
   })
 
-  it('filter input narrows visible items', function () {
+  it('filter input narrows visible items', () => {
     setup()
     let totalCount = 0
     cy.get('#outline li').then(($items) => {
@@ -96,7 +96,7 @@ describe('Outline modes and filter', () => {
     })
   })
 
-  it('clearing filter shows all items again', function () {
+  it('clearing filter shows all items again', () => {
     setup()
     let totalCount = 0
     cy.get('#outline li').then(($items) => {
@@ -115,7 +115,7 @@ describe('Outline modes and filter', () => {
     })
   })
 
-  it('clicking an outline item navigates the editor', function () {
+  it('clicking an outline item navigates the editor', () => {
     setup()
     cy.on('uncaught:exception', () => false)
 

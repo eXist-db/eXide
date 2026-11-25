@@ -72,7 +72,7 @@ if (!fs.existsSync(rexClass)) {
     console.log('Compiling REx.java...');
     try {
         execSync(`javac ${rexJava}`, { cwd: root, stdio: 'inherit' });
-    } catch (e) {
+    } catch {
         console.error('javac failed — ensure a JDK is installed');
         process.exit(1);
     }
@@ -100,13 +100,13 @@ if (dryRun) {
 console.log('\nGenerating parser...');
 try {
     execSync(cmd, { cwd: root, stdio: 'inherit' });
-} catch (e) {
+} catch {
     console.error('REx generation failed');
     process.exit(1);
 }
 
 // REx outputs to cwd as <name>.js — move to target
-const generatedPath = path.join(root, parserName + '.js');
+const generatedPath = path.join(root, `${parserName}.js`);
 if (!fs.existsSync(generatedPath)) {
     console.error(`Expected output file not found: ${parserName}.js`);
     process.exit(1);
@@ -143,7 +143,7 @@ const exportBoilerplate = [
     `export default ${parserName};`,
 ].join('\n');
 
-source = source.replace(/\/\/ End\s*$/, exportBoilerplate + '\n\n// End\n');
+source = source.replace(/\/\/ End\s*$/, `${exportBoilerplate}\n\n// End\n`);
 
 // ── Write ────────────────────────────────────────────────────────────────────
 

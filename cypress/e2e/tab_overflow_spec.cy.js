@@ -83,7 +83,7 @@ describe('Tab bar overflow controls', () => {
         const ancestors = []
         while (el) {
           const style = window.getComputedStyle(el)
-          const overflow = style.overflow + ' ' + style.overflowX + ' ' + style.overflowY
+          const overflow = `${style.overflow} ${style.overflowX} ${style.overflowY}`
           if (/hidden|clip/.test(overflow)) {
             const parentRect = el.getBoundingClientRect()
             ancestors.push({
@@ -106,7 +106,7 @@ describe('Tab bar overflow controls', () => {
         // Fail if any ancestor actually clips the menu
         const clippers = ancestors.filter(a => a.clips)
         const desc = clippers.map(c => `${c.tag}#${c.id}.${c.class} overflow="${c.overflow}"`).join('; ')
-        expect(clippers, 'no ancestor should clip the menu [' + desc + ']').to.have.length(0)
+        expect(clippers, `no ancestor should clip the menu [${desc}]`).to.have.length(0)
       })
     })
 

@@ -20,29 +20,17 @@
 import { namespace } from "./namespace.js";
 import { Document } from "./document.js";
 import { ModeHelper } from "./mode-helper.js";
-import { oop } from "./oop.js";
 
 /**
  * JSON specific helper methods.
  */
-export const JsonModeHelper = (function () {
-
-    const Constr = function(editor) {
-        this.parent = editor;
-        this.editor = this.parent.editor;
-        this.addCommand("locate", this.locate);
-        this.addCommand("format", this.format);
-        this.addCommand("gotoSymbol", this.gotoSymbol);
-    };
-
-    oop.inherit(Constr, ModeHelper);
-
-    Constr.prototype.createOutline = function(doc, onComplete) {
+export class JsonModeHelper extends ModeHelper {
+    createOutline(doc, onComplete) {
         const state = this.editor.state;
         const tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
         let depth = 0;
         tree.iterate({
-            enter: function(node) {
+            enter(node) {
                 if (node.name === "Property") {
                     const nameNode = node.node.getChild("PropertyName");
                     if (nameNode && depth < 3) {
@@ -53,10 +41,10 @@ export const JsonModeHelper = (function () {
                         const valType = valNode ? valNode.name : "";
                         doc.functions.push({
                             type: Document.TYPE_FUNCTION,
-                            name: name,
+                            name,
                             indent: depth,
                             source: doc.getPath(),
-                            signature: name + ": " + valType.toLowerCase(),
+                            signature: `${name}: ${valType.toLowerCase()}`,
                             sort: String(line.number).padStart(6, "0"),
                             row: line.number - 1,
                             from: node.from,
@@ -67,7 +55,7 @@ export const JsonModeHelper = (function () {
                     return true;
                 }
             },
-            leave: function(node) {
+            leave(node) {
                 if (node.name === "Property") {
                     depth--;
                 }
@@ -75,10 +63,8 @@ export const JsonModeHelper = (function () {
         });
         this.collectErrors(doc);
         if (onComplete) onComplete(doc);
-    };
-
-    return Constr;
-}());
+    }
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").JsonModeHelper = JsonModeHelper;

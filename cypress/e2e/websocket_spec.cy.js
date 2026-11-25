@@ -55,7 +55,7 @@ describe('WebSocket transport', () => {
     waitForWs(this)
     cy.window().then((win) => {
       let received = null
-      win.eXide.ws.on("exist/metrics", function (data) {
+      win.eXide.ws.on("exist/metrics", (data) => {
         received = data
       })
 
@@ -80,7 +80,7 @@ describe('WebSocket transport', () => {
     waitForWs(this)
     cy.window().then((win) => {
       let received = null
-      win.eXide.ws.on("textDocument/publishDiagnostics", function (data) {
+      win.eXide.ws.on("textDocument/publishDiagnostics", (data) => {
         received = data
       })
 

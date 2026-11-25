@@ -20,12 +20,12 @@ export const TagMatching = (function () {
     const clearEffect = StateEffect.define();
 
     const matchField = StateField.define({
-        create: function () { return Decoration.none; },
-        update: function (value, tr) {
+        create () { return Decoration.none; },
+        update (value, tr) {
             for (let i = 0; i < tr.effects.length; i++) {
                 if (tr.effects[i].is(matchEffect)) {
                     const ranges = tr.effects[i].value;
-                    return Decoration.set(ranges.map(function (r) {
+                    return Decoration.set(ranges.map((r) => {
                         return matchDeco.range(r.from, r.to);
                     }), true);
                 }
@@ -35,14 +35,14 @@ export const TagMatching = (function () {
             }
             return value;
         },
-        provide: function (f) { return CM6.EditorView.decorations.from(f); }
+        provide (f) { return CM6.EditorView.decorations.from(f); }
     });
 
     const tagPlugin = ViewPlugin.fromClass(function TagMatchingPlugin(view) {
         this.view = view;
         this.lastHead = -1;
     }, {
-        update: function (update) {
+        update (update) {
             if (!update.selectionSet && !update.docChanged) return;
 
             const view = update.view;
@@ -160,7 +160,7 @@ export const TagMatching = (function () {
     }
 
     return {
-        extension: extension
+        extension
     };
 }());
 

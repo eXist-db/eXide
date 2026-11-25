@@ -16,8 +16,8 @@ const flashEffect = CM6.StateEffect.define();
 const flashClear = CM6.StateEffect.define();
 const flashDeco = CM6.Decoration.line({ class: "cm-goto-flash" });
 const flashField = CM6.StateField.define({
-    create: function () { return CM6.Decoration.none; },
-    update: function (value, tr) {
+    create () { return CM6.Decoration.none; },
+    update (value, tr) {
         for (let i = 0; i < tr.effects.length; i++) {
             if (tr.effects[i].is(flashEffect)) {
                 const line = tr.state.doc.lineAt(tr.effects[i].value);
@@ -29,7 +29,7 @@ const flashField = CM6.StateField.define({
         }
         return value;
     },
-    provide: function (f) { return CM6.EditorView.decorations.from(f); }
+    provide (f) { return CM6.EditorView.decorations.from(f); }
 });
 
 /**
@@ -73,7 +73,7 @@ function gotoLine(view, line, column, animate) {
  */
 function flashLine(view, offset) {
     view.dispatch({ effects: flashEffect.of(offset) });
-    setTimeout(function () {
+    setTimeout(() => {
         view.dispatch({ effects: flashClear.of(null) });
     }, 1200);
 }
@@ -122,9 +122,9 @@ function setAnnotations(view, annotations) {
         const severity = ann.type === "error" ? "error" :
                        ann.type === "warning" ? "warning" : "info";
         const diag = {
-            from: from,
-            to: to,
-            severity: severity,
+            from,
+            to,
+            severity,
             message: ann.text || ""
         };
         if (ann.actions) {
@@ -140,7 +140,7 @@ function setAnnotations(view, annotations) {
  */
 function getAnnotations(view) {
     const annotations = [];
-    CM6.forEachDiagnostic(view.state, function (d) {
+    CM6.forEachDiagnostic(view.state, (d) => {
         const pos = offsetToRowCol(view.state, d.from);
         annotations.push({
             row: pos.row,
@@ -160,16 +160,16 @@ function clearAnnotations(view) {
 }
 
 export const editorUtils = {
-    offsetToRowCol: offsetToRowCol,
-    rowColToOffset: rowColToOffset,
-    gotoLine: gotoLine,
-    insertSnippet: insertSnippet,
-    textToScreenCoordinates: textToScreenCoordinates,
-    setAnnotations: setAnnotations,
-    getAnnotations: getAnnotations,
-    clearAnnotations: clearAnnotations,
-    flashField: flashField,
-    flashLine: flashLine
+    offsetToRowCol,
+    rowColToOffset,
+    gotoLine,
+    insertSnippet,
+    textToScreenCoordinates,
+    setAnnotations,
+    getAnnotations,
+    clearAnnotations,
+    flashField,
+    flashLine
 };
 
 // Register on the global `eXide` object (see namespace.js)

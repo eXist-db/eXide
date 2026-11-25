@@ -64,7 +64,7 @@ describe('File save', () => {
   function openFileDirectly(path) {
     const name = path.split('/').pop()
     cy.window().then((win) => {
-      win.eXide.app.$doOpenDocument({ path: path, name: name })
+      win.eXide.app.$doOpenDocument({ path, name })
     })
   }
 

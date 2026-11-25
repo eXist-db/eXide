@@ -4,39 +4,35 @@
 
 import { namespace } from "./namespace.js";
 import { Sender } from "./events.js";
-import { oop } from "./oop.js";
 
-export const CodeValidator = (function () {
+const VALIDATE_TIMEOUT = 700;
 
-    const VALIDATE_TIMEOUT = 700;
-
-    function canValidate(doc) {
-        const mode = doc.getModeHelper();
-        if (!(mode && mode.validate)) {
-            return false;
-        }
-        return true;
+function canValidate(doc) {
+    const mode = doc.getModeHelper();
+    if (!(mode && mode.validate)) {
+        return false;
     }
+    return true;
+}
 
-    function createDeferred() {
-        let resolve;
-        const promise = new Promise(function(r) { resolve = r; });
-        promise.resolve = resolve;
-        return promise;
-    }
+function createDeferred() {
+    let resolve;
+    const promise = new Promise((r) => { resolve = r; });
+    promise.resolve = resolve;
+    return promise;
+}
 
-    const Constr = function(editor) {
+export class CodeValidator extends Sender {
+    constructor(editor) {
+        super();
         this.editor = editor;
         this.inProgress = false;
         this.enabled = true;
         this.validateTimeout = null;
         this.deferred = null;
-    };
+    }
 
-    // Extend eXide.events.Sender for event support
-    oop.inherit(Constr, Sender);
-
-    Constr.prototype.triggerDelayed = function(doc) {
+    triggerDelayed(doc) {
         if (!(this.enabled && canValidate(doc))) {
             return;
         }
@@ -51,12 +47,12 @@ export const CodeValidator = (function () {
         }
 
         this.deferred = createDeferred();
-        this.validateTimeout = setTimeout(function() {
+        this.validateTimeout = setTimeout(() => {
             self.triggerNow.apply(self, [doc]);
         }, VALIDATE_TIMEOUT);
-    };
+    }
 
-    Constr.prototype.triggerNow = function(doc) {
+    triggerNow(doc) {
         if (!(this.enabled && canValidate(doc))) {
             return null;
         }
@@ -74,7 +70,7 @@ export const CodeValidator = (function () {
 
         this.inProgress = true;
         const startedAt = new Date().getTime();
-        doc.getModeHelper().validate(doc, doc.getText(), function (success) {
+        doc.getModeHelper().validate(doc, doc.getText(), (success) => {
             // Check if document changed while compile was in flight,
             // BEFORE updating lastValidation (which would mask the change)
             const changedDuringValidation = doc.lastChangeEvent > startedAt;
@@ -98,14 +94,12 @@ export const CodeValidator = (function () {
             }
         });
         return this.deferred;
-    };
+    }
 
-    Constr.prototype.setEnabled = function(enabled) {
+    setEnabled(enabled) {
         this.enabled = enabled;
-    };
-
-    return Constr;
-}());
+    }
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").CodeValidator = CodeValidator;

@@ -23,11 +23,12 @@ import { editorUtils } from "./editor-utils.js";
 /**
  * Represents an open document.
  */
-export const Document = (function() {
+export class Document {
+    static TYPE_FUNCTION = "function";
+    static TYPE_VARIABLE = "variable";
+    static TYPE_TEMPLATE = "template";
 
-    const EditorState = CM6.EditorState;
-
-    const Constr = function(name, path, stateOrText) {
+    constructor(name, path, stateOrText) {
         this.name = name;
         this.path = path.replace(/\/{2,}/g, "/");
         this.mime = null;
@@ -53,28 +54,24 @@ export const Document = (function() {
         this._cursorOffset = 0;
         // Stored annotations for this document
         this._annotations = [];
-    };
+    }
 
-    Constr.TYPE_FUNCTION = "function";
-    Constr.TYPE_VARIABLE = "variable";
-    Constr.TYPE_TEMPLATE = "template";
-
-    Constr.prototype.needsValidation = function() {
+    needsValidation() {
         if (this.isNew() && this.isSaved()) {
             return false;
         }
         return !this.ast || this.lastChangeEvent > this.lastValidation;
-    };
+    }
 
-    Constr.prototype.getText = function() {
+    getText() {
         // If the document is active, get text from the view
         if (this._view) {
             return this._view.state.doc.toString();
         }
         return this._text;
-    };
+    }
 
-    Constr.prototype.setText = function(text) {
+    setText(text) {
         if (this._view) {
             this._view.dispatch({
                 changes: { from: 0, to: this._view.state.doc.length, insert: text }
@@ -82,89 +79,87 @@ export const Document = (function() {
         } else {
             this._text = text;
         }
-    };
+    }
 
-    Constr.prototype.getName = function() {
+    getName() {
         return this.name;
-    };
+    }
 
-    Constr.prototype.getPath = function() {
+    getPath() {
         return this.path;
-    };
+    }
 
-    Constr.prototype.setPath = function(path) {
+    setPath(path) {
         this.path = path;
-    };
+    }
 
-    Constr.prototype.getBasePath = function() {
-        return this.path.replace(/(^.+)\/[^\/]*$/, "$1");
-    };
+    getBasePath() {
+        return this.path.replace(/(^.+)\/[^/]*$/, "$1");
+    }
 
-    Constr.prototype.getMime = function() {
+    getMime() {
         return this.mime;
-    };
+    }
 
-    Constr.prototype.setMime = function(mimeType) {
+    setMime(mimeType) {
         this.mime = mimeType;
-    };
+    }
 
-    Constr.prototype.getSyntax = function() {
+    getSyntax() {
         return this.syntax;
-    };
+    }
 
-    Constr.prototype.setSyntax = function(syntax) {
+    setSyntax(syntax) {
         this.syntax = syntax;
-    };
+    }
 
     /**
      * getSession() returns the EditorView for CM6 compatibility with mode helpers.
      * Mode helpers that call doc.getSession() will get the view instance.
      */
-    Constr.prototype.getSession = function() {
+    getSession() {
         return this._view;
-    };
+    }
 
-    Constr.prototype.isSaved = function() {
+    isSaved() {
         return this.saved;
-    };
+    }
 
-    Constr.prototype.isNew = function() {
+    isNew() {
         return /__new__/.test(this.path);
-    };
+    }
 
-    Constr.prototype.isEditable = function() {
+    isEditable() {
         return this.editable;
-    };
+    }
 
-    Constr.prototype.isXQuery = function() {
+    isXQuery() {
         return this.mime === "application/xquery";
-    };
+    }
 
-    Constr.prototype.setModeHelper = function(mode) {
+    setModeHelper(mode) {
         this.helper = mode;
-    };
+    }
 
-    Constr.prototype.getModeHelper = function() {
+    getModeHelper() {
         return this.helper;
-    };
+    }
 
-    Constr.prototype.getCurrentLine = function() {
+    getCurrentLine() {
         if (this._view) {
             return editorUtils.offsetToRowCol(this._view.state, this._view.state.selection.main.head).row;
         }
         return 0;
-    };
+    }
 
-    Constr.prototype.getLastChanged = function() {
+    getLastChanged() {
         return this.lastChangeEvent;
-    };
+    }
 
-    Constr.prototype.getExternalLink = function() {
+    getExternalLink() {
         return this.externalLink;
-    };
-
-    return Constr;
-}());
+    }
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").Document = Document;

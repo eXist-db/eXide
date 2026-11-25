@@ -24,9 +24,8 @@ import { QuickPicker } from "./quick-picker.js";
 /**
  * Implements the main menubar behaviour
  */
-export const Menubar = (function() {
-
-    const Constr = function (container) {
+export class Menubar {
+    constructor(container) {
         const $this = this;
         this.container = typeof container === "string" ? document.querySelector(container) : container;
         this.editor = null;
@@ -58,7 +57,7 @@ export const Menubar = (function() {
                 }
             });
         }
-        document.body.addEventListener("click", function() {
+        document.body.addEventListener("click", () => {
             if (menuVisible) {
                 const subs = $this.container.querySelectorAll("ul li ul");
                 for (let j = 0; j < subs.length; j++) subs[j].style.display = "none";
@@ -67,32 +66,25 @@ export const Menubar = (function() {
                 menuVisible = false;
             }
         });
-    };
-
-    function closeMenus($this) {
-        const subs = $this.container.querySelectorAll("ul li ul");
-        for (let j = 0; j < subs.length; j++) subs[j].style.display = "none";
-        const opens = $this.container.querySelectorAll("ul li > a.open");
-        for (let j = 0; j < opens.length; j++) opens[j].classList.remove("open");
     }
 
-    Constr.prototype.commandPalette = function() {
+    commandPalette() {
         const self = this;
         const items = [];
         for (const key in self.commands) {
             items.push(self.commands[key]);
         }
         if (items.length > 0) {
-            QuickPicker.show(items, function (selected) {
+            QuickPicker.show(items, (selected) => {
                 if (selected) {
                     selected.callback();
                 }
                 if (self.editor) self.editor.focus();
             }, { title: "Command Palette", placeholder: "Run command\u2026", parentEditor: self.editor });
         }
-    };
+    }
 
-    Constr.prototype.click = function(selector, callback, action) {
+    click(selector, callback, action) {
         const $this = this;
         const item = document.querySelector(selector);
         if (!item) return;
@@ -113,10 +105,10 @@ export const Menubar = (function() {
             const shortcutEl = item.querySelector(".shortcut");
             $this.commands[item.id] = {
                 label: [label, shortcutEl ? shortcutEl.textContent : ""],
-                callback: callback
+                callback
             };
         }
-        item.addEventListener("click", function(ev) {
+        item.addEventListener("click", (ev) => {
             ev.preventDefault();
             callback();
             if ($this.editor) {
@@ -132,23 +124,23 @@ export const Menubar = (function() {
             }
             closeMenus($this);
         });
-    };
+    }
 
-    Constr.prototype.add = function(menu, label, title, index, onclick) {
+    add(menu, label, title, index, onclick) {
         const $this = this;
         let shortcut = "";
         if (index < 10) {
-            shortcut = "<span class=\"shortcut\">" + commands.getShortcut("gotoTab" + index) + "</span>";
+            shortcut = `<span class="shortcut">${commands.getShortcut(`gotoTab${index}`)}</span>`;
         }
-        const menuEl = this.container.querySelector("ul li[title=\"" + menu + "\"]");
+        const menuEl = this.container.querySelector(`ul li[title="${menu}"]`);
         if (!menuEl) return;
         const ul = menuEl.querySelector("ul");
         if (!ul) return;
         const li = document.createElement("li");
-        li.innerHTML = "<a href=\"#\" title=\"" + title + "\">" + label + shortcut + "</a>";
+        li.innerHTML = `<a href="#" title="${title}">${label}${shortcut}</a>`;
         ul.appendChild(li);
         const itemLink = li.querySelector("a");
-        itemLink.addEventListener("click", function(ev) {
+        itemLink.addEventListener("click", (ev) => {
             ev.preventDefault();
             closeMenus($this);
             onclick();
@@ -156,22 +148,27 @@ export const Menubar = (function() {
                 $this.editor.focus();
             }
         });
-    };
+    }
 
-    Constr.prototype.remove = function(menu, title) {
-        const menuEl = this.container.querySelector("ul li[title=\"" + menu + "\"]");
+    remove(menu, title) {
+        const menuEl = this.container.querySelector(`ul li[title="${menu}"]`);
         if (!menuEl) return;
-        const link = menuEl.querySelector("ul li a[title=\"" + title + "\"]");
+        const link = menuEl.querySelector(`ul li a[title="${title}"]`);
         if (link && link.parentNode) link.parentNode.remove();
-    };
+    }
 
-    Constr.prototype.removeAll = function(menu) {
-        const menuEl = this.container.querySelector("ul li[title=\"" + menu + "\"] ul");
+    removeAll(menu) {
+        const menuEl = this.container.querySelector(`ul li[title="${menu}"] ul`);
         if (menuEl) menuEl.innerHTML = "";
-    };
+    }
+}
 
-    return Constr;
-}());
+function closeMenus($this) {
+    const subs = $this.container.querySelectorAll("ul li ul");
+    for (let j = 0; j < subs.length; j++) subs[j].style.display = "none";
+    const opens = $this.container.querySelectorAll("ul li > a.open");
+    for (let j = 0; j < opens.length; j++) opens[j].classList.remove("open");
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.util").Menubar = Menubar;

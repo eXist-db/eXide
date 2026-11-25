@@ -29,118 +29,92 @@ import { PrologAdder, XQueryQuickFix } from "./quickfix.js";
 import { SemanticHighlight } from "./semantic-highlight.js";
 import { staticAnalysis } from "./static-analysis.js";
 import { util } from "./util.js";
-import { oop } from "./oop.js";
 import { FunctionCalls, ModuleInfo, VariableReferences, XQueryUtils } from "./xquery-utils.js";
 
 /**
  * XQuery specific helper methods.
  */
-export const XQueryModeHelper = (function () {
-	
-	const RE_FUNC_NAME = /^[\$\w:\-_\.]+/;
-	
-    // REx parser + adapter loaded as globals from src/parser/ (concatenated before this file)
-    const rexAdapter = rexParserAdapter;
+const RE_FUNC_NAME = /^[$\w:\-_.]+/;
 
-    /**
-     * Build CM6 diagnostic actions for annotations that have quick fixes.
-     * For namespace prefix errors, creates a direct "Import module" action
-     * using cached module data (fetched at startup).
-     */
-    function addQuickFixActions(annotation) {
-        // Namespace prefix errors — offer direct import
-        const prefixMatch = /for prefix (\w+)/.exec(annotation.text) ||
-                          /\[XPST0081\] "(\w+)"/.exec(annotation.text);
-        if (prefixMatch) {
-            const prefix = prefixMatch[1];
-            annotation.actions = [{
-                name: "Import module \u2018" + prefix + "\u2019",
-                apply: function () {
-                    if (typeof eXide === "undefined" || !eXide.app) return;
-                    const ed = eXide.app.getEditor();
-                    const doc = ed.getActiveDocument();
-                    const helper = doc.getModeHelper();
-                    if (!helper) return;
-                    helper.parent.validator.setEnabled(false);
+// REx parser + adapter loaded as globals from src/parser/ (concatenated before this file)
+const rexAdapter = rexParserAdapter;
 
-                    function doImport(mod) {
-                        const adder = new PrologAdder(ed, doc);
-                        if (mod) {
-                            let at = mod.at;
-                            if (at && at.indexOf("java:") === 0) at = null;
-                            adder.importModule(prefix, mod.uri, at);
-                        } else {
-                            adder.importModule(prefix);
-                        }
-                        helper.parseXQuery(doc);
-                        helper.parent.validator.setEnabled(true);
-                    }
+/**
+ * Build CM6 diagnostic actions for annotations that have quick fixes.
+ * For namespace prefix errors, creates a direct "Import module" action
+ * using cached module data (fetched at startup).
+ */
+function addQuickFixActions(annotation) {
+    // Namespace prefix errors — offer direct import
+    const prefixMatch = /for prefix (\w+)/.exec(annotation.text) ||
+                      /\[XPST0081\] "(\w+)"/.exec(annotation.text);
+    if (prefixMatch) {
+        const prefix = prefixMatch[1];
+        annotation.actions = [{
+            name: `Import module \u2018${prefix}\u2019`,
+            apply () {
+                if (typeof eXide === "undefined" || !eXide.app) return;
+                const ed = eXide.app.getEditor();
+                const doc = ed.getActiveDocument();
+                const helper = doc.getModeHelper();
+                if (!helper) return;
+                helper.parent.validator.setEnabled(false);
 
-                    const mod = staticAnalysis.getModuleByPrefix(prefix);
+                function doImport(mod) {
+                    const adder = new PrologAdder(ed, doc);
                     if (mod) {
-                        doImport(mod);
+                        let at = mod.at;
+                        if (at && at.indexOf("java:") === 0) at = null;
+                        adder.importModule(prefix, mod.uri, at);
                     } else {
-                        // Cache miss — refresh cache then retry
-                        eXide.app.refreshModuleCache().then(function () {
-                            doImport(staticAnalysis.getModuleByPrefix(prefix));
-                        });
+                        adder.importModule(prefix);
+                    }
+                    helper.parseXQuery(doc);
+                    helper.parent.validator.setEnabled(true);
+                }
+
+                const mod = staticAnalysis.getModuleByPrefix(prefix);
+                if (mod) {
+                    doImport(mod);
+                } else {
+                    // Cache miss — refresh cache then retry
+                    eXide.app.refreshModuleCache().then(() => {
+                        doImport(staticAnalysis.getModuleByPrefix(prefix));
+                    });
+                }
+            }
+        }];
+        return;
+    }
+
+    // Other quickfix-eligible patterns — generic "Quick Fix" action
+    const otherPatterns = [
+        /Call to undeclared function/,
+        /unused namespace prefix/,
+        /undeclared variable|variable.*not set/
+    ];
+    for (let i = 0; i < otherPatterns.length; i++) {
+        if (otherPatterns[i].test(annotation.text)) {
+            annotation.actions = [{
+                name: "Quick Fix",
+                apply () {
+                    if (typeof eXide !== "undefined" && eXide.app && eXide.app.getEditor) {
+                        eXide.app.getEditor().exec("quickFix");
                     }
                 }
             }];
             return;
         }
-
-        // Other quickfix-eligible patterns — generic "Quick Fix" action
-        const otherPatterns = [
-            /Call to undeclared function/,
-            /unused namespace prefix/,
-            /undeclared variable|variable.*not set/
-        ];
-        for (let i = 0; i < otherPatterns.length; i++) {
-            if (otherPatterns[i].test(annotation.text)) {
-                annotation.actions = [{
-                    name: "Quick Fix",
-                    apply: function () {
-                        if (typeof eXide !== "undefined" && eXide.app && eXide.app.getEditor) {
-                            eXide.app.getEditor().exec("quickFix");
-                        }
-                    }
-                }];
-                return;
-            }
-        }
     }
-    function semanticHighlight(ast) {
-        const tokens = {};
-        function visit(node) {
-            if (node.name === "EQName" || node.name === "NCName") {
-                const row = node.pos.sl;
-                if (!tokens[row]) tokens[row] = [];
-                tokens[row].push({
-                    sl: node.pos.sl, sc: node.pos.sc,
-                    el: node.pos.el, ec: node.pos.ec,
-                    type: "support.function"
-                });
-                return;
-            }
-            if (node.children) {
-                for (let i = 0; i < node.children.length; i++) visit(node.children[i]);
-            }
-        }
-        visit(ast);
-        return tokens;
-    }
-    // staticAnalysis loaded as global from src/static-analysis.js (concatenated before this file)
-    // Code formatting handled by prettierFormat (src/prettier-format.js)
+}
 
-    // CM6 editor utilities (editorUtils global from src/editor-utils.js)
-    
-	const Constr = function(editor, menubar) {
-		this.parent = editor;
-		this.editor = this.parent.editor;
+// CM6 editor utilities (editorUtils global from src/editor-utils.js)
+export class XQueryModeHelper extends ModeHelper {
+    constructor(editor, menubar) {
+        super(editor);
         this.xqDebugger = null;
         
-        this.funcDefRe = /\(:.*declare.+function.+:\)|(declare\s+((?:%[\w\:\-]+(?:\([^\)]*\))?\s*)*)function\s+([^\(]+)\()/g;
+        this.funcDefRe = /\(:.*declare.+function.+:\)|(declare\s+((?:%[\w:-]+(?:\([^)]*\))?\s*)*)function\s+([^(]+)\()/g;
         this.varDefRe = /\(:.*declare.+variable.+:\)|(declare\s+(?:%\w+\s+)*variable\s+\$[^\s;]+)/gm;
         this.varRe = /declare\s+(?:%\w+\s+)*variable\s+(\$[^\s;]+)/;
         this.parseImportRe = /\(:[^)]*:\)|(import\s+module\s+namespace\s+[^=]+\s*=\s*["'][^"']+["']\s*at\s+["'][^"']+["']\s*;)/g
@@ -148,6 +122,7 @@ export const XQueryModeHelper = (function () {
 
 
 		// added to clean function name : 
+        // eslint-disable-next-line no-control-regex -- all Unicode whitespace, including control characters
         this.trimRe = /^[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+|[\x09\x0a\x0b\x0c\x0d\x20\xa0\u1680\u180e\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u2028\u2029\u202f\u205f\u3000]+$/g;
         
         this.addCommand("expandSelection", this.expandSelection);
@@ -157,9 +132,6 @@ export const XQueryModeHelper = (function () {
 		this.addCommand("showFunctionDoc", this.showFunctionDoc);
 		this.addCommand("gotoDefinition", this.gotoDefinition);
         this.addCommand("findReferences", this.findReferences);
-        this.addCommand("gotoSymbol", this.gotoSymbol);
-		this.addCommand("locate", this.locate);
-        this.addCommand("format", this.format);
 		this.addCommand("closeTag", this.closeTag);
         this.addCommand("importModule", this.importModule);
         this.addCommand("quickFix", this.quickFix);
@@ -170,79 +142,77 @@ export const XQueryModeHelper = (function () {
         const self = this;
         this.menu = document.getElementById("menu-xquery");
         this.menu.style.display = "none";
-        menubar.click("#menu-xquery-expand", function() {
+        menubar.click("#menu-xquery-expand", () => {
             self.expandSelection(editor.getActiveDocument());
         });
-        menubar.click("#menu-xquery-rename", function() {
+        menubar.click("#menu-xquery-rename", () => {
             self.rename(editor.getActiveDocument());
         });
-        menubar.click("#menu-xquery-extract-function", function() {
+        menubar.click("#menu-xquery-extract-function", () => {
             self.extractFunction(editor.getActiveDocument());
         });
-        menubar.click("#menu-xquery-extract-variable", function() {
+        menubar.click("#menu-xquery-extract-variable", () => {
             self.extractVariable(editor.getActiveDocument());
         });
-        menubar.click("#menu-xquery-quickfix", function() {
+        menubar.click("#menu-xquery-quickfix", () => {
             self.quickFix(editor.getActiveDocument());
         });
-        menubar.click("#menu-xquery-run-test", function() {
+        menubar.click("#menu-xquery-run-test", () => {
             self.runTest(editor.getActiveDocument());
         });
         
         self.validating = null;
         self.validationListeners = [];
-	};
-	
-	// extends ModeHelper
-	oop.inherit(Constr, ModeHelper);
-	
-    Constr.prototype.activate = function() {
+	}
+
+    activate() {
         this.menu.style.display = "";
         this.parent.updateStatus("");
-    };
+    }
 
-    Constr.prototype.deactivate = function() {
+    deactivate() {
         this.menu.style.display = "none";
-    };
-    
-    Constr.prototype.afterValidate = function(context, callback) {
-        this.validationListeners.push({context: context, exec: callback});
-    };
-    
-	Constr.prototype.closeTag = function (doc, text, row) {
-		const basePath = "xmldb:exist://" + doc.getBasePath();
+    }
+
+    afterValidate(context, callback) {
+        this.validationListeners.push({context, exec: callback});
+    }
+
+    async closeTag(doc, text, row) {
+		const basePath = `xmldb:exist://${doc.getBasePath()}`;
 		const $this = this;
-		fetch("api/query/compile", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ query: text, base: basePath })
-		})
-		.then(function(response) { return response.json(); })
-		.then(function(data) {
+		try {
+			const response = await fetch("api/query/compile", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ query: text, base: basePath })
+			});
+			const data = await response.json();
 			if (data.errors && data.errors.length > 0) {
 				const err = data.errors[0];
 				const msg = err.message || "";
-				let tag = /constructor:\s([^\)]+)\)?$/.exec(msg);
+				let tag = /constructor:\s([^)]+)\)?$/.exec(msg);
 				if (tag && tag.length > 0) {
-					const insertText = tag[1] + ">";
+					const insertText = `${tag[1]}>`;
 					const insertPos = $this.editor.state.selection.main.head;
 					$this.editor.dispatch({ changes: { from: insertPos, insert: insertText }, selection: { anchor: insertPos + insertText.length } });
 				} else {
 					tag = /tag:.*;\sexpected:\s(.*)$/.exec(msg);
 					if (tag && tag.length > 0) {
-						const insertText2 = tag[1] + ">";
+						const insertText2 = `${tag[1]}>`;
 						const insertPos2 = $this.editor.state.selection.main.head;
 						$this.editor.dispatch({ changes: { from: insertPos2, insert: insertText2 }, selection: { anchor: insertPos2 + insertText2.length } });
 					}
 				}
 			}
-		})
-		.catch(function() {});
+		} catch {
+			// ignore
+		}
 	}
-		
-	Constr.prototype.validate = function(doc, code, onComplete) {
+
+    async validate(doc, code, onComplete) {
 		const $this = this;
-		const basePath = "xmldb:exist://" + doc.getBasePath();
+		const basePath = `xmldb:exist://${doc.getBasePath()}`;
 		
         this.parseXQuery(doc);
         for (let i = 0; i < this.validationListeners.length; i++) {
@@ -251,30 +221,29 @@ export const XQueryModeHelper = (function () {
         }
         this.validationListeners.length = 0;
         
-		fetch("api/query/compile", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ query: code, base: basePath, uri: doc.getPath() || "untitled" })
-		})
-		.then(function(response) { return response.json(); })
-		.then(function(data) {
+		try {
+			const response = await fetch("api/query/compile", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ query: code, base: basePath, uri: doc.getPath() || "untitled" })
+			});
+			const data = await response.json();
 			const valid = $this.compileError(data, doc);
 			if (onComplete) {
 				onComplete.call(null, valid);
 			}
-		})
-		.catch(function(err) {
+		} catch (err) {
 			if (onComplete) {
 				onComplete.call(null, false);
 			}
 			console.log("Compile error: %s", err);
-		});
+		}
 	}
-	
-	/*
-	 * New API response: { "errors": [{ "line": 52, "column": 43, "message": "...", "code": "..." }] }
-	 */
-	Constr.prototype.compileError = function(data, doc) {
+
+    /*
+     * New API response: { "errors": [{ "line": 52, "column": 43, "message": "...", "code": "..." }] }
+     */
+    compileError(data, doc) {
 		if (data.errors && data.errors.length > 0) {
 			const err = data.errors[0];
 			let line = (err.line || 0) - 1;
@@ -291,12 +260,12 @@ export const XQueryModeHelper = (function () {
 			}
 			const annotation = {
 				row: line,
-                column: column,
+                column,
 				text: msg,
 				type: "error"
 			};
 			addQuickFixActions(annotation);
-			this.parent.updateStatus(msg, doc.getPath() + "#" + (line + 1));
+			this.parent.updateStatus(msg, `${doc.getPath()}#${line + 1}`);
             const annotations = this.clearAnnotations(doc, "error");
             annotations.push(annotation);
 			editorUtils.setAnnotations(this.editor, annotations);
@@ -306,9 +275,9 @@ export const XQueryModeHelper = (function () {
 			this.parent.updateStatus("");
             return true;
 		}
-	};
-	
-    Constr.prototype.parseXQuery = function(doc) {
+	}
+
+    parseXQuery(doc) {
         if (doc.ast && doc.lastParsed >= doc.getLastChanged()) {
             return;
         }
@@ -327,10 +296,10 @@ export const XQueryModeHelper = (function () {
 
         // If 4.0 parser is still loading, re-parse when it arrives
         if (selection.pending) {
-            parserRegistry.loadParser40().then(function () {
+            parserRegistry.loadParser40().then(() => {
                 doc.lastParsed = 0; // force re-parse
                 self.parseXQuery(doc);
-            }).catch(function (err) {
+            }).catch((err) => {
                 console.warn("Failed to load XQuery 4.0 parser:", err.message);
             });
         }
@@ -373,9 +342,9 @@ export const XQueryModeHelper = (function () {
         } catch(e) {
             console.log("Error while processing ast: %s", e.message);
         }
-    };
-    
-    Constr.prototype.clearAnnotations = function(doc, type) {
+    }
+
+    clearAnnotations(doc, type) {
         const na = [];
         const a = editorUtils.getAnnotations(this.editor);
         for (let i = 0; i < a.length; i++) {
@@ -384,22 +353,22 @@ export const XQueryModeHelper = (function () {
             }
         }
         return na;
-    };
+    }
 
-    Constr.prototype.gotoSymbol = function(doc) {
+    async gotoSymbol(doc) {
         const self = this;
         const code = this.editor.state.doc.toString();
-        const basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
+        const basePath = `xmldb:exist://${doc.getBasePath ? doc.getBasePath() : "/db"}`;
 
-        fetch("api/query/symbols", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: code, base: basePath })
-        })
-        .then(function (response) { return response.json(); })
-        .then(function (symbols) {
+        try {
+            const response = await fetch("api/query/symbols", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query: code, base: basePath })
+            });
+            const symbols = await response.json();
             if (!symbols || !symbols.length) return;
-            const items = symbols.map(function (sym) {
+            const items = symbols.map((sym) => {
                 return {
                     // detail has the full signature for functions; name for variables
                     label: sym.detail || sym.name,
@@ -408,16 +377,15 @@ export const XQueryModeHelper = (function () {
                     column: sym.column
                 };
             });
-            QuickPicker.show(items, function (selected) {
+            QuickPicker.show(items, (selected) => {
                 if (selected) {
                     // lang:symbols() returns 0-based line; gotoLine expects 1-based
                     editorUtils.gotoLine(self.editor, selected.line + 1, selected.column, true);
                 }
             }, { placeholder: "Go to symbol\u2026", parentEditor: self.editor });
-        })
-        .catch(function () {
+        } catch {
             // Fall back to AST-based symbol list
-            const items = doc.functions.map(function (f) {
+            const items = doc.functions.map((f) => {
                 return {
                     label: f.signature || f.name,
                     name: f.name,
@@ -426,16 +394,16 @@ export const XQueryModeHelper = (function () {
                 };
             });
             if (items.length > 0) {
-                QuickPicker.show(items, function (selected) {
+                QuickPicker.show(items, (selected) => {
                     if (selected) {
                         editorUtils.gotoLine(self.editor, selected.line + 1, 0, true);
                     }
                 }, { placeholder: "Go to symbol\u2026", parentEditor: self.editor });
             }
-        });
-    };
+        }
+    }
 
-	Constr.prototype.getFunctionAtCursor = function (doc, lead) {
+    getFunctionAtCursor(doc, lead) {
         let name;
         const astNode = XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
         if (astNode) {
@@ -461,9 +429,9 @@ export const XQueryModeHelper = (function () {
     		name = line.substring(start, end);
         }
         return name;
-	};
-	
-	Constr.prototype.getVariableAtCursor = function (doc, lead) {
+	}
+
+    getVariableAtCursor(doc, lead) {
         const astNode = XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
         if (astNode) {
             const ref = XQueryUtils.findAncestor(astNode, "VarRef");
@@ -471,9 +439,9 @@ export const XQueryModeHelper = (function () {
                 return astNode.value;
             }
         }
-	};
-	
-	Constr.prototype.showFunctionDoc = function (doc) {
+	}
+
+    async showFunctionDoc(doc) {
         this.parseXQuery(doc);
 		const self = this;
 		const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
@@ -490,7 +458,7 @@ export const XQueryModeHelper = (function () {
 		const code = doc.getText();
 		const imports = this.$parseImports(code);
 		if (imports) {
-			const basePath = "xmldb:exist://" + doc.getBasePath();
+			const basePath = `xmldb:exist://${doc.getBasePath()}`;
 			params.set("base", basePath);
 			for (let i = 0; i < imports.length; i++) {
 				const matches = this.moduleRe.exec(imports[i]);
@@ -502,13 +470,13 @@ export const XQueryModeHelper = (function () {
 			}
 		}
 
-		fetch("api/editor/completions?" + params.toString())
-		.then(function(response) { return response.json(); })
-		.then(function(serverFuncs) {
+		try {
+			const response = await fetch(`api/editor/completions?${params.toString()}`);
+			const serverFuncs = await response.json();
 			// Merge local functions (from AST parse) with server results
 			let items = [];
-			const regex = new RegExp("^" + func.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-			doc.functions.forEach(function(f) {
+			const regex = new RegExp(`^${func.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`);
+			doc.functions.forEach((f) => {
 				if (f.type !== "variable" && f.name && f.name.match(regex)) {
 					// Normalize local functions to the completions API shape
 					items.push({
@@ -526,10 +494,10 @@ export const XQueryModeHelper = (function () {
 			});
 			if (serverFuncs) items = items.concat(serverFuncs);
 			if (items.length === 0) {
-				util.message("No documentation found for " + func);
+				util.message(`No documentation found for ${func}`);
 				return;
 			}
-			FuncDocTooltip.show(self.editor, items, function(selected) {
+			FuncDocTooltip.show(self.editor, items, (selected) => {
 				if (selected) {
 					const template = selected.snippet || selected.template;
 					if (template) {
@@ -537,14 +505,13 @@ export const XQueryModeHelper = (function () {
 					}
 				}
 			});
-		})
-		.catch(function(e) {
+		} catch (e) {
 			console.log("Error fetching function docs: %s", e.message);
-			util.error("Could not load function documentation: " + e.message);
-		});
+			util.error(`Could not load function documentation: ${e.message}`);
+		}
 	}
-	
-    Constr.prototype.quickFix = function (doc, row) {
+
+    quickFix(doc, row) {
         if (!row) {
             row = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head).row;
         }
@@ -553,7 +520,7 @@ export const XQueryModeHelper = (function () {
         for (let i = 0; i < an.length; i++) {
             if (an[i].row === row) {
                 const qf = XQueryQuickFix.getResolutions(this, this.editor, doc, an[i]);
-                qf.forEach(function(fix) {
+                qf.forEach((fix) => {
                     resolutions.push({
                         label: fix.action,
                         resolve: fix.resolve,
@@ -565,33 +532,33 @@ export const XQueryModeHelper = (function () {
 
         if (resolutions.length > 0) {
             const self = this;
-            QuickPicker.show(resolutions, function(selected) {
+            QuickPicker.show(resolutions, (selected) => {
                 if (selected) {
                     selected.resolve(self, self.parent, doc, selected.annotation);
                 }
                 self.editor.focus();
             }, { placeholder: "Quick fix\u2026", parentEditor: self.editor });
         }
-    };
-    
-	Constr.prototype.gotoDefinition = function (doc) {
+    }
+
+    async gotoDefinition(doc) {
         const self = this;
         const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
         const code = this.editor.state.doc.toString();
-        const basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
+        const basePath = `xmldb:exist://${doc.getBasePath ? doc.getBasePath() : "/db"}`;
 
-        fetch("api/query/definition", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                query: code,
-                line: lead.row,      // 0-based
-                column: lead.column, // 0-based
-                base: basePath
-            })
-        })
-        .then(function (response) { return response.json(); })
-        .then(function (data) {
+        try {
+            const response = await fetch("api/query/definition", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    query: code,
+                    line: lead.row,      // 0-based
+                    column: lead.column, // 0-based
+                    base: basePath
+                })
+            });
+            const data = await response.json();
             if (data && data.line !== undefined) {
                 if (data.uri) {
                     // Cross-module definition: open the target module
@@ -620,35 +587,34 @@ export const XQueryModeHelper = (function () {
                     }
                 }
             }
-        })
-        .catch(function () {
+        } catch {
             // Network error: fall back to AST lookup
             self.parseXQuery(doc);
             const funcName = self.getFunctionAtCursor(doc, lead);
             if (funcName) {
                 self.parent.outline.gotoDefinition(doc, funcName);
             }
-        });
+        }
 	}
-	
-    Constr.prototype.findReferences = function (doc) {
+
+    async findReferences(doc) {
         const self = this;
         const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
         const code = this.editor.state.doc.toString();
-        const basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
+        const basePath = `xmldb:exist://${doc.getBasePath ? doc.getBasePath() : "/db"}`;
 
-        fetch("api/query/references", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                query: code,
-                line: lead.row,
-                column: lead.column,
-                base: basePath
-            })
-        })
-        .then(function (response) { return response.json(); })
-        .then(function (refs) {
+        try {
+            const response = await fetch("api/query/references", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    query: code,
+                    line: lead.row,
+                    column: lead.column,
+                    base: basePath
+                })
+            });
+            let refs = await response.json();
             if (!Array.isArray(refs) || refs.length === 0) {
                 // Fall back to AST-based references
                 self.parseXQuery(doc);
@@ -660,7 +626,7 @@ export const XQueryModeHelper = (function () {
                     const fcall = astNode ? XQueryUtils.findAncestor(astNode, "FunctionCall") : null;
                     const arity = fcall ? (fcall.arity || 0) : 0;
                     const visitor = new FunctionCalls(funcName, arity, doc.ast);
-                    refs = visitor.getReferences().map(function (ref) {
+                    refs = visitor.getReferences().map((ref) => {
                         return { line: ref.pos.sl, column: ref.pos.sc, name: funcName, kind: "function" };
                     });
                     if (visitor.declaration) {
@@ -671,8 +637,8 @@ export const XQueryModeHelper = (function () {
                     if (varName) {
                         const name = varName.replace(/^\$/, "");
                         const varVisitor = new VariableReferences(name, doc.ast);
-                        refs = varVisitor.getReferences().map(function (ref) {
-                            return { line: ref.pos.sl, column: ref.pos.sc, name: "$" + name, kind: "variable" };
+                        refs = varVisitor.getReferences().map((ref) => {
+                            return { line: ref.pos.sl, column: ref.pos.sc, name: `$${name}`, kind: "variable" };
                         });
                     }
                 }
@@ -683,28 +649,26 @@ export const XQueryModeHelper = (function () {
                 return;
             }
 
-            const items = refs.map(function (ref) {
+            const items = refs.map((ref) => {
                 return {
-                    label: (ref.kind === "variable" ? ref.name : ref.name) +
-                           " \u2014 line " + (ref.line + 1),
+                    label: `${ref.kind === "variable" ? ref.name : ref.name} \u2014 line ${ref.line + 1}`,
                     line: ref.line,
                     column: ref.column
                 };
             });
 
-            QuickPicker.show(items, function (selected) {
+            QuickPicker.show(items, (selected) => {
                 if (selected) {
                     editorUtils.gotoLine(self.editor, selected.line + 1, selected.column, true);
                 }
-            }, { placeholder: "References (" + items.length + " found)\u2026", parentEditor: self.editor });
-        })
-        .catch(function (err) {
+            }, { placeholder: `References (${items.length} found)\u2026`, parentEditor: self.editor });
+        } catch (err) {
             console.error("[findReferences] error:", err);
             util.message("Failed to find references.");
-        });
-    };
+        }
+    }
 
-	Constr.prototype.locate = function(doc, type, name) {
+    locate(doc, type, name) {
 		switch (type) {
 		case "function":
 			this.gotoFunction(doc, name);
@@ -713,8 +677,8 @@ export const XQueryModeHelper = (function () {
 			this.gotoVarDecl(doc, name);
 		}
 	}
-	
-    Constr.prototype.extractVariable = function(doc) {
+
+    extractVariable(doc) {
         this.parseXQuery(doc);
         // get text of selection
         const sel = this.editor.state.selection.main;
@@ -735,7 +699,7 @@ export const XQueryModeHelper = (function () {
             {line: range.start.row, col: range.start.column + 1});
         let contextNode = XQueryUtils.findAncestor(currentNode, ["IntermediateClause", "InitialClause", "ReturnClause"]);
         if (contextNode) {
-            template = "let $${1} := " + value.replace("$", "\\$");
+            template = `let $\${1} := ${value.replace("$", "\\$")}`;
         } else {
             contextNode = XQueryUtils.findAncestor(currentNode, "StatementsAndOptionalExpr");
             contextNode = XQueryUtils.findChild(contextNode, "Expr");
@@ -743,7 +707,7 @@ export const XQueryModeHelper = (function () {
                 util.error("Extract variable: unable to determine context. Giving up.")
                 return;
             }
-            template = "let $${1} := " + value.replace("$", "\\$") + "\nreturn";
+            template = `let $\${1} := ${value.replace("$", "\\$")}\nreturn`;
         }
         console.log("extract variable: context: %o", contextNode);
 
@@ -758,9 +722,9 @@ export const XQueryModeHelper = (function () {
         this.editor.focus();
 
         this.parent.validationEnabled = true;
-    };
-    
-    Constr.prototype.extractFunction = function(doc) {
+    }
+
+    extractFunction(doc) {
         this.parseXQuery(doc);
         // get text of selection
         const sel = this.editor.state.selection.main;
@@ -786,7 +750,7 @@ export const XQueryModeHelper = (function () {
         const selection2 = parserRegistry.getParser(value, versionPref2);
         const result = rexAdapter.parseXQuery(value, selection2.parser);
         if (result.error) {
-            util.error("Not a valid code block: " + (result.error.message || result.error));
+            util.error(`Not a valid code block: ${result.error.message || result.error}`);
             return;
         }
         try {
@@ -808,7 +772,7 @@ export const XQueryModeHelper = (function () {
                 variables.push(v);
             }
         } catch(e) {
-            util.error("Not a valid code block: " + e.message);
+            util.error(`Not a valid code block: ${e.message}`);
             return;
         }
 
@@ -823,7 +787,7 @@ export const XQueryModeHelper = (function () {
         for (let i = 0; i < variables.length; i++) {
             if (i > 0)
                 params += ", ";
-            params += "$" + variables[i];
+            params += `$${variables[i]}`;
         }
         params += ")";
         const insertPos = this.editor.state.selection.main.head;
@@ -836,18 +800,17 @@ export const XQueryModeHelper = (function () {
         this.editor.focus();
 
         this.parent.validationEnabled = true;
-    };
-    
-	Constr.prototype.gotoFunction = function (doc, name) {
+    }
+
+    gotoFunction(doc, name) {
 		console.log("Goto function %s", name);
         const prefix = this.getModuleNamespacePrefix();
         if (prefix != null) {
-			name = name.replace(/[^:]+:/, prefix + ":");
+			name = name.replace(/[^:]+:/, `${prefix}:`);
 		}
         const lines = [];
         for (let i = 1; i <= this.editor.state.doc.lines; i++) { lines.push(this.editor.state.doc.line(i).text); }
         const len = lines.length;
-        let lineNb;
         const returnLine = function(regexp) {
             for (let i = 0; i < len; i++) {
                 if (lines[i].match(regexp)) { return i }
@@ -859,22 +822,20 @@ export const XQueryModeHelper = (function () {
             return this.editor.focus();
         };
         
-        if (lineNb = returnLine(new RegExp("function\\s+" + name + "\\s*\\("))) {
-            return focus.call(this, lineNb);
-        }
-        if (lineNb = returnLine(new RegExp("function\\s+" + name + "$"))) {
+        const lineNb = returnLine(new RegExp(`function\\s+${name}\\s*\\(`)) || returnLine(new RegExp(`function\\s+${name}$`));
+        if (lineNb) {
             return focus.call(this, lineNb);
         }
 	}
-	
-	Constr.prototype.gotoVarDecl = function (doc, name) {
+
+    gotoVarDecl(doc, name) {
 		const prefix = this.getModuleNamespacePrefix();
 		if (prefix != null) {
-			name = name.replace(/[^:]+:/, "$" + prefix + ":");
+			name = name.replace(/[^:]+:/, `$${prefix}:`);
 		}
 		
 		console.log("Goto variable declaration %s", name);
-		const regexp = new RegExp("variable\\s+\\" + name);
+		const regexp = new RegExp(`variable\\s+\\${name}`);
 		const lines = [];
 		for (let li = 1; li <= this.editor.state.doc.lines; li++) { lines.push(this.editor.state.doc.line(li).text); }
 		for (let i = 0; i < lines.length; i++) {
@@ -886,8 +847,8 @@ export const XQueryModeHelper = (function () {
 			}
 		}
 	}
-	
-	Constr.prototype.getModuleNamespacePrefix = function () {
+
+    getModuleNamespacePrefix() {
 		const moduleRe = /^\s*module\s+namespace\s+([^=\s]+)\s*=/;
 		const lines = [];
 		for (let li = 1; li <= this.editor.state.doc.lines; li++) { lines.push(this.editor.state.doc.line(li).text); }
@@ -899,23 +860,22 @@ export const XQueryModeHelper = (function () {
 		}
 		return null;
 	}
-	
-    Constr.prototype.importModule = function (doc, prefix, uri, location) {
+
+    importModule(doc, prefix, uri, location) {
         console.log("location = %s path = %s", location, doc.path);
-        let code;
         if (location) {
             const base = doc.getBasePath();
             if (location.lastIndexOf(base, 0) === 0) {
                 location = location.substring(base.length + 1);
             } else {
-                location = "xmldb:exist://" + location;
+                location = `xmldb:exist://${location}`;
             }
         }
         const adder = new PrologAdder(this.parent, doc);
         adder.importModule(prefix, uri, location);
     }
-    
-    Constr.prototype.expandSelection = function(doc) {
+
+    expandSelection(doc) {
         this.parseXQuery(doc);
         const selMain = this.editor.state.selection.main;
         const selRange = { start: editorUtils.offsetToRowCol(this.editor.state, selMain.from), end: editorUtils.offsetToRowCol(this.editor.state, selMain.to) };
@@ -943,12 +903,12 @@ export const XQueryModeHelper = (function () {
             const selTo = editorUtils.rowColToOffset(this.editor.state, parent.pos.el, parent.pos.ec);
             this.editor.dispatch({ selection: { anchor: selFrom, head: selTo } });
         }
-    };
-    
+    }
+
     /**
      * Rename variable or function call.
      */
-    Constr.prototype.rename = function(doc) {
+    rename(doc) {
         const self = this;
 
         function doRename(references) {
@@ -962,10 +922,10 @@ export const XQueryModeHelper = (function () {
                 ranges.push(CM6.EditorSelection.range(from, to));
             }
             // Sort by position (required by EditorSelection)
-            ranges.sort(function(a, b) { return a.from - b.from; });
+            ranges.sort((a, b) => { return a.from - b.from; });
             self.editor.dispatch({ selection: CM6.EditorSelection.create(ranges) });
             self.editor.focus();
-            util.message("Editing " + references.length + " occurrence" + (references.length > 1 ? "s" : "") + " — type to rename.");
+            util.message(`Editing ${references.length} occurrence${references.length > 1 ? "s" : ""} — type to rename.`);
         }
 
         this.parseXQuery(doc);
@@ -1018,9 +978,9 @@ export const XQueryModeHelper = (function () {
         } else {
             util.message("Rename failed: node not found in syntax tree, sorry.");
         }
-    };
-    
-    Constr.prototype.runTest = function(doc) {
+    }
+
+    runTest(doc) {
         const self = this;
         this.parseXQuery(doc);
         const info = new ModuleInfo(doc.ast);
@@ -1045,14 +1005,14 @@ export const XQueryModeHelper = (function () {
             return;
         }
 
-        function doRun() {
-            fetch("api/test", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ source: doc.getPath() })
-            })
-            .then(function(response) { return response.json(); })
-            .then(function(data) {
+        async function doRun() {
+            try {
+                const response = await fetch("api/test", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ source: doc.getPath() })
+                });
+                const data = await response.json();
                 self.parent.updateStatus("");
                 self.parent.clearErrors();
                 eXide.app.showResultsPanel();
@@ -1064,50 +1024,49 @@ export const XQueryModeHelper = (function () {
                     // every time the renderer rebuilds innerHTML.
                     self.wireTestResultsHandlers(results, data, doc);
                 }
-            })
-            .catch(function(err) {
+            } catch (err) {
                 util.error(String(err), "Server Error");
-            });
+            }
         }
 
         if (!doc.saved) {
             // Auto-save the dirty buffer, then run. Surfacing a save failure
             // means we don't silently run stale code.
-            self.parent.saveDocument(null, function () {
+            self.parent.saveDocument(null, () => {
                 doRun();
-            }, function (msg) {
-                util.error("Could not save testsuite before running: " + msg);
+            }, (msg) => {
+                util.error(`Could not save testsuite before running: ${msg}`);
             });
             return;
         }
 
         doRun();
-    };
+    }
 
-    Constr.prototype.renderTestResults = function(data) {
+    renderTestResults(data) {
         if (data.error) {
-            return '<div class="test-error">' + escapeHtml(data.error) + '</div>';
+            return `<div class="test-error">${escapeHtml(data.error)}</div>`;
         }
         // setUp failure shape: xqsuite emits a testsuite with no testcases and
         // the error text in the element body. Render a distinct "Setup Failed"
         // panel — the regular table would show "0 tests" which obscures what
         // actually went wrong.
         if (data.setupFailure) {
-            return '<div class="test-summary test-setup-failure-summary">' +
-                '<span class="test-errors">setUp failed</span>' +
-                ' — ' + data.setupFailure.errors + ' tests blocked' +
-                '</div>' +
-                '<div class="test-setup-failure">' +
-                '<div class="test-setup-failure-label">Error from %test:setUp function:</div>' +
-                '<pre class="test-full-output">' + escapeHtml(data.setupFailure.message) + '</pre>' +
-                '</div>';
+            return `<div class="test-summary test-setup-failure-summary">` +
+                `<span class="test-errors">setUp failed</span>` +
+                ` — ${data.setupFailure.errors} tests blocked` +
+                `</div>` +
+                `<div class="test-setup-failure">` +
+                `<div class="test-setup-failure-label">Error from %test:setUp function:</div>` +
+                `<pre class="test-full-output">${escapeHtml(data.setupFailure.message)}</pre>` +
+                `</div>`;
         }
         let html = '<div class="test-summary">';
-        html += '<span class="test-count">' + data.tests + ' tests</span>';
-        if (data.failures > 0) html += ', <span class="test-failures">' + data.failures + ' failures</span>';
-        if (data.errors > 0) html += ', <span class="test-errors">' + data.errors + ' errors</span>';
-        if (data.pending > 0) html += ', <span class="test-pending">' + data.pending + ' pending</span>';
-        if (data.time) html += ' (' + data.time + ')';
+        html += `<span class="test-count">${data.tests} tests</span>`;
+        if (data.failures > 0) html += `, <span class="test-failures">${data.failures} failures</span>`;
+        if (data.errors > 0) html += `, <span class="test-errors">${data.errors} errors</span>`;
+        if (data.pending > 0) html += `, <span class="test-pending">${data.pending} pending</span>`;
+        if (data.time) html += ` (${data.time})`;
         // JUnit XML download button. data.xml is the raw <testsuites>…</testsuites>
         // already prepared server-side; we expose it as a blob download so users
         // can hand the result to CI consumers (GitHub Actions test reporters,
@@ -1142,13 +1101,13 @@ export const XQueryModeHelper = (function () {
                     // so users don't have to guess which half they're seeing.
                     const lines = [];
                     if (tc.failure.expected !== undefined && tc.failure.expected !== '') {
-                        lines.push('expected: ' + tc.failure.expected);
+                        lines.push(`expected: ${tc.failure.expected}`);
                     }
                     if (tc.failure.actual !== undefined && tc.failure.actual !== '') {
-                        lines.push('actual:   ' + tc.failure.actual);
+                        lines.push(`actual:   ${tc.failure.actual}`);
                     }
                     if (tc.failure.type) {
-                        lines.push('type:     ' + tc.failure.type);
+                        lines.push(`type:     ${tc.failure.type}`);
                     }
                     fullOutput = lines.length > 0 ? lines.join('\n')
                         : (tc.failure.detail && tc.failure.detail !== summary
@@ -1157,38 +1116,38 @@ export const XQueryModeHelper = (function () {
                 if (tc.error) {
                     summary = tc.error.message || tc.error.detail || '';
                     const errLines = [];
-                    if (tc.error.type) errLines.push('type:   ' + tc.error.type);
+                    if (tc.error.type) errLines.push(`type:   ${tc.error.type}`);
                     if (tc.error.detail && tc.error.detail !== summary) {
-                        errLines.push('detail: ' + tc.error.detail);
+                        errLines.push(`detail: ${tc.error.detail}`);
                     }
                     fullOutput = errLines.join('\n');
                 }
                 // data-source + data-line let the row act as a "jump to source line" link.
                 // Wired up in wireTestResultsHandlers (delegated click) so we don't re-bind
                 // every render.
-                const rowAttrs = ' class="test-' + status + ' test-clickable"' +
-                    ' data-source="' + escapeHtml(tc.source || '') + '"' +
-                    ' data-line="' + escapeHtml(String(tc.line || 0)) + '"' +
-                    ' title="Click to open source"';
-                html += '<tr' + rowAttrs + '>';
-                html += '<td>' + escapeHtml(tc.name) + '</td>';
-                html += '<td>' + status + '</td>';
+                const rowAttrs = ` class="test-${status} test-clickable"` +
+                    ` data-source="${escapeHtml(tc.source || '')}"` +
+                    ` data-line="${escapeHtml(String(tc.line || 0))}"` +
+                    ` title="Click to open source"`;
+                html += `<tr${rowAttrs}>`;
+                html += `<td>${escapeHtml(tc.name)}</td>`;
+                html += `<td>${status}</td>`;
                 if (fullOutput) {
-                    html += '<td>' +
-                        '<details class="test-details">' +
-                        '<summary>' + escapeHtml(summary) + '</summary>' +
-                        '<pre class="test-full-output">' + escapeHtml(fullOutput) + '</pre>' +
-                        '</details>' +
-                        '</td>';
+                    html += `<td>` +
+                        `<details class="test-details">` +
+                        `<summary>${escapeHtml(summary)}</summary>` +
+                        `<pre class="test-full-output">${escapeHtml(fullOutput)}</pre>` +
+                        `</details>` +
+                        `</td>`;
                 } else {
-                    html += '<td>' + escapeHtml(summary) + '</td>';
+                    html += `<td>${escapeHtml(summary)}</td>`;
                 }
                 html += '</tr>';
             }
         }
         html += '</tbody></table>';
         return html;
-    };
+    }
 
     /**
      * Wire interactive handlers on a freshly-rendered test results panel.
@@ -1203,12 +1162,12 @@ export const XQueryModeHelper = (function () {
      *  - Clicks inside <details>/<summary>/<pre> are ignored so users can
      *    expand failure detail without triggering the jump.
      */
-    Constr.prototype.wireTestResultsHandlers = function(container, data, currentDoc) {
+    wireTestResultsHandlers(container, data, currentDoc) {
         const self = this;
 
         const downloadBtn = container.querySelector(".test-download-junit");
         if (downloadBtn && data.xml) {
-            downloadBtn.addEventListener("click", function() {
+            downloadBtn.addEventListener("click", () => {
                 const blob = new Blob([data.xml], { type: "application/xml" });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
@@ -1216,7 +1175,7 @@ export const XQueryModeHelper = (function () {
                 // currentDoc.getName() returns "foo.xqm"; strip the extension and
                 // append "-junit.xml" so the file is easy to find on disk.
                 const base = (currentDoc && currentDoc.getName && currentDoc.getName()) || "tests";
-                a.download = base.replace(/\.[^.]+$/, "") + "-junit.xml";
+                a.download = `${base.replace(/\.[^.]+$/, "")}-junit.xml`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -1226,7 +1185,7 @@ export const XQueryModeHelper = (function () {
 
         const tbody = container.querySelector(".test-results tbody");
         if (tbody) {
-            tbody.addEventListener("click", function(ev) {
+            tbody.addEventListener("click", (ev) => {
                 // Don't intercept clicks inside the expandable details panel — users
                 // need to be able to expand/collapse failure detail without triggering
                 // the row jump.
@@ -1239,7 +1198,7 @@ export const XQueryModeHelper = (function () {
                 self.openTestSource(src, line, currentDoc);
             });
         }
-    };
+    }
 
     /**
      * Open the source module at a specific line. If the target is the document
@@ -1247,7 +1206,7 @@ export const XQueryModeHelper = (function () {
      * Otherwise we open via the standard resource pathway so it lands in a new
      * tab and the user can edit + re-run.
      */
-    Constr.prototype.openTestSource = function(source, line, currentDoc) {
+    openTestSource(source, line, currentDoc) {
         const currentPath = currentDoc && currentDoc.getPath && currentDoc.getPath();
         if (currentPath === source) {
             editorUtils.gotoLine(this.editor, line || 1, 0, true);
@@ -1260,32 +1219,32 @@ export const XQueryModeHelper = (function () {
             line: line || 1
         };
         eXide.app.$doOpenDocument(resource);
-    };
+    }
 
-    Constr.prototype.createOutline = function(doc, onComplete) {
+    async createOutline(doc, onComplete) {
         const code = doc.getText();
-        const basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
+        const basePath = `xmldb:exist://${doc.getBasePath ? doc.getBasePath() : "/db"}`;
         const imports = this.$parseImports(code);
         const self = this;
 
         doc.functions = [];
 
-        fetch("api/query/symbols", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ query: code, base: basePath })
-        })
-        .then(function(response) { return response.json(); })
-        .then(function(symbols) {
+        try {
+            const response = await fetch("api/query/symbols", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ query: code, base: basePath })
+            });
+            const symbols = await response.json();
             const localFuncs = [];
             if (Array.isArray(symbols)) {
-                symbols.forEach(function(sym) {
+                symbols.forEach((sym) => {
                     const isFunc = sym.kind === 12;
                     // Strip arity suffix from function names ("local:foo#1" → "local:foo")
                     const name = isFunc ? sym.name.replace(/#\d+$/, "") : sym.name.replace(/^\$/, "");
                     localFuncs.push({
                         type: isFunc ? Document.TYPE_FUNCTION : Document.TYPE_VARIABLE,
-                        name: name,
+                        name,
                         signature: sym.detail || name,
                         row: sym.line,
                         column: sym.column
@@ -1299,8 +1258,7 @@ export const XQueryModeHelper = (function () {
             } else {
                 onComplete(doc);
             }
-        })
-        .catch(function(err) {
+        } catch (err) {
             console.warn("[outline] symbols fetch failed, falling back:", err);
             // Fall back to regex-based parsing
             self.$parseLocalFunctions(code, doc);
@@ -1309,11 +1267,11 @@ export const XQueryModeHelper = (function () {
             } else {
                 onComplete(doc);
             }
-        });
+        }
     }
-    
-    Constr.prototype.$sortFunctions = function(doc) {
-		doc.functions.sort(function (a, b) {
+
+    $sortFunctions(doc) {
+		doc.functions.sort((a, b) => {
             if (a.source && !b.source)
                 return 1;
             else if (b.source && !a.source)
@@ -1322,8 +1280,8 @@ export const XQueryModeHelper = (function () {
 			    return(a.name === b.name) ? 0 : (a.name > b.name) ? 1 : -1;
 		});
 	}
-    
-    Constr.prototype.$parseLocalFunctions = function(text, doc) {
+
+    $parseLocalFunctions(text, doc) {
         doc.functions = [];
         
         let match =  this.funcDefRe.exec(text), 
@@ -1336,16 +1294,16 @@ export const XQueryModeHelper = (function () {
                 const end = this.$findMatchingParen(text, offset);
                 const name = (funcDef.length === 4 ? funcDef[3] : funcDef[2]).replace(this.trimRe,"");
                 let status = funcDef.length === 4 ? funcDef[2] : "public";
-                const signature =  name + "(" + text.substring(offset, end) + ")"
+                const signature =  `${name}(${text.substring(offset, end)})`
                 if (status.indexOf("%private") !== -1) {status = "private";}
                 const row = text.substring(0, funcDef.index).split("\n").length - 1;
                 doc.functions.push({
                     type: Document.TYPE_FUNCTION,
-                    name: name,
+                    name,
                     visibility: status,
-                    signature: signature,
-                    sort : "$$" + signature,
-                    row: row
+                    signature,
+                    sort : `$$${signature}`,
+                    row
                 });
             };
             match = this.funcDefRe.exec(text);
@@ -1364,9 +1322,9 @@ export const XQueryModeHelper = (function () {
                 const row = text.substring(0, varDef.index).split("\n").length - 1;
                 doc.functions.push({
                     type: Document.TYPE_VARIABLE,
-                    name: name,
-                    sort: "$$" + sort.join(""),
-                    row: row
+                    name,
+                    sort: `$$${sort.join("")}`,
+                    row
                 });
             }
             match = this.varDefRe.exec(text);
@@ -1374,8 +1332,8 @@ export const XQueryModeHelper = (function () {
 
         this.$sortFunctions(doc);
     }
-	
-	Constr.prototype.$findMatchingParen = function (text, offset) {
+
+    $findMatchingParen(text, offset) {
 		let depth = 1;
 		for (let i = offset; i < text.length; i++) {
 			const ch = text.charAt(i);
@@ -1389,8 +1347,8 @@ export const XQueryModeHelper = (function () {
 		}
 		return -1;
 	}
-	
-	Constr.prototype.$parseImports = function(code) {
+
+    $parseImports(code) {
         const ret = [];
         const re = this.parseImportRe;
         let match = re.exec(code);
@@ -1403,8 +1361,8 @@ export const XQueryModeHelper = (function () {
         return ret
 		// return code.match(this.parseImportRe);
 	}
-	
-	Constr.prototype.$resolveImports = function(doc, imports, onComplete) {
+
+    $resolveImports(doc, imports, onComplete) {
 		const $this = this;
 		const functions = [];
 
@@ -1418,12 +1376,12 @@ export const XQueryModeHelper = (function () {
 			}
 		}
 
-		const basePath = "xmldb:exist://" + doc.getBasePath();
+		const basePath = `xmldb:exist://${doc.getBasePath()}`;
 		params.append("base", basePath);
 
-		fetch("api/editor/symbols?" + params.toString())
-		.then(function(response) { return response.json(); })
-		.then(function(modules) {
+		fetch(`api/editor/symbols?${params.toString()}`)
+		.then((response) => { return response.json(); })
+		.then((modules) => {
 			if (modules != null) {
 				for (let i = 0; i < modules.length; i++) {
 					const funcs = modules[i].functions;
@@ -1461,32 +1419,30 @@ export const XQueryModeHelper = (function () {
 		});
 		return functions;
 	}
-    
-    Constr.prototype.initDebugger = function(doc) {
+
+    initDebugger(doc) {
         util.message("The debugger is not available in this version of eXide.");
         return;
     }
-    
-    Constr.prototype.stepOver = function(doc) {
+
+    stepOver(doc) {
         if (this.xqDebugger) {
             this.xqDebugger.stepOver();
         }
     }
-    
-    Constr.prototype.stepInto = function(doc) {
+
+    stepInto(doc) {
         if (this.xqDebugger) {
             this.xqDebugger.stepInto();
         }
     }
-    
-	function escapeHtml(str) {
-		const d = document.createElement("div");
-		d.textContent = str || "";
-		return d.innerHTML;
-	}
+}
 
-	return Constr;
-}());
+function escapeHtml(str) {
+	const d = document.createElement("div");
+	d.textContent = str || "";
+	return d.innerHTML;
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").XQueryModeHelper = XQueryModeHelper;

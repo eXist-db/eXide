@@ -1,4 +1,4 @@
-describe('Navbar', function () {
+describe('Navbar', () => {
 
   it.skip("should display notification", () => {
     cy.visit('/eXide/index.html')
@@ -17,7 +17,7 @@ describe('Navbar', function () {
   })
 
   // as of now cypress does not provide a way to provide clipboard permissions
-  it.skip('should copy to clipboard', function () {
+  it.skip('should copy to clipboard', () => {
     cy.visit('/eXide/index.html')
     cy.wait(500)
     cy.get("#ui-id-1").parents("div.ui-dialog ").within(() => {

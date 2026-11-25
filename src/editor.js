@@ -41,7 +41,6 @@ import { SnippetModeHelper } from "./snippet-helper.js";
 import { Snippets } from "./snippets.js";
 import { TagMatching } from "./tag-matching.js";
 import { mimeTypes, util } from "./util.js";
-import { oop } from "./oop.js";
 import { XMLModeHelper } from "./xml-helper.js";
 import { CompletionSource } from "./xquery-completion.js";
 import { XQueryModeHelper } from "./xquery-helper.js";
@@ -50,247 +49,230 @@ import { XQueryUtils } from "./xquery-utils.js";
 /**
  * The main editor component. Uses CodeMirror 6.
  */
-export const Editor = (function () {
+const EditorView = CM6.EditorView;
+const EditorState = CM6.EditorState;
+const Compartment = CM6.Compartment;
+const keymap = CM6.keymap;
 
-    const EditorView = CM6.EditorView;
-    const EditorState = CM6.EditorState;
-    const Compartment = CM6.Compartment;
-    const keymap = CM6.keymap;
+// Language compartment for switching syntax modes
+const languageCompartment = new Compartment();
+// Theme compartment for switching themes
+const themeCompartment = new Compartment();
+// Read-only compartment
+const readOnlyCompartment = new Compartment();
+// Auto-pair brackets/quotes compartment
+const autoPairCompartment = new Compartment();
+// Line wrapping compartment
+const lineWrappingCompartment = new Compartment();
+// Show invisibles (whitespace) compartment
+const showInvisiblesCompartment = new Compartment();
+// Rectangular selection compartment
+const rectangularSelectionCompartment = new Compartment();
+// Autocompletion compartment (for toggling activateOnTyping)
+const autocompletionCompartment = new Compartment();
 
-    // Language compartment for switching syntax modes
-    const languageCompartment = new Compartment();
-    // Theme compartment for switching themes
-    const themeCompartment = new Compartment();
-    // Read-only compartment
-    const readOnlyCompartment = new Compartment();
-    // Auto-pair brackets/quotes compartment
-    const autoPairCompartment = new Compartment();
-    // Line wrapping compartment
-    const lineWrappingCompartment = new Compartment();
-    // Show invisibles (whitespace) compartment
-    const showInvisiblesCompartment = new Compartment();
-    // Rectangular selection compartment
-    const rectangularSelectionCompartment = new Compartment();
-    // Autocompletion compartment (for toggling activateOnTyping)
-    const autocompletionCompartment = new Compartment();
-
-    function parseErrMsg(error) {
-        let msg;
-        if (error.line) {
-            msg = error["#text"];
-        } else {
-            msg = error;
-        }
-        const str = /.*line:?\s(\d+)/i.exec(msg);
-        let line = -1;
-        if (str) {
-            line = parseInt(str[1]) - 1;
-        } else if (error.line) {
-            line = parseInt(error.line) - 1;
-        }
-        return { line: line, msg: msg };
+/**
+ * Get CM6 language extension for a given syntax mode name.
+ */
+function getLanguageExtension(syntax) {
+    switch (syntax) {
+        case "xquery":
+            return CM6.xquery ? CM6.xquery() : [];
+        case "xml":
+            return CM6.xml();
+        case "html":
+            return CM6.html();
+        case "javascript":
+            return CM6.javascript();
+        case "css":
+            return CM6.css();
+        case "less":
+            return CM6.css(); // Less uses CSS mode
+        case "json":
+            return [CM6.json(), CM6.jsonParseLinter ? CM6.linter(CM6.jsonParseLinter()) : []];
+        case "markdown":
+            return CM6.markdown();
+        default:
+            return [];
     }
+}
 
-    /**
-     * Get CM6 language extension for a given syntax mode name.
-     */
-    function getLanguageExtension(syntax) {
-        switch (syntax) {
-            case "xquery":
-                return CM6.xquery ? CM6.xquery() : [];
-            case "xml":
-                return CM6.xml();
-            case "html":
-                return CM6.html();
-            case "javascript":
-                return CM6.javascript();
-            case "css":
-                return CM6.css();
-            case "less":
-                return CM6.css(); // Less uses CSS mode
-            case "json":
-                return [CM6.json(), CM6.jsonParseLinter ? CM6.linter(CM6.jsonParseLinter()) : []];
-            case "markdown":
-                return CM6.markdown();
-            default:
-                return [];
-        }
-    }
-
-    /**
-     * Build the base set of CM6 extensions.
-     */
-    function buildExtensions($this) {
-        return [
-            CM6.lintGutter(),
-            CM6.lineNumbers(),
-            CM6.highlightActiveLine(),
-            CM6.highlightActiveLineGutter(),
-            CM6.drawSelection(),
-            CM6.dropCursor(),
-            CM6.highlightSpecialChars(),
-            CM6.history(),
-            CM6.foldGutter(),
-            EditorState.allowMultipleSelections.of(true),
-            CM6.bracketMatching(),
-            EditorView.theme({
-                "&.cm-focused .cm-matchingBracket": {
-                    backgroundColor: "rgba(43, 108, 176, 0.15)",
-                    outline: "1px solid rgba(43, 108, 176, 0.3)"
-                },
-                "&.cm-focused .cm-nonmatchingBracket": {
-                    backgroundColor: "rgba(220, 38, 38, 0.15)"
+/**
+ * Build the base set of CM6 extensions.
+ */
+function buildExtensions($this) {
+    return [
+        CM6.lintGutter(),
+        CM6.lineNumbers(),
+        CM6.highlightActiveLine(),
+        CM6.highlightActiveLineGutter(),
+        CM6.drawSelection(),
+        CM6.dropCursor(),
+        CM6.highlightSpecialChars(),
+        CM6.history(),
+        CM6.foldGutter(),
+        EditorState.allowMultipleSelections.of(true),
+        CM6.bracketMatching(),
+        EditorView.theme({
+            "&.cm-focused .cm-matchingBracket": {
+                backgroundColor: "rgba(43, 108, 176, 0.15)",
+                outline: "1px solid rgba(43, 108, 176, 0.3)"
+            },
+            "&.cm-focused .cm-nonmatchingBracket": {
+                backgroundColor: "rgba(220, 38, 38, 0.15)"
+            }
+        }),
+        CM6.highlightSelectionMatches(),
+        autoPairCompartment.of([CM6.closeBrackets(), keymap.of(CM6.closeBracketsKeymap)]),
+        CM6.indentOnInput(),
+        CM6.syntaxHighlighting(CM6.defaultHighlightStyle, { fallback: true }),
+        CM6.syntaxHighlighting(CM6.classHighlighter),
+        CM6.search({ top: true }),
+        keymap.of([
+            ...CM6.defaultKeymap,
+            ...CM6.historyKeymap,
+            ...CM6.foldKeymap,
+            ...CM6.searchKeymap,
+            ...CM6.lintKeymap,
+            CM6.indentWithTab
+        ]),
+        languageCompartment.of([]),
+        themeCompartment.of(CM6.xqueryHighlightStyle ? [CM6.syntaxHighlighting(CM6.xqueryHighlightStyle)] : []),
+        readOnlyCompartment.of(EditorState.readOnly.of(false)),
+        lineWrappingCompartment.of([]),
+        showInvisiblesCompartment.of([]),
+        rectangularSelectionCompartment.of([CM6.rectangularSelection(), CM6.crosshairCursor()]),
+        FuncDocTooltip.extension(),
+        LspHover.extension(),
+        TagMatching.extension(),
+        SemanticHighlight.extension(),
+        // Initial config: explicit-trigger only (Ctrl-Space). Preferences
+        // upgrades this to as-you-type via the compartment reconfigure
+        // in preferences.js if the user opts in.
+        autocompletionCompartment.of(CM6.autocompletion({
+            override: [CompletionSource.completionSource],
+            activateOnTyping: false,
+            maxRenderedOptions: 50,
+            icons: true
+        })),
+        CM6.scrollPastEnd(),
+        editorUtils.flashField,
+        EditorView.domEventHandlers({
+            click(event, view) {
+                // Cmd+Click (Mac) or Ctrl+Click (other) → go to definition
+                const isMac = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
+                if ((isMac && event.metaKey) || (!isMac && event.ctrlKey)) {
+                    event.preventDefault();
+                    $this.exec("gotoDefinition");
+                    return true;
                 }
-            }),
-            CM6.highlightSelectionMatches(),
-            autoPairCompartment.of([CM6.closeBrackets(), keymap.of(CM6.closeBracketsKeymap)]),
-            CM6.indentOnInput(),
-            CM6.syntaxHighlighting(CM6.defaultHighlightStyle, { fallback: true }),
-            CM6.syntaxHighlighting(CM6.classHighlighter),
-            CM6.search({ top: true }),
-            keymap.of([
-                ...CM6.defaultKeymap,
-                ...CM6.historyKeymap,
-                ...CM6.foldKeymap,
-                ...CM6.searchKeymap,
-                ...CM6.lintKeymap,
-                CM6.indentWithTab
-            ]),
-            languageCompartment.of([]),
-            themeCompartment.of(CM6.xqueryHighlightStyle ? [CM6.syntaxHighlighting(CM6.xqueryHighlightStyle)] : []),
-            readOnlyCompartment.of(EditorState.readOnly.of(false)),
-            lineWrappingCompartment.of([]),
-            showInvisiblesCompartment.of([]),
-            rectangularSelectionCompartment.of([CM6.rectangularSelection(), CM6.crosshairCursor()]),
-            FuncDocTooltip.extension(),
-            LspHover.extension(),
-            TagMatching.extension(),
-            SemanticHighlight.extension(),
-            // Initial config: explicit-trigger only (Ctrl-Space). Preferences
-            // upgrades this to as-you-type via the compartment reconfigure
-            // in preferences.js if the user opts in.
-            autocompletionCompartment.of(CM6.autocompletion({
-                override: [CompletionSource.completionSource],
-                activateOnTyping: false,
-                maxRenderedOptions: 50,
-                icons: true
-            })),
-            CM6.scrollPastEnd(),
-            editorUtils.flashField,
-            EditorView.domEventHandlers({
-                click: function(event, view) {
-                    // Cmd+Click (Mac) or Ctrl+Click (other) → go to definition
-                    const isMac = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
-                    if ((isMac && event.metaKey) || (!isMac && event.ctrlKey)) {
-                        event.preventDefault();
-                        $this.exec("gotoDefinition");
-                        return true;
-                    }
-                },
-                keydown: function(event, view) {
-                    const isMac = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
-                    if ((isMac && event.key === "Meta") || (!isMac && event.key === "Control")) {
-                        view.contentDOM.classList.add("cm-goto-clickable");
-                    }
-                },
-                keyup: function(event, view) {
-                    const isMac = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
-                    if ((isMac && event.key === "Meta") || (!isMac && event.key === "Control")) {
-                        view.contentDOM.classList.remove("cm-goto-clickable");
-                    }
-                },
-                blur: function(event, view) {
+            },
+            keydown(event, view) {
+                const isMac = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
+                if ((isMac && event.key === "Meta") || (!isMac && event.key === "Control")) {
+                    view.contentDOM.classList.add("cm-goto-clickable");
+                }
+            },
+            keyup(event, view) {
+                const isMac = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
+                if ((isMac && event.key === "Meta") || (!isMac && event.key === "Control")) {
                     view.contentDOM.classList.remove("cm-goto-clickable");
                 }
-            }),
-            EditorView.updateListener.of(function(update) {
-                if (update.docChanged && $this.activeDoc && !$this._switching) {
-                    if ($this.activeDoc.saved) {
-                        $this.activeDoc.saved = false;
-                        $this.updateTabStatus($this.activeDoc.path, $this.activeDoc);
-                    }
-                    $this.activeDoc.lastChangeEvent = new Date().getTime();
-                    $this.validator.triggerDelayed($this.activeDoc);
-                    $this.$triggerEvent("change", [$this.activeDoc]);
-                    $this.history.push($this.activeDoc.getPath(), $this.activeDoc.getCurrentLine());
+            },
+            blur(event, view) {
+                view.contentDOM.classList.remove("cm-goto-clickable");
+            }
+        }),
+        EditorView.updateListener.of((update) => {
+            if (update.docChanged && $this.activeDoc && !$this._switching) {
+                if ($this.activeDoc.saved) {
+                    $this.activeDoc.saved = false;
+                    $this.updateTabStatus($this.activeDoc.path, $this.activeDoc);
                 }
-                if (update.selectionSet || update.docChanged) {
-                    const head = update.state.selection.main.head;
-                    const line = update.state.doc.lineAt(head);
-                    const col = head - line.from + 1;
-                    const el = document.getElementById("status-cursor");
-                    if (el) {
-                        el.textContent = "Ln " + line.number + ", Col " + col;
-                    }
-                    // Update scope breadcrumb
-                    const scopeEl = document.getElementById("status-scope");
-                    const scopeSep = document.getElementById("status-scope-sep");
-                    if (scopeEl && $this.activeDoc) {
-                        const syntax = $this.activeDoc.getSyntax();
-                        let scopePath = null;
+                $this.activeDoc.lastChangeEvent = new Date().getTime();
+                $this.validator.triggerDelayed($this.activeDoc);
+                $this.$triggerEvent("change", [$this.activeDoc]);
+                $this.history.push($this.activeDoc.getPath(), $this.activeDoc.getCurrentLine());
+            }
+            if (update.selectionSet || update.docChanged) {
+                const head = update.state.selection.main.head;
+                const line = update.state.doc.lineAt(head);
+                const col = head - line.from + 1;
+                const el = document.getElementById("status-cursor");
+                if (el) {
+                    el.textContent = `Ln ${line.number}, Col ${col}`;
+                }
+                // Update scope breadcrumb
+                const scopeEl = document.getElementById("status-scope");
+                const scopeSep = document.getElementById("status-scope-sep");
+                if (scopeEl && $this.activeDoc) {
+                    const syntax = $this.activeDoc.getSyntax();
+                    let scopePath = null;
 
-                        if (syntax === "xquery" && $this.activeDoc.ast) {
-                            const pos = { line: line.number - 1, col: col - 1 };
-                            const node = XQueryUtils.findNode($this.activeDoc.ast, pos);
-                            if (node) {
-                                scopePath = XQueryUtils.getPath(node);
-                            }
-                        } else if (syntax === "xml" || syntax === "html") {
-                            // Walk CM6 syntax tree to build XPath at cursor
-                            const tree = CM6.syntaxTree(update.state);
-                            const treeNode = tree.resolveInner(head, -1);
-                            const steps = [];
-                            let cur = treeNode;
-                            while (cur) {
-                                // Skip SelfClosingTag when parent is Element (avoid double-counting)
-                                if (cur.name === "SelfClosingTag" && cur.parent && cur.parent.name === "Element") {
-                                    cur = cur.parent;
-                                    continue;
-                                }
-                                if (cur.name === "Element" || cur.name === "SelfClosingTag") {
-                                    // Find TagName child
-                                    let child = cur.firstChild;
-                                    while (child) {
-                                        if (child.name === "TagName") {
-                                            steps.unshift(update.state.sliceDoc(child.from, child.to));
-                                            break;
-                                        }
-                                        if (child.name === "OpenTag" || child.name === "SelfClosingTag") {
-                                            let gc = child.firstChild;
-                                            while (gc) {
-                                                if (gc.name === "TagName") {
-                                                    steps.unshift(update.state.sliceDoc(gc.from, gc.to));
-                                                    break;
-                                                }
-                                                gc = gc.nextSibling;
-                                            }
-                                            break;
-                                        }
-                                        child = child.nextSibling;
-                                    }
-                                }
+                    if (syntax === "xquery" && $this.activeDoc.ast) {
+                        const pos = { line: line.number - 1, col: col - 1 };
+                        const node = XQueryUtils.findNode($this.activeDoc.ast, pos);
+                        if (node) {
+                            scopePath = XQueryUtils.getPath(node);
+                        }
+                    } else if (syntax === "xml" || syntax === "html") {
+                        // Walk CM6 syntax tree to build XPath at cursor
+                        const tree = CM6.syntaxTree(update.state);
+                        const treeNode = tree.resolveInner(head, -1);
+                        const steps = [];
+                        let cur = treeNode;
+                        while (cur) {
+                            // Skip SelfClosingTag when parent is Element (avoid double-counting)
+                            if (cur.name === "SelfClosingTag" && cur.parent && cur.parent.name === "Element") {
                                 cur = cur.parent;
+                                continue;
                             }
-                            if (steps.length > 0) {
-                                scopePath = "/" + steps.join("/");
+                            if (cur.name === "Element" || cur.name === "SelfClosingTag") {
+                                // Find TagName child
+                                let child = cur.firstChild;
+                                while (child) {
+                                    if (child.name === "TagName") {
+                                        steps.unshift(update.state.sliceDoc(child.from, child.to));
+                                        break;
+                                    }
+                                    if (child.name === "OpenTag" || child.name === "SelfClosingTag") {
+                                        let gc = child.firstChild;
+                                        while (gc) {
+                                            if (gc.name === "TagName") {
+                                                steps.unshift(update.state.sliceDoc(gc.from, gc.to));
+                                                break;
+                                            }
+                                            gc = gc.nextSibling;
+                                        }
+                                        break;
+                                    }
+                                    child = child.nextSibling;
+                                }
                             }
+                            cur = cur.parent;
                         }
-
-                        if (scopePath) {
-                            scopeEl.textContent = scopePath;
-                            scopeEl.style.display = "";
-                            scopeSep.style.display = "";
-                        } else {
-                            scopeEl.style.display = "none";
-                            scopeSep.style.display = "none";
+                        if (steps.length > 0) {
+                            scopePath = `/${steps.join("/")}`;
                         }
                     }
-                }
-            })
-        ];
-    }
 
-    const Constr = function(container, menubar, projects) {
+                    if (scopePath) {
+                        scopeEl.textContent = scopePath;
+                        scopeEl.style.display = "";
+                        scopeSep.style.display = "";
+                    } else {
+                        scopeEl.style.display = "none";
+                        scopeSep.style.display = "none";
+                    }
+                }
+            }
+        })
+    ];
+}
+
+export class Editor extends Sender {
+    constructor(container, menubar, projects) {
+        super();
         const $this = this;
         $this.container = container;
         $this.menubar = menubar;
@@ -390,8 +372,8 @@ export const Editor = (function () {
             height: 200,
             title: "Go to Line",
             buttons: {
-                "Cancel": function () { $this._gotoLineDlg.close(); $this.editor.focus(); },
-                "Go": function() {
+                "Cancel" () { $this._gotoLineDlg.close(); $this.editor.focus(); },
+                "Go"() {
                     const line = gotoLineEl.querySelector('input[name="row"]').value;
                     const column = gotoLineEl.querySelector('input[name="column"]').value;
                     if (column && column !== "") {
@@ -405,8 +387,8 @@ export const Editor = (function () {
             }
         });
         // Handle Enter key in goto-line dialog inputs
-        gotoLineEl.querySelectorAll("input").forEach(function(input) {
-            input.addEventListener("keyup", function(e) {
+        gotoLineEl.querySelectorAll("input").forEach((input) => {
+            input.addEventListener("keyup", (e) => {
                 if (e.keyCode === 13) {
                     const gotoBtn = $this._gotoLineDlg.dialog.querySelector(".eXide-dialog-buttons button:last-child");
                     if (gotoBtn) gotoBtn.click();
@@ -448,16 +430,16 @@ export const Editor = (function () {
          // Set up west panel tab bar (collections / outline)
         const outlineData = [{label: "collections", cls: "directory"},{label:'outline', cls:"outline"}];
         const tabsOutline = document.getElementById("tabs-outline");
-        outlineData.forEach(function(d, i) {
+        outlineData.forEach((d, i) => {
             const li = document.createElement("li");
             const a = document.createElement("a");
             a.className = "tab";
             a.textContent = d.label;
-            a.addEventListener("click", function() {
-                tabsOutline.querySelectorAll("a.tab").forEach(function(t, ii) {
+            a.addEventListener("click", () => {
+                tabsOutline.querySelectorAll("a.tab").forEach((t, ii) => {
                     t.classList.toggle("active", ii === i);
                 });
-                outlineData.forEach(function(m, ii) {
+                outlineData.forEach((m, ii) => {
                     menubar.editor[m.cls].toggle(ii === i);
                 });
             });
@@ -466,25 +448,22 @@ export const Editor = (function () {
             li.appendChild(a);
             tabsOutline.appendChild(li);
         });
-    };
+    }
 
-    // Extend eXide.events.Sender for event support
-    oop.inherit(Constr, Sender);
-
-    Constr.prototype.init = function() {
+    init() {
         if (this.documents.length === 0)
             this.newDocument(null, "xquery");
         this.initializing = false;
         const currentDoc = this.getActiveDocument();
         this.$triggerEvent("activate", [currentDoc]);
-    };
+    }
 
-    Constr.prototype.setEmmetEnabled = function(enabled) {
+    setEmmetEnabled(enabled) {
         this.enableEmmet = enabled;
         // Emmet not yet supported in CM6 — no-op for now
-    };
+    }
 
-    Constr.prototype.exec = function () {
+    exec() {
         const helper = this.activeDoc.getModeHelper();
         if (helper) {
             const args = Array.prototype.slice.call(arguments, 1);
@@ -492,17 +471,17 @@ export const Editor = (function () {
         } else {
             util.message("Not supported in this mode.");
         }
-    };
+    }
 
-    Constr.prototype.getActiveDocument = function() {
+    getActiveDocument() {
         return this.activeDoc;
-    };
+    }
 
-    Constr.prototype.getText = function() {
+    getText() {
         return this.activeDoc.getText();
-    };
+    }
 
-    Constr.prototype.newDocument = function(data, type) {
+    newDocument(data, type) {
         const $this = this;
         let newDocId = 0;
         for (let i = 0; i < $this.documents.length; i++) {
@@ -520,8 +499,8 @@ export const Editor = (function () {
         } else {
             text = "";
         }
-        const newDocument = new Document("untitled-" + newDocId,
-                "__new__" + newDocId, text);
+        const newDocument = new Document(`untitled-${newDocId}`,
+                `__new__${newDocId}`, text);
         newDocument.saved = true;
         if (type) {
             newDocument.setSyntax(type);
@@ -529,9 +508,9 @@ export const Editor = (function () {
             newDocument.setSyntax("text");
         }
         this.$initDocument(newDocument, true);
-    };
+    }
 
-    Constr.prototype.newDocumentWithText = function(data, mime, resource) {
+    newDocumentWithText(data, mime, resource) {
         const doc = new Document(resource.name, resource.path, data);
         doc.editable = resource.writable;
         doc.mime = mime;
@@ -541,17 +520,17 @@ export const Editor = (function () {
         if (resource.line) {
             editorUtils.gotoLine(this.editor, resource.line);
         }
-    };
+    }
 
-    Constr.prototype.newDocumentFromTemplate = function(mode, template) {
+    async newDocumentFromTemplate(mode, template) {
         if (!template || template.length === 0) {
             this.newDocument(null, mode);
             return;
         }
         const self = this;
-        fetch("api/templates/" + encodeURIComponent(template))
-        .then(function(response) { return response.text(); })
-        .then(function(data) {
+        try {
+            const response = await fetch(`api/templates/${encodeURIComponent(template)}`);
+            const data = await response.text();
             let newDocId = 0;
             for (let i = 0; i < self.documents.length; i++) {
                 const doc = self.documents[i];
@@ -560,23 +539,21 @@ export const Editor = (function () {
                 }
             }
             newDocId++;
-            const newDocument = new Document("untitled-" + newDocId,
-                    "__new__" + newDocId, data);
+            const newDocument = new Document(`untitled-${newDocId}`,
+                    `__new__${newDocId}`, data);
             newDocument.setSyntax(mode);
             newDocument.template = template;
             self.$initDocument(newDocument, true);
-        })
-        .catch(function(error) {
-            util.error("Failed to load template: " + error.message);
-        });
-    };
+        } catch (error) {
+            util.error(`Failed to load template: ${error.message}`);
+        }
+    }
 
-    Constr.prototype.openDocument = function(data, mime, resource, externalPath) {
-        const $this = this;
+    openDocument(data, mime, resource, externalPath) {
         if (!resource.writable)
-            util.message("Opening " + encodeURI(resource.path) + " readonly!");
+            util.message(`Opening ${encodeURI(resource.path)} readonly!`);
         else
-            util.message("Opening " + encodeURI(resource.path));
+            util.message(`Opening ${encodeURI(resource.path)}`);
         if (/\.snippet/.test(resource.name)) {
             mime = "application/tmsnippet";
         } else if (/\.less/.test(resource.name)) {
@@ -602,9 +579,9 @@ export const Editor = (function () {
         }
         this.$initDocument(doc);
         this.directory.toggleEdit(this.activeDoc.getPath(), true)
-    };
+    }
 
-    Constr.prototype.$initDocument = function (doc, setMime) {
+    $initDocument(doc, setMime) {
         const $this = this;
 
         // Save old document state before switching
@@ -627,14 +604,14 @@ export const Editor = (function () {
         if (doc.getModeHelper()) {
             doc.getModeHelper().activate(doc);
         }
-    };
+    }
 
     /**
      * Switch the CM6 view to display a document's content.
      * Sets _switching flag to prevent the updateListener from marking
      * the document as unsaved due to the content replacement.
      */
-    Constr.prototype.$switchView = function(doc) {
+    $switchView(doc) {
         this._switching = true;
         try {
             const text = doc._text || "";
@@ -688,9 +665,9 @@ export const Editor = (function () {
         } finally {
             this._switching = false;
         }
-    };
+    }
 
-    Constr.prototype.setMode = function(mode) {
+    setMode(mode) {
         this.activeDoc.syntax = mode;
         this.$setMode(this.activeDoc, true);
         // Reconfigure language
@@ -705,9 +682,9 @@ export const Editor = (function () {
         this.activeDoc.lastValidation = 0;
         this.activeDoc.lastParsed = 0;
         this.validator.triggerNow(this.activeDoc);
-    };
+    }
 
-    Constr.prototype.$setMode = function(doc, setMime) {
+    $setMode(doc, setMime) {
         switch (doc.getSyntax()) {
         case "xquery":
             if (setMime)
@@ -758,12 +735,12 @@ export const Editor = (function () {
             mode = new ModeHelper(this);
         }
         doc.setModeHelper(mode);
-    };
+    }
 
-    Constr.prototype.closeDocument = function(docToClose) {
+    closeDocument(docToClose) {
         const doc = docToClose || this.activeDoc;
         this.$triggerEvent("close", [doc]);
-        const tabLink = document.querySelector("#tabs a[title=\"" + doc.path + "\"]");
+        const tabLink = document.querySelector(`#tabs a[title="${doc.path}"]`);
         if (tabLink) tabLink.parentNode.remove();
         this.menubar.remove("editors", doc.path);
         for (let i = 0; i < this.documents.length; i++) {
@@ -778,15 +755,15 @@ export const Editor = (function () {
             this.newDocument(null, "xquery");
         else {
             this.activeDoc = this.documents[this.documents.length - 1];
-            const activeTabLink = document.querySelector("#tabs a[title=\"" + this.activeDoc.path + "\"]");
+            const activeTabLink = document.querySelector(`#tabs a[title="${this.activeDoc.path}"]`);
             if (activeTabLink) activeTabLink.classList.add("active");
             this.$switchView(this.activeDoc);
             this.directory.toggleEdit(doc.getPath(), false)
             this.$triggerEvent("activate", [this.activeDoc]);
         }
-    };
+    }
 
-    Constr.prototype.saveDocument = function(resource, successHandler, errorHandler) {
+    async saveDocument(resource, successHandler, errorHandler) {
         const $this = this;
         const oldPath = $this.activeDoc.path;
         const oldName = $this.activeDoc.name;
@@ -795,41 +772,38 @@ export const Editor = (function () {
             $this.activeDoc.name = resource.name
         }
 
-        util.message("Storing resource " + $this.activeDoc.name + "...");
+        util.message(`Storing resource ${$this.activeDoc.name}...`);
 
         const encodedPath = $this.activeDoc.path.replace(/^\//, "").split("/").map(encodeURIComponent).join("/");
-        fetch("api/storage/" + encodedPath, {
-            method: "PUT",
-            headers: {
-                // Always send the editor buffer as opaque bytes.
-                //
-                // The body is already a plain string (getText()), and the server stores it
-                // verbatim. Labelling it with the document's own media type instead makes
-                // roaster parse it into a node first -- an entirely wasted round trip, and
-                // one that used to be lossy: request:get-data() discarded CDATA sections,
-                // so `<![CDATA[ ... ]]>` in a <script> or <style> block came back escaped,
-                // turning `>` into `&gt;` (eXist-db/exist#2081).
-                //
-                // That underlying defect is fixed in eXist core, but sending the buffer as
-                // bytes is correct regardless: there is nothing to gain from parsing and
-                // re-serializing content we already hold as text.
-                //
-                // The stored resource's media type is derived from the file name by the
-                // server, not from this header, so sending octet-stream changes nothing
-                // else about how the resource is stored.
-                "Content-Type": "application/octet-stream"
-            },
-            body: $this.activeDoc.getText()
-        })
-        .then(function(response) {
+        try {
+            const response = await fetch(`api/storage/${encodedPath}`, {
+                method: "PUT",
+                headers: {
+                    // Always send the editor buffer as opaque bytes.
+                    //
+                    // The body is already a plain string (getText()), and the server stores it
+                    // verbatim. Labelling it with the document's own media type instead makes
+                    // roaster parse it into a node first -- an entirely wasted round trip, and
+                    // one that used to be lossy: request:get-data() discarded CDATA sections,
+                    // so `<![CDATA[ ... ]]>` in a <script> or <style> block came back escaped,
+                    // turning `>` into `&gt;` (eXist-db/exist#2081).
+                    //
+                    // That underlying defect is fixed in eXist core, but sending the buffer as
+                    // bytes is correct regardless: there is nothing to gain from parsing and
+                    // re-serializing content we already hold as text.
+                    //
+                    // The stored resource's media type is derived from the file name by the
+                    // server, not from this header, so sending octet-stream changes nothing
+                    // else about how the resource is stored.
+                    "Content-Type": "application/octet-stream"
+                },
+                body: $this.activeDoc.getText()
+            });
             if (!response.ok) {
-                return response.text().then(function(text) {
-                    throw new Error(text);
-                });
+                const text = await response.text();
+                throw new Error(text);
             }
-            return response.json();
-        })
-        .then(function(data) {
+            const data = await response.json();
             if (data.status === "error") {
                 $this.activeDoc.path = oldPath;
                 $this.activeDoc.name = oldName;
@@ -845,7 +819,7 @@ export const Editor = (function () {
                 if (successHandler) {
                     successHandler.apply($this.activeDoc);
                 } else {
-                    util.success($this.activeDoc.name + " stored.");
+                    util.success(`${$this.activeDoc.name} stored.`);
                 }
 
                 const mode = $this.activeDoc.getModeHelper();
@@ -854,8 +828,7 @@ export const Editor = (function () {
                 }
                 $this.$triggerEvent("saved", [$this.activeDoc]);
             }
-        })
-        .catch(function(error) {
+        } catch (error) {
             $this.activeDoc.path = oldPath;
             $this.activeDoc.name = oldName;
             if (errorHandler) {
@@ -863,97 +836,97 @@ export const Editor = (function () {
             } else {
                 util.error(error.message);
             }
-        });
-    };
+        }
+    }
 
-    Constr.prototype.reload = function(data) {
+    reload(data) {
         this.editor.dispatch({
             changes: { from: 0, to: this.editor.state.doc.length, insert: data }
         });
         this.activeDoc._text = data;
         this.activeDoc.saved = true;
         this.updateTabStatus(this.activeDoc.path, this.activeDoc);
-    };
+    }
 
-    Constr.prototype.getDocument = function(path) {
+    getDocument(path) {
         path = util.normalizePath(path);
         for (let i = 0; i < this.documents.length; i++) {
             if (this.documents[i].path === path)
                 return this.documents[i];
         }
         return null;
-    };
+    }
 
-    Constr.prototype.onInput = function (doc, delta) {
+    onInput(doc, delta) {
         const mode = doc.getModeHelper();
         if (mode && mode.onInput) {
             mode.onInput(doc, delta);
         }
-    };
+    }
 
-    Constr.prototype.historyBack = function() {
+    historyBack() {
         const item = this.history.pop();
         if (item) {
             console.log("history event: going to %s at line %d", item.path, item.line);
             eXide.app.findDocument(item.path, item.line + 1);
         }
-    };
+    }
 
-    Constr.prototype.getHeight = function () {
+    getHeight() {
         return document.getElementById("fullscreen").offsetHeight;
-    };
+    }
 
-    Constr.prototype.getWidth = function () {
+    getWidth() {
         return this.container.offsetWidth;
-    };
+    }
 
-    Constr.prototype.getOffset = function() {
+    getOffset() {
         const rect = this.container.getBoundingClientRect();
         return { left: rect.left + window.pageXOffset, top: rect.top + window.pageYOffset };
-    };
+    }
 
-    Constr.prototype.resize = function () {
+    resize() {
         // CM6 auto-resizes; trigger a re-measure if needed
         this.editor.requestMeasure();
-    };
+    }
 
-    Constr.prototype.clearErrors = function () {
+    clearErrors() {
         editorUtils.clearAnnotations(this.editor);
-    };
+    }
 
-    Constr.prototype.toggleDiagnostics = function () {
+    toggleDiagnostics() {
         const panel = this.editor.dom.querySelector(".cm-panel-lint");
         if (panel) {
             CM6.closeLintPanel(this.editor);
         } else {
             CM6.openLintPanel(this.editor);
         }
-    };
+    }
 
-    Constr.prototype.forEachDocument = function(callback) {
+    forEachDocument(callback) {
         const docs = this.documents.slice(0);
         for (let i = 0; i < docs.length; i++) {
             callback(docs[i]);
         }
-    };
+    }
 
-    Constr.prototype.gotoLine = function() {
+    gotoLine() {
         const gotoLineEl = this._gotoLineDlg.content;
-        gotoLineEl.querySelectorAll("input[type='text']").forEach(function(inp) { inp.value = ""; });
+        gotoLineEl.querySelectorAll("input[type='text']").forEach((inp) => { inp.value = ""; });
         this._gotoLineDlg.open();
         const rowInput = gotoLineEl.querySelector('input[name="row"]');
         if (rowInput) rowInput.focus();
-    };
+    }
 
-    Constr.prototype.addTab = function(doc) {
+    addTab(doc) {
         const $this = this;
-        const tabId = "t" + $this.tabCounter++;
+        const tabId = `t${$this.tabCounter++}`;
         let label = doc.name;
         if (label.length > 16) {
-            label = label.substring(0, 13) + "...";
+            label = `${label.substring(0, 13)}...`;
         }
 
-        $this.tabs.querySelectorAll("li a").forEach(function(a) { a.classList.remove("active"); });
+        $this.tabs.querySelectorAll("li a").forEach((a) => { a.classList.remove("active"); });
 
         const li = document.createElement("li");
         const tab = document.createElement("a");
@@ -966,7 +939,7 @@ export const Editor = (function () {
         const closeBtn = document.createElement("span");
         closeBtn.className = "tab-close";
         closeBtn.textContent = "\u00d7";
-        closeBtn.addEventListener("click", function(ev) {
+        closeBtn.addEventListener("click", (ev) => {
             ev.preventDefault();
             ev.stopPropagation();
             $this.closeDocument(doc);
@@ -976,13 +949,13 @@ export const Editor = (function () {
         modDot.className = "tab-modified";
         indicator.appendChild(modDot);
         tab.appendChild(indicator);
-        tab.className = "tab active" + (doc.saved ? "" : " modified");
+        tab.className = `tab active${doc.saved ? "" : " modified"}`;
         tab.id = tabId;
         tab.title = doc.path;
         tab.draggable = true;
         li.appendChild(tab);
 
-        tab.addEventListener("click", function (ev) {
+        tab.addEventListener("click", (ev) => {
             ev.preventDefault();
             $this.switchTo(doc);
         });
@@ -1059,7 +1032,7 @@ export const Editor = (function () {
             $this.tabs.querySelector("ul").appendChild(li);
         }
 
-        $this.menubar.add("editors", label, tab.title, $this.documents.length + 1, function() {
+        $this.menubar.add("editors", label, tab.title, $this.documents.length + 1, () => {
             $this.switchTo(doc);
         });
 
@@ -1069,25 +1042,25 @@ export const Editor = (function () {
             $this.$triggerEvent("activate", [doc]);
         }
         $this.scrollToTab(tab);
-    };
+    }
 
-    Constr.prototype.rebuildBuffersMenu = function() {
+    rebuildBuffersMenu() {
         const self = this;
         self.menubar.removeAll("editors");
-        self.documents.forEach(function(doc, idx) {
+        self.documents.forEach((doc, idx) => {
             let label = doc.name;
             if (label.length > 16) {
-                label = label.substring(0, 13) + "...";
+                label = `${label.substring(0, 13)}...`;
             }
             if (!doc.saved)
                 label += "*";
-            self.menubar.add("editors", label, doc.path, idx + 1, function() {
+            self.menubar.add("editors", label, doc.path, idx + 1, () => {
                 self.switchTo(doc);
             });
         });
-    };
+    }
 
-    Constr.prototype.selectTab = function(pos) {
+    selectTab(pos) {
         const self = this;
         if (pos >= 0 && pos < this.documents.length) {
             this.switchTo(this.documents[pos]);
@@ -1100,16 +1073,16 @@ export const Editor = (function () {
                 });
             }
             if (items.length > 0) {
-                QuickPicker.show(items, function (selected) {
+                QuickPicker.show(items, (selected) => {
                     if (selected) {
                         self.switchTo(self.documents[selected.pos]);
                     }
                 }, { placeholder: "Switch to file\u2026" });
             }
         }
-    };
+    }
 
-    Constr.prototype.switchTo = function(doc) {
+    switchTo(doc) {
         // Save current document state before switching
         if (this.activeDoc && this.activeDoc !== doc) {
             this.activeDoc._text = this.editor.state.doc.toString();
@@ -1126,7 +1099,7 @@ export const Editor = (function () {
         this.$switchView(doc);
         this.activeDoc = doc;
         const $this = this;
-        $this.tabs.querySelectorAll("a").forEach(function (el) {
+        $this.tabs.querySelectorAll("a").forEach((el) => {
             if (el.title === doc.path) {
                 el.classList.add("active");
                 $this.scrollToTab(el);
@@ -1146,14 +1119,14 @@ export const Editor = (function () {
         if (!this.activeDoc.ast) {
             this.validator.triggerNow(this.activeDoc);
         }
-    };
+    }
 
-    Constr.prototype.updateTabStatus = function(oldPath, doc) {
+    updateTabStatus(oldPath, doc) {
         let label = doc.name;
         if (label.length > 16) {
-            label = label.substring(0, 13) + "...";
+            label = `${label.substring(0, 13)}...`;
         }
-        const tabLink = this.tabs.querySelector("a[title=\"" + oldPath + "\"]");
+        const tabLink = this.tabs.querySelector(`a[title="${oldPath}"]`);
         if (tabLink) {
             tabLink.setAttribute("title", doc.path);
             const tabLabel = tabLink.querySelector(".tab-label");
@@ -1162,15 +1135,15 @@ export const Editor = (function () {
             }
             tabLink.classList.toggle("modified", !doc.saved);
         }
-    };
+    }
 
-    Constr.prototype.scrollToTab = function (current) {
+    scrollToTab(current) {
         const strip = document.getElementById("tab-strip-wrap");
         if (!strip) return;
         current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-    };
+    }
 
-    Constr.prototype.setTheme = function(theme) {
+    setTheme(theme) {
         console.log("Changing theme to %s", theme);
         const isDark = (theme === "dark");
         const themeExt = isDark ? [
@@ -1191,15 +1164,15 @@ export const Editor = (function () {
         this.editor.dispatch({
             effects: this._themeCompartment.reconfigure(themeExt)
         });
-        this.$triggerEvent("setTheme", [{ isDark: isDark }]);
-    };
+        this.$triggerEvent("setTheme", [{ isDark }]);
+    }
 
     /**
      * Update the status bar error channel (#error-status → red pill).
      * Non-empty messages clear the calm validation segment so valid and
      * invalid never share the same chrome.
      */
-    Constr.prototype.updateStatus = function(msg, href) {
+    updateStatus(msg, href) {
         this.status.textContent = msg;
         if (href) {
             this.status.href = href;
@@ -1207,14 +1180,14 @@ export const Editor = (function () {
         if (msg) {
             this.clearValidationStatus();
         }
-    };
+    }
 
     /**
      * Show a non-error XML validation outcome in #validation-status
      * ("Well-formed only" / "Validated against …"). Clears the error
      * channel so the red pill does not linger over a successful result.
      */
-    Constr.prototype.setValidationStatus = function(msg) {
+    setValidationStatus(msg) {
         if (!this.validationStatus) {
             return;
         }
@@ -1236,13 +1209,13 @@ export const Editor = (function () {
                 this.validationStatusSep.hidden = true;
             }
         }
-    };
+    }
 
-    Constr.prototype.clearValidationStatus = function() {
+    clearValidationStatus() {
         this.setValidationStatus("");
-    };
+    }
 
-    Constr.prototype.evalError = function(msg, gotoLine, errObj) {
+    evalError(msg, gotoLine, errObj) {
         // Prefer the structured line number from errObj when provided;
         // otherwise parse "line N" out of the formatted message string
         // (older code paths that don't supply errObj).
@@ -1275,7 +1248,7 @@ export const Editor = (function () {
             if (errObj && typeof errObj === "object") {
                 try {
                     this.status.dataset.error = JSON.stringify(errObj);
-                } catch (e) {
+                } catch {
                     delete this.status.dataset.error;
                 }
             } else {
@@ -1283,41 +1256,38 @@ export const Editor = (function () {
             }
         }
         editorUtils.setAnnotations(this.editor, annotation);
-    };
+    }
 
-    Constr.prototype.focus = function() {
+    focus() {
         this.editor.focus();
-    };
+    }
 
-    Constr.prototype.saveState = function() {
-        const $this = this;
+    saveState() {
         let i = 0;
-        this.documents.forEach(function (doc, index) {
+        this.documents.forEach((doc, index) => {
             if (doc.path.match('^__new__.*')) {
                 const data = doc.getText();
                 if (data && data.length > 0) {
-                    localStorage["eXide." + i + ".path"] = doc.path;
-                    localStorage["eXide." + i + ".name"] = doc.name;
-                    localStorage["eXide." + i + ".mime"] = doc.mime;
-                    localStorage["eXide." + i + ".data"] = doc.getText();
-                    localStorage["eXide." + i + ".last-line"] = doc.getCurrentLine();
+                    localStorage[`eXide.${i}.path`] = doc.path;
+                    localStorage[`eXide.${i}.name`] = doc.name;
+                    localStorage[`eXide.${i}.mime`] = doc.mime;
+                    localStorage[`eXide.${i}.data`] = doc.getText();
+                    localStorage[`eXide.${i}.last-line`] = doc.getCurrentLine();
                 }
             } else {
-                localStorage["eXide." + i + ".path"] = doc.path;
-                localStorage["eXide." + i + ".name"] = doc.name;
-                localStorage["eXide." + i + ".mime"] = doc.mime;
-                localStorage["eXide." + i + ".writable"] = (doc.editable ? "true" : "false");
-                localStorage["eXide." + i + ".last-line"] = doc.getCurrentLine();
+                localStorage[`eXide.${i}.path`] = doc.path;
+                localStorage[`eXide.${i}.name`] = doc.name;
+                localStorage[`eXide.${i}.mime`] = doc.mime;
+                localStorage[`eXide.${i}.writable`] = (doc.editable ? "true" : "false");
+                localStorage[`eXide.${i}.last-line`] = doc.getCurrentLine();
                 if (!doc.saved)
-                    localStorage["eXide." + i + ".data"] = doc.getText();
+                    localStorage[`eXide.${i}.data`] = doc.getText();
             }
             i++;
         });
         localStorage["eXide.documents"] = i;
-    };
-
-    return Constr;
-}());
+    }
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").Editor = Editor;

@@ -53,10 +53,10 @@ export const FuncDocTooltip = (function () {
     // --- Tooltip State Field ---
 
     const funcDocField = StateField.define({
-        create: function () {
+        create () {
             return null;
         },
-        update: function (value, tr) {
+        update (value, tr) {
             for (let i = 0; i < tr.effects.length; i++) {
                 const e = tr.effects[i];
                 if (e.is(setFuncDocItems)) {
@@ -68,8 +68,8 @@ export const FuncDocTooltip = (function () {
             }
             return value;
         },
-        provide: function (field) {
-            return showTooltip.computeN([field], function (state) {
+        provide (field) {
+            return showTooltip.computeN([field], (state) => {
                 const data = state.field(field);
                 if (!data) return [];
                 return [makeTooltip(data)];
@@ -85,7 +85,7 @@ export const FuncDocTooltip = (function () {
             above: true,
             strictSide: false,
             arrow: false,
-            create: function (view) {
+            create (view) {
                 return { dom: buildTooltipDOM(view, data) };
             }
         };
@@ -127,7 +127,7 @@ export const FuncDocTooltip = (function () {
         // --- Status bar ---
         const statusBar = document.createElement("div");
         statusBar.className = "cm-funcdoc-status";
-        statusBar.textContent = items.length + " match" + (items.length !== 1 ? "es" : "");
+        statusBar.textContent = `${items.length} match${items.length !== 1 ? "es" : ""}`;
         container.appendChild(statusBar);
 
         // --- Populate list ---
@@ -142,7 +142,7 @@ export const FuncDocTooltip = (function () {
                 rows.push({ el: row, item: filtered[i] });
                 listPane.appendChild(row);
             }
-            statusBar.textContent = filtered.length + " match" + (filtered.length !== 1 ? "es" : "");
+            statusBar.textContent = `${filtered.length} match${filtered.length !== 1 ? "es" : ""}`;
             if (rows.length > 0) {
                 selectedIndex = 0;
                 activateRow(0);
@@ -170,11 +170,11 @@ export const FuncDocTooltip = (function () {
                 row.appendChild(retType);
             }
 
-            row.addEventListener("click", function () {
+            row.addEventListener("click", () => {
                 activateRow(parseInt(row.getAttribute("data-index"), 10));
             });
 
-            row.addEventListener("dblclick", function () {
+            row.addEventListener("dblclick", () => {
                 if (onSelect) {
                     onSelect(rows[parseInt(row.getAttribute("data-index"), 10)].item);
                 }
@@ -225,7 +225,7 @@ export const FuncDocTooltip = (function () {
             if (item.leftLabel) {
                 const retSpan = document.createElement("span");
                 retSpan.className = "cm-funcdoc-detail-returns-inline";
-                retSpan.textContent = " as " + item.leftLabel;
+                retSpan.textContent = ` as ${item.leftLabel}`;
                 sigHeader.appendChild(retSpan);
             }
             detailPane.appendChild(sigHeader);
@@ -252,7 +252,7 @@ export const FuncDocTooltip = (function () {
                     for (let i = 0; i < item.arguments.length; i++) {
                         const arg = item.arguments[i];
                         const dt = document.createElement("dt");
-                        dt.textContent = "$" + arg.name + " as " + arg.type;
+                        dt.textContent = `$${arg.name} as ${arg.type}`;
                         dl.appendChild(dt);
                         if (arg.description) {
                             const dd = document.createElement("dd");
@@ -305,7 +305,7 @@ export const FuncDocTooltip = (function () {
                 const insertBtn = document.createElement("button");
                 insertBtn.className = "cm-funcdoc-insert-btn";
                 insertBtn.textContent = "Insert";
-                insertBtn.addEventListener("click", function () {
+                insertBtn.addEventListener("click", () => {
                     if (onSelect) onSelect(item);
                     dismiss(view);
                 });
@@ -317,20 +317,20 @@ export const FuncDocTooltip = (function () {
             if (item.path || item.source) {
                 const srcDiv = document.createElement("div");
                 srcDiv.className = "cm-funcdoc-detail-source";
-                srcDiv.textContent = "Source: " + (item.path || item.source);
+                srcDiv.textContent = `Source: ${item.path || item.source}`;
                 detailPane.appendChild(srcDiv);
             }
         }
 
         // --- Filtering ---
-        filterInput.addEventListener("input", function () {
+        filterInput.addEventListener("input", () => {
             const term = filterInput.value;
             if (!term) {
                 renderList(items);
                 return;
             }
             const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
-            const filtered = items.filter(function (item) {
+            const filtered = items.filter((item) => {
                 const text = item.text || item.signature || item.name || item.label;
                 return regex.test(text);
             });
@@ -338,7 +338,7 @@ export const FuncDocTooltip = (function () {
         });
 
         // --- Keyboard handling ---
-        container.addEventListener("keydown", function (ev) {
+        container.addEventListener("keydown", (ev) => {
             if (ev.key === "ArrowDown" || ev.key === "Down") {
                 ev.preventDefault();
                 if (selectedIndex < rows.length - 1) activateRow(selectedIndex + 1);
@@ -361,7 +361,7 @@ export const FuncDocTooltip = (function () {
         renderList(items);
 
         // Focus the filter input after a tick (tooltip needs to be in DOM first)
-        setTimeout(function () {
+        setTimeout(() => {
             filterInput.focus();
         }, 0);
 
@@ -379,8 +379,8 @@ export const FuncDocTooltip = (function () {
         const pos = view.state.selection.main.head;
         view.dispatch({
             effects: setFuncDocItems.of({
-                pos: pos,
-                items: items,
+                pos,
+                items,
                 onSelect: onSelect || null
             })
         });
@@ -391,9 +391,9 @@ export const FuncDocTooltip = (function () {
     }
 
     return {
-        show: show,
-        dismiss: dismiss,
-        extension: extension
+        show,
+        dismiss,
+        extension
     };
 }());
 

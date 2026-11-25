@@ -23,31 +23,23 @@ import { editorUtils } from "./editor-utils.js";
 import { ModeHelper } from "./mode-helper.js";
 import { QuickPicker } from "./quick-picker.js";
 import { util } from "./util.js";
-import { oop } from "./oop.js";
 
 /**
  * JavaScript specific helper methods.
  */
-export const JavascriptModeHelper = (function () {
+const RE_FUNC_NAME = /^[$\w\-_]+/;
 
-    const RE_FUNC_NAME = /^[\$\w\-_]+/;
-
-    const Constr = function(editor) {
-        this.parent = editor;
-        this.editor = this.parent.editor;
+export class JavascriptModeHelper extends ModeHelper {
+    constructor(editor) {
+        super(editor);
         this.addCommand("gotoDefinition", this.gotoDefinition);
-        this.addCommand("locate", this.locate);
-        this.addCommand("gotoSymbol", this.gotoSymbol);
-        this.addCommand("format", this.format);
     }
 
-    oop.inherit(Constr, ModeHelper);
-
-    Constr.prototype.createOutline = function(doc, onComplete) {
+    createOutline(doc, onComplete) {
         const state = this.editor.state;
         const tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
         tree.iterate({
-            enter: function(node) {
+            enter(node) {
                 const type = Document.TYPE_FUNCTION;
                 let name = null, sig = null;
                 if (node.name === "FunctionDeclaration") {
@@ -57,7 +49,7 @@ export const JavascriptModeHelper = (function () {
                 } else if (node.name === "ClassDeclaration") {
                     const cn = node.node.getChild("VariableDefinition");
                     if (cn) name = state.sliceDoc(cn.from, cn.to);
-                    if (name) sig = "class " + name;
+                    if (name) sig = `class ${name}`;
                 } else if (node.name === "MethodDeclaration") {
                     const pn = node.node.getChild("PropertyDefinition");
                     if (pn) name = state.sliceDoc(pn.from, pn.to);
@@ -72,7 +64,7 @@ export const JavascriptModeHelper = (function () {
                             const nextSib = child.nextSibling;
                             if (nextSib && (nextSib.name === "ArrowFunction" || nextSib.name === "FunctionExpression")) {
                                 name = vname;
-                                sig = keyword + " " + vname + " = " + (nextSib.name === "ArrowFunction" ? "() => …" : "function(…)");
+                                sig = `${keyword} ${vname} = ${nextSib.name === "ArrowFunction" ? "() => …" : "function(…)"}`;
                             }
                         }
                         child = child.nextSibling;
@@ -81,8 +73,8 @@ export const JavascriptModeHelper = (function () {
                 if (name) {
                     const line = state.doc.lineAt(node.from);
                     doc.functions.push({
-                        type: type,
-                        name: name,
+                        type,
+                        name,
                         signature: sig || name,
                         sort: name,
                         row: line.number - 1,
@@ -96,28 +88,28 @@ export const JavascriptModeHelper = (function () {
         });
         this.collectErrors(doc);
         if (onComplete) onComplete(doc);
-    };
+    }
 
-    Constr.prototype.gotoSymbol = function(doc) {
+    gotoSymbol(doc) {
         const self = this;
         // Ensure outline is populated
         if (!doc.functions || doc.functions.length === 0) {
             doc.functions = [];
-            this.createOutline(doc, function() {
+            this.createOutline(doc, () => {
                 self._showSymbolPicker(doc);
             });
         } else {
             this._showSymbolPicker(doc);
         }
-    };
+    }
 
-    Constr.prototype._showSymbolPicker = function(doc) {
+    _showSymbolPicker(doc) {
         const self = this;
         if (!doc.functions || doc.functions.length === 0) {
             util.message("No symbols found.");
             return;
         }
-        const items = doc.functions.map(function(f) {
+        const items = doc.functions.map((f) => {
             return {
                 label: f.signature || f.name,
                 name: f.name,
@@ -125,7 +117,7 @@ export const JavascriptModeHelper = (function () {
                 from: f.from
             };
         });
-        QuickPicker.show(items, function (selected) {
+        QuickPicker.show(items, (selected) => {
             if (selected) {
                 self.parent.history.push(doc.getPath(), doc.getCurrentLine());
                 if (selected.from !== undefined) {
@@ -140,17 +132,17 @@ export const JavascriptModeHelper = (function () {
                 }
             }
         }, { placeholder: "Go to symbol\u2026", parentEditor: self.editor });
-    };
+    }
 
-    Constr.prototype.gotoDefinition = function (doc) {
+    gotoDefinition(doc) {
         const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
         const funcName = this.getFunctionAtCursor(lead);
         if (funcName) {
             this.locate(doc, null, funcName);
         }
-    };
+    }
 
-    Constr.prototype.locate = function(doc, type, name) {
+    locate(doc, type, name) {
         if (typeof name === "number") {
             editorUtils.gotoLine(this.editor, name + 1);
         } else {
@@ -160,9 +152,9 @@ export const JavascriptModeHelper = (function () {
                 editorUtils.gotoLine(this.editor, func.row + 1);
             }
         }
-    };
+    }
 
-    Constr.prototype.getFunctionAtCursor = function (lead) {
+    getFunctionAtCursor(lead) {
         const row = lead.row;
         const lineNum = row + 1;
         const line = (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) ? this.editor.state.doc.line(lineNum).text : "";
@@ -176,10 +168,8 @@ export const JavascriptModeHelper = (function () {
             end++;
         }
         return line.substring(start, end);
-    };
-
-    return Constr;
-}());
+    }
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").JavascriptModeHelper = JavascriptModeHelper;

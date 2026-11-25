@@ -21,77 +21,62 @@ import { namespace } from "./namespace.js";
 import { Document } from "./document.js";
 import { ModeHelper } from "./mode-helper.js";
 import { util } from "./util.js";
-import { oop } from "./oop.js";
 
 /**
  * Less specific helper methods.
  */
-export const LessModeHelper = (function () {
-
-    function saveCSS (path, css) {
-        fetch("store/" + path, {
+async function saveCSS (path, css) {
+    try {
+        const response = await fetch(`store/${path}`, {
             method: "PUT",
             headers: { "Content-Type": "text/css" },
             body: css
-        })
-        .then(function(response) { return response.json(); })
-        .then(function(data) {
-            if (data.status === "error") {
-                return util.error(data.message);
-            }
-            util.message(path + " stored.");
-        })
-        .catch(function(err) {
-            util.error(String(err));
         });
+        const data = await response.json();
+        if (data.status === "error") {
+            return util.error(data.message);
+        }
+        util.message(`${path} stored.`);
+    } catch (err) {
+        util.error(String(err));
     }
+}
 
-    const Constr = function(editor) {
-        this.parent = editor;
-        this.editor = this.parent.editor;
-        this.addCommand("locate", this.locate);
-        this.addCommand("format", this.format);
-        this.addCommand("gotoSymbol", this.gotoSymbol);
-    };
-
-    oop.inherit(Constr, ModeHelper);
-
-    Constr.prototype.documentSaved = function(doc) {
+export class LessModeHelper extends ModeHelper {
+    documentSaved(doc) {
         const path = doc.getExternalLink();
         const code = doc.getText();
 
         if (/\/_.+\.less$/.test(path)) {
-          return util.error("CSS not compiled for include : " + path);
+          return util.error(`CSS not compiled for include : ${path}`);
         }
 
         const options = {
             filename: path
         };
 
-        const header = "/**\n" +
-                      " * THIS IS A GENERATED FILE\n" +
-                      " * to make changes edit\n" +
-                      " * " + path + "\n" +
-                      " */\n\n";
+        const header = `/**\n` +
+                      ` * THIS IS A GENERATED FILE\n` +
+                      ` * to make changes edit\n` +
+                      ` * ${path}\n` +
+                      ` */\n\n`;
 
         const handler = function (err, output) {
             if (err) {
-                return util.error("Error: " + err.message);
+                return util.error(`Error: ${err.message}`);
             }
-            util.message("Compiled less file: " + path);
+            util.message(`Compiled less file: ${path}`);
             const cssPath = doc.getPath().replace(/\.less$/, ".css");
             saveCSS(cssPath, header + output.css);
         };
         less.render(code, options, handler);
-    };
+    }
 
-    Constr.prototype.saveCSS = saveCSS;
-
-    Constr.prototype.createOutline = function(doc, onComplete) {
+    createOutline(doc, onComplete) {
         const state = this.editor.state;
         const tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
         tree.iterate({
-            enter: function(node) {
+            enter(node) {
                 if (node.name === "RuleSet") {
                     let blockStart = node.to;
                     let child = node.node.firstChild;
@@ -119,7 +104,7 @@ export const LessModeHelper = (function () {
                     let text = state.sliceDoc(node.from, node.to);
                     const braceIdx = text.indexOf("{");
                     if (braceIdx >= 0) text = text.substring(0, braceIdx).trim();
-                    if (text.length > 60) text = text.substring(0, 60) + "…";
+                    if (text.length > 60) text = `${text.substring(0, 60)}…`;
                     const line = state.doc.lineAt(node.from);
                     doc.functions.push({
                         type: Document.TYPE_FUNCTION,
@@ -137,9 +122,9 @@ export const LessModeHelper = (function () {
         this.collectErrors(doc);
         if (onComplete) onComplete(doc);
     }
+}
 
-    return Constr;
-}());
+LessModeHelper.prototype.saveCSS = saveCSS;
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").LessModeHelper = LessModeHelper;

@@ -69,7 +69,7 @@ function computeTerminalPos(value, sl, sc) {
     const el = sl + lines.length - 1;
     const lastIdx = value.lastIndexOf("\n");
     const ec = lastIdx === -1 ? sc + value.length : value.substring(lastIdx + 1).length;
-    return { sl: sl, sc: sc, el: el, ec: ec };
+    return { sl, sc, el, ec };
 }
 
 /**
@@ -81,27 +81,27 @@ function extractTree(handler, input) {
     let root = null;
 
     handler.serialize({
-        reset: function() {},
-        startNonterminal: function(name, begin) {
-            const node = { name: name, begin: begin, end: begin, children: [], isTerminal: false };
+        reset() {},
+        startNonterminal(name, begin) {
+            const node = { name, begin, end: begin, children: [], isTerminal: false };
             if (stack.length > 0) {
                 stack[stack.length - 1].children.push(node);
             }
             stack.push(node);
             if (!root) root = node;
         },
-        endNonterminal: function(name, end) {
+        endNonterminal(name, end) {
             stack[stack.length - 1].end = end;
             stack.pop();
         },
-        terminal: function(name, begin, end) {
-            const node = { name: name, begin: begin, end: end, isTerminal: true };
+        terminal(name, begin, end) {
+            const node = { name, begin, end, isTerminal: true };
             if (stack.length > 0) {
                 stack[stack.length - 1].children.push(node);
             }
         },
-        whitespace: function(begin, end) {
-            const node = { name: "WS", begin: begin, end: end, isTerminal: true };
+        whitespace(begin, end) {
+            const node = { name: "WS", begin, end, isTerminal: true };
             if (stack.length > 0) {
                 stack[stack.length - 1].children.push(node);
             }
@@ -134,10 +134,10 @@ function convertTerminal(rexNode, input, lineOffsets) {
     const pos = computeTerminalPos(value, start.line, start.col);
 
     return {
-        name: name,
+        name,
         children: [],
-        value: value,
-        pos: pos,
+        value,
+        pos,
         getParent: null
     };
 }
@@ -355,7 +355,7 @@ function parseXQuery(input, ParserConstructor) {
     } catch (e) {
         try {
             error = parser.getErrorMessage(e);
-        } catch (_) {
+        } catch {
             error = e.message || String(e);
         }
     }
@@ -364,7 +364,7 @@ function parseXQuery(input, ParserConstructor) {
     const lineOffsets = buildLineOffsets(input);
     const ast = convertNode(rexRoot, input, lineOffsets);
 
-    return { ast: ast, error: error };
+    return { ast, error };
 }
 
 export const rexParserAdapter = { parseXQuery };

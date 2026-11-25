@@ -24,7 +24,7 @@ function makeShortLabel(raw) {
     s = s.replace(/^err:[A-Z0-9]+\s+/i, '');
     // Strip location suffix "[at line N, column N, source: ...]"
     s = s.replace(/\s*\[at line[\s\S]*$/, '');
-    return s.length > 55 ? s.substring(0, 53) + '\u2026' : s;
+    return s.length > 55 ? `${s.substring(0, 53)}\u2026` : s;
 }
 function escapeHtml(s) {
     return String(s)
@@ -62,17 +62,17 @@ function formatStructuredPanelHtml(errObj, raw) {
     function row(label, value, cssClass) {
         if (value === null || value === undefined || value === '') return;
         rows.push(
-            '<div class="ep-field ep-field-' + cssClass + '">' +
-              '<span class="ep-field-label">' + label + '</span>' +
-              '<span class="ep-field-value">' + escapeHtml(value) + '</span>' +
-            '</div>'
+            `<div class="ep-field ep-field-${cssClass}">` +
+              `<span class="ep-field-label">${label}</span>` +
+              `<span class="ep-field-value">${escapeHtml(value)}</span>` +
+            `</div>`
         );
     }
     row('Code', errObj.code, 'code');
     let loc = '';
     if (errObj.line) {
-        loc = 'line ' + errObj.line;
-        if (errObj.column) loc += ', column ' + errObj.column;
+        loc = `line ${errObj.line}`;
+        if (errObj.column) loc += `, column ${errObj.column}`;
     }
     if (loc) row('Location', loc, 'loc');
     row('Description', errObj.message, 'desc');
@@ -90,17 +90,17 @@ function formatStructuredPanelHtml(errObj, raw) {
 function formatTitleDump(errObj, raw) {
     if (!errObj) return raw;
     const lines = [];
-    if (errObj.code) lines.push('Code:        ' + errObj.code);
+    if (errObj.code) lines.push(`Code:        ${errObj.code}`);
     if (errObj.line) {
-        let l = 'Location:    line ' + errObj.line;
-        if (errObj.column) l += ', column ' + errObj.column;
+        let l = `Location:    line ${errObj.line}`;
+        if (errObj.column) l += `, column ${errObj.column}`;
         lines.push(l);
     }
-    if (errObj.message) lines.push('Description: ' + errObj.message);
+    if (errObj.message) lines.push(`Description: ${errObj.message}`);
     // #71's `raw` is the full boilerplate behind the concise message; expose
     // it in the hover dump when it adds detail beyond the message shown.
     if (errObj.raw && errObj.raw !== errObj.message) {
-        lines.push('Raw:         ' + errObj.raw);
+        lines.push(`Raw:         ${errObj.raw}`);
     }
     return lines.length ? lines.join('\n') : (errObj.error || raw);
 }
@@ -127,7 +127,7 @@ function init() {
     function readStructured() {
         const json = errSource.dataset.error;
         if (!json) return null;
-        try { return JSON.parse(json); } catch (e) { return null; }
+        try { return JSON.parse(json); } catch { return null; }
     }
     function updatePill(raw, open) {
         if (!raw) {
@@ -192,7 +192,7 @@ function init() {
     // ── MutationObserver ─────────────────────────────────────────────────────
     // Watches #error-status (which eXide owns). We never write to it,
     // so there is no risk of a feedback loop.
-    const observer = new MutationObserver(function () {
+    const observer = new MutationObserver(() => {
         const raw = errSource.textContent.trim();
         const struct = readStructured();
         const structJson = struct ? JSON.stringify(struct) : null;
@@ -209,11 +209,11 @@ function init() {
         attributeFilter: ['data-error']
     });
     // ── Event wiring ─────────────────────────────────────────────────────────
-    pill.addEventListener('click', function () {
+    pill.addEventListener('click', () => {
         if (!currentRaw) return;
         panelOpen ? hidePanel() : showPanel();
     });
-    pill.addEventListener('keydown', function (e) {
+    pill.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             if (!currentRaw) return;
@@ -229,12 +229,12 @@ function init() {
     // the panel; the pill stayed visible.
     const dismissBtn = document.getElementById('exide-err-panel-dismiss');
     if (dismissBtn) {
-        dismissBtn.addEventListener('click', function () {
+        dismissBtn.addEventListener('click', () => {
             errSource.textContent = '';
         });
     }
     if (copyBtn) {
-        copyBtn.addEventListener('click', function () {
+        copyBtn.addEventListener('click', async () => {
             if (!currentRaw) return;
             // When the structured payload is available, copy the full dump
             // (every field, one per line). Otherwise fall back to the raw
@@ -242,13 +242,12 @@ function init() {
             const text = currentErr
                 ? formatTitleDump(currentErr, currentRaw)
                 : currentRaw;
-            navigator.clipboard.writeText(text).then(function () {
-                copyBtn.classList.add('ep-copied');
-                setTimeout(function () { copyBtn.classList.remove('ep-copied'); }, 1500);
-            });
+            await navigator.clipboard.writeText(text);
+            copyBtn.classList.add('ep-copied');
+            setTimeout(() => { copyBtn.classList.remove('ep-copied'); }, 1500);
         });
     }
-    document.addEventListener('keydown', function (e) {
+    document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && panelOpen) hidePanel();
     });
     // ── Initialize with current state ────────────────────────────────────────

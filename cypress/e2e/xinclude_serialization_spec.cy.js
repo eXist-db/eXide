@@ -1,10 +1,10 @@
 // Guards db:load-document's expand-xincludes handling.
 
 const COLLECTION = '/db/cypress-xinclude'
-const MAIN = COLLECTION + '/main.xml'
+const MAIN = `${COLLECTION}/main.xml`
 
 function storageUrl(dbPath) {
-  return '/eXide/api/storage/' + dbPath.replace(/^\//, '').split('/').map(encodeURIComponent).join('/')
+  return `/eXide/api/storage/${dbPath.replace(/^\//, '').split('/').map(encodeURIComponent).join('/')}`
 }
 
 function cleanup() {
@@ -39,7 +39,7 @@ context('XInclude serialization on open', () => {
   })
 
   it('?expand-xincludes=true expands the include', () => {
-    cy.request(storageUrl(MAIN) + '?expand-xincludes=true').then((r) => {
+    cy.request(`${storageUrl(MAIN)}?expand-xincludes=true`).then((r) => {
       expect(r.body.content).to.contain('INCLUDED-CONTENT')
       expect(r.body.content).to.not.contain('<xi:include')
     })
@@ -53,10 +53,10 @@ context('XInclude serialization on open', () => {
   // test environment.
   it.skip('future: existdb-openapi /api/db/resource honors expand-xincludes server-side', () => {
     const path = encodeURIComponent('/db/cypress-xinclude/main.xml')
-    cy.request('/existdb-openapi/api/db/resource?path=' + path + '&expand-xincludes=false').then((r) => {
+    cy.request(`/existdb-openapi/api/db/resource?path=${path}&expand-xincludes=false`).then((r) => {
       expect(r.body).to.contain('<xi:include')
     })
-    cy.request('/existdb-openapi/api/db/resource?path=' + path + '&expand-xincludes=true').then((r) => {
+    cy.request(`/existdb-openapi/api/db/resource?path=${path}&expand-xincludes=true`).then((r) => {
       expect(r.body).to.contain('INCLUDED-CONTENT')
     })
   })
