@@ -7,7 +7,7 @@ describe('Binary file preview', () => {
   })
 
   function openBinaryFile(path) {
-    var name = path.split('/').pop()
+    const name = path.split('/').pop()
     cy.window().then((win) => {
       win.eXide.app.$doOpenDocument({ path: path, name: name })
     })

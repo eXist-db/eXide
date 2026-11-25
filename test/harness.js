@@ -8,7 +8,7 @@ const fs = require("fs");
 // Shim globals expected by eXide source files
 const eXide = {};
 eXide.namespace = function (ns_string) {
-    var parts = ns_string.split("."),
+    let parts = ns_string.split("."),
         parent = eXide,
         i;
     if (parts[0] === "eXide") {
@@ -26,7 +26,7 @@ eXide.namespace = function (ns_string) {
 // oop.inherit (from src/util.js)
 eXide.namespace("eXide.util.oop");
 eXide.util.oop.inherit = (function () {
-    var F = function () {};
+    const F = function () {};
     return function (C, P) {
         F.prototype = P.prototype;
         C.prototype = new F();

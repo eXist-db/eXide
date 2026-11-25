@@ -9,10 +9,10 @@ describe('Go-to-definition and Find References', () => {
 
   function setEditorContent(text, cursorPos) {
     cy.window().then((win) => {
-      var editor = win.eXide.app.getEditor()
-      var view = editor.editor
-      var doc = editor.getActiveDocument()
-      var anchor = cursorPos !== undefined ? cursorPos : 0
+      const editor = win.eXide.app.getEditor()
+      const view = editor.editor
+      const doc = editor.getActiveDocument()
+      const anchor = cursorPos !== undefined ? cursorPos : 0
       editor.validator.setEnabled(false)
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: text },
@@ -27,7 +27,7 @@ describe('Go-to-definition and Find References', () => {
 
   describe('Go-to-definition', () => {
     it('jumps to function declaration via F3', () => {
-      var code = 'declare function local:greet($name) {\n  "Hello " || $name\n};\n\nlocal:greet("world")'
+      const code = 'declare function local:greet($name) {\n  "Hello " || $name\n};\n\nlocal:greet("world")'
       // Place cursor on "local:greet" call at line 5 (offset ~62)
       setEditorContent(code, 62)
 
@@ -50,9 +50,9 @@ describe('Go-to-definition and Find References', () => {
       // matches the runner's platform — otherwise the class is never
       // added and the assertion times out.
       cy.window().then((win) => {
-        var isMac = /Mac|iPhone|iPod|iPad/.test(win.navigator.platform)
-        var modKey = isMac ? 'Meta' : 'Control'
-        var keydownProps = isMac
+        const isMac = /Mac|iPhone|iPod|iPad/.test(win.navigator.platform)
+        const modKey = isMac ? 'Meta' : 'Control'
+        const keydownProps = isMac
           ? { metaKey: true, key: modKey }
           : { ctrlKey: true, key: modKey }
         cy.get('.cm-content').trigger('keydown', keydownProps)
@@ -66,7 +66,7 @@ describe('Go-to-definition and Find References', () => {
   describe('Find All References', () => {
     it('opens QuickPicker with references via findReferences command', () => {
       // Use a function call — references work best on function names
-      var code = 'declare function local:greet($name) {\n  "Hello " || $name\n};\n\nlocal:greet("a"),\nlocal:greet("b")'
+      const code = 'declare function local:greet($name) {\n  "Hello " || $name\n};\n\nlocal:greet("a"),\nlocal:greet("b")'
       // Place cursor on "local:greet" in the call at line 5 (after the newlines)
       setEditorContent(code, 56)
 
@@ -83,7 +83,7 @@ describe('Go-to-definition and Find References', () => {
     })
 
     it('closes QuickPicker on Escape', () => {
-      var code = 'declare function local:greet($name) {\n  "Hello " || $name\n};\n\nlocal:greet("a"),\nlocal:greet("b")'
+      const code = 'declare function local:greet($name) {\n  "Hello " || $name\n};\n\nlocal:greet("a"),\nlocal:greet("b")'
       setEditorContent(code, 56)
 
       cy.window().then((win) => {

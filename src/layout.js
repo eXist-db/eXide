@@ -2,33 +2,34 @@ eXide.namespace("eXide.app.FlexboxSplitter");
 
 eXide.app.FlexboxSplitter = (function () {
 
-    Constr = function(layout, resizable, region, min, preferred) {
-        var self = this;
+    const Constr = function(layout, resizable, region, min, preferred) {
+        const self = this;
         self.el = document.querySelector(resizable);
-        self.isHorizontal = region == "west" || region == "east";
+        self.isHorizontal = region === "west" || region === "east";
         self.min = min;
-        var splitter = self.el.querySelector(".resize-handle");
-        var toggle = splitter.querySelector("span");
-        var container = self.el.closest(".layout");
+        const splitter = self.el.querySelector(".resize-handle");
+        const toggle = splitter.querySelector("span");
+        const container = self.el.closest(".layout");
 
         self.prevSize = preferred;
-        var hasMoved = false;
+        let hasMoved = false;
+        let pos;
 
         function onMouseMove(e) {
-            var current = (self.isHorizontal ? e.pageX : e.pageY);
-            var diff = (pos - current);
+            const current = (self.isHorizontal ? e.pageX : e.pageY);
+            const diff = (pos - current);
             hasMoved = hasMoved || diff !== 0;
             pos = current;
             if (hasMoved) {
                 if (self.isHorizontal) {
-                    var w = self.el.offsetWidth;
-                    var d = region == "west" ? -diff : diff;
+                    const w = self.el.offsetWidth;
+                    const d = region === "west" ? -diff : diff;
                     if ((w < min && d > 0) || w + d >= min) {
                         self.el.style.width = (w + d) + "px";
                         self.el.style.minWidth = (w + d) + "px";
                     }
                 } else {
-                    var h = self.el.offsetHeight;
+                    const h = self.el.offsetHeight;
                     if ((h < min && diff > 0) || h + diff >= min) {
                         self.el.style.height = (h + diff) + "px";
                     }
@@ -37,12 +38,10 @@ eXide.app.FlexboxSplitter = (function () {
             }
         }
 
-        var pos;
-
         function togglePanel() {
-            var isMinimized = splitter.classList.contains("minimized");
+            const isMinimized = splitter.classList.contains("minimized");
             if (isMinimized) {
-                var size = self.prevSize > self.min ? self.prevSize : self.min;
+                const size = self.prevSize > self.min ? self.prevSize : self.min;
                 self.setSize(size);
             } else {
                 self.prevSize = self.isHorizontal ? self.el.offsetWidth : self.el.offsetHeight;
@@ -100,7 +99,7 @@ eXide.app.FlexboxSplitter = (function () {
         }
 
         // Find the splitter element (may have either class)
-        var splitter = this.el.querySelector(".resize-handle") ||
+        const splitter = this.el.querySelector(".resize-handle") ||
                        this.el.querySelector(".minimized");
 
         if (size <= 10) {
@@ -134,10 +133,10 @@ eXide.app.FlexboxSplitter = (function () {
     Constr.prototype.show = function(resize) {
         if (isHidden(this.el)) {
             this.el.style.display = "";
-            var size = this.prevSize > this.min ? this.prevSize : this.min;
+            const size = this.prevSize > this.min ? this.prevSize : this.min;
             this.setSize(size);
         } else if (resize && this.el.querySelector(".minimized")) {
-            var size = this.prevSize > this.min ? this.prevSize : this.min;
+            const size = this.prevSize > this.min ? this.prevSize : this.min;
             this.setSize(size);
         }
     };
@@ -157,13 +156,13 @@ eXide.namespace("eXide.app.Layout");
 
 eXide.app.Layout = (function () {
 
-    var PANEL_DEFAULTS = {
+    const PANEL_DEFAULTS = {
         "west": { size: 200, preferred: 200 },
         "south": { size: 10, preferred: 200 },
         "east": { size: 0, preferred: 220 }
     };
 
-    var Constr = function(editor) {
+    const Constr = function(editor) {
         this.editor = editor;
         this.regions = {
             "west": new eXide.app.FlexboxSplitter(this, ".panel-west", "west", 100, 200),
@@ -200,10 +199,10 @@ eXide.app.Layout = (function () {
         if (!sameVersion) {
             this.reset();
         } else {
-            for (var region in this.regions) {
-                var size = localStorage["eXide.layout." + region];
+            for (const region in this.regions) {
+                const size = localStorage["eXide.layout." + region];
                 if (size != null) {
-                    var parsed = parseInt(size);
+                    const parsed = parseInt(size);
                     if (!isNaN(parsed)) {
                         this.regions[region].setSize(parsed);
                     }
@@ -213,8 +212,8 @@ eXide.app.Layout = (function () {
     };
 
     Constr.prototype.reset = function() {
-        for (var region in this.regions) {
-            var settings = PANEL_DEFAULTS[region];
+        for (const region in this.regions) {
+            const settings = PANEL_DEFAULTS[region];
             this.regions[region].setSize(settings.size, settings.preferred);
         }
         eXide.app.afterResize();

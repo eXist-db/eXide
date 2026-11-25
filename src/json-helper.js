@@ -23,7 +23,7 @@ eXide.namespace("eXide.edit.JsonModeHelper");
  */
 eXide.edit.JsonModeHelper = (function () {
 
-    Constr = function(editor) {
+    const Constr = function(editor) {
         this.parent = editor;
         this.editor = this.parent.editor;
         this.addCommand("locate", this.locate);
@@ -34,19 +34,19 @@ eXide.edit.JsonModeHelper = (function () {
     eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
 
     Constr.prototype.createOutline = function(doc, onComplete) {
-        var state = this.editor.state;
-        var tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
-        var depth = 0;
+        const state = this.editor.state;
+        const tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
+        let depth = 0;
         tree.iterate({
             enter: function(node) {
                 if (node.name === "Property") {
-                    var nameNode = node.node.getChild("PropertyName");
+                    const nameNode = node.node.getChild("PropertyName");
                     if (nameNode && depth < 3) {
-                        var name = state.sliceDoc(nameNode.from, nameNode.to);
+                        let name = state.sliceDoc(nameNode.from, nameNode.to);
                         if (name.charAt(0) === '"') name = name.slice(1, -1);
-                        var line = state.doc.lineAt(node.from);
-                        var valNode = nameNode.nextSibling;
-                        var valType = valNode ? valNode.name : "";
+                        const line = state.doc.lineAt(node.from);
+                        const valNode = nameNode.nextSibling;
+                        const valType = valNode ? valNode.name : "";
                         doc.functions.push({
                             type: eXide.edit.Document.TYPE_FUNCTION,
                             name: name,

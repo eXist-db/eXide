@@ -20,21 +20,21 @@ eXide.namespace("eXide.wsEval");
 eXide.wsEval = (function () {
     "use strict";
 
-    var socket = null;
-    var connected = false;
-    var url = null;
-    var activeQueryId = null;
-    var handlers = {};  // keyed by query id
-    var reconnectTimer = null;
-    var reconnectDelay = 1000;
-    var maxReconnectDelay = 30000;
-    var reconnectAttempts = 0;
-    var maxReconnectAttempts = 5;
+    let socket = null;
+    let connected = false;
+    let url = null;
+    let activeQueryId = null;
+    let handlers = {};  // keyed by query id
+    let reconnectTimer = null;
+    let reconnectDelay = 1000;
+    const maxReconnectDelay = 30000;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
     // Whether we've received a real application message on the current
     // connection. Used to gate the backoff reset in onopen so a server that
     // accepts the WS upgrade and immediately drops the connection can't
     // sustain a fast open→close→reset→open loop.
-    var sessionEstablished = false;
+    let sessionEstablished = false;
 
     /**
      * Connect to the /ws/eval endpoint.
@@ -77,10 +77,10 @@ eXide.wsEval = (function () {
             }
 
             try {
-                var msg = JSON.parse(event.data);
-                var id = msg.id;
+                const msg = JSON.parse(event.data);
+                const id = msg.id;
                 if (id && handlers[id]) {
-                    var h = handlers[id];
+                    const h = handlers[id];
                     switch (msg.type) {
                         case "progress":
                             if (h.onProgress) h.onProgress(msg);
@@ -132,10 +132,10 @@ eXide.wsEval = (function () {
      * Auto-connect: derive the eval WebSocket URL from the current page URL.
      */
     function autoConnect() {
-        var loc = window.location;
-        var rootContext = loc.pathname.replace(/^(.*?)\/apps\/.*$/, "$1");
-        var wsProtocol = loc.protocol === "https:" ? "wss:" : "ws:";
-        var wsUrl = wsProtocol + "//" + loc.host + rootContext + "/ws/eval";
+        const loc = window.location;
+        const rootContext = loc.pathname.replace(/^(.*?)\/apps\/.*$/, "$1");
+        const wsProtocol = loc.protocol === "https:" ? "wss:" : "ws:";
+        const wsUrl = wsProtocol + "//" + loc.host + rootContext + "/ws/eval";
         connect(wsUrl);
     }
 
@@ -155,7 +155,7 @@ eXide.wsEval = (function () {
     function execute(opts) {
         if (!connected || !socket) return null;
 
-        var id = "q-" + Date.now() + "-" + Math.random().toString(36).substr(2, 6);
+        const id = "q-" + Date.now() + "-" + Math.random().toString(36).substr(2, 6);
         activeQueryId = id;
 
         handlers[id] = {
@@ -165,7 +165,7 @@ eXide.wsEval = (function () {
             onCancelled: opts.onCancelled
         };
 
-        var msg = {
+        const msg = {
             action: "eval",
             id: id,
             query: opts.query,
@@ -183,7 +183,7 @@ eXide.wsEval = (function () {
      */
     function cancel(id) {
         if (!connected || !socket) return;
-        var cancelId = id || activeQueryId;
+        const cancelId = id || activeQueryId;
         if (!cancelId) return;
 
         socket.send(JSON.stringify({

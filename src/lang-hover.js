@@ -28,24 +28,24 @@ eXide.namespace("eXide.edit.LspHover");
 
 eXide.edit.LspHover = (function () {
 
-    var hoverTooltip = CM6.hoverTooltip;
+    const hoverTooltip = CM6.hoverTooltip;
 
     function lspHoverSource(view, pos, side) {
         // Only hover in XQuery mode
-        var doc = eXide.app && eXide.app.getEditor && eXide.app.getEditor().getActiveDocument();
+        const doc = eXide.app && eXide.app.getEditor && eXide.app.getEditor().getActiveDocument();
         if (!doc || doc.getSyntax() !== "xquery") {
             return null;
         }
 
-        var line = view.state.doc.lineAt(pos);
-        var lineNumber = line.number - 1;  // 0-based for LSP
-        var column = pos - line.from;      // 0-based column
+        const line = view.state.doc.lineAt(pos);
+        const lineNumber = line.number - 1;  // 0-based for LSP
+        const column = pos - line.from;      // 0-based column
 
-        var code = view.state.doc.toString();
-        var basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
+        const code = view.state.doc.toString();
+        const basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
 
         // Use WebSocket if available, otherwise HTTP
-        var dataPromise;
+        let dataPromise;
         if (typeof eXide.ws !== "undefined" && eXide.ws.isConnected()) {
             dataPromise = new Promise(function (resolve) {
                 eXide.ws.send("textDocument/hover", {
@@ -79,10 +79,10 @@ eXide.edit.LspHover = (function () {
             }
 
             // Find the word boundaries at the hover position for highlighting
-            var wordStart = pos;
-            var wordEnd = pos;
-            var text = line.text;
-            var col = column;
+            let wordStart = pos;
+            let wordEnd = pos;
+            const text = line.text;
+            let col = column;
 
             while (col > 0 && /[\w:\-$]/.test(text[col - 1])) {
                 col--;
@@ -99,18 +99,18 @@ eXide.edit.LspHover = (function () {
                 end: wordEnd,
                 above: true,
                 create: function () {
-                    var dom = document.createElement("div");
+                    const dom = document.createElement("div");
                     dom.className = "cm-lang-hover";
 
-                    var sig = document.createElement("code");
+                    const sig = document.createElement("code");
                     sig.className = "cm-lang-hover-signature";
                     sig.textContent = data.contents.split("\n\n")[0];
                     dom.appendChild(sig);
 
                     // Documentation (after the signature)
-                    var parts = data.contents.split("\n\n");
+                    const parts = data.contents.split("\n\n");
                     if (parts.length > 1) {
-                        var desc = document.createElement("p");
+                        const desc = document.createElement("p");
                         desc.className = "cm-lang-hover-description";
                         desc.textContent = parts.slice(1).join("\n\n");
                         dom.appendChild(desc);
@@ -130,26 +130,26 @@ eXide.edit.LspHover = (function () {
      * when the server's lang:hover() returns nothing.
      */
     function localHoverFallback(view, pos, line, column) {
-        var doc = eXide.app.getEditor().getActiveDocument();
+        const doc = eXide.app.getEditor().getActiveDocument();
         if (!doc || !doc.ast) return null;
 
-        var lead = { line: line.number - 1, col: column };
-        var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, lead);
+        const lead = { line: line.number - 1, col: column };
+        const astNode = eXide.edit.XQueryUtils.findNode(doc.ast, lead);
         if (!astNode) return null;
 
         // Check if we're on a FunctionCall
-        var fcall = eXide.edit.XQueryUtils.findAncestor(astNode, "FunctionCall");
-        var funcName = null;
-        var arity = 0;
-        var signature = null;
+        const fcall = eXide.edit.XQueryUtils.findAncestor(astNode, "FunctionCall");
+        let funcName = null;
+        let arity = 0;
+        let signature = null;
         if (fcall) {
-            var nameNode = eXide.edit.XQueryUtils.findChild(fcall, "EQName");
+            const nameNode = eXide.edit.XQueryUtils.findChild(fcall, "EQName");
             if (nameNode) {
                 funcName = eXide.edit.XQueryUtils.getValue(nameNode);
                 arity = fcall.arity || 0;
                 // Search outline for matching function
-                for (var i = 0; i < doc.functions.length; i++) {
-                    var f = doc.functions[i];
+                for (let i = 0; i < doc.functions.length; i++) {
+                    const f = doc.functions[i];
                     if (f.type === "function" && f.name === funcName) {
                         signature = f.signature || funcName + "#" + arity;
                         break;
@@ -160,9 +160,9 @@ eXide.edit.LspHover = (function () {
 
         // Check if we're on a VarRef
         if (!funcName && !signature) {
-            var varRef = eXide.edit.XQueryUtils.findAncestor(astNode, ["VarRef", "VarName"]);
+            const varRef = eXide.edit.XQueryUtils.findAncestor(astNode, ["VarRef", "VarName"]);
             if (varRef) {
-                var varEQName = eXide.edit.XQueryUtils.findChild(
+                const varEQName = eXide.edit.XQueryUtils.findChild(
                     varRef.name === "VarRef" ? varRef : varRef, "EQName"
                 );
                 if (varEQName) {
@@ -174,10 +174,10 @@ eXide.edit.LspHover = (function () {
         if (!funcName && !signature) return null;
 
         // Build word boundaries for tooltip positioning
-        var wordStart = pos;
-        var wordEnd = pos;
-        var text = line.text;
-        var col = column;
+        let wordStart = pos;
+        let wordEnd = pos;
+        const text = line.text;
+        let col = column;
         while (col > 0 && /[\w:\-$]/.test(text[col - 1])) { col--; wordStart--; }
         col = column;
         while (col < text.length && /[\w:\-]/.test(text[col])) { col++; wordEnd++; }
@@ -190,10 +190,10 @@ eXide.edit.LspHover = (function () {
             }))
             .then(function (r) { return r.json(); })
             .then(function (items) {
-                var match = null;
+                let match = null;
                 if (items && items.length > 0) {
                     // Prefer exact arity match
-                    for (var j = 0; j < items.length; j++) {
+                    for (let j = 0; j < items.length; j++) {
                         if (items[j].name === funcName + "#" + arity) {
                             match = items[j];
                             break;
@@ -208,14 +208,14 @@ eXide.edit.LspHover = (function () {
                     end: wordEnd,
                     above: true,
                     create: function () {
-                        var dom = document.createElement("div");
+                        const dom = document.createElement("div");
                         dom.className = "cm-lang-hover";
-                        var sig = document.createElement("code");
+                        const sig = document.createElement("code");
                         sig.className = "cm-lang-hover-signature";
                         sig.textContent = match.text || funcName;
                         dom.appendChild(sig);
                         if (match.description) {
-                            var desc = document.createElement("p");
+                            const desc = document.createElement("p");
                             desc.className = "cm-lang-hover-description";
                             desc.textContent = match.description;
                             dom.appendChild(desc);
@@ -232,9 +232,9 @@ eXide.edit.LspHover = (function () {
             end: wordEnd,
             above: true,
             create: function () {
-                var dom = document.createElement("div");
+                const dom = document.createElement("div");
                 dom.className = "cm-lang-hover";
-                var sig = document.createElement("code");
+                const sig = document.createElement("code");
                 sig.className = "cm-lang-hover-signature";
                 sig.textContent = signature || funcName;
                 dom.appendChild(sig);

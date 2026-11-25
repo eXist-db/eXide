@@ -26,25 +26,25 @@ eXide.namespace("eXide.edit.Outline");
 eXide.edit.Outline = (function () {
 
     // View modes
-    var MODE_NESTED_DOC = "nested-doc";
-    var MODE_FLAT_DOC   = "flat-doc";
-    var MODE_FLAT_ALPHA = "flat-alpha";
+    const MODE_NESTED_DOC = "nested-doc";
+    const MODE_FLAT_DOC   = "flat-doc";
+    const MODE_FLAT_ALPHA = "flat-alpha";
 
-    Constr = function() {
+    const Constr = function() {
         this.currentDoc = null;
         this.__activated = false;
         this._viewMode = MODE_NESTED_DOC;
 
-        var self = this;
+        const self = this;
         document.getElementById("outline-filter").addEventListener("keyup", function() {
             self.filter(this.value);
         });
 
         // Toolbar buttons
-        var toolbar = document.getElementById("outline-toolbar");
+        const toolbar = document.getElementById("outline-toolbar");
         if (toolbar) {
             toolbar.addEventListener("click", function(e) {
-                var btn = e.target.closest("[data-outline-mode]");
+                const btn = e.target.closest("[data-outline-mode]");
                 if (!btn) return;
                 self._viewMode = btn.getAttribute("data-outline-mode");
                 toolbar.querySelectorAll("[data-outline-mode]").forEach(function(b) {
@@ -55,20 +55,20 @@ eXide.edit.Outline = (function () {
                 }
             });
             // Mark initial active
-            var initial = toolbar.querySelector('[data-outline-mode="' + this._viewMode + '"]');
+            const initial = toolbar.querySelector('[data-outline-mode="' + this._viewMode + '"]');
             if (initial) initial.classList.add("active");
         }
     };
 
     function docOrderSort(a, b) {
-        var ra = a.row !== undefined ? a.row : 999999;
-        var rb = b.row !== undefined ? b.row : 999999;
+        const ra = a.row !== undefined ? a.row : 999999;
+        const rb = b.row !== undefined ? b.row : 999999;
         return ra - rb;
     }
 
     function alphaSort(a, b) {
-        var na = (a.name || "").toLowerCase();
-        var nb = (b.name || "").toLowerCase();
+        const na = (a.name || "").toLowerCase();
+        const nb = (b.name || "").toLowerCase();
         return na > nb ? 1 : na < nb ? -1 : 0;
     }
 
@@ -76,18 +76,18 @@ eXide.edit.Outline = (function () {
      * Create the <a> element for an outline item with click handler.
      */
     function makeLink(d) {
-        var a = document.createElement("a");
+        const a = document.createElement("a");
         if (d.signature) a.title = d.signature;
         a.href = "#" + (d.source ? d.source : "");
 
-        var text = d.type == eXide.edit.Document.TYPE_VARIABLE ? "$" + d.name : d.name;
-        var nameSpan = document.createElement("span");
+        const text = d.type === eXide.edit.Document.TYPE_VARIABLE ? "$" + d.name : d.name;
+        const nameSpan = document.createElement("span");
         nameSpan.className = "outline-name";
         nameSpan.textContent = text;
         a.appendChild(nameSpan);
 
         if (d.hint) {
-            var hintSpan = document.createElement("span");
+            const hintSpan = document.createElement("span");
             hintSpan.className = "outline-hint";
             hintSpan.textContent = " \u201C" + d.hint + "\u201D";
             a.appendChild(hintSpan);
@@ -95,9 +95,9 @@ eXide.edit.Outline = (function () {
 
         a.addEventListener("click", function(e) {
             e.preventDefault();
-            var path = this.hash.substring(1);
+            const path = this.hash.substring(1);
             if (d.from !== undefined && d.to !== undefined) {
-                var ed = eXide.app.getEditor();
+                const ed = eXide.app.getEditor();
                 if (ed && ed.editor) {
                     ed.editor.dispatch({
                         selection: { anchor: d.to, head: d.from }
@@ -109,14 +109,14 @@ eXide.edit.Outline = (function () {
                     ed.editor.focus();
                 }
             } else if(d.row !== undefined && d.row !== null) {
-                var ed = eXide.app.getEditor();
+                const ed = eXide.app.getEditor();
                 if (ed && ed.editor) {
                     editorUtils.gotoLine(ed.editor, d.row + 1, d.column || 0, true);
                 }
-            } else if(d.type == eXide.edit.Document.TYPE_FUNCTION) {
-                eXide.app.locate("function", path == '' ? null: path, d.name);
+            } else if(d.type === eXide.edit.Document.TYPE_FUNCTION) {
+                eXide.app.locate("function", path === '' ? null: path, d.name);
             } else {
-                eXide.app.locate("variable", path == '' ? null: path, d.name);
+                eXide.app.locate("variable", path === '' ? null: path, d.name);
             }
         });
 
@@ -133,8 +133,8 @@ eXide.edit.Outline = (function () {
      * Create a <li> element with the appropriate CSS classes.
      */
     function makeLi(d) {
-        var li = document.createElement("li");
-        var cl = d.type == eXide.edit.Document.TYPE_FUNCTION ? "t_function" : "t_variable";
+        const li = document.createElement("li");
+        let cl = d.type === eXide.edit.Document.TYPE_FUNCTION ? "t_function" : "t_variable";
         if (d.visibility === "private") cl += " private";
         else if (d.visibility === "public") cl += " public";
         if (d.outlineClass) cl += " " + d.outlineClass;
@@ -147,7 +147,7 @@ eXide.edit.Outline = (function () {
      * Check whether any items have indent > 0 (i.e. the data is hierarchical).
      */
     function hasHierarchy(items) {
-        for (var i = 0; i < items.length; i++) {
+        for (let i = 0; i < items.length; i++) {
             if (items[i].indent > 0) return true;
         }
         return false;
@@ -158,7 +158,7 @@ eXide.edit.Outline = (function () {
         toggle : function(state) {
             if(state || state === false) {this.__activated = !!state}
             else {this.__activated = !this.__activated};
-            var body = document.getElementById("outline-body");
+            const body = document.getElementById("outline-body");
             if (body) {
                 body.style.position = this.__activated ? "relative" : "absolute";
                 body.style.visibility = this.__activated ? "visible" : "hidden";
@@ -169,9 +169,9 @@ eXide.edit.Outline = (function () {
         },
 
         getTemplates: function (prefix) {
-            var re = new RegExp("^" + prefix);
-            var matches = [];
-            for (var i = 0; i < this.templates.length; i++) {
+            const re = new RegExp("^" + prefix);
+            const matches = [];
+            for (let i = 0; i < this.templates.length; i++) {
                 if (this.templates[i].name.match(re)) {
                     matches.push(this.templates[i]);
                 }
@@ -180,24 +180,24 @@ eXide.edit.Outline = (function () {
         },
 
         gotoDefinition: function(doc, name) {
-            var type = "function"
+            let type = "function"
             if (name.indexOf("$") === 0) {
                 name = name.substring(1);
                 type = "variable";
             }
-            for (var i = 0; i < doc.functions.length; i++) {
-                var func = doc.functions[i];
-                if (name == func.name && type == func.type) {
-                    eXide.app.locate(func.type, func.source == '' ? null : func.source, name);
+            for (let i = 0; i < doc.functions.length; i++) {
+                const func = doc.functions[i];
+                if (name === func.name && type === func.type) {
+                    eXide.app.locate(func.type, func.source === '' ? null : func.source, name);
                     break;
                 }
             }
         },
 
         findDefinition: function(doc, name) {
-            for (var i = 0; i < doc.functions.length; i++) {
-                var func = doc.functions[i];
-                if (name == func.name) {
+            for (let i = 0; i < doc.functions.length; i++) {
+                const func = doc.functions[i];
+                if (name === func.name) {
                     return func;
                 }
             }
@@ -205,10 +205,10 @@ eXide.edit.Outline = (function () {
         },
 
         updateOutline: function(doc) {
-            var self = this;
+            const self = this;
             self.currentDoc = doc;
 
-            var helper = doc.getModeHelper();
+            const helper = doc.getModeHelper();
             if (helper != null && this.__activated) {
                 // Defer to let CM6 process language reconfiguration before
                 // walking the syntax tree (Lezer parses asynchronously)
@@ -223,28 +223,28 @@ eXide.edit.Outline = (function () {
         },
 
         clearOutline: function() {
-            var el = document.getElementById("outline");
+            const el = document.getElementById("outline");
             if (el) el.innerHTML = "";
         },
 
         filter: function(str) {
-            var regex = new RegExp(str, "i");
-            var links = document.querySelectorAll("#outline li a");
-            for (var i = 0; i < links.length; i++) {
-                var link = links[i];
+            const regex = new RegExp(str, "i");
+            const links = document.querySelectorAll("#outline li a");
+            for (let i = 0; i < links.length; i++) {
+                const link = links[i];
                 link.parentNode.style.display = regex.test(link.textContent) ? "" : "none";
             }
         },
 
         $outlineUpdate: function (doc) {
-            if (this.currentDoc != doc)
+            if (this.currentDoc !== doc)
                 return;
 
-            var mode = this._viewMode;
-            var nested = (mode === MODE_NESTED_DOC);
+            const mode = this._viewMode;
+            const nested = (mode === MODE_NESTED_DOC);
 
             // Prepare sorted data
-            var items = doc.functions.slice();
+            const items = doc.functions.slice();
             if (mode === MODE_FLAT_ALPHA) {
                 items.sort(alphaSort);
             } else {
@@ -253,7 +253,7 @@ eXide.edit.Outline = (function () {
 
             eXide.app.resize();
 
-            var outline = document.getElementById("outline");
+            const outline = document.getElementById("outline");
             outline.innerHTML = "";
 
             // Use nested <ul> tree when in nested mode and data has hierarchy
@@ -279,16 +279,16 @@ eXide.edit.Outline = (function () {
          */
         $renderNested: function(outline, items) {
             // Stack tracks the current <ul> at each depth level
-            var stack = [outline];
-            var currentDepth = 0;
+            const stack = [outline];
+            let currentDepth = 0;
 
             items.forEach(function(d) {
-                var depth = d.indent || 0;
+                const depth = d.indent || 0;
 
                 // Go deeper: open new <ul> inside the last <li>
                 while (currentDepth < depth) {
-                    var ul = document.createElement("ul");
-                    var parentLi = stack[stack.length - 1].lastElementChild;
+                    const ul = document.createElement("ul");
+                    const parentLi = stack[stack.length - 1].lastElementChild;
                     if (parentLi) {
                         parentLi.appendChild(ul);
                     } else {

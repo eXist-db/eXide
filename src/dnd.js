@@ -5,9 +5,9 @@ eXide.namespace("eXide.util.DnD");
  */
 eXide.util.DnD = (function(util) {
 
-    var Constr = function(container) {
-        var self = this;
-        var el = typeof container === "string" ? document.querySelector(container) : container;
+    const Constr = function(container) {
+        const self = this;
+        const el = typeof container === "string" ? document.querySelector(container) : container;
         el.addEventListener("dragenter", function(ev) {
             ev.stopPropagation();
             ev.preventDefault();

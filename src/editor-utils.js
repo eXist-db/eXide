@@ -8,20 +8,20 @@
 (function () {
     "use strict";
 
-    var CM6 = globalThis.CM6;
-    var setDiagnostics = CM6.setDiagnostics;
+    const CM6 = globalThis.CM6;
+    const setDiagnostics = CM6.setDiagnostics;
 
     // -- Navigation flash effect --
     // Briefly highlights the target line after gotoLine to draw the eye.
-    var flashEffect = CM6.StateEffect.define();
-    var flashClear = CM6.StateEffect.define();
-    var flashDeco = CM6.Decoration.line({ class: "cm-goto-flash" });
-    var flashField = CM6.StateField.define({
+    const flashEffect = CM6.StateEffect.define();
+    const flashClear = CM6.StateEffect.define();
+    const flashDeco = CM6.Decoration.line({ class: "cm-goto-flash" });
+    const flashField = CM6.StateField.define({
         create: function () { return CM6.Decoration.none; },
         update: function (value, tr) {
-            for (var i = 0; i < tr.effects.length; i++) {
+            for (let i = 0; i < tr.effects.length; i++) {
                 if (tr.effects[i].is(flashEffect)) {
-                    var line = tr.state.doc.lineAt(tr.effects[i].value);
+                    const line = tr.state.doc.lineAt(tr.effects[i].value);
                     return CM6.Decoration.set([flashDeco.range(line.from)]);
                 }
                 if (tr.effects[i].is(flashClear)) {
@@ -37,7 +37,7 @@
      * Convert a CM6 offset to a 0-indexed {row, column} position.
      */
     function offsetToRowCol(state, offset) {
-        var line = state.doc.lineAt(offset);
+        const line = state.doc.lineAt(offset);
         return { row: line.number - 1, column: offset - line.from };
     }
 
@@ -46,10 +46,10 @@
      */
     function rowColToOffset(state, row, column) {
         if (row < 0) row = 0;
-        var maxLine = state.doc.lines;
+        const maxLine = state.doc.lines;
         if (row >= maxLine) row = maxLine - 1;
-        var line = state.doc.line(row + 1);
-        var col = Math.min(column || 0, line.length);
+        const line = state.doc.line(row + 1);
+        const col = Math.min(column || 0, line.length);
         return line.from + col;
     }
 
@@ -57,8 +57,8 @@
      * Navigate to a line (1-indexed) and optional column (0-indexed).
      */
     function gotoLine(view, line, column, animate) {
-        var row = Math.max(0, line - 1);
-        var offset = rowColToOffset(view.state, row, column || 0);
+        const row = Math.max(0, line - 1);
+        const offset = rowColToOffset(view.state, row, column || 0);
         view.dispatch({
             selection: { anchor: offset }
         });
@@ -87,7 +87,7 @@
             // eXide's ${N:label} syntax is native CM6 snippet syntax
             CM6.snippet(template)(view, null, view.state.selection.main.from, view.state.selection.main.to);
         } else {
-            var sel = view.state.selection.main;
+            const sel = view.state.selection.main;
             view.dispatch({
                 changes: { from: sel.from, to: sel.to, insert: template },
                 selection: { anchor: sel.from + template.length }
@@ -99,8 +99,8 @@
      * Get screen coordinates for a 0-indexed row/column position.
      */
     function textToScreenCoordinates(view, row, column) {
-        var offset = rowColToOffset(view.state, row, column);
-        var coords = view.coordsAtPos(offset);
+        const offset = rowColToOffset(view.state, row, column);
+        const coords = view.coordsAtPos(offset);
         if (coords) {
             return { pageX: coords.left, pageY: coords.bottom };
         }
@@ -111,18 +111,18 @@
      * Set annotations (diagnostics) from [{row, column, text, type}] objects.
      */
     function setAnnotations(view, annotations) {
-        var diagnostics = [];
-        for (var i = 0; i < annotations.length; i++) {
-            var ann = annotations[i];
-            var row = Math.max(ann.row || 0, 0);
-            var lineNum = Math.min(row + 1, view.state.doc.lines);
-            var line = view.state.doc.line(lineNum);
-            var from = line.from + (ann.column || 0);
-            var to = line.to;
+        const diagnostics = [];
+        for (let i = 0; i < annotations.length; i++) {
+            const ann = annotations[i];
+            const row = Math.max(ann.row || 0, 0);
+            const lineNum = Math.min(row + 1, view.state.doc.lines);
+            const line = view.state.doc.line(lineNum);
+            let from = line.from + (ann.column || 0);
+            const to = line.to;
             if (from > to) from = line.from;
-            var severity = ann.type === "error" ? "error" :
+            const severity = ann.type === "error" ? "error" :
                            ann.type === "warning" ? "warning" : "info";
-            var diag = {
+            const diag = {
                 from: from,
                 to: to,
                 severity: severity,
@@ -140,9 +140,9 @@
      * Get current annotations as {row, column, text, type} objects.
      */
     function getAnnotations(view) {
-        var annotations = [];
+        const annotations = [];
         CM6.forEachDiagnostic(view.state, function (d) {
-            var pos = offsetToRowCol(view.state, d.from);
+            const pos = offsetToRowCol(view.state, d.from);
             annotations.push({
                 row: pos.row,
                 column: pos.column,

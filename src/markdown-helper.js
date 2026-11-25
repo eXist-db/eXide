@@ -23,7 +23,7 @@ eXide.namespace("eXide.edit.MarkdownModeHelper");
  */
 eXide.edit.MarkdownModeHelper = (function () {
 
-    Constr = function(editor) {
+    const Constr = function(editor) {
         this.parent = editor;
         this.editor = this.parent.editor;
         this.addCommand("locate", this.locate);
@@ -34,11 +34,11 @@ eXide.edit.MarkdownModeHelper = (function () {
     eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
 
     Constr.prototype.createOutline = function(doc, onComplete) {
-        var state = this.editor.state;
-        var tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
+        const state = this.editor.state;
+        const tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
         tree.iterate({
             enter: function(node) {
-                var level = 0;
+                let level = 0;
                 if (node.name === "ATXHeading1") level = 1;
                 else if (node.name === "ATXHeading2") level = 2;
                 else if (node.name === "ATXHeading3") level = 3;
@@ -46,9 +46,9 @@ eXide.edit.MarkdownModeHelper = (function () {
                 else if (node.name === "ATXHeading5") level = 5;
                 else if (node.name === "ATXHeading6") level = 6;
                 if (level > 0) {
-                    var text = state.sliceDoc(node.from, node.to);
+                    let text = state.sliceDoc(node.from, node.to);
                     text = text.replace(/^#+\s*/, "");
-                    var line = state.doc.lineAt(node.from);
+                    const line = state.doc.lineAt(node.from);
                     doc.functions.push({
                         type: eXide.edit.Document.TYPE_FUNCTION,
                         name: text,

@@ -12,24 +12,24 @@
 (function () {
     "use strict";
 
-    var CM6 = globalThis.CM6;
-    var StreamLanguage = CM6.StreamLanguage;
-    var LanguageSupport = CM6.LanguageSupport;
-    var indentUnit = CM6.indentUnit;
-    var bracketMatching = CM6.bracketMatching;
-    var syntaxHighlighting = CM6.syntaxHighlighting;
-    var HighlightStyle = CM6.HighlightStyle;
-    var tags = CM6.tags;
-    var xQuery = CM6.legacyModes.xQuery;
+    const CM6 = globalThis.CM6;
+    const StreamLanguage = CM6.StreamLanguage;
+    const LanguageSupport = CM6.LanguageSupport;
+    const indentUnit = CM6.indentUnit;
+    const bracketMatching = CM6.bracketMatching;
+    const syntaxHighlighting = CM6.syntaxHighlighting;
+    const HighlightStyle = CM6.HighlightStyle;
+    const tags = CM6.tags;
+    const xQuery = CM6.legacyModes.xQuery;
 
     // Create the StreamLanguage from the legacy XQuery mode
-    var xqueryStreamLanguage = StreamLanguage.define(xQuery);
+    const xqueryStreamLanguage = StreamLanguage.define(xQuery);
 
     /**
      * XQuery-specific highlight style layered on top of the default.
      * Maps legacy token names to CM6 highlight tags.
      */
-    var xqueryHighlightStyle = HighlightStyle.define([
+    const xqueryHighlightStyle = HighlightStyle.define([
         { tag: tags.keyword, color: "#770088" },
         { tag: tags.atom, color: "#221199" },
         { tag: tags.string, color: "#aa1111" },
@@ -42,7 +42,7 @@
         { tag: tags.processingInstruction, color: "#999999" },
     ], {themeType: "light"});
 
-    var xqueryDarkHighlightStyle = HighlightStyle.define([
+    const xqueryDarkHighlightStyle = HighlightStyle.define([
         { tag: tags.keyword, color: "#c678dd" },
         { tag: tags.atom, color: "#d19a66" },
         { tag: tags.string, color: "#98c379" },

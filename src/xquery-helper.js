@@ -23,10 +23,10 @@ eXide.namespace("eXide.edit.XQueryModeHelper");
  */
 eXide.edit.XQueryModeHelper = (function () {
 	
-	var RE_FUNC_NAME = /^[\$\w:\-_\.]+/;
+	const RE_FUNC_NAME = /^[\$\w:\-_\.]+/;
 	
     // REx parser + adapter loaded as globals from src/parser/ (concatenated before this file)
-    var rexAdapter = rexParserAdapter;
+    const rexAdapter = rexParserAdapter;
 
     /**
      * Build CM6 diagnostic actions for annotations that have quick fixes.
@@ -35,24 +35,24 @@ eXide.edit.XQueryModeHelper = (function () {
      */
     function addQuickFixActions(annotation) {
         // Namespace prefix errors — offer direct import
-        var prefixMatch = /for prefix (\w+)/.exec(annotation.text) ||
+        const prefixMatch = /for prefix (\w+)/.exec(annotation.text) ||
                           /\[XPST0081\] "(\w+)"/.exec(annotation.text);
         if (prefixMatch) {
-            var prefix = prefixMatch[1];
+            const prefix = prefixMatch[1];
             annotation.actions = [{
                 name: "Import module \u2018" + prefix + "\u2019",
                 apply: function () {
                     if (typeof eXide === "undefined" || !eXide.app) return;
-                    var ed = eXide.app.getEditor();
-                    var doc = ed.getActiveDocument();
-                    var helper = doc.getModeHelper();
+                    const ed = eXide.app.getEditor();
+                    const doc = ed.getActiveDocument();
+                    const helper = doc.getModeHelper();
                     if (!helper) return;
                     helper.parent.validator.setEnabled(false);
 
                     function doImport(mod) {
-                        var adder = new eXide.edit.PrologAdder(ed, doc);
+                        const adder = new eXide.edit.PrologAdder(ed, doc);
                         if (mod) {
-                            var at = mod.at;
+                            let at = mod.at;
                             if (at && at.indexOf("java:") === 0) at = null;
                             adder.importModule(prefix, mod.uri, at);
                         } else {
@@ -62,7 +62,7 @@ eXide.edit.XQueryModeHelper = (function () {
                         helper.parent.validator.setEnabled(true);
                     }
 
-                    var mod = staticAnalysis.getModuleByPrefix(prefix);
+                    const mod = staticAnalysis.getModuleByPrefix(prefix);
                     if (mod) {
                         doImport(mod);
                     } else {
@@ -77,12 +77,12 @@ eXide.edit.XQueryModeHelper = (function () {
         }
 
         // Other quickfix-eligible patterns — generic "Quick Fix" action
-        var otherPatterns = [
+        const otherPatterns = [
             /Call to undeclared function/,
             /unused namespace prefix/,
             /undeclared variable|variable.*not set/
         ];
-        for (var i = 0; i < otherPatterns.length; i++) {
+        for (let i = 0; i < otherPatterns.length; i++) {
             if (otherPatterns[i].test(annotation.text)) {
                 annotation.actions = [{
                     name: "Quick Fix",
@@ -97,10 +97,10 @@ eXide.edit.XQueryModeHelper = (function () {
         }
     }
     function semanticHighlight(ast) {
-        var tokens = {};
+        const tokens = {};
         function visit(node) {
             if (node.name === "EQName" || node.name === "NCName") {
-                var row = node.pos.sl;
+                const row = node.pos.sl;
                 if (!tokens[row]) tokens[row] = [];
                 tokens[row].push({
                     sl: node.pos.sl, sc: node.pos.sc,
@@ -110,7 +110,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 return;
             }
             if (node.children) {
-                for (var i = 0; i < node.children.length; i++) visit(node.children[i]);
+                for (let i = 0; i < node.children.length; i++) visit(node.children[i]);
             }
         }
         visit(ast);
@@ -121,7 +121,7 @@ eXide.edit.XQueryModeHelper = (function () {
 
     // CM6 editor utilities (editorUtils global from src/editor-utils.js)
     
-	Constr = function(editor, menubar) {
+	const Constr = function(editor, menubar) {
 		this.parent = editor;
 		this.editor = this.parent.editor;
         this.xqDebugger = null;
@@ -153,7 +153,7 @@ eXide.edit.XQueryModeHelper = (function () {
         this.addCommand("stepOver", this.stepOver);
         this.addCommand("stepInto", this.stepInto);
         
-        var self = this;
+        const self = this;
         this.menu = document.getElementById("menu-xquery");
         this.menu.style.display = "none";
         menubar.click("#menu-xquery-expand", function() {
@@ -196,8 +196,8 @@ eXide.edit.XQueryModeHelper = (function () {
     };
     
 	Constr.prototype.closeTag = function (doc, text, row) {
-		var basePath = "xmldb:exist://" + doc.getBasePath();
-		var $this = this;
+		const basePath = "xmldb:exist://" + doc.getBasePath();
+		const $this = this;
 		fetch("api/query/compile", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
@@ -206,18 +206,18 @@ eXide.edit.XQueryModeHelper = (function () {
 		.then(function(response) { return response.json(); })
 		.then(function(data) {
 			if (data.errors && data.errors.length > 0) {
-				var err = data.errors[0];
-				var msg = err.message || "";
-				var tag = /constructor:\s([^\)]+)\)?$/.exec(msg);
+				const err = data.errors[0];
+				const msg = err.message || "";
+				let tag = /constructor:\s([^\)]+)\)?$/.exec(msg);
 				if (tag && tag.length > 0) {
-					var insertText = tag[1] + ">";
-					var insertPos = $this.editor.state.selection.main.head;
+					const insertText = tag[1] + ">";
+					const insertPos = $this.editor.state.selection.main.head;
 					$this.editor.dispatch({ changes: { from: insertPos, insert: insertText }, selection: { anchor: insertPos + insertText.length } });
 				} else {
 					tag = /tag:.*;\sexpected:\s(.*)$/.exec(msg);
 					if (tag && tag.length > 0) {
-						var insertText2 = tag[1] + ">";
-						var insertPos2 = $this.editor.state.selection.main.head;
+						const insertText2 = tag[1] + ">";
+						const insertPos2 = $this.editor.state.selection.main.head;
 						$this.editor.dispatch({ changes: { from: insertPos2, insert: insertText2 }, selection: { anchor: insertPos2 + insertText2.length } });
 					}
 				}
@@ -227,12 +227,12 @@ eXide.edit.XQueryModeHelper = (function () {
 	}
 		
 	Constr.prototype.validate = function(doc, code, onComplete) {
-		var $this = this;
-		var basePath = "xmldb:exist://" + doc.getBasePath();
+		const $this = this;
+		const basePath = "xmldb:exist://" + doc.getBasePath();
 		
         this.parseXQuery(doc);
-        for (var i = 0; i < this.validationListeners.length; i++) {
-            var listener = this.validationListeners[i];
+        for (let i = 0; i < this.validationListeners.length; i++) {
+            const listener = this.validationListeners[i];
             listener.exec.apply(listener.context, [doc]);
         }
         this.validationListeners.length = 0;
@@ -244,7 +244,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		})
 		.then(function(response) { return response.json(); })
 		.then(function(data) {
-			var valid = $this.compileError(data, doc);
+			const valid = $this.compileError(data, doc);
 			if (onComplete) {
 				onComplete.call(null, valid);
 			}
@@ -262,20 +262,20 @@ eXide.edit.XQueryModeHelper = (function () {
 	 */
 	Constr.prototype.compileError = function(data, doc) {
 		if (data.errors && data.errors.length > 0) {
-			var err = data.errors[0];
-			var line = (err.line || 0) - 1;
-			var column = err.column || 0;
-			var msg = err.message || err.code || "Unknown error";
+			const err = data.errors[0];
+			let line = (err.line || 0) - 1;
+			let column = err.column || 0;
+			const msg = err.message || err.code || "Unknown error";
 			// lang:diagnostics() may return line 0 for all errors;
 			// fall back to parsing the location from the message text
 			if (line <= 0 && msg) {
-				var locMatch = msg.match(/\[at line (\d+), column (\d+)/);
+				const locMatch = msg.match(/\[at line (\d+), column (\d+)/);
 				if (locMatch) {
 					line = parseInt(locMatch[1], 10) - 1;
 					column = parseInt(locMatch[2], 10);
 				}
 			}
-			var annotation = {
+			const annotation = {
 				row: line,
                 column: column,
 				text: msg,
@@ -283,7 +283,7 @@ eXide.edit.XQueryModeHelper = (function () {
 			};
 			addQuickFixActions(annotation);
 			this.parent.updateStatus(msg, doc.getPath() + "#" + (line + 1));
-            var annotations = this.clearAnnotations(doc, "error");
+            const annotations = this.clearAnnotations(doc, "error");
             annotations.push(annotation);
 			editorUtils.setAnnotations(this.editor, annotations);
             return false;
@@ -298,12 +298,12 @@ eXide.edit.XQueryModeHelper = (function () {
         if (doc.ast && doc.lastParsed >= doc.getLastChanged()) {
             return;
         }
-        var value = doc.getText();
-        var self = this;
-        var versionPref = (typeof eXide !== 'undefined' && eXide.app && eXide.app.getPreference)
+        const value = doc.getText();
+        const self = this;
+        const versionPref = (typeof eXide !== 'undefined' && eXide.app && eXide.app.getPreference)
             ? eXide.app.getPreference("xqueryVersion") : "auto";
-        var selection = parserRegistry.getParser(value, versionPref);
-        var result = rexAdapter.parseXQuery(value, selection.parser);
+        const selection = parserRegistry.getParser(value, versionPref);
+        const result = rexAdapter.parseXQuery(value, selection.parser);
         doc.xqueryVersion = selection.version;
 
         // Refresh status bar to show detected XQuery version
@@ -330,7 +330,7 @@ eXide.edit.XQueryModeHelper = (function () {
             doc.lastParsed = new Date().getTime();
 
             try {
-                var analysisResult = staticAnalysis.analyze(result.ast);
+                const analysisResult = staticAnalysis.analyze(result.ast);
                 doc.ast.markers = analysisResult.markers;
             } catch(te) {
                 console.log("Static analysis error (non-fatal): %s", te.message);
@@ -338,13 +338,13 @@ eXide.edit.XQueryModeHelper = (function () {
 
             eXide.edit.SemanticHighlight.update(this.editor, doc.ast);
 
-            var markers = doc.ast.markers;
+            const markers = doc.ast.markers;
             if (markers) {
                 // Clear previous client-side markers (both warnings and errors)
                 // but keep any server-side compile errors that are still relevant
-                var annotations = [];
-                for (var i = 0; i < markers.length; i++) {
-                    var ann = {
+                const annotations = [];
+                for (let i = 0; i < markers.length; i++) {
+                    const ann = {
                         row: markers[i].pos.sl,
                         column: markers[i].pos.sc,
                         text: markers[i].message,
@@ -362,9 +362,9 @@ eXide.edit.XQueryModeHelper = (function () {
     };
     
     Constr.prototype.clearAnnotations = function(doc, type) {
-        var na = [];
-        var a = editorUtils.getAnnotations(this.editor);
-        for (var i = 0; i < a.length; i++) {
+        const na = [];
+        const a = editorUtils.getAnnotations(this.editor);
+        for (let i = 0; i < a.length; i++) {
             if (a[i].type !== type) {
                 na.push(a[i]);
             }
@@ -373,9 +373,9 @@ eXide.edit.XQueryModeHelper = (function () {
     };
 
     Constr.prototype.gotoSymbol = function(doc) {
-        var self = this;
-        var code = this.editor.state.doc.toString();
-        var basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
+        const self = this;
+        const code = this.editor.state.doc.toString();
+        const basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
 
         fetch("api/query/symbols", {
             method: "POST",
@@ -385,7 +385,7 @@ eXide.edit.XQueryModeHelper = (function () {
         .then(function (response) { return response.json(); })
         .then(function (symbols) {
             if (!symbols || !symbols.length) return;
-            var items = symbols.map(function (sym) {
+            const items = symbols.map(function (sym) {
                 return {
                     // detail has the full signature for functions; name for variables
                     label: sym.detail || sym.name,
@@ -403,7 +403,7 @@ eXide.edit.XQueryModeHelper = (function () {
         })
         .catch(function () {
             // Fall back to AST-based symbol list
-            var items = doc.functions.map(function (f) {
+            const items = doc.functions.map(function (f) {
                 return {
                     label: f.signature || f.name,
                     name: f.name,
@@ -422,25 +422,25 @@ eXide.edit.XQueryModeHelper = (function () {
     };
 
 	Constr.prototype.getFunctionAtCursor = function (doc, lead) {
-        var name;
-        var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+        let name;
+        const astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
         if (astNode) {
-            var fcall = eXide.edit.XQueryUtils.findAncestor(astNode, "FunctionCall");
+            const fcall = eXide.edit.XQueryUtils.findAncestor(astNode, "FunctionCall");
             if (fcall) {
                 name = fcall.children[0].value
             }
         }
         
         if (!name) {
-    		var row = lead.row;
-    		var lineNum = row + 1;
-    		var line = (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) ? this.editor.state.doc.line(lineNum).text : "";
-    		var start = lead.column;
+    		const row = lead.row;
+    		const lineNum = row + 1;
+    		const line = (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) ? this.editor.state.doc.line(lineNum).text : "";
+    		let start = lead.column;
     		do {
     			start--;
     		} while (start >= 0 && line.charAt(start).match(RE_FUNC_NAME));
     		start++;
-    		var end = lead.column;
+    		let end = lead.column;
     		while (end < line.length && line.charAt(end).match(RE_FUNC_NAME)) {
     			end++;
     		}
@@ -450,9 +450,9 @@ eXide.edit.XQueryModeHelper = (function () {
 	};
 	
 	Constr.prototype.getVariableAtCursor = function (doc, lead) {
-        var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+        const astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
         if (astNode) {
-            var ref = eXide.edit.XQueryUtils.findAncestor(astNode, "VarRef");
+            const ref = eXide.edit.XQueryUtils.findAncestor(astNode, "VarRef");
             if (ref && astNode.name === "EQName") {
                 return astNode.value;
             }
@@ -461,26 +461,26 @@ eXide.edit.XQueryModeHelper = (function () {
 	
 	Constr.prototype.showFunctionDoc = function (doc) {
         this.parseXQuery(doc);
-		var self = this;
-		var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
-		var func = this.getFunctionAtCursor(doc, lead);
+		const self = this;
+		const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
+		const func = this.getFunctionAtCursor(doc, lead);
 		if (!func) {
 			eXide.util.message("Place cursor on a function name first.");
 			return;
 		}
 
 		// Build request params for /api/editor/completions
-		var params = new URLSearchParams({ prefix: func });
+		const params = new URLSearchParams({ prefix: func });
 
 		// Extract module imports so completions API can search imported functions too
-		var code = doc.getText();
-		var imports = this.$parseImports(code);
+		const code = doc.getText();
+		const imports = this.$parseImports(code);
 		if (imports) {
-			var basePath = "xmldb:exist://" + doc.getBasePath();
+			const basePath = "xmldb:exist://" + doc.getBasePath();
 			params.set("base", basePath);
-			for (var i = 0; i < imports.length; i++) {
-				var matches = this.moduleRe.exec(imports[i]);
-				if (matches != null && matches.length == 4) {
+			for (let i = 0; i < imports.length; i++) {
+				const matches = this.moduleRe.exec(imports[i]);
+				if (matches != null && matches.length === 4) {
 					params.append("mprefix", matches[1]);
 					params.append("uri", matches[2]);
 					params.append("source", matches[3]);
@@ -492,8 +492,8 @@ eXide.edit.XQueryModeHelper = (function () {
 		.then(function(response) { return response.json(); })
 		.then(function(serverFuncs) {
 			// Merge local functions (from AST parse) with server results
-			var items = [];
-			var regex = new RegExp("^" + func.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+			let items = [];
+			const regex = new RegExp("^" + func.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
 			doc.functions.forEach(function(f) {
 				if (f.type !== "variable" && f.name && f.name.match(regex)) {
 					// Normalize local functions to the completions API shape
@@ -517,7 +517,7 @@ eXide.edit.XQueryModeHelper = (function () {
 			}
 			eXide.edit.FuncDocTooltip.show(self.editor, items, function(selected) {
 				if (selected) {
-					var template = selected.snippet || selected.template;
+					const template = selected.snippet || selected.template;
 					if (template) {
 						editorUtils.insertSnippet(self.editor, template);
 					}
@@ -534,11 +534,11 @@ eXide.edit.XQueryModeHelper = (function () {
         if (!row) {
             row = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head).row;
         }
-        var resolutions = [];
-        var an = editorUtils.getAnnotations(this.editor);
-        for (var i = 0; i < an.length; i++) {
+        const resolutions = [];
+        const an = editorUtils.getAnnotations(this.editor);
+        for (let i = 0; i < an.length; i++) {
             if (an[i].row === row) {
-                var qf = eXide.edit.XQueryQuickFix.getResolutions(this, this.editor, doc, an[i]);
+                const qf = eXide.edit.XQueryQuickFix.getResolutions(this, this.editor, doc, an[i]);
                 qf.forEach(function(fix) {
                     resolutions.push({
                         label: fix.action,
@@ -550,7 +550,7 @@ eXide.edit.XQueryModeHelper = (function () {
         }
 
         if (resolutions.length > 0) {
-            var self = this;
+            const self = this;
             eXide.util.QuickPicker.show(resolutions, function(selected) {
                 if (selected) {
                     selected.resolve(self, self.parent, doc, selected.annotation);
@@ -561,10 +561,10 @@ eXide.edit.XQueryModeHelper = (function () {
     };
     
 	Constr.prototype.gotoDefinition = function (doc) {
-        var self = this;
-        var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
-        var code = this.editor.state.doc.toString();
-        var basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
+        const self = this;
+        const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
+        const code = this.editor.state.doc.toString();
+        const basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
 
         fetch("api/query/definition", {
             method: "POST",
@@ -581,8 +581,8 @@ eXide.edit.XQueryModeHelper = (function () {
             if (data && data.line !== undefined) {
                 if (data.uri) {
                     // Cross-module definition: open the target module
-                    var targetPath = data.uri;
-                    var resource = {
+                    const targetPath = data.uri;
+                    const resource = {
                         path: targetPath,
                         name: targetPath.replace(/^.*\//, ""),
                         writable: true,
@@ -596,11 +596,11 @@ eXide.edit.XQueryModeHelper = (function () {
             } else {
                 // Fall back to AST-based local definition lookup
                 self.parseXQuery(doc);
-                var funcName = self.getFunctionAtCursor(doc, lead);
+                const funcName = self.getFunctionAtCursor(doc, lead);
                 if (funcName) {
                     self.parent.outline.gotoDefinition(doc, funcName);
                 } else {
-                    var varName = self.getVariableAtCursor(doc, lead);
+                    const varName = self.getVariableAtCursor(doc, lead);
                     if (varName) {
                         self.parent.outline.gotoDefinition(doc, varName);
                     }
@@ -610,7 +610,7 @@ eXide.edit.XQueryModeHelper = (function () {
         .catch(function () {
             // Network error: fall back to AST lookup
             self.parseXQuery(doc);
-            var funcName = self.getFunctionAtCursor(doc, lead);
+            const funcName = self.getFunctionAtCursor(doc, lead);
             if (funcName) {
                 self.parent.outline.gotoDefinition(doc, funcName);
             }
@@ -618,10 +618,10 @@ eXide.edit.XQueryModeHelper = (function () {
 	}
 	
     Constr.prototype.findReferences = function (doc) {
-        var self = this;
-        var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
-        var code = this.editor.state.doc.toString();
-        var basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
+        const self = this;
+        const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
+        const code = this.editor.state.doc.toString();
+        const basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
 
         fetch("api/query/references", {
             method: "POST",
@@ -639,13 +639,13 @@ eXide.edit.XQueryModeHelper = (function () {
                 // Fall back to AST-based references
                 self.parseXQuery(doc);
                 refs = [];
-                var funcName = self.getFunctionAtCursor(doc, lead);
+                const funcName = self.getFunctionAtCursor(doc, lead);
                 if (funcName) {
                     // Find arity from the FunctionCall node
-                    var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
-                    var fcall = astNode ? eXide.edit.XQueryUtils.findAncestor(astNode, "FunctionCall") : null;
-                    var arity = fcall ? (fcall.arity || 0) : 0;
-                    var visitor = new eXide.edit.FunctionCalls(funcName, arity, doc.ast);
+                    const astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+                    const fcall = astNode ? eXide.edit.XQueryUtils.findAncestor(astNode, "FunctionCall") : null;
+                    const arity = fcall ? (fcall.arity || 0) : 0;
+                    const visitor = new eXide.edit.FunctionCalls(funcName, arity, doc.ast);
                     refs = visitor.getReferences().map(function (ref) {
                         return { line: ref.pos.sl, column: ref.pos.sc, name: funcName, kind: "function" };
                     });
@@ -653,10 +653,10 @@ eXide.edit.XQueryModeHelper = (function () {
                         refs.unshift({ line: visitor.declaration.pos.sl, column: visitor.declaration.pos.sc, name: funcName, kind: "function" });
                     }
                 } else {
-                    var varName = self.getVariableAtCursor(doc, lead);
+                    const varName = self.getVariableAtCursor(doc, lead);
                     if (varName) {
-                        var name = varName.replace(/^\$/, "");
-                        var varVisitor = new eXide.edit.VariableReferences(name, doc.ast);
+                        const name = varName.replace(/^\$/, "");
+                        const varVisitor = new eXide.edit.VariableReferences(name, doc.ast);
                         refs = varVisitor.getReferences().map(function (ref) {
                             return { line: ref.pos.sl, column: ref.pos.sc, name: "$" + name, kind: "variable" };
                         });
@@ -669,7 +669,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 return;
             }
 
-            var items = refs.map(function (ref) {
+            const items = refs.map(function (ref) {
                 return {
                     label: (ref.kind === "variable" ? ref.name : ref.name) +
                            " \u2014 line " + (ref.line + 1),
@@ -703,12 +703,12 @@ eXide.edit.XQueryModeHelper = (function () {
     Constr.prototype.extractVariable = function(doc) {
         this.parseXQuery(doc);
         // get text of selection
-        var sel = this.editor.state.selection.main;
-        var range = { start: editorUtils.offsetToRowCol(this.editor.state, sel.from), end: editorUtils.offsetToRowCol(this.editor.state, sel.to) };
-        var rangeFrom = editorUtils.rowColToOffset(this.editor.state, range.start.row, range.start.column);
-        var rangeTo = editorUtils.rowColToOffset(this.editor.state, range.end.row, range.end.column);
-        var value = this.editor.state.sliceDoc(rangeFrom, rangeTo);
-        if (value.length == 0) {
+        const sel = this.editor.state.selection.main;
+        const range = { start: editorUtils.offsetToRowCol(this.editor.state, sel.from), end: editorUtils.offsetToRowCol(this.editor.state, sel.to) };
+        const rangeFrom = editorUtils.rowColToOffset(this.editor.state, range.start.row, range.start.column);
+        const rangeTo = editorUtils.rowColToOffset(this.editor.state, range.end.row, range.end.column);
+        const value = this.editor.state.sliceDoc(rangeFrom, rangeTo);
+        if (value.length === 0) {
             eXide.util.error("Please select code to extract.");
             return;
         }
@@ -716,10 +716,10 @@ eXide.edit.XQueryModeHelper = (function () {
         // disable validation while refactoring
         this.parent.validationEnabled = false;
 
-        var template;
-        var currentNode = eXide.edit.XQueryUtils.findNode(doc.ast,
+        let template;
+        const currentNode = eXide.edit.XQueryUtils.findNode(doc.ast,
             {line: range.start.row, col: range.start.column + 1});
-        var contextNode = eXide.edit.XQueryUtils.findAncestor(currentNode, ["IntermediateClause", "InitialClause", "ReturnClause"]);
+        let contextNode = eXide.edit.XQueryUtils.findAncestor(currentNode, ["IntermediateClause", "InitialClause", "ReturnClause"]);
         if (contextNode) {
             template = "let $${1} := " + value.replace("$", "\\$");
         } else {
@@ -733,11 +733,11 @@ eXide.edit.XQueryModeHelper = (function () {
         }
         console.log("extract variable: context: %o", contextNode);
 
-        var dollarPos = this.editor.state.selection.main.head;
+        const dollarPos = this.editor.state.selection.main.head;
         this.editor.dispatch({ changes: { from: dollarPos, insert: "$" }, selection: { anchor: dollarPos + 1 } });
 
         editorUtils.gotoLine(this.editor, contextNode.pos.sl + 1, contextNode.pos.sc);
-        var nlPos = this.editor.state.selection.main.head;
+        const nlPos = this.editor.state.selection.main.head;
         this.editor.dispatch({ changes: { from: nlPos, insert: "\n" }, selection: { anchor: nlPos + 1 } });
         editorUtils.gotoLine(this.editor, contextNode.pos.sl + 1, contextNode.pos.sc);
         editorUtils.insertSnippet(this.editor, template);
@@ -749,12 +749,12 @@ eXide.edit.XQueryModeHelper = (function () {
     Constr.prototype.extractFunction = function(doc) {
         this.parseXQuery(doc);
         // get text of selection
-        var sel = this.editor.state.selection.main;
-        var range = { start: editorUtils.offsetToRowCol(this.editor.state, sel.from), end: editorUtils.offsetToRowCol(this.editor.state, sel.to) };
-        var rangeFrom = editorUtils.rowColToOffset(this.editor.state, range.start.row, range.start.column);
-        var rangeTo = editorUtils.rowColToOffset(this.editor.state, range.end.row, range.end.column);
-        var value = this.editor.state.sliceDoc(rangeFrom, rangeTo);
-        if (value.length == 0) {
+        const sel = this.editor.state.selection.main;
+        const range = { start: editorUtils.offsetToRowCol(this.editor.state, sel.from), end: editorUtils.offsetToRowCol(this.editor.state, sel.to) };
+        const rangeFrom = editorUtils.rowColToOffset(this.editor.state, range.start.row, range.start.column);
+        const rangeTo = editorUtils.rowColToOffset(this.editor.state, range.end.row, range.end.column);
+        const value = this.editor.state.sliceDoc(rangeFrom, rangeTo);
+        if (value.length === 0) {
             eXide.util.error("Please select code to extract.");
             return;
         }
@@ -762,35 +762,35 @@ eXide.edit.XQueryModeHelper = (function () {
         // disable validation while refactoring
         this.parent.validationEnabled = false;
 
-        var currentNode = eXide.edit.XQueryUtils.findNode(doc.ast,
+        const currentNode = eXide.edit.XQueryUtils.findNode(doc.ast,
             {line: range.start.row, col: range.start.column + 1});
 
         // parse selection code to get list of variables which need to be parameters
-        var variables = [];
-        var versionPref2 = (typeof eXide !== 'undefined' && eXide.app && eXide.app.getPreference)
+        const variables = [];
+        const versionPref2 = (typeof eXide !== 'undefined' && eXide.app && eXide.app.getPreference)
             ? eXide.app.getPreference("xqueryVersion") : "auto";
-        var selection2 = parserRegistry.getParser(value, versionPref2);
-        var result = rexAdapter.parseXQuery(value, selection2.parser);
+        const selection2 = parserRegistry.getParser(value, versionPref2);
+        const result = rexAdapter.parseXQuery(value, selection2.parser);
         if (result.error) {
             eXide.util.error("Not a valid code block: " + (result.error.message || result.error));
             return;
         }
         try {
-            var analysisResult = staticAnalysis.analyze(result.ast);
+            const analysisResult = staticAnalysis.analyze(result.ast);
             result.ast.markers = analysisResult.markers;
-            var ast = result.ast;
+            const ast = result.ast;
 
-            var markers = ast.markers;
-            var vars = {};
-            for (var i = 0; i < markers.length; i++) {
+            const markers = ast.markers;
+            const vars = {};
+            for (let i = 0; i < markers.length; i++) {
                 if (markers[i].type === "error") {
-                    var matches = /\[XPST0008\]\s"([^"]+)": undeclared variable.*/.exec(markers[i].message);
-                    if (matches && matches.length == 2) {
+                    const matches = /\[XPST0008\]\s"([^"]+)": undeclared variable.*/.exec(markers[i].message);
+                    if (matches && matches.length === 2) {
                         vars[matches[1]] = 0;
                     }
                 }
             }
-            for (var v in vars) {
+            for (const v in vars) {
                 variables.push(v);
             }
         } catch(e) {
@@ -798,21 +798,21 @@ eXide.edit.XQueryModeHelper = (function () {
             return;
         }
 
-        var adder = new eXide.edit.PrologAdder(this.parent, doc);
-        var insertRow = adder.getInsertionPoint(currentNode);
+        const adder = new eXide.edit.PrologAdder(this.parent, doc);
+        const insertRow = adder.getInsertionPoint(currentNode);
 
         // remove selected range and replace with parameter list
-        var removeFrom = editorUtils.rowColToOffset(this.editor.state, range.start.row, range.start.column);
-        var removeTo = editorUtils.rowColToOffset(this.editor.state, range.end.row, range.end.column);
+        const removeFrom = editorUtils.rowColToOffset(this.editor.state, range.start.row, range.start.column);
+        const removeTo = editorUtils.rowColToOffset(this.editor.state, range.end.row, range.end.column);
         this.editor.dispatch({ changes: { from: removeFrom, to: removeTo } });
-        var params = "(";
-        for (var i = 0; i < variables.length; i++) {
+        let params = "(";
+        for (let i = 0; i < variables.length; i++) {
             if (i > 0)
                 params += ", ";
             params += "$" + variables[i];
         }
         params += ")";
-        var insertPos = this.editor.state.selection.main.head;
+        const insertPos = this.editor.state.selection.main.head;
         this.editor.dispatch({ changes: { from: insertPos, insert: params }, selection: { anchor: insertPos + params.length } });
         // reset cursor
         editorUtils.gotoLine(this.editor, range.start.row + 1, range.start.column);
@@ -826,20 +826,20 @@ eXide.edit.XQueryModeHelper = (function () {
     
 	Constr.prototype.gotoFunction = function (doc, name) {
 		console.log("Goto function %s", name);
-        var prefix = this.getModuleNamespacePrefix();
+        const prefix = this.getModuleNamespacePrefix();
         if (prefix != null) {
 			name = name.replace(/[^:]+:/, prefix + ":");
 		}
-        var lines = [];
-        for (var i = 1; i <= this.editor.state.doc.lines; i++) { lines.push(this.editor.state.doc.line(i).text); }
-        var len = lines.length;
-        var lineNb;
-        var returnLine = function(regexp) {
-            for (var i = 0; i < len; i++) {
+        const lines = [];
+        for (let i = 1; i <= this.editor.state.doc.lines; i++) { lines.push(this.editor.state.doc.line(i).text); }
+        const len = lines.length;
+        let lineNb;
+        const returnLine = function(regexp) {
+            for (let i = 0; i < len; i++) {
                 if (lines[i].match(regexp)) { return i }
             }
         };
-        var focus = function(lineNb) {
+        const focus = function(lineNb) {
             this.parent.history.push(doc.getPath(), doc.getCurrentLine());
             editorUtils.gotoLine(this.editor, lineNb + 1);
             return this.editor.focus();
@@ -854,16 +854,16 @@ eXide.edit.XQueryModeHelper = (function () {
 	}
 	
 	Constr.prototype.gotoVarDecl = function (doc, name) {
-		var prefix = this.getModuleNamespacePrefix();
+		const prefix = this.getModuleNamespacePrefix();
 		if (prefix != null) {
 			name = name.replace(/[^:]+:/, "$" + prefix + ":");
 		}
 		
 		console.log("Goto variable declaration %s", name);
-		var regexp = new RegExp("variable\\s+\\" + name);
-		var lines = [];
-		for (var li = 1; li <= this.editor.state.doc.lines; li++) { lines.push(this.editor.state.doc.line(li).text); }
-		for (var i = 0; i < lines.length; i++) {
+		const regexp = new RegExp("variable\\s+\\" + name);
+		const lines = [];
+		for (let li = 1; li <= this.editor.state.doc.lines; li++) { lines.push(this.editor.state.doc.line(li).text); }
+		for (let i = 0; i < lines.length; i++) {
 			if (lines[i].match(regexp)) {
 				this.parent.history.push(doc.getPath(), doc.getCurrentLine());
 				editorUtils.gotoLine(this.editor, i + 1);
@@ -874,11 +874,11 @@ eXide.edit.XQueryModeHelper = (function () {
 	}
 	
 	Constr.prototype.getModuleNamespacePrefix = function () {
-		var moduleRe = /^\s*module\s+namespace\s+([^=\s]+)\s*=/;
-		var lines = [];
-		for (var li = 1; li <= this.editor.state.doc.lines; li++) { lines.push(this.editor.state.doc.line(li).text); }
-		for (var i = 0; i < lines.length; i++) {
-			var matches = lines[i].match(moduleRe);
+		const moduleRe = /^\s*module\s+namespace\s+([^=\s]+)\s*=/;
+		const lines = [];
+		for (let li = 1; li <= this.editor.state.doc.lines; li++) { lines.push(this.editor.state.doc.line(li).text); }
+		for (let i = 0; i < lines.length; i++) {
+			const matches = lines[i].match(moduleRe);
 			if (matches) {
 				return matches[1];
 			}
@@ -888,27 +888,27 @@ eXide.edit.XQueryModeHelper = (function () {
 	
     Constr.prototype.importModule = function (doc, prefix, uri, location) {
         console.log("location = %s path = %s", location, doc.path);
-        var code;
+        let code;
         if (location) {
-            var base = doc.getBasePath();
+            const base = doc.getBasePath();
             if (location.lastIndexOf(base, 0) === 0) {
                 location = location.substring(base.length + 1);
             } else {
                 location = "xmldb:exist://" + location;
             }
         }
-        var adder = new eXide.edit.PrologAdder(this.parent, doc);
+        const adder = new eXide.edit.PrologAdder(this.parent, doc);
         adder.importModule(prefix, uri, location);
     }
     
     Constr.prototype.expandSelection = function(doc) {
         this.parseXQuery(doc);
-        var selMain = this.editor.state.selection.main;
-        var selRange = { start: editorUtils.offsetToRowCol(this.editor.state, selMain.from), end: editorUtils.offsetToRowCol(this.editor.state, selMain.to) };
+        const selMain = this.editor.state.selection.main;
+        const selRange = { start: editorUtils.offsetToRowCol(this.editor.state, selMain.from), end: editorUtils.offsetToRowCol(this.editor.state, selMain.to) };
 
         // try to determine the ast node where the cursor is located
-        var astNode;
-        if (selRange.start.column == selRange.end.column && selRange.start.row == selRange.end.row) {
+        let astNode;
+        if (selRange.start.column === selRange.end.column && selRange.start.row === selRange.end.row) {
             astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: selRange.start.row, col: selRange.start.column });
         } else {
             astNode = eXide.edit.XQueryUtils.findNodeForRange(doc.ast, { line: selRange.start.row, col: selRange.start.column },
@@ -916,7 +916,7 @@ eXide.edit.XQueryModeHelper = (function () {
         }
 
         if (astNode) {
-            var parent = astNode.getParent;
+            let parent = astNode.getParent;
             while (parent && eXide.edit.XQueryUtils.samePosition(astNode.pos, parent.pos)) {
                 astNode = parent;
                 parent = parent.getParent;
@@ -925,8 +925,8 @@ eXide.edit.XQueryModeHelper = (function () {
                 }
             }
 
-            var selFrom = editorUtils.rowColToOffset(this.editor.state, parent.pos.sl, parent.pos.sc);
-            var selTo = editorUtils.rowColToOffset(this.editor.state, parent.pos.el, parent.pos.ec);
+            const selFrom = editorUtils.rowColToOffset(this.editor.state, parent.pos.sl, parent.pos.sc);
+            const selTo = editorUtils.rowColToOffset(this.editor.state, parent.pos.el, parent.pos.ec);
             this.editor.dispatch({ selection: { anchor: selFrom, head: selTo } });
         }
     };
@@ -935,15 +935,16 @@ eXide.edit.XQueryModeHelper = (function () {
      * Rename variable or function call.
      */
     Constr.prototype.rename = function(doc) {
+        const self = this;
 
         function doRename(references) {
             if (references.length === 0) return;
             // Create a multi-cursor selection covering all references
-            var ranges = [];
-            for (var i = 0; i < references.length; i++) {
-                var node = references[i];
-                var from = editorUtils.rowColToOffset(self.editor.state, node.pos.sl, node.pos.sc);
-                var to = editorUtils.rowColToOffset(self.editor.state, node.pos.el, node.pos.ec);
+            const ranges = [];
+            for (let i = 0; i < references.length; i++) {
+                const node = references[i];
+                const from = editorUtils.rowColToOffset(self.editor.state, node.pos.sl, node.pos.sc);
+                const to = editorUtils.rowColToOffset(self.editor.state, node.pos.el, node.pos.ec);
                 ranges.push(CM6.EditorSelection.range(from, to));
             }
             // Sort by position (required by EditorSelection)
@@ -954,43 +955,42 @@ eXide.edit.XQueryModeHelper = (function () {
         }
 
         this.parseXQuery(doc);
-        var self = this;
-        var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
-        var ast = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+        const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
+        const ast = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
         if (ast) {
             // XML element tag rename: cursor lands on EQName inside QName inside DirElemConstructor
-            var dirElem = eXide.edit.XQueryUtils.findAncestor(ast, "DirElemConstructor");
-            if (dirElem && ast.name == "EQName" && ast.getParent.name == "QName" && ast.getParent.getParent.name == "DirElemConstructor") {
+            const dirElem = eXide.edit.XQueryUtils.findAncestor(ast, "DirElemConstructor");
+            if (dirElem && ast.name === "EQName" && ast.getParent.name === "QName" && ast.getParent.getParent.name === "DirElemConstructor") {
                 // Collect the open/close tag QNames (direct children of DirElemConstructor, skip attribute QNames)
-                var tagNames = [];
-                for (var t = 0; t < dirElem.children.length; t++) {
+                const tagNames = [];
+                for (let t = 0; t < dirElem.children.length; t++) {
                     if (dirElem.children[t].name === "QName") {
                         tagNames.push(dirElem.children[t]);
                     }
                 }
                 doRename(tagNames);
-            } else if (ast.getParent.name == "VarName" || ast.getParent.name == "Param"
-                    || (ast.name == "TOKEN" && ast.value == "$" && ast.getParent.name == "VarRef")) {
+            } else if (ast.getParent.name === "VarName" || ast.getParent.name === "Param"
+                    || (ast.name === "TOKEN" && ast.value === "$" && ast.getParent.name === "VarRef")) {
                 // If cursor is on the $ token, navigate to the EQName inside VarName
-                var varNode = ast;
-                if (ast.name == "TOKEN" && ast.getParent.name == "VarRef") {
+                let varNode = ast;
+                if (ast.name === "TOKEN" && ast.getParent.name === "VarRef") {
                     varNode = eXide.edit.XQueryUtils.findChild(ast.getParent, "VarName");
                     if (varNode) varNode = eXide.edit.XQueryUtils.findChild(varNode, "EQName") || varNode;
                 }
-                var varName = eXide.edit.XQueryUtils.getValue(varNode);
-                var ancestor = eXide.edit.XQueryUtils.findVariableContext(varNode, varName);
+                const varName = eXide.edit.XQueryUtils.getValue(varNode);
+                const ancestor = eXide.edit.XQueryUtils.findVariableContext(varNode, varName);
                 if (ancestor) {
-                    var references = new eXide.edit.VariableReferences(varName, ancestor).getReferences();
+                    const references = new eXide.edit.VariableReferences(varName, ancestor).getReferences();
                     doRename(references);
                 } else {
                     eXide.util.message("Rename failed: unable to determine context, sorry.");
                 }
-            } else if (ast.name == "EQName" && (ast.getParent.name == "FunctionDecl" || ast.getParent.name == "FunctionCall")) {
-                var funName = ast.value;
-                var arity = parseInt(ast.getParent.arity);
+            } else if (ast.name === "EQName" && (ast.getParent.name === "FunctionDecl" || ast.getParent.name === "FunctionCall")) {
+                const funName = ast.value;
+                const arity = parseInt(ast.getParent.arity);
                 console.log("searching calls to function: %s#%d", funName, arity);
-                var calls = new eXide.edit.FunctionCalls(funName, arity, doc.ast);
-                var refs = calls.getReferences();
+                const calls = new eXide.edit.FunctionCalls(funName, arity, doc.ast);
+                const refs = calls.getReferences();
                 if (calls.declaration) {
                     refs.push(calls.declaration);
                     doRename(refs);
@@ -1007,9 +1007,9 @@ eXide.edit.XQueryModeHelper = (function () {
     };
     
     Constr.prototype.runTest = function(doc) {
-        var self = this;
+        const self = this;
         this.parseXQuery(doc);
-        var info = new eXide.edit.ModuleInfo(doc.ast);
+        const info = new eXide.edit.ModuleInfo(doc.ast);
         if (!(info.isModule() && info.hasTests())) {
             return;
         }
@@ -1042,7 +1042,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 self.parent.updateStatus("");
                 self.parent.clearErrors();
                 eXide.app.showResultsPanel();
-                var results = document.querySelector(".results-container .results");
+                const results = document.querySelector(".results-container .results");
                 if (results) {
                     results.innerHTML = self.renderTestResults(data);
                     // Wire up click-to-jump and JUnit download handlers.
@@ -1088,7 +1088,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 '<pre class="test-full-output">' + escapeHtml(data.setupFailure.message) + '</pre>' +
                 '</div>';
         }
-        var html = '<div class="test-summary">';
+        let html = '<div class="test-summary">';
         html += '<span class="test-count">' + data.tests + ' tests</span>';
         if (data.failures > 0) html += ', <span class="test-failures">' + data.failures + ' failures</span>';
         if (data.errors > 0) html += ', <span class="test-errors">' + data.errors + ' errors</span>';
@@ -1105,12 +1105,12 @@ eXide.edit.XQueryModeHelper = (function () {
         html += '</div>';
         html += '<table class="test-results"><thead><tr><th>Test</th><th>Status</th><th>Details</th></tr></thead><tbody>';
         if (data.testcases) {
-            for (var i = 0; i < data.testcases.length; i++) {
-                var tc = data.testcases[i];
+            for (let i = 0; i < data.testcases.length; i++) {
+                const tc = data.testcases[i];
                 // %test:pending appears as <testcase><pending/></testcase> — surfaced as
                 // tc.pending by the server. Without a distinct status the row would render
                 // as a passing test, hiding from the user that the test was intentionally skipped.
-                var status = tc.pending ? 'pending' :
+                const status = tc.pending ? 'pending' :
                     (tc.failure ? 'failure' : (tc.error ? 'error' : 'pass'));
                 // Short summary message + optional full output for failures/errors.
                 // The XQSuite endpoint may return either a string in `.message` /
@@ -1118,15 +1118,15 @@ eXide.edit.XQueryModeHelper = (function () {
                 // `.message` as the one-line summary and `.detail` (or anything
                 // additional) in the expandable <details>. Both are escaped before
                 // insertion.
-                var summary = '';
-                var fullOutput = '';
+                let summary = '';
+                let fullOutput = '';
                 if (tc.failure) {
                     summary = tc.failure.message || tc.failure.detail || '';
                     // XQSuite assertion failures carry the *expected* value as
                     // `expected` and the *actual* value as `actual` (parsed
                     // server-side from <failure> + sibling <output>). Show both
                     // so users don't have to guess which half they're seeing.
-                    var lines = [];
+                    const lines = [];
                     if (tc.failure.expected !== undefined && tc.failure.expected !== '') {
                         lines.push('expected: ' + tc.failure.expected);
                     }
@@ -1142,7 +1142,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 }
                 if (tc.error) {
                     summary = tc.error.message || tc.error.detail || '';
-                    var errLines = [];
+                    const errLines = [];
                     if (tc.error.type) errLines.push('type:   ' + tc.error.type);
                     if (tc.error.detail && tc.error.detail !== summary) {
                         errLines.push('detail: ' + tc.error.detail);
@@ -1152,7 +1152,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 // data-source + data-line let the row act as a "jump to source line" link.
                 // Wired up in wireTestResultsHandlers (delegated click) so we don't re-bind
                 // every render.
-                var rowAttrs = ' class="test-' + status + ' test-clickable"' +
+                const rowAttrs = ' class="test-' + status + ' test-clickable"' +
                     ' data-source="' + escapeHtml(tc.source || '') + '"' +
                     ' data-line="' + escapeHtml(String(tc.line || 0)) + '"' +
                     ' title="Click to open source"';
@@ -1190,18 +1190,18 @@ eXide.edit.XQueryModeHelper = (function () {
      *    expand failure detail without triggering the jump.
      */
     Constr.prototype.wireTestResultsHandlers = function(container, data, currentDoc) {
-        var self = this;
+        const self = this;
 
-        var downloadBtn = container.querySelector(".test-download-junit");
+        const downloadBtn = container.querySelector(".test-download-junit");
         if (downloadBtn && data.xml) {
             downloadBtn.addEventListener("click", function() {
-                var blob = new Blob([data.xml], { type: "application/xml" });
-                var url = URL.createObjectURL(blob);
-                var a = document.createElement("a");
+                const blob = new Blob([data.xml], { type: "application/xml" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
                 a.href = url;
                 // currentDoc.getName() returns "foo.xqm"; strip the extension and
                 // append "-junit.xml" so the file is easy to find on disk.
-                var base = (currentDoc && currentDoc.getName && currentDoc.getName()) || "tests";
+                const base = (currentDoc && currentDoc.getName && currentDoc.getName()) || "tests";
                 a.download = base.replace(/\.[^.]+$/, "") + "-junit.xml";
                 document.body.appendChild(a);
                 a.click();
@@ -1210,17 +1210,17 @@ eXide.edit.XQueryModeHelper = (function () {
             });
         }
 
-        var tbody = container.querySelector(".test-results tbody");
+        const tbody = container.querySelector(".test-results tbody");
         if (tbody) {
             tbody.addEventListener("click", function(ev) {
                 // Don't intercept clicks inside the expandable details panel — users
                 // need to be able to expand/collapse failure detail without triggering
                 // the row jump.
                 if (ev.target.closest("details") || ev.target.closest("summary")) return;
-                var row = ev.target.closest("tr.test-clickable");
+                const row = ev.target.closest("tr.test-clickable");
                 if (!row) return;
-                var src = row.getAttribute("data-source");
-                var line = parseInt(row.getAttribute("data-line"), 10) || 0;
+                const src = row.getAttribute("data-source");
+                const line = parseInt(row.getAttribute("data-line"), 10) || 0;
                 if (!src) return;
                 self.openTestSource(src, line, currentDoc);
             });
@@ -1234,12 +1234,12 @@ eXide.edit.XQueryModeHelper = (function () {
      * tab and the user can edit + re-run.
      */
     Constr.prototype.openTestSource = function(source, line, currentDoc) {
-        var currentPath = currentDoc && currentDoc.getPath && currentDoc.getPath();
+        const currentPath = currentDoc && currentDoc.getPath && currentDoc.getPath();
         if (currentPath === source) {
             editorUtils.gotoLine(this.editor, line || 1, 0, true);
             return;
         }
-        var resource = {
+        const resource = {
             path: source,
             name: source.replace(/^.*\//, ""),
             writable: true,
@@ -1249,10 +1249,10 @@ eXide.edit.XQueryModeHelper = (function () {
     };
 
     Constr.prototype.createOutline = function(doc, onComplete) {
-        var code = doc.getText();
-        var basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
-        var imports = this.$parseImports(code);
-        var self = this;
+        const code = doc.getText();
+        const basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
+        const imports = this.$parseImports(code);
+        const self = this;
 
         doc.functions = [];
 
@@ -1263,12 +1263,12 @@ eXide.edit.XQueryModeHelper = (function () {
         })
         .then(function(response) { return response.json(); })
         .then(function(symbols) {
-            var localFuncs = [];
+            const localFuncs = [];
             if (Array.isArray(symbols)) {
                 symbols.forEach(function(sym) {
-                    var isFunc = sym.kind === 12;
+                    const isFunc = sym.kind === 12;
                     // Strip arity suffix from function names ("local:foo#1" → "local:foo")
-                    var name = isFunc ? sym.name.replace(/#\d+$/, "") : sym.name.replace(/^\$/, "");
+                    const name = isFunc ? sym.name.replace(/#\d+$/, "") : sym.name.replace(/^\$/, "");
                     localFuncs.push({
                         type: isFunc ? eXide.edit.Document.TYPE_FUNCTION : eXide.edit.Document.TYPE_VARIABLE,
                         name: name,
@@ -1305,26 +1305,26 @@ eXide.edit.XQueryModeHelper = (function () {
             else if (b.source && !a.source)
                 return -1;
             else
-			    return(a.name == b.name) ? 0 : (a.name > b.name) ? 1 : -1;
+			    return(a.name === b.name) ? 0 : (a.name > b.name) ? 1 : -1;
 		});
 	}
     
     Constr.prototype.$parseLocalFunctions = function(text, doc) {
         doc.functions = [];
         
-        var match =  this.funcDefRe.exec(text), 
+        let match =  this.funcDefRe.exec(text), 
             funcDef,
             varDef;
 
         while ((funcDef = match) != null) {
             if(funcDef[1] != null ) {
-                var offset = this.funcDefRe.lastIndex;
-                var end = this.$findMatchingParen(text, offset);
-                var name = (funcDef.length == 4 ? funcDef[3] : funcDef[2]).replace(this.trimRe,"");
-                var status = funcDef.length == 4 ? funcDef[2] : "public";
-                var signature =  name + "(" + text.substring(offset, end) + ")"
+                const offset = this.funcDefRe.lastIndex;
+                const end = this.$findMatchingParen(text, offset);
+                const name = (funcDef.length === 4 ? funcDef[3] : funcDef[2]).replace(this.trimRe,"");
+                let status = funcDef.length === 4 ? funcDef[2] : "public";
+                const signature =  name + "(" + text.substring(offset, end) + ")"
                 if (status.indexOf("%private") !== -1) {status = "private";}
-                var row = text.substring(0, funcDef.index).split("\n").length - 1;
+                const row = text.substring(0, funcDef.index).split("\n").length - 1;
                 doc.functions.push({
                     type: eXide.edit.Document.TYPE_FUNCTION,
                     name: name,
@@ -1340,14 +1340,14 @@ eXide.edit.XQueryModeHelper = (function () {
         match =  this.varDefRe.exec(text);
         while ((varDef = match) != null) {
             if(varDef[1] != null ) {
-                var v = this.varRe.exec(varDef[1]);
-                var sort = v[1].substr(1).split(":");
+                const v = this.varRe.exec(varDef[1]);
+                const sort = v[1].substr(1).split(":");
                 sort.splice(1,0,":$");
-                var name = v[1];
-                if (name.substring(0, 1) == "$") {
+                let name = v[1];
+                if (name.substring(0, 1) === "$") {
                     name = name.substring(1);
                 }
-                var row = text.substring(0, varDef.index).split("\n").length - 1;
+                const row = text.substring(0, varDef.index).split("\n").length - 1;
                 doc.functions.push({
                     type: eXide.edit.Document.TYPE_VARIABLE,
                     name: name,
@@ -1362,14 +1362,14 @@ eXide.edit.XQueryModeHelper = (function () {
     }
 	
 	Constr.prototype.$findMatchingParen = function (text, offset) {
-		var depth = 1;
-		for (var i = offset; i < text.length; i++) {
-			var ch = text.charAt(i);
-			if (ch == ')') {
+		let depth = 1;
+		for (let i = offset; i < text.length; i++) {
+			const ch = text.charAt(i);
+			if (ch === ')') {
 				depth -= 1;
-				if (depth == 0)
+				if (depth === 0)
 					return i;
-			} else if (ch == '(') {
+			} else if (ch === '(') {
 				depth += 1;
 			}
 		}
@@ -1377,9 +1377,9 @@ eXide.edit.XQueryModeHelper = (function () {
 	}
 	
 	Constr.prototype.$parseImports = function(code) {
-        var ret = [], 
-            re = this.parseImportRe,
-            match = re.exec(code);
+        const ret = [];
+        const re = this.parseImportRe;
+        let match = re.exec(code);
 
         // put Group capture in ret
         while (match != null) {
@@ -1391,30 +1391,30 @@ eXide.edit.XQueryModeHelper = (function () {
 	}
 	
 	Constr.prototype.$resolveImports = function(doc, imports, onComplete) {
-		var $this = this;
-		var functions = [];
+		const $this = this;
+		const functions = [];
 
-		var params = new URLSearchParams();
-		for (var i = 0; i < imports.length; i++) {
-			var matches = this.moduleRe.exec(imports[i]);
-			if (matches != null && matches.length == 4) {
+		const params = new URLSearchParams();
+		for (let i = 0; i < imports.length; i++) {
+			const matches = this.moduleRe.exec(imports[i]);
+			if (matches != null && matches.length === 4) {
 				params.append("prefix", matches[1]);
 				params.append("uri", matches[2]);
 				params.append("source", matches[3]);
 			}
 		}
 
-		var basePath = "xmldb:exist://" + doc.getBasePath();
+		const basePath = "xmldb:exist://" + doc.getBasePath();
 		params.append("base", basePath);
 
 		fetch("api/editor/symbols?" + params.toString())
 		.then(function(response) { return response.json(); })
 		.then(function(modules) {
 			if (modules != null) {
-				for (var i = 0; i < modules.length; i++) {
-					var funcs = modules[i].functions;
+				for (let i = 0; i < modules.length; i++) {
+					const funcs = modules[i].functions;
 					if (funcs) {
-						for (var j = 0; j < funcs.length; j++) {
+						for (let j = 0; j < funcs.length; j++) {
 							functions.push({
 								type: eXide.edit.Document.TYPE_FUNCTION,
 								name: funcs[j].name,
@@ -1425,10 +1425,10 @@ eXide.edit.XQueryModeHelper = (function () {
 							});
 						}
 					}
-					var vars = modules[i].variables;
+					const vars = modules[i].variables;
 					if (vars) {
-						for (var j = 0; j < vars.length; j++) {
-							var sort = vars[j].split(":");
+						for (let j = 0; j < vars.length; j++) {
+							const sort = vars[j].split(":");
 							sort.splice(1, 0, ":$");
 							functions.push({
 								type: eXide.edit.Document.TYPE_VARIABLE,
@@ -1466,7 +1466,7 @@ eXide.edit.XQueryModeHelper = (function () {
     }
     
 	function escapeHtml(str) {
-		var d = document.createElement("div");
+		const d = document.createElement("div");
 		d.textContent = str || "";
 		return d.innerHTML;
 	}

@@ -7,7 +7,7 @@ describe('Semantic highlighting', () => {
 
   function setEditorContent(text) {
     cy.window().then((win) => {
-      var doc = win.eXide.app.getEditor().getActiveDocument()
+      const doc = win.eXide.app.getEditor().getActiveDocument()
       doc.setText(text)
     })
   }
@@ -15,9 +15,9 @@ describe('Semantic highlighting', () => {
   function triggerParse() {
     // Force a parse by calling the helper's validate method
     cy.window().then((win) => {
-      var editor = win.eXide.app.getEditor()
-      var doc = editor.getActiveDocument()
-      var helper = editor.getActiveDocument().helper
+      const editor = win.eXide.app.getEditor()
+      const doc = editor.getActiveDocument()
+      const helper = editor.getActiveDocument().helper
       if (helper && helper.parseXQuery) {
         helper.parseXQuery(doc)
       }

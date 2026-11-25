@@ -31,7 +31,7 @@ eXide.edit.LessModeHelper = (function () {
         })
         .then(function(response) { return response.json(); })
         .then(function(data) {
-            if (data.status == "error") {
+            if (data.status === "error") {
                 return eXide.util.error(data.message);
             }
             eXide.util.message(path + " stored.");
@@ -41,7 +41,7 @@ eXide.edit.LessModeHelper = (function () {
         });
     }
 
-    var Constr = function(editor) {
+    const Constr = function(editor) {
         this.parent = editor;
         this.editor = this.parent.editor;
         this.addCommand("locate", this.locate);
@@ -52,29 +52,29 @@ eXide.edit.LessModeHelper = (function () {
     eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
 
     Constr.prototype.documentSaved = function(doc) {
-        var path = doc.getExternalLink();
-        var code = doc.getText();
+        const path = doc.getExternalLink();
+        const code = doc.getText();
 
         if (/\/_.+\.less$/.test(path)) {
           return eXide.util.error("CSS not compiled for include : " + path);
         }
 
-        var options = {
+        const options = {
             filename: path
         };
 
-        var header = "/**\n" +
+        const header = "/**\n" +
                       " * THIS IS A GENERATED FILE\n" +
                       " * to make changes edit\n" +
                       " * " + path + "\n" +
                       " */\n\n";
 
-        var handler = function (err, output) {
+        const handler = function (err, output) {
             if (err) {
                 return eXide.util.error("Error: " + err.message);
             }
             eXide.util.message("Compiled less file: " + path);
-            var cssPath = doc.getPath().replace(/\.less$/, ".css");
+            const cssPath = doc.getPath().replace(/\.less$/, ".css");
             saveCSS(cssPath, header + output.css);
         };
         less.render(code, options, handler);
@@ -83,20 +83,20 @@ eXide.edit.LessModeHelper = (function () {
     Constr.prototype.saveCSS = saveCSS;
 
     Constr.prototype.createOutline = function(doc, onComplete) {
-        var state = this.editor.state;
-        var tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
+        const state = this.editor.state;
+        const tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
         tree.iterate({
             enter: function(node) {
                 if (node.name === "RuleSet") {
-                    var blockStart = node.to;
-                    var child = node.node.firstChild;
+                    let blockStart = node.to;
+                    let child = node.node.firstChild;
                     while (child) {
                         if (child.name === "Block") { blockStart = child.from; break; }
                         child = child.nextSibling;
                     }
-                    var selector = state.sliceDoc(node.from, blockStart).trim();
+                    const selector = state.sliceDoc(node.from, blockStart).trim();
                     if (selector) {
-                        var line = state.doc.lineAt(node.from);
+                        const line = state.doc.lineAt(node.from);
                         doc.functions.push({
                             type: eXide.edit.Document.TYPE_FUNCTION,
                             name: selector,
@@ -111,11 +111,11 @@ eXide.edit.LessModeHelper = (function () {
                     return false;
                 }
                 if (node.name === "MediaStatement" || node.name === "KeyframesStatement") {
-                    var text = state.sliceDoc(node.from, node.to);
-                    var braceIdx = text.indexOf("{");
+                    let text = state.sliceDoc(node.from, node.to);
+                    const braceIdx = text.indexOf("{");
                     if (braceIdx >= 0) text = text.substring(0, braceIdx).trim();
                     if (text.length > 60) text = text.substring(0, 60) + "…";
-                    var line = state.doc.lineAt(node.from);
+                    const line = state.doc.lineAt(node.from);
                     doc.functions.push({
                         type: eXide.edit.Document.TYPE_FUNCTION,
                         name: text,

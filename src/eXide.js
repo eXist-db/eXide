@@ -26,13 +26,13 @@ document.addEventListener("DOMContentLoaded", function() {
     window.name = "eXide";
 
     // parse query parameters passed in by URL:
-    var qs = (function(a) {
-        if (a == "") return {};
-        var b = {};
-        for (var i = 0; i < a.length; ++i)
+    const qs = (function(a) {
+        if (a === "") return {};
+        const b = {};
+        for (let i = 0; i < a.length; ++i)
         {
-            var p=a[i].split('=');
-            if (p.length != 2) continue;
+            const p=a[i].split('=');
+            if (p.length !== 2) continue;
             b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
         }
         return b;
@@ -40,8 +40,8 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // check parameters passed in GET request
     eXide.app.init(function (restored) {
-        var openDoc = qs["open"];
-        var snippet = qs["snip"];
+        const openDoc = qs["open"];
+        const snippet = qs["snip"];
         if (openDoc) {
             eXide.app.findDocument(qs["open"]);
         } else if (snippet) {
@@ -60,35 +60,35 @@ eXide.namespace("eXide.app");
  */
 eXide.app = (function(util) {
 
-	var editor;
+	let editor;
 
-    var layout;
-	var deploymentEditor;
-	var dbBrowser;
-    var projects;
-	var preferences;
-    var templates = {};
-    var menu;
-    var lastQuery = null;
-	var hitCount = 0;
-	var startOffset = 0;
-	var currentOffset = 0;
-	var endOffset = 0;
-    var numberOfResults = 10;
-    var activeResultIdx = -1;
+    let layout;
+	let deploymentEditor;
+	let dbBrowser;
+    let projects;
+	let preferences;
+    let templates = {};
+    let menu;
+    let lastQuery = null;
+	let hitCount = 0;
+	let startOffset = 0;
+	let currentOffset = 0;
+	let endOffset = 0;
+    let numberOfResults = 10;
+    let activeResultIdx = -1;
 
-	var login = null;
+	const login = null;
 
-    var allowDnd = true;
+    const allowDnd = true;
 
     // used to detect when window looses focus
-    var hasFocus = true;
+    let hasFocus = true;
 
-    var resultPanel = "south";
+    let resultPanel = "south";
 
-    var monitor = null;
+    let monitor = null;
 
-    var dialogs = {};
+    const dialogs = {};
 
     /**
      * Apply CM6 syntax highlighting to a result content element.
@@ -97,11 +97,11 @@ eXide.app = (function(util) {
      */
     function highlightResultContent(contentEl) {
         if (!CM6.highlightTree) return;
-        var text = contentEl.textContent;
+        const text = contentEl.textContent;
         if (!text || text.length === 0) return;
 
-        var serializationMode = document.getElementById("serialization-mode").value;
-        var langSupport;
+        const serializationMode = document.getElementById("serialization-mode").value;
+        let langSupport;
         switch (serializationMode) {
             case "xml":
             case "xhtml":
@@ -125,15 +125,15 @@ eXide.app = (function(util) {
                     return; // plain text, no highlighting
                 }
         }
-        var lang = langSupport.language;
-        var tree = lang.parser.parse(text);
-        var parts = [];
-        var pos = 0;
+        const lang = langSupport.language;
+        const tree = lang.parser.parse(text);
+        const parts = [];
+        let pos = 0;
         CM6.highlightTree(tree, CM6.classHighlighter, function(from, to, classes) {
             if (from > pos) {
                 parts.push(document.createTextNode(text.slice(pos, from)));
             }
-            var span = document.createElement("span");
+            const span = document.createElement("span");
             span.className = classes;
             span.textContent = text.slice(from, to);
             parts.push(span);
@@ -144,20 +144,20 @@ eXide.app = (function(util) {
         }
         if (parts.length > 0) {
             contentEl.textContent = "";
-            for (var i = 0; i < parts.length; i++) {
+            for (let i = 0; i < parts.length; i++) {
                 contentEl.appendChild(parts[i]);
             }
         }
     }
 
-    var webResources = {
+    const webResources = {
         "html": 1,
         "javascript": 1,
         "css": 1,
         "less": 1
     };
 
-	var app = {
+	const app = {
 
 		init: function(afterInitCallback) {
 		    if (!("flex" in document.documentElement.style)) {
@@ -179,7 +179,7 @@ eXide.app = (function(util) {
 
             app.initGUI(menu);
 
-			var dnd = new eXide.util.DnD("body");
+			const dnd = new eXide.util.DnD("body");
 			dnd.addEventListener("drop", app.dropFile);
 
             // save restored paths for later
@@ -196,9 +196,9 @@ eXide.app = (function(util) {
                         // Listen for pushed diagnostics from the server
                         eXide.ws.on("textDocument/publishDiagnostics", function (data) {
                             if (!data || !data.uri) return;
-                            var doc = editor.getDocument(data.uri);
+                            const doc = editor.getDocument(data.uri);
                             if (!doc) return;
-                            var diagnostics = data.diagnostics;
+                            const diagnostics = data.diagnostics;
                             if (!diagnostics || !Array.isArray(diagnostics) || diagnostics.length === 0) {
                                 // Clear errors for this document
                                 if (doc === editor.getActiveDocument()) {
@@ -209,7 +209,7 @@ eXide.app = (function(util) {
                             }
                             // Apply first error to the active document
                             if (doc === editor.getActiveDocument()) {
-                                var err = diagnostics[0];
+                                const err = diagnostics[0];
                                 if (err && err.message) {
                                     editor.updateStatus(err.message, doc.getPath() + "#" + err.line);
                                 }
@@ -296,7 +296,7 @@ eXide.app = (function(util) {
         },
 
 		updateAuthStatus: function(user) {
-		    var el = document.getElementById("user");
+		    const el = document.getElementById("user");
 		    if (user) {
 		        el.innerHTML = '<span class="auth-dot auth-dot-ok"></span>' + user;
 		        el.title = "Click to logout";
@@ -305,8 +305,8 @@ eXide.app = (function(util) {
 		        el.title = "Click to login";
 		    }
 		    // Start/stop monitor based on auth and panel visibility
-		    var eastEl = document.querySelector(".panel-east");
-		    var eastVisible = eastEl && eastEl.style.display !== "none";
+		    const eastEl = document.querySelector(".panel-east");
+		    const eastVisible = eastEl && eastEl.style.display !== "none";
 		    if (app.login && app.login.isAdmin && eastVisible) {
 		        if (!monitor) {
 		            monitor = new eXide.app.Monitor();
@@ -324,8 +324,8 @@ eXide.app = (function(util) {
 		        monitor.init();
 		    }
 		    layout.toggle("east");
-		    var eastEl = document.querySelector(".panel-east");
-		    var isVisible = eastEl && eastEl.style.display !== "none";
+		    const eastEl = document.querySelector(".panel-east");
+		    const isVisible = eastEl && eastEl.style.display !== "none";
 		    if (isVisible) {
 		        if (app.login && app.login.isAdmin) {
 		            monitor.start();
@@ -339,23 +339,23 @@ eXide.app = (function(util) {
 		},
 
 		updateLayoutTop: function() {
-		    var toolbarBtns = document.querySelector(".toolbar-buttons");
-		    var layoutH = document.querySelector(".layout-horizontal");
+		    const toolbarBtns = document.querySelector(".toolbar-buttons");
+		    const layoutH = document.querySelector(".layout-horizontal");
 		    if (toolbarBtns && layoutH) {
-		        var fullscreen = document.getElementById("fullscreen");
-		        var top = toolbarBtns.getBoundingClientRect().bottom -
+		        const fullscreen = document.getElementById("fullscreen");
+		        const top = toolbarBtns.getBoundingClientRect().bottom -
 		                  fullscreen.getBoundingClientRect().top + 2;
 		        layoutH.style.top = top + "px";
 		    }
 		},
 
 		resize: function(resizeIframe) {
-			var panel = document.getElementById("editor");
+			const panel = document.getElementById("editor");
             if (resizeIframe) {
-                var resultsContainer = document.querySelector(".panel-" + resultPanel);
-                var resultsBody = document.getElementById("results-body");
-                var navbarEl = resultsContainer.querySelector(".navbar");
-                var navbarHeight = navbarEl ? navbarEl.offsetHeight : 0;
+                const resultsContainer = document.querySelector(".panel-" + resultPanel);
+                const resultsBody = document.getElementById("results-body");
+                const navbarEl = resultsContainer.querySelector(".navbar");
+                const navbarHeight = navbarEl ? navbarEl.offsetHeight : 0;
                 document.getElementById("results-iframe").style.width = resultsBody.clientWidth + "px";
                 document.getElementById("results-iframe").style.height = (resultsContainer.clientHeight - navbarHeight - 8) + "px";
                 resultsBody.style.height = (resultsContainer.clientHeight - navbarHeight - 8) + "px";
@@ -364,14 +364,14 @@ eXide.app = (function(util) {
 		},
 
         beforeResize: function() {
-            if (document.getElementById("serialization-mode").value == "html") {
+            if (document.getElementById("serialization-mode").value === "html") {
                 document.getElementById("results-iframe").style.display = "none";
             }
         },
 
         afterResize: function() {
             editor.resize();
-            if (document.getElementById("serialization-mode").value == "html") {
+            if (document.getElementById("serialization-mode").value === "html") {
                 document.getElementById("results-iframe").style.display = "";
             }
         },
@@ -389,9 +389,9 @@ eXide.app = (function(util) {
                 return;
             }
             if (typeof FileReader !== "undefined") {
-                var reader = new FileReader();
-                for (var i = 0; i < files.length; i++) {
-                    var mime = eXide.util.mimeTypes.getLangFromMime(files[i].type) || "xquery";
+                const reader = new FileReader();
+                for (let i = 0; i < files.length; i++) {
+                    const mime = eXide.util.mimeTypes.getLangFromMime(files[i].type) || "xquery";
                     reader.onloadend = function(e) {
                         app.newDocument(this.result, mime);
                     };
@@ -403,9 +403,9 @@ eXide.app = (function(util) {
         },
 
 		findDocument: function(path, line) {
-			var doc = editor.getDocument(path);
+			const doc = editor.getDocument(path);
 			if (doc == null) {
-				var resource = {
+				const resource = {
 						name: path.match(/[^\/]+$/)[0],
 						path: path
 				};
@@ -426,9 +426,9 @@ eXide.app = (function(util) {
 			if (path == null) {
 				editor.exec("locate", type, symbol);
 			} else {
-				var doc = editor.getDocument(path);
+				const doc = editor.getDocument(path);
 				if (doc == null) {
-					var resource = {
+					const resource = {
 							name: path.match(/[^\/]+$/)[0],
 							path: path
 					};
@@ -455,11 +455,11 @@ eXide.app = (function(util) {
 		},
 
 		openSelectedDocument: function(doc, close) {
-			var resource = doc || dbBrowser.getSelection();
+			const resource = doc || dbBrowser.getSelection();
 			if (resource) {
 				app.$doOpenDocument(resource);
 			}
-			if (close == undefined || close)
+			if (close ?? true)
 				dialogs["open-dialog"].close();
 		},
 
@@ -471,16 +471,16 @@ eXide.app = (function(util) {
 			}else {
                 util.Dialog.warning("Invalid selection","The Download Selected command requires that resources be selected. Please select resources for download.")
             }
-			if (close == undefined || close)
+			if (close ?? true)
 				dialogs["open-dialog"].close();
 		},
 
 		$doOpenDocument: function(resource, callback, reload, forceText) {
 			resource.path = util.normalizePath(resource.path);
-            var indentOnOpen = document.getElementById("indent-on-open").checked;
-            var expandXIncludesOnOpen = document.getElementById("expand-xincludes-on-open").checked;
-            var omitXMLDeclatarionOnOpen = document.getElementById("omit-xml-decl-on-open").checked;
-            var doc = editor.getDocument(resource.path);
+            const indentOnOpen = document.getElementById("indent-on-open").checked;
+            const expandXIncludesOnOpen = document.getElementById("expand-xincludes-on-open").checked;
+            const omitXMLDeclatarionOnOpen = document.getElementById("omit-xml-decl-on-open").checked;
+            const doc = editor.getDocument(resource.path);
             if (doc && !reload) {
                 editor.switchTo(doc);
                 if (callback) {
@@ -488,7 +488,7 @@ eXide.app = (function(util) {
                 }
                 return true;
             }
-			var params = new URLSearchParams({
+			const params = new URLSearchParams({
 			    "indent": indentOnOpen,
 			    "expand-xincludes": expandXIncludesOnOpen,
 			    "omit-xml-decl": omitXMLDeclatarionOnOpen
@@ -501,22 +501,22 @@ eXide.app = (function(util) {
 			        return response.json();
 			    })
 			    .then(function(data) {
-			        var baseMime = data.mime || "";
-			        var externalPath = data.externalPath;
+			        const baseMime = data.mime || "";
+			        const externalPath = data.externalPath;
 			        // Show binary files in a preview overlay
 			        if (!reload && !forceText && data.binary &&
 			            /^image\/|^audio\/|^video\/|^application\/pdf|^application\/octet-stream|^application\/zip/.test(baseMime)) {
-			            var fileUrl = externalPath || ("rest" + resource.path);
-			            var fileName = resource.name || resource.path.replace(/^.*\//, "");
+			            const fileUrl = externalPath || ("rest" + resource.path);
+			            const fileName = resource.name || resource.path.replace(/^.*\//, "");
 			            app.$showBinaryPreview(fileUrl, fileName, baseMime, resource, callback);
 			            if (callback) { callback(null); }
 			            return true;
 			        }
-			        var content = data.content || "";
+			        const content = data.content || "";
 			        if (reload) {
 			            editor.reload(content);
 			        } else {
-			            var mime = forceText ? "text/text" : util.mimeTypes.getMime(baseMime);
+			            const mime = forceText ? "text/text" : util.mimeTypes.getMime(baseMime);
 			            editor.openDocument(content, mime, resource, externalPath);
 			        }
 			        if (callback) {
@@ -536,25 +536,25 @@ eXide.app = (function(util) {
 
 		$showBinaryPreview: function(fileUrl, fileName, mime, resource, callback) {
 		    // Remove existing overlay
-		    var existing = document.getElementById("binary-preview-overlay");
+		    const existing = document.getElementById("binary-preview-overlay");
 		    if (existing) existing.remove();
 
-		    var overlay = document.createElement("div");
+		    const overlay = document.createElement("div");
 		    overlay.id = "binary-preview-overlay";
 		    overlay.className = "binary-preview-overlay";
 
-		    var panel = document.createElement("div");
+		    const panel = document.createElement("div");
 		    panel.className = "binary-preview-panel";
 
 		    // Header
-		    var header = document.createElement("div");
+		    const header = document.createElement("div");
 		    header.className = "binary-preview-header";
-		    var title = document.createElement("span");
+		    const title = document.createElement("span");
 		    title.className = "binary-preview-title";
 		    title.textContent = fileName;
 		    title.title = fileName;
 		    header.appendChild(title);
-		    var closeBtn = document.createElement("button");
+		    const closeBtn = document.createElement("button");
 		    closeBtn.className = "binary-preview-close";
 		    closeBtn.textContent = "\u2715";
 		    closeBtn.title = "Close";
@@ -562,34 +562,34 @@ eXide.app = (function(util) {
 		    panel.appendChild(header);
 
 		    // Content
-		    var content = document.createElement("div");
+		    const content = document.createElement("div");
 		    content.className = "binary-preview-content";
 		    if (/^image\//.test(mime)) {
-		        var img = document.createElement("img");
+		        const img = document.createElement("img");
 		        img.src = fileUrl;
 		        img.alt = fileName;
 		        content.appendChild(img);
 		    } else if (mime === "application/pdf") {
-		        var embed = document.createElement("embed");
+		        const embed = document.createElement("embed");
 		        embed.src = fileUrl;
 		        embed.type = "application/pdf";
 		        embed.style.width = "100%";
 		        embed.style.height = "100%";
 		        content.appendChild(embed);
 		    } else if (/^audio\//.test(mime)) {
-		        var audio = document.createElement("audio");
+		        const audio = document.createElement("audio");
 		        audio.src = fileUrl;
 		        audio.controls = true;
 		        content.appendChild(audio);
 		    } else if (/^video\//.test(mime)) {
-		        var video = document.createElement("video");
+		        const video = document.createElement("video");
 		        video.src = fileUrl;
 		        video.controls = true;
 		        video.style.maxWidth = "100%";
 		        video.style.maxHeight = "100%";
 		        content.appendChild(video);
 		    } else {
-		        var msg = document.createElement("div");
+		        const msg = document.createElement("div");
 		        msg.className = "binary-preview-nopreview";
 		        msg.innerHTML = '<i class="fa fa-file-o" style="font-size:48px;margin-bottom:12px;display:block"></i>No preview available<br><small>' + mime + '</small>';
 		        content.appendChild(msg);
@@ -597,29 +597,29 @@ eXide.app = (function(util) {
 		    panel.appendChild(content);
 
 		    // Footer
-		    var footer = document.createElement("div");
+		    const footer = document.createElement("div");
 		    footer.className = "binary-preview-footer";
-		    var openBtn = document.createElement("button");
+		    const openBtn = document.createElement("button");
 		    openBtn.textContent = "Open in New Tab";
 		    openBtn.addEventListener("click", function() {
 		        window.open(fileUrl, fileName);
 		    });
-		    var dlBtn = document.createElement("button");
+		    const dlBtn = document.createElement("button");
 		    dlBtn.textContent = "Download";
 		    dlBtn.addEventListener("click", function() {
-		        var a = document.createElement("a");
+		        const a = document.createElement("a");
 		        a.href = fileUrl;
 		        a.download = fileName;
 		        a.click();
 		    });
-		    var openTextBtn = document.createElement("button");
+		    const openTextBtn = document.createElement("button");
 		    openTextBtn.textContent = "Open Anyway";
 		    openTextBtn.title = "Open as plain text in the editor";
 		    openTextBtn.addEventListener("click", function() {
 		        close();
 		        app.$doOpenDocument(resource, callback, false, true);
 		    });
-		    var cancelBtn = document.createElement("button");
+		    const cancelBtn = document.createElement("button");
 		    cancelBtn.textContent = "Close";
 		    cancelBtn.addEventListener("click", close);
 		    footer.appendChild(openTextBtn);
@@ -647,7 +647,7 @@ eXide.app = (function(util) {
 		},
 
         reloadDocument: function() {
-            var doc = editor.getActiveDocument();
+            const doc = editor.getActiveDocument();
             if (doc.isSaved()) {
                 app.$reloadDocument(doc);
             } else {
@@ -658,7 +658,7 @@ eXide.app = (function(util) {
         },
 
         $reloadDocument: function(doc) {
-            var resource = {
+            const resource = {
                 name: doc.getName(),
                 path: doc.getPath()
             };
@@ -716,7 +716,7 @@ eXide.app = (function(util) {
 		 *   (Also used as a click handler, so anything but a function is ignored.)
 		 */
 		saveDocument: function(onSaved) {
-            var afterSave = typeof onSaved === "function" ? onSaved : function() {};
+            const afterSave = typeof onSaved === "function" ? onSaved : function() {};
             app.requireLogin(function () {
                 if (editor.getActiveDocument().getPath().match('^__new__')) {
                     dbBrowser.changeToCollection("/db");
@@ -745,7 +745,7 @@ eXide.app = (function(util) {
     					}
     				});
     				dialogs["open-dialog"].open();
-					var nameInput = document.querySelector("#open-dialog input[name='resource']");
+					const nameInput = document.querySelector("#open-dialog input[name='resource']");
 					if (nameInput) nameInput.focus();
     			} else {
     				editor.saveDocument(null, function () {
@@ -791,7 +791,7 @@ eXide.app = (function(util) {
     				}
     			});
     			dialogs["open-dialog"].open();
-				var nameInput = document.querySelector("#open-dialog input[name='resource']");
+				const nameInput = document.querySelector("#open-dialog input[name='resource']");
 				if (nameInput) nameInput.focus();
             });
         },
@@ -801,16 +801,16 @@ eXide.app = (function(util) {
         },
 
         download: function(path) {
-            var indentOnDownload = document.getElementById("indent-on-download").checked;
-            var expandXIncludesOnDownload = document.getElementById("expand-xincludes-on-download").checked;
-            var omitXMLDeclatarionOnDownload = document.getElementById("omit-xml-decl-on-download").checked;
-			var doc = editor.getActiveDocument();
+            const indentOnDownload = document.getElementById("indent-on-download").checked;
+            const expandXIncludesOnDownload = document.getElementById("expand-xincludes-on-download").checked;
+            const omitXMLDeclatarionOnDownload = document.getElementById("omit-xml-decl-on-download").checked;
+			const doc = editor.getActiveDocument();
 			if (!path && (doc.getPath().match("^__new__") || !doc.isSaved())) {
 				util.error("There are unsaved changes in the document. Please save it first.");
 				return;
 			}
-            var path = path || doc.getPath()
-            var dlParams = new URLSearchParams({
+            path = path || doc.getPath();
+            const dlParams = new URLSearchParams({
                 "download": "true",
                 "indent": indentOnDownload,
                 "expand-xincludes": expandXIncludesOnDownload,
@@ -847,9 +847,9 @@ eXide.app = (function(util) {
                 return;
             }
             switch (editor.getActiveDocument().getSyntax()) {
-                case "html":
+                case "html": {
                     showResultsPanel();
-                    var iframe = document.getElementById("results-iframe");
+                    const iframe = document.getElementById("results-iframe");
                     iframe.style.display = "";
                     if (path) {
                         iframe.src = editor.getActiveDocument().getExternalLink();
@@ -859,20 +859,22 @@ eXide.app = (function(util) {
                     document.getElementById("serialization-mode").setAttribute("disabled", "disabled");
                     document.getElementById("serialization-mode").value = "html";
                     break;
-                case "javascript":
+                }
+                case "javascript": {
                     showResultsPanel();
-                    var iframe = document.getElementById("results-iframe");
+                    const iframe = document.getElementById("results-iframe");
                     iframe.style.display = "";
-                    var code = editor.getText();
+                    let code = editor.getText();
                     code = "<script type=\"text/javascript\">" + code + "</script>";
                     iframe.contentDocument.documentElement.innerHTML = code;
                     document.getElementById("serialization-mode").setAttribute("disabled", "disabled");
                     document.getElementById("serialization-mode").value = "html";
                     break;
-                default:
-                    var code = editor.getText();
+                }
+                default: {
+                    let code = editor.getText();
                     if (path) {
-                        var doc = editor.getDocument(path);
+                        const doc = editor.getDocument(path);
                         if (doc) {
                             code = doc.getText();
                         } else {
@@ -884,16 +886,17 @@ eXide.app = (function(util) {
         			eXide.util.message("Running query ...");
 
                     document.getElementById("serialization-mode").removeAttribute("disabled");
-                    var serializationMode = document.getElementById("serialization-mode").value;
+                    const serializationMode = document.getElementById("serialization-mode").value;
                     // Unsaved buffers (path "__new__N") have no real collection. Send "." so
                     // the server treats it as "no location" rather than a malformed xmldb URI
                     // (xmldb:exist://__new__1), which previously crashed module imports server-side.
-                    var activeDoc = editor.getActiveDocument();
-        			var moduleLoadPath = activeDoc.isNew() ? "." : "xmldb:exist://" + activeDoc.getBasePath();
+                    const activeDoc = editor.getActiveDocument();
+        			const moduleLoadPath = activeDoc.isNew() ? "." : "xmldb:exist://" + activeDoc.getBasePath();
         			document.querySelectorAll('.results-container .results').forEach(function(el) { el.innerHTML = ""; });
 
                     app.runQueryCursor(code, moduleLoadPath, serializationMode, livePreview);
                     break;
+                }
             }
 
 		},
@@ -914,8 +917,8 @@ eXide.app = (function(util) {
 		 * Cookie auth works because both apps share the org.exist.login domain.
 		 */
 		runQueryCursor: function(code, moduleLoadPath, serializationMode, livePreview) {
-		    var btnCancel = document.getElementById("cancel-query");
-		    var timingEl = document.getElementById("query-timing");
+		    const btnCancel = document.getElementById("cancel-query");
+		    const timingEl = document.getElementById("query-timing");
 
 		    function showCancel() { if (btnCancel) btnCancel.style.display = ""; }
 		    function hideCancel() { if (btnCancel) btnCancel.style.display = "none"; }
@@ -932,7 +935,7 @@ eXide.app = (function(util) {
 		    function queryErrorMessage(err, fallback) {
 		        if (err == null) { return fallback || "Query failed."; }
 		        if (typeof err === "string") { return err; }
-		        var msg = err.message || err.error || err.raw
+		        let msg = err.message || err.error || err.raw
 		            || fallback || JSON.stringify(err);
 		        if (err.code) { msg = "[" + err.code + "] " + msg; }
 		        if (err.line > 0) { msg = "line " + err.line + ": " + msg; }
@@ -950,7 +953,7 @@ eXide.app = (function(util) {
 		        app._queryAbort.abort();
 		    }
 
-		    var abortController = new AbortController();
+		    const abortController = new AbortController();
 		    app._queryAbort = abortController;
 
 		    showCancel();
@@ -976,7 +979,7 @@ eXide.app = (function(util) {
 		                // Body wasn't JSON — try to surface whatever the
 		                // server actually said (HTTP status + body text).
 		                return response.text().then(function (text) {
-		                    var msg = "HTTP " + response.status + ": " +
+		                    const msg = "HTTP " + response.status + ": " +
 		                        (text ? text.slice(0, 500) : response.statusText);
 		                    editor.evalError(msg, !livePreview);
 		                }).catch(function () {
@@ -1010,12 +1013,12 @@ eXide.app = (function(util) {
 		            currentOffset = 1;
 		            activeResultIdx = -1;
 
-		            var elapsed = (data.elapsed / 1000).toFixed(3);
+		            const elapsed = (data.elapsed / 1000).toFixed(3);
 		            util.message("Query returned " + hitCount.toLocaleString() + " item(s) in " + elapsed + "s");
 
 		            // Show timing breakdown
 		            if (timingEl) {
-		                var t = data.timing;
+		                const t = data.timing;
 		                if (t) {
 		                    timingEl.innerHTML =
 		                        '<span><span class="timing-label">Compile:</span> ' + t.compile + 'ms</span>' +
@@ -1063,11 +1066,11 @@ eXide.app = (function(util) {
 		fetchCursorPage: function(start, end) {
 		    if (!app._cursorId) return;
 
-		    var count = end - start + 1;
-		    var serializationMode = document.getElementById("serialization-mode").value;
-		    var indent = document.getElementById("indent-results").checked ? "yes" : "no";
-		    var autoExpand = document.getElementById("auto-expand-matches").checked ? "both" : "no";
-		    var params = new URLSearchParams({
+		    const count = end - start + 1;
+		    const serializationMode = document.getElementById("serialization-mode").value;
+		    const indent = document.getElementById("indent-results").checked ? "yes" : "no";
+		    const autoExpand = document.getElementById("auto-expand-matches").checked ? "both" : "no";
+		    const params = new URLSearchParams({
 		        start: start,
 		        count: count,
 		        method: serializationMode,
@@ -1081,22 +1084,22 @@ eXide.app = (function(util) {
 		        return response.json();
 		    })
 		    .then(function(data) {
-		        var resultsDiv = document.querySelector('.results-container .results');
+		        const resultsDiv = document.querySelector('.results-container .results');
 		        if (!resultsDiv) return;
 		        resultsDiv.innerHTML = "";
 
-		        var items = data; // existdb-openapi returns a plain array
+		        const items = data; // existdb-openapi returns a plain array
 		        if (!items || items.length === 0) return;
 
-		        var numWidth = Math.ceil(Math.log(hitCount + 1) / Math.LN10);
-		        for (var i = 0; i < items.length; i++) {
-		            var item = items[i];
-		            var idx = start + i;
-		            var div = document.createElement("div");
+		        const numWidth = Math.ceil(Math.log(hitCount + 1) / Math.LN10);
+		        for (let i = 0; i < items.length; i++) {
+		            const item = items[i];
+		            const idx = start + i;
+		            const div = document.createElement("div");
 		            div.className = (idx % 2 === 0) ? "even" : "uneven";
 
 		            // Build badge — clickable link if documentURI is available
-		            var badge;
+		            let badge;
 		            if (item.documentURI) {
 		                badge = '<a class="badge" href="#" data-path="' + item.documentURI +
 		                    '" title="Click to open source document" style="width:' + numWidth + 'ch">' + idx + '</a>';
@@ -1109,12 +1112,12 @@ eXide.app = (function(util) {
 		                '<div class="item"><i class="fa fa-clipboard copy-result" title="Copy this item to clipboard"></i>' +
 		                '<div class="content" style="white-space: pre-wrap"></div></div>';
 
-		            var contentDiv = div.querySelector('.content');
+		            const contentDiv = div.querySelector('.content');
 		            contentDiv.textContent = item.value;
 		            highlightResultContent(contentDiv);
 
 		            // Document link click handler
-		            var posLink = div.querySelector('.pos a');
+		            const posLink = div.querySelector('.pos a');
 		            if (posLink) {
 		                posLink.addEventListener("click", function(e) {
 		                    e.preventDefault();
@@ -1124,9 +1127,9 @@ eXide.app = (function(util) {
 
 		            // Copy button
 		            div.querySelector('.copy-result').addEventListener("click", function() {
-		                var sibling = this.parentNode.querySelector('.content');
-		                var text = sibling ? sibling.textContent : "";
-		                var btn = this;
+		                const sibling = this.parentNode.querySelector('.content');
+		                const text = sibling ? sibling.textContent : "";
+		                const btn = this;
 		                navigator.clipboard.writeText(text).then(function() {
 		                    btn.classList.remove('fa-clipboard');
 		                    btn.classList.add('fa-check', 'copied');
@@ -1141,7 +1144,7 @@ eXide.app = (function(util) {
 		        }
 
 		        // Update status
-		        var actualEnd = start + items.length - 1;
+		        const actualEnd = start + items.length - 1;
 		        document.querySelectorAll('.results-container .current').forEach(function(el) {
 		            el.textContent = "Showing results " + start + " to " + actualEnd + " of " + hitCount;
 		        });
@@ -1158,10 +1161,10 @@ eXide.app = (function(util) {
 
 		/** Cancel the active query. */
 		cancelQuery: function() {
-		    var code = editor.getText();
+		    const code = editor.getText();
 		    // Detect queries that modify state: XQUF expressions, legacy update syntax,
 		    // xmldb store/remove/create, security manager changes, file system writes
-		    var hasSideEffects = /\b(update|insert|delete|replace|rename)\b/i.test(code) ||
+		    const hasSideEffects = /\b(update|insert|delete|replace|rename)\b/i.test(code) ||
 		        /\b(xmldb:(store|remove|create-collection|copy|move|rename))\b/.test(code) ||
 		        /\b(sm:(chmod|chown|chgrp|add-account|remove-account))\b/.test(code) ||
 		        /\b(file:(write|delete|move|mkdirs|serialize))\b/.test(code);
@@ -1178,16 +1181,16 @@ eXide.app = (function(util) {
 		        //    Fetch running queries and kill any that are user-submitted
 		        //    (exclude eXide's own internal API queries).
 		        fetch("api/admin/queries").then(function(r) { return r.json(); }).then(function(data) {
-		            var running = data.queries || [];
-		            for (var i = 0; i < running.length; i++) {
-		                var q = running[i];
+		            const running = data.queries || [];
+		            for (let i = 0; i < running.length; i++) {
+		                const q = running[i];
 		                if (q.sourceKey && !q.sourceKey.includes("/apps/eXide/modules/")) {
 		                    fetch("api/admin/queries/" + encodeURIComponent(q.id), { method: "DELETE" });
 		                }
 		            }
 		        }).catch(function() {});
 
-		        var btnCancel = document.getElementById("cancel-query");
+		        const btnCancel = document.getElementById("cancel-query");
 		        if (btnCancel) btnCancel.style.display = "none";
 		        util.message("Query cancelled.");
 		    }
@@ -1215,7 +1218,7 @@ eXide.app = (function(util) {
 		browseNext: function() {
 			if (currentOffset > 0 && endOffset < hitCount) {
 				startOffset = currentOffset;
-		        var howmany = numberOfResults;
+		        const howmany = numberOfResults;
 		        endOffset = currentOffset + howmany - 1;
 				if (hitCount < endOffset)
 					endOffset = hitCount;
@@ -1228,7 +1231,7 @@ eXide.app = (function(util) {
 		/** Called if user clicks on "previous" link in query results. */
 		browsePrevious: function() {
 			if (currentOffset > 0 && startOffset > 1) {
-		        var count = numberOfResults;
+		        const count = numberOfResults;
 		        startOffset = startOffset - count;
 				if (startOffset < 1)
 					startOffset = 1;
@@ -1269,7 +1272,7 @@ eXide.app = (function(util) {
 		},
 
 		syncManager : function(collection) {
-			var openDialogEl = document.getElementById("open-dialog");
+			const openDialogEl = document.getElementById("open-dialog");
 			if(openDialogEl && openDialogEl.style.display !== "none" && openDialogEl.offsetParent !== null){
 				dbBrowser.resources.collection = collection
 				dbBrowser.resources.reload()
@@ -1289,8 +1292,8 @@ eXide.app = (function(util) {
 
 		deploy: function() {
             app.requireLogin(function() {
-    			var path = editor.getActiveDocument().getPath();
-    			var collection = /^(.*)\/[^\/]+$/.exec(path);
+    			const path = editor.getActiveDocument().getPath();
+    			const collection = /^(.*)\/[^\/]+$/.exec(path);
     			if (!collection) {
     				util.error("The file open in the editor does not belong to an application package!");
     				return false;
@@ -1303,8 +1306,8 @@ eXide.app = (function(util) {
 
 		synchronize: function() {
             app.requireLogin(function () {
-                var path = editor.getActiveDocument().getPath();
-        		var collection = /^(.*)\/[^\/]+$/.exec(path);
+                const path = editor.getActiveDocument().getPath();
+        		const collection = /^(.*)\/[^\/]+$/.exec(path);
     			if (!collection) {
                     util.error("The file open in the editor does not belong to an application package!");
     				return;
@@ -1315,8 +1318,8 @@ eXide.app = (function(util) {
 
         gitCheckout: function() {
             app.requireLogin(function () {
-                var path = editor.getActiveDocument().getPath();
-        		var collection = /^(.*)\/[^\/]+$/.exec(path);
+                const path = editor.getActiveDocument().getPath();
+        		const collection = /^(.*)\/[^\/]+$/.exec(path);
     			if (!collection) {
                     util.error("The file open in the editor does not belong to an application package!");
     				return;
@@ -1326,8 +1329,8 @@ eXide.app = (function(util) {
 		},
         gitCommit: function() {
             app.requireLogin(function () {
-                var path = editor.getActiveDocument().getPath();
-        		var collection = /^(.*)\/[^\/]+$/.exec(path);
+                const path = editor.getActiveDocument().getPath();
+        		const collection = /^(.*)\/[^\/]+$/.exec(path);
     			if (!collection) {
                     util.error("The file open in the editor does not belong to an application package!");
     				return;
@@ -1338,8 +1341,8 @@ eXide.app = (function(util) {
 
         downloadApp: function () {
             app.requireLogin(function() {
-                var path = editor.getActiveDocument().getPath();
-            	var collection = /^(.*)\/[^\/]+$/.exec(path);
+                const path = editor.getActiveDocument().getPath();
+            	const collection = /^(.*)\/[^\/]+$/.exec(path);
                 console.log("downloading %s", collection);
     			if (!collection) {
                     util.error("The file open in the editor does not belong to an application package!");
@@ -1350,8 +1353,8 @@ eXide.app = (function(util) {
         },
 
 		openApp: function (firstLoad) {
-			var path = editor.getActiveDocument().getPath();
-			var collection = /^(.*)\/[^\/]+$/.exec(path);
+			const path = editor.getActiveDocument().getPath();
+			const collection = /^(.*)\/[^\/]+$/.exec(path);
 			if (!collection) {
                 util.error("The file open in the editor does not belong to an application package!");
 				return;
@@ -1360,16 +1363,16 @@ eXide.app = (function(util) {
 		},
 
         runAppOrQuery: function() {
-            var doc = editor.getActiveDocument();
-            var project = projects.getProjectFor(doc.getPath());
+            const doc = editor.getActiveDocument();
+            const project = projects.getProjectFor(doc.getPath());
             if (project) {
-                var url = project.url.replace(/\/{2,}/, "/");
-                var link = eXide.configuration.context + url + "/";
+                const url = project.url.replace(/\/{2,}/, "/");
+                const link = eXide.configuration.context + url + "/";
                 app.ensureSaved(function() {
                     project.win = window.open(link, project.abbrev);
                     project.win.focus();
                 });
-            } else if (!doc.isNew() && (doc.getSyntax() == "xquery")) {
+            } else if (!doc.isNew() && (doc.getSyntax() === "xquery")) {
                 app.ensureSaved(function() {
                     window.open(doc.getExternalLink(), doc.getName());
                 });
@@ -1377,11 +1380,11 @@ eXide.app = (function(util) {
         },
 
         toggleRunStatus: function(doc) {
-            var project = projects.getProjectFor(doc.getPath());
-            var syntax = doc.getSyntax();
-            var enable = ((syntax == "xquery" || syntax == "html") && (project || !doc.isNew()));
+            const project = projects.getProjectFor(doc.getPath());
+            const syntax = doc.getSyntax();
+            let enable = ((syntax === "xquery" || syntax === "html") && (project || !doc.isNew()));
             document.getElementById("launch").disabled = !enable;
-            enable = (doc.getSyntax() == "xquery");
+            enable = (doc.getSyntax() === "xquery");
             document.getElementById("run").disabled = !enable;
         },
 
@@ -1405,7 +1408,7 @@ eXide.app = (function(util) {
 		restoreState: function(callback) {
 			if (!util.supportsHtml5Storage)
 				return false;
-			var sameVersion = preferences.read();
+			const sameVersion = preferences.read();
 			app.updateDarkModeIcon(preferences.get("theme"));
 			if (!sameVersion) {
 			    util.Dialog.message("Version Note", "It seems another version of eXide has been " +
@@ -1414,18 +1417,18 @@ eXide.app = (function(util) {
 			}
 			layout.restoreState(sameVersion);
 
-            var restoring = {};
+            const restoring = {};
 
-			var docCount = localStorage["eXide.documents"];
+			let docCount = localStorage["eXide.documents"];
 			if (!docCount)
 				docCount = 0;
             // we need to restore documents one after the other
-            var docsToLoad = [];
-			for (var i = 0; i < docCount; i++) {
-				var doc = {
+            const docsToLoad = [];
+			for (let i = 0; i < docCount; i++) {
+				const doc = {
 						path: localStorage["eXide." + i + ".path"],
 						name: localStorage["eXide." + i + ".name"],
-						writable: (localStorage["eXide." + i + ".writable"] == "true"),
+						writable: (localStorage["eXide." + i + ".writable"] === "true"),
 						line: parseInt(localStorage["eXide." + i + ".last-line"])
 				};
 				// New documents always editable (writable not stored for __new__ docs)
@@ -1436,7 +1439,7 @@ eXide.app = (function(util) {
                     continue;
                 }
 				console.log("Restoring doc %s, going to line = %i", doc.path, doc.line);
-				var data = localStorage["eXide." + i + ".data"];
+				const data = localStorage["eXide." + i + ".data"];
 				if (data) {
 					editor.newDocumentWithText(data, localStorage["eXide." + i + ".mime"], doc);
 				} else {
@@ -1448,7 +1451,7 @@ eXide.app = (function(util) {
                 if (!editor.getActiveDocument()) {
                     app.newDocument("", "xquery");
                 } else {
-                    var active = localStorage["eXide.activeTab"];
+                    const active = localStorage["eXide.activeTab"];
                     if (active) {
                         app.findDocument(active);
                     }
@@ -1462,12 +1465,12 @@ eXide.app = (function(util) {
 		},
 
         restoreDocs: function(docs, callback) {
-            if (docs.length == 0) {
+            if (docs.length === 0) {
                 callback();
                 return;
             }
-            var self = this;
-            var doc = docs.pop();
+            const self = this;
+            const doc = docs.pop();
             app.$doOpenDocument(doc, function() {
                 if (doc.line) {
                     editorUtils.gotoLine(editor.editor, doc.line + 1);
@@ -1539,7 +1542,7 @@ eXide.app = (function(util) {
                     }
                 };
                 dialogs["login-dialog"].open();
-                var firstInput = document.querySelector("#login-dialog input:first-of-type");
+                const firstInput = document.querySelector("#login-dialog input:first-of-type");
                 if (firstInput) firstInput.focus();
             } else
                 callback();
@@ -1570,19 +1573,19 @@ eXide.app = (function(util) {
         },
 
         updateDarkModeIcon: function(themeOrResolved) {
-            var icon = document.querySelector("#toggle-dark-mode i");
+            const icon = document.querySelector("#toggle-dark-mode i");
             if (!icon) return;
             // Show sun when dark (click to go light), moon when light (click to go dark)
-            var isDark = themeOrResolved === "dark" || document.body.classList.contains("dark");
+            const isDark = themeOrResolved === "dark" || document.body.classList.contains("dark");
             icon.className = isDark ? "fa fa-sun-o" : "fa fa-moon-o";
         },
 
         updateStatus: function(doc) {
-            var syntax = doc.getSyntax();
+            const syntax = doc.getSyntax();
             // Update status bar type segment
-            var typeLabels = {text:"Text",xml:"XML",html:"HTML",xquery:"XQuery",javascript:"Javascript",css:"CSS",less:"Less",json:"JSON",markdown:"Markdown"};
-            var typeVal = document.getElementById("status-type-value");
-            var label = typeLabels[syntax] || syntax;
+            const typeLabels = {text:"Text",xml:"XML",html:"HTML",xquery:"XQuery",javascript:"Javascript",css:"CSS",less:"Less",json:"JSON",markdown:"Markdown"};
+            const typeVal = document.getElementById("status-type-value");
+            let label = typeLabels[syntax] || syntax;
             if (syntax === "xquery" && doc.xqueryVersion) {
                 label += " " + doc.xqueryVersion;
             }
@@ -1591,18 +1594,18 @@ eXide.app = (function(util) {
             document.querySelectorAll("#type-popover .type-popover-item").forEach(function(el) {
                 el.classList.toggle("active", el.dataset.value === syntax);
             });
-            var pathEl = document.querySelector("#status .path");
-            var pathText = doc.isNew() ? doc.getName() : decodeURI(util.normalizePath(doc.getPath()));
-            var copyBtn = document.getElementById("status-copy-url");
-            var extLink = doc.getExternalLink();
+            let pathEl = document.querySelector("#status .path");
+            const pathText = doc.isNew() ? doc.getName() : decodeURI(util.normalizePath(doc.getPath()));
+            const copyBtn = document.getElementById("status-copy-url");
+            let extLink = doc.getExternalLink();
             if (!extLink && !doc.isNew()) {
                 // Compute fallback external link from path
-                var ctx = eXide.configuration.context || "";
+                const ctx = eXide.configuration.context || "";
                 extLink = ctx + "/rest" + doc.getPath();
             }
             if (!doc.isNew() && extLink) {
                 if (pathEl.tagName !== "A") {
-                    var a = document.createElement("a");
+                    const a = document.createElement("a");
                     a.className = "path";
                     a.target = "_blank";
                     a.rel = "noopener";
@@ -1615,7 +1618,7 @@ eXide.app = (function(util) {
                 copyBtn.style.display = "";
             } else {
                 if (pathEl.tagName !== "SPAN") {
-                    var span = document.createElement("span");
+                    const span = document.createElement("span");
                     span.className = "path";
                     pathEl.replaceWith(span);
                     pathEl = span;
@@ -1651,7 +1654,7 @@ eXide.app = (function(util) {
         },
 
         isWestPanelVisible: function() {
-            var el = document.querySelector(".panel-west");
+            const el = document.querySelector(".panel-west");
             return el && el.style.display !== "none" && el.offsetParent !== null;
         },
 
@@ -1665,13 +1668,13 @@ eXide.app = (function(util) {
         },
 
         isSouthPanelVisible: function() {
-            var el = document.querySelector(".panel-" + resultPanel);
+            const el = document.querySelector(".panel-" + resultPanel);
             return el && el.style.display !== "none" && el.offsetParent !== null;
         },
 
         setEastPanel: function(visible) {
-            var eastEl = document.querySelector(".panel-east");
-            var isVisible = eastEl && eastEl.style.display !== "none";
+            const eastEl = document.querySelector(".panel-east");
+            const isVisible = eastEl && eastEl.style.display !== "none";
             if (visible && !isVisible) {
                 layout.show("east");
                 if (!monitor) {
@@ -1689,20 +1692,20 @@ eXide.app = (function(util) {
         },
 
         isEastPanelVisible: function() {
-            var el = document.querySelector(".panel-east");
+            const el = document.querySelector(".panel-east");
             return !!(el && el.style.display !== "none");
         },
 
         setCollectionsView: function(view) {
-            var treeView = document.getElementById("dir-tree-view");
-            var flatView = document.getElementById("dir-flat-view");
-            var toggleBtn = document.getElementById("toggle-dir-view");
-            var isFolder = (view === "folder");
+            const treeView = document.getElementById("dir-tree-view");
+            const flatView = document.getElementById("dir-flat-view");
+            const toggleBtn = document.getElementById("toggle-dir-view");
+            const isFolder = (view === "folder");
             if (treeView) treeView.style.display = isFolder ? "none" : "";
             if (flatView) flatView.style.display = isFolder ? "" : "none";
             if (toggleBtn) {
                 toggleBtn.title = isFolder ? "Switch to tree view" : "Switch to folder view";
-                var icon = toggleBtn.querySelector("i");
+                const icon = toggleBtn.querySelector("i");
                 if (icon) icon.className = isFolder ? "fa fa-sitemap" : "fa fa-folder-open-o";
             }
             if (editor && editor.directory && editor.directory.setFlatViewActive) {
@@ -1712,8 +1715,8 @@ eXide.app = (function(util) {
 
         $savePanelPrefs: function() {
             try {
-                var eastEl = document.querySelector(".panel-east");
-                var eastVisible = !!(eastEl && eastEl.style.display !== "none");
+                const eastEl = document.querySelector(".panel-east");
+                const eastVisible = !!(eastEl && eastEl.style.display !== "none");
                 // Update both localStorage and the live preferences object
                 // so saveState's localStorage.clear() + preferences.save() preserves the value
                 preferences.preferences.showWestPanel = app.isWestPanelVisible();
@@ -1728,7 +1731,7 @@ eXide.app = (function(util) {
         },
 
         git: function() {
-            var unavailable = function() {
+            const unavailable = function() {
                 util.message("Git integration is not available in this version of eXide.");
             };
             return {
@@ -1738,7 +1741,7 @@ eXide.app = (function(util) {
         }(),
 
         findFiles: function() {
-            var doc = editor.getActiveDocument();
+            const doc = editor.getActiveDocument();
             projects.findProject(doc.getBasePath(), function(app) {
                 eXide.find.Files.open(doc, app, function(searchParams) {
                     editor.updateStatus("");
@@ -1746,7 +1749,7 @@ eXide.app = (function(util) {
 				    startOffset = 1;
 				    currentOffset = 1;
 
-                    var iframe = document.getElementById("results-iframe");
+                    const iframe = document.getElementById("results-iframe");
                     iframe.style.display = "";
 				    eXide.app.showResultsPanel();
 
@@ -1755,12 +1758,12 @@ eXide.app = (function(util) {
                     iframe.contentWindow.document.close();
 
                     // Parse form params into JSON body for POST /api/search
-                    var formParams = new URLSearchParams(searchParams);
-                    var target = formParams.get("target");
-                    var collection = target === "all" ? "/db" :
+                    const formParams = new URLSearchParams(searchParams);
+                    const target = formParams.get("target");
+                    const collection = target === "all" ? "/db" :
                         target === "collection" ? formParams.get("collection") :
                         (target || "/db");
-                    var body = {
+                    const body = {
                         query: formParams.get("search"),
                         collection: collection,
                         type: formParams.get("type") || "all",
@@ -1781,14 +1784,14 @@ eXide.app = (function(util) {
                             iframe.contentWindow.document.close();
                             return;
                         }
-                        var hits = data.hits || [];
-                        var html = '<html><head><link rel="stylesheet" type="text/css" href="resources/css/search.css"/></head><body>';
+                        const hits = data.hits || [];
+                        let html = '<html><head><link rel="stylesheet" type="text/css" href="resources/css/search.css"/></head><body>';
                         html += '<div><h3>Search Results for ' + data.query + ' in ' + data.collection + '</h3><ul>';
                         if (hits.length === 0) {
                             html += '<li>No matches found.</li>';
                         }
-                        for (var i = 0; i < hits.length; i++) {
-                            var hit = hits[i];
+                        for (let i = 0; i < hits.length; i++) {
+                            const hit = hits[i];
                             html += '<li class="sourceinfo"><a class="resource" href="#" data-src="' +
                                 hit.resource + '" data-line="' + hit.line + '">' +
                                 hit.name + '</a><span class="line">line ' + hit.line + '</span></li>';
@@ -1799,8 +1802,8 @@ eXide.app = (function(util) {
                         iframe.contentWindow.document.write(html);
                         iframe.contentWindow.document.close();
                         // Bind click handlers
-                        var links = iframe.contentDocument.querySelectorAll(".resource");
-                        for (var j = 0; j < links.length; j++) {
+                        const links = iframe.contentDocument.querySelectorAll(".resource");
+                        for (let j = 0; j < links.length; j++) {
                             links[j].addEventListener("click", function(ev) {
                                 ev.preventDefault();
                                 eXide.app.findDocument(this.dataset.src, parseInt(this.dataset.line));
@@ -1812,15 +1815,15 @@ eXide.app = (function(util) {
         },
 
         liveReload: function() {
-            var doc = editor.getActiveDocument();
+            const doc = editor.getActiveDocument();
             projects.findProject(doc.getBasePath(), function(project) {
                 if (project == null) {
                     return;
                 }
                 console.log("live reload: %s %s", project.liveReload, project.abbrev);
                 if (project.liveReload) {
-                    var url = project.url.replace(/\/{2,}/, "/");
-                    var link = eXide.configuration.context + url + "/";
+                    const url = project.url.replace(/\/{2,}/, "/");
+                    const link = eXide.configuration.context + url + "/";
                     project.win = window.open(link, project.abbrev);
                     if (project.win && !project.win.closed) {
                         project.win.location.reload();
@@ -1832,7 +1835,7 @@ eXide.app = (function(util) {
         },
 
         toggleLiveReload: function() {
-            var doc = editor.getActiveDocument();
+            const doc = editor.getActiveDocument();
             projects.findProject(doc.getBasePath(), function(project) {
                 if (!project) {
                     return;
@@ -1859,9 +1862,9 @@ eXide.app = (function(util) {
     		        width: 640
 			    }
 			);
-			var openDialogEl = document.getElementById("open-dialog");
+			const openDialogEl = document.getElementById("open-dialog");
 			dialogs["open-dialog"].dialog.addEventListener("close", function() {});
-			var origOpenDialogOpen = dialogs["open-dialog"].open;
+			const origOpenDialogOpen = dialogs["open-dialog"].open;
 			dialogs["open-dialog"].open = function() {
 			    origOpenDialogOpen.call(dialogs["open-dialog"]);
 			    dbBrowser.init();
@@ -1888,14 +1891,14 @@ eXide.app = (function(util) {
 			        editor.focus();
 			    },
 			    "Log in": function() {
-                    var user = document.querySelector("#login-form input[name=\"user\"]").value;
-                    var password = document.querySelector("#login-form input[name=\"password\"]").value;
-                    var formData = new URLSearchParams();
+                    const user = document.querySelector("#login-form input[name=\"user\"]").value;
+                    const password = document.querySelector("#login-form input[name=\"password\"]").value;
+                    const formData = new URLSearchParams();
                     formData.append("user", user);
                     formData.append("password", password);
                     // The server decides how long a remembered session lasts; the
                     // client only says whether the box was ticked.
-                    var rememberEl = document.querySelector("#login-form input[name=\"remember-me\"]");
+                    const rememberEl = document.querySelector("#login-form input[name=\"remember-me\"]");
                     if (rememberEl && rememberEl.checked) {
                         formData.append("remember-me", "true");
                     }
@@ -1912,7 +1915,7 @@ eXide.app = (function(util) {
 					.then(function(data) {
 					    if (!data.user) {
 					        document.getElementById("login-error").textContent = "Login failed.";
-					        var firstInput = document.querySelector("#login-dialog input:first-of-type");
+					        const firstInput = document.querySelector("#login-dialog input:first-of-type");
 					        if (firstInput) firstInput.focus();
 					    } else {
 						    app.login = data;
@@ -1924,24 +1927,24 @@ eXide.app = (function(util) {
 					})
 					.catch(function(err) {
 					    document.getElementById("login-error").textContent = "Login failed. " + (err.message || "");
-					    var firstInput = document.querySelector("#login-dialog input:first-of-type");
+					    const firstInput = document.querySelector("#login-dialog input:first-of-type");
 					    if (firstInput) firstInput.focus();
 					});
 			    }
 			});
-			var origLoginOpen = dialogs["login-dialog"].open;
+			const origLoginOpen = dialogs["login-dialog"].open;
 			dialogs["login-dialog"].open = function() {
 			    origLoginOpen.call(dialogs["login-dialog"]);
-			    var loginDialogEl = document.getElementById("login-dialog");
-			    var inputs = loginDialogEl.querySelectorAll("input");
+			    const loginDialogEl = document.getElementById("login-dialog");
+			    const inputs = loginDialogEl.querySelectorAll("input");
 			    inputs.forEach(function(input) { input.value = ""; });
-			    var firstInput = loginDialogEl.querySelector("input:first-of-type");
+			    const firstInput = loginDialogEl.querySelector("input:first-of-type");
 			    if (firstInput) firstInput.focus();
 			    document.getElementById("login-error").textContent = "";
 			    inputs.forEach(function(input) {
 			        input.addEventListener("keyup", function(e) {
-			            if (e.keyCode == 13) {
-			                var loginBtn = Array.prototype.find.call(
+			            if (e.keyCode === 13) {
+			                const loginBtn = Array.prototype.find.call(
 						    dialogs["login-dialog"].dialog.querySelectorAll(".eXide-dialog-buttons button"),
 						    function(btn) { return btn.textContent === "Log in"; });
 			                if (loginBtn) loginBtn.click();
@@ -1962,7 +1965,7 @@ eXide.app = (function(util) {
     				}
 			    }
 			);
-			var origKbHelpOpen = dialogs["keyboard-help"].open;
+			const origKbHelpOpen = dialogs["keyboard-help"].open;
 			dialogs["keyboard-help"].open = function() {
 			    origKbHelpOpen.call(dialogs["keyboard-help"]);
 			    eXide.edit.commands.help(document.getElementById("keyboard-help"), editor);
@@ -1990,9 +1993,9 @@ eXide.app = (function(util) {
                     buttons: {
 				        "Cancel": function () { dialogs["dialog-templates"].close(); editor.focus(); },
                         "Create": function() {
-                            var templEl = document.getElementById("dialog-templates");
-                            var mode = templEl.querySelector(".type-select").value;
-                            var template = templEl.querySelector(".templates select").value;
+                            const templEl = document.getElementById("dialog-templates");
+                            const mode = templEl.querySelector(".type-select").value;
+                            const template = templEl.querySelector(".templates select").value;
                             console.log("creating new doc with mode: %s and template: %s", mode, template);
                             editor.newDocumentFromTemplate(mode, template);
                             dialogs["dialog-templates"].close();
@@ -2001,16 +2004,16 @@ eXide.app = (function(util) {
                     }
                 }
             );
-            var origTemplOpen = dialogs["dialog-templates"].open;
+            const origTemplOpen = dialogs["dialog-templates"].open;
             dialogs["dialog-templates"].open = function() {
                 origTemplOpen.call(dialogs["dialog-templates"]);
                 fetch("api/templates")
                 .then(function(response) { return response.json(); })
                 .then(function(data) {
                     templates = data;
-                    var templatesDiv = document.querySelector("#dialog-templates .templates");
+                    const templatesDiv = document.querySelector("#dialog-templates .templates");
                     if (templatesDiv) templatesDiv.style.display = "none";
-                    var typeSelect = document.querySelector("#dialog-templates .type-select");
+                    const typeSelect = document.querySelector("#dialog-templates .type-select");
                     if (typeSelect) {
                         typeSelect.value = "xquery";
                         typeSelect.dispatchEvent(new Event("change"));
@@ -2019,14 +2022,14 @@ eXide.app = (function(util) {
                 });
             };
             document.querySelector("#dialog-templates .type-select").addEventListener("change", function() {
-                var templ = document.querySelector("#dialog-templates .templates");
-                var templSel = templ.querySelector("select");
-                var type = this.value;
+                const templ = document.querySelector("#dialog-templates .templates");
+                const templSel = templ.querySelector("select");
+                const type = this.value;
                 templSel.innerHTML = "";
-                var mode = templates[type];
+                const mode = templates[type];
                 if (mode) {
-                    var options = "<option value=''>None</option>";
-                    for (var i = 0; i < mode.length; i++) {
+                    let options = "<option value=''>None</option>";
+                    for (let i = 0; i < mode.length; i++) {
                         options += "<option value='" + mode[i].name + "'>" + mode[i].description + "</option>";
                     }
                     templSel.innerHTML = options;
@@ -2037,22 +2040,22 @@ eXide.app = (function(util) {
             });
 
 			// initialize buttons and menu events
-            var btnOpen = document.getElementById("open");
+            const btnOpen = document.getElementById("open");
 			btnOpen.addEventListener("click", app.openDocument);
             menu.click("#menu-file-open", app.openDocument);
 
-            var btnClose = document.getElementById("close");
+            const btnClose = document.getElementById("close");
 			btnClose.addEventListener("click", app.closeDocument);
 			menu.click("#menu-file-close", app.closeDocument);
 
 			menu.click("#menu-file-close-all", app.closeAll);
 
-            var btnNew = document.getElementById("new");
+            const btnNew = document.getElementById("new");
 			btnNew.addEventListener("click", function() {
                 app.newDocumentFromTemplate();
 			});
 
-            var btnNewXquery = document.getElementById("new-xquery");
+            const btnNewXquery = document.getElementById("new-xquery");
 			btnNewXquery.addEventListener("click", function() {
                 app.newDocument(null, "xquery");
 			});
@@ -2061,19 +2064,19 @@ eXide.app = (function(util) {
                 app.newDocument(null, "xquery");
     		});
 
-            var btnRun = document.getElementById("run");
+            const btnRun = document.getElementById("run");
             btnRun.disabled = true;
 			btnRun.addEventListener("click", function(ev) { app.runQuery() });
 
-            var btnCancel = document.getElementById("cancel-query");
+            const btnCancel = document.getElementById("cancel-query");
             if (btnCancel) {
                 btnCancel.addEventListener("click", function() { app.cancelQuery(); });
             }
 
-            var btnLaunch = document.getElementById("launch");
+            const btnLaunch = document.getElementById("launch");
 			btnLaunch.addEventListener("click", function(ev) { app.runAppOrQuery() });
 
-            var statusCursor = document.getElementById("status-cursor");
+            const statusCursor = document.getElementById("status-cursor");
             if (statusCursor) {
                 statusCursor.style.cursor = "pointer";
                 statusCursor.title = "Go to Line";
@@ -2083,8 +2086,8 @@ eXide.app = (function(util) {
             }
 
             document.getElementById("status-copy-url").addEventListener("click", function() {
-                var pathEl = document.querySelector("#status .path");
-                var path = pathEl ? pathEl.textContent : null;
+                const pathEl = document.querySelector("#status .path");
+                const path = pathEl ? pathEl.textContent : null;
                 if (path) {
                     navigator.clipboard.writeText(path).then(function() {
                         app.showMessage("Path copied to clipboard");
@@ -2092,12 +2095,12 @@ eXide.app = (function(util) {
                 }
             });
 
-            var btnToggleSplitPane = document.getElementById("toggle-split-pane");
+            const btnToggleSplitPane = document.getElementById("toggle-split-pane");
             if (btnToggleSplitPane) {
                 btnToggleSplitPane.addEventListener("click", function() {
-                    var prefs = preferences.preferences;
+                    const prefs = preferences.preferences;
                     prefs.splitPane = !prefs.splitPane;
-                    var pw = document.querySelector('.panel-west');
+                    const pw = document.querySelector('.panel-west');
                     if (pw) {
                         pw.classList.toggle('split-pane', prefs.splitPane);
                     }
@@ -2108,8 +2111,8 @@ eXide.app = (function(util) {
                         editor.directory.toggle(true);
                     } else {
                         // Restore tabbed mode: activate whichever tab is marked active
-                        var tabs = document.querySelectorAll('#tabs-outline a.tab');
-                        var activeIndex = 0;
+                        const tabs = document.querySelectorAll('#tabs-outline a.tab');
+                        let activeIndex = 0;
                         tabs.forEach(function(t, i) { if (t.classList.contains('active')) activeIndex = i; });
                         editor.directory.toggle(activeIndex === 0);
                         editor.outline.toggle(activeIndex === 1);
@@ -2118,14 +2121,14 @@ eXide.app = (function(util) {
                 });
             }
 
-            var btnToggleOutline = document.getElementById("toggle-outline");
+            const btnToggleOutline = document.getElementById("toggle-outline");
             if (btnToggleOutline) {
                 btnToggleOutline.addEventListener("click", function() {
                     layout.toggle("west");
                     app.$savePanelPrefs();
                 });
             }
-            var btnToggleResults = document.getElementById("toggle-results");
+            const btnToggleResults = document.getElementById("toggle-results");
             if (btnToggleResults) {
                 btnToggleResults.addEventListener("click", function() {
                     layout.toggle(resultPanel);
@@ -2133,14 +2136,14 @@ eXide.app = (function(util) {
                 });
             }
 
-            var btnToggleMonitor = document.getElementById("toggle-monitor");
+            const btnToggleMonitor = document.getElementById("toggle-monitor");
             if (btnToggleMonitor) {
                 btnToggleMonitor.addEventListener("click", function() {
                     app.toggleMonitor();
                 });
             }
 
-            var btnMonitorClose = document.getElementById("monitor-close");
+            const btnMonitorClose = document.getElementById("monitor-close");
             if (btnMonitorClose) {
                 btnMonitorClose.addEventListener("click", function() {
                     app.toggleMonitor();
@@ -2148,32 +2151,32 @@ eXide.app = (function(util) {
             }
 
             // delegate kill buttons in monitor
-            var monRunning = document.getElementById("mon-running-body");
+            const monRunning = document.getElementById("mon-running-body");
             if (monRunning) {
                 monRunning.addEventListener("click", function(ev) {
-                    var btn = ev.target.closest(".mon-kill");
+                    const btn = ev.target.closest(".mon-kill");
                     if (btn && monitor) {
                         monitor.killQuery(btn.dataset.id);
                     }
                 });
             }
 
-            var btnDebug = document.getElementById("debug");
+            const btnDebug = document.getElementById("debug");
             if (btnDebug) btnDebug.addEventListener("click", app.startDebug);
 
-            var btnStepOver = document.querySelector("#debug-actions #step-over");
+            const btnStepOver = document.querySelector("#debug-actions #step-over");
             if (btnStepOver) btnStepOver.addEventListener("click", app.stepOver);
 
-            var btnStepInto = document.querySelector("#debug-actions #step-into");
+            const btnStepInto = document.querySelector("#debug-actions #step-into");
             if (btnStepInto) btnStepInto.addEventListener("click", app.stepInto);
 
-            var btnStepOut = document.querySelector("#debug-actions #step-out");
+            const btnStepOut = document.querySelector("#debug-actions #step-out");
             if (btnStepOut) btnStepOut.addEventListener("click", app.startDebug);
 
-            var btnValidate = document.getElementById("validate");
+            const btnValidate = document.getElementById("validate");
 			if (btnValidate) btnValidate.addEventListener("click", app.checkQuery);
 
-            var btnSave = document.getElementById("save");
+            const btnSave = document.getElementById("save");
 			btnSave.addEventListener("click", app.saveDocument);
 			menu.click("#menu-file-save", app.saveDocument);
             menu.click("#menu-file-save-as", app.saveDocumentAs);
@@ -2201,14 +2204,14 @@ eXide.app = (function(util) {
             menu.click("#menu-edit-find", function() {
                 CM6.openSearchPanel(editor.editor);
                 setTimeout(function() {
-                    var searchInput = document.querySelector(".cm-search input[main-field]");
+                    const searchInput = document.querySelector(".cm-search input[main-field]");
                     if (searchInput) searchInput.focus();
                 }, 0);
             });
             menu.click("#menu-edit-find-replace", function() {
                 CM6.openSearchPanel(editor.editor);
                 setTimeout(function() {
-                    var searchInput = document.querySelector(".cm-search input[main-field]");
+                    const searchInput = document.querySelector(".cm-search input[main-field]");
                     if (searchInput) searchInput.focus();
                 }, 0);
             });
@@ -2289,20 +2292,20 @@ eXide.app = (function(util) {
             });
 			// type popover in status bar
 			(function() {
-				var typeBtn = document.getElementById("status-type");
-				var popover = document.getElementById("type-popover");
-				var arrow = typeBtn ? typeBtn.querySelector(".status-segment-arrow") : null;
+				const typeBtn = document.getElementById("status-type");
+				const popover = document.getElementById("type-popover");
+				const arrow = typeBtn ? typeBtn.querySelector(".status-segment-arrow") : null;
 				if (typeBtn && popover) {
 					typeBtn.addEventListener("click", function(ev) {
 						ev.stopPropagation();
-						var isOpen = popover.classList.toggle("open");
+						const isOpen = popover.classList.toggle("open");
 						if (arrow) arrow.innerHTML = isOpen ? "&#x25BC;" : "&#x25B2;";
 					});
 					popover.addEventListener("click", function(ev) {
-						var item = ev.target.closest(".type-popover-item");
+						const item = ev.target.closest(".type-popover-item");
 						if (!item) return;
 						editor.setMode(item.dataset.value);
-						var doc = editor.getActiveDocument();
+						const doc = editor.getActiveDocument();
 						if (doc) app.updateStatus(doc);
 						popover.classList.remove("open");
 						if (arrow) arrow.innerHTML = "&#x25B2;";
@@ -2318,13 +2321,13 @@ eXide.app = (function(util) {
                 app.updateStatus(doc);
                 projects.findProject(doc.getBasePath(), function(app) {
                     if (app) {
-                        var appEl = document.getElementById("toolbar-current-app");
+                        const appEl = document.getElementById("toolbar-current-app");
                         appEl.textContent = app.abbrev;
-                        var appLink = document.getElementById("toolbar-current-app-link");
+                        const appLink = document.getElementById("toolbar-current-app-link");
                         appLink.classList.remove("unknown");
-                        var appUrl = app.url ? (eXide.configuration.context + app.url.replace(/\/{2,}/, "/") + "/") : "#";
+                        const appUrl = app.url ? (eXide.configuration.context + app.url.replace(/\/{2,}/, "/") + "/") : "#";
                         appLink.href = appUrl;
-                        var appIcon = document.getElementById("toolbar-current-app-icon");
+                        const appIcon = document.getElementById("toolbar-current-app-icon");
                         appIcon.src = eXide.configuration.context + "/apps/" + app.abbrev + "/icon.png";
                         appIcon.style.display = "";
                         appIcon.onerror = function() {
@@ -2334,7 +2337,7 @@ eXide.app = (function(util) {
                         document.getElementById("menu-deploy-active").textContent = app.abbrev;
                         document.querySelector("#menu-deploy-live span").setAttribute("class", app.liveReload ? "fa fa-check-square-o" : "fa fa-square-o");
                         // update show/hide git stuff
-                        if(app.git == "true" || app.git == true) {
+                        if(app.git === "true" || app.git === true) {
                             document.querySelectorAll(".current-branch").forEach(function(el) { el.style.display = ""; });
                             document.getElementById("menu-git").style.display = "";
                             // update git-status
@@ -2345,12 +2348,12 @@ eXide.app = (function(util) {
                         }
 
                     } else {
-                        var appEl2 = document.getElementById("toolbar-current-app");
+                        const appEl2 = document.getElementById("toolbar-current-app");
                         appEl2.textContent = "unknown";
-                        var appLink2 = document.getElementById("toolbar-current-app-link");
+                        const appLink2 = document.getElementById("toolbar-current-app-link");
                         appLink2.classList.add("unknown");
                         appLink2.removeAttribute("href");
-                        var appIcon2 = document.getElementById("toolbar-current-app-icon");
+                        const appIcon2 = document.getElementById("toolbar-current-app-icon");
                         appIcon2.style.display = "none";
                         document.getElementById("menu-deploy-active").textContent = "unknown";
                         document.querySelectorAll(".current-branch").forEach(function(el) { el.style.display = "none"; });
@@ -2381,16 +2384,16 @@ eXide.app = (function(util) {
             document.getElementById("toggle-dark-mode").addEventListener("click", function(ev) {
                 ev.preventDefault();
                 // Toggle between light/dark for the current session only (does not save to preferences)
-                var isDark = document.body.classList.contains("dark");
-                var newTheme = isDark ? "light" : "dark";
+                const isDark = document.body.classList.contains("dark");
+                const newTheme = isDark ? "light" : "dark";
                 app.setTheme({ isDark: newTheme === "dark" });
                 app.updateDarkModeIcon(newTheme);
             });
             document.querySelectorAll('.navbar .toggle-btn[id$="-btn"]').forEach(function(btn) {
                 btn.addEventListener("click", function(e) {
                     e.preventDefault();
-                    var cb = btn.querySelector('input[type="checkbox"]');
-                    var checked = !cb.checked;
+                    const cb = btn.querySelector('input[type="checkbox"]');
+                    const checked = !cb.checked;
                     cb.checked = checked;
                     btn.classList.toggle('active', checked);
                     // Dispatch change event so listeners (e.g., cursor re-fetch) fire
@@ -2401,10 +2404,10 @@ eXide.app = (function(util) {
 			document.querySelectorAll('.results-container #copy-all-clipboard').forEach(function(btnEl) {
 			    btnEl.addEventListener("click", function(e) {
                     e.preventDefault();
-                    var icon = btnEl.querySelector('.fa');
-                    var texts = [];
+                    const icon = btnEl.querySelector('.fa');
+                    const texts = [];
                     document.querySelectorAll("#results-body > div > div > div > div.item").forEach(function (item) { texts.push(item.innerText); });
-                    var res = texts.join('\n');
+                    const res = texts.join('\n');
                     navigator.clipboard.writeText(res).then(function() {
                         icon.classList.remove('fa-clipboard');
                         icon.classList.add('fa-check');
@@ -2426,12 +2429,12 @@ eXide.app = (function(util) {
 			document.querySelectorAll('.results-container .last-page').forEach(function(el) { el.addEventListener("click", app.browseLast); });
 
             function scrollToResult(idx) {
-                var items = document.querySelectorAll('.results-container .results > .even, .results-container .results > .uneven');
+                const items = document.querySelectorAll('.results-container .results > .even, .results-container .results > .uneven');
                 if (items.length === 0) return;
                 idx = Math.max(0, Math.min(idx, items.length - 1));
                 activeResultIdx = idx;
                 items.forEach(function(el) { el.classList.remove('result-active'); });
-                var target = items[idx];
+                const target = items[idx];
                 target.classList.add('result-active');
                 target.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
@@ -2472,15 +2475,15 @@ eXide.app = (function(util) {
                 if (app._cursorId) app.fetchCursorPage(startOffset, endOffset);
             });
             document.getElementById("error-status").addEventListener("mouseover", function(ev) {
-                var error = this;
-                var extBar = document.getElementById("ext-status-bar");
+                const error = this;
+                const extBar = document.getElementById("ext-status-bar");
                 if (extBar) {
                     extBar.innerHTML = error.innerHTML;
                     extBar.style.display = "block";
                 }
             });
-            var errorStatus = document.getElementById("error-status");
-            var extStatusBar = document.getElementById("ext-status-bar");
+            const errorStatus = document.getElementById("error-status");
+            const extStatusBar = document.getElementById("ext-status-bar");
             if (extStatusBar) {
                 extStatusBar.addEventListener("mouseout", function(ev) {
                     extStatusBar.style.display = "none";
@@ -2495,7 +2498,7 @@ eXide.app = (function(util) {
                 hasFocus = false;
             });
             window.addEventListener("focus", function() {
-                var checkLogin = !hasFocus;
+                const checkLogin = !hasFocus;
                 hasFocus = true;
                 if (checkLogin) {
                    app.getLogin();
@@ -2516,8 +2519,8 @@ eXide.app = (function(util) {
     		);
             if (!util.supportsHtml5Storage)
     		    return;
-            var showHints = localStorage.getItem("eXide.firstTime");
-            if (!showHints || showHints == 1) {
+            const showHints = localStorage.getItem("eXide.firstTime");
+            if (!showHints || showHints === "1") {
                 dialogs["dialog-startup"].open();
             }
 		}

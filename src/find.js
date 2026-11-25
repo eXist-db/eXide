@@ -2,7 +2,7 @@ eXide.namespace("eXide.find.IncrementalSearch");
 
 eXide.find.IncrementalSearch = (function () {
 
-    var searchOptions = {
+    const searchOptions = {
         backwards: false,
         wrap: true,
         caseSensitive: false,
@@ -12,7 +12,7 @@ eXide.find.IncrementalSearch = (function () {
 
     function setSearch(view, needle, options) {
         if (!needle) return;
-        var query = new CM6.SearchQuery({
+        const query = new CM6.SearchQuery({
             search: needle,
             caseSensitive: options && options.caseSensitive,
             regexp: options && options.regExp,
@@ -22,8 +22,8 @@ eXide.find.IncrementalSearch = (function () {
         CM6.findNext(view);
     }
 
-    Constr = function (input, editor) {
-        var $this = this;
+    const Constr = function (input, editor) {
+        const $this = this;
         $this.inputEl = typeof input === "string" ? document.querySelector(input) : input;
         $this.inputEl.style.display = "none";
         $this.inputEl.addEventListener("keyup", function (ev) {
@@ -57,7 +57,7 @@ eXide.find.IncrementalSearch = (function () {
     };
 
     Constr.prototype.start = function () {
-        var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
+        const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
         this.currentLine = lead.row;
         this.inputEl.value = "";
         this.inputEl.style.display = "";
@@ -66,7 +66,7 @@ eXide.find.IncrementalSearch = (function () {
 
     Constr.prototype.onChange = function () {
         editorUtils.gotoLine(this.editor, this.currentLine + 1);
-        var search = this.inputEl.value;
+        const search = this.inputEl.value;
         setSearch(this.editor, search, searchOptions);
         this.inputEl.focus();
     };
@@ -77,8 +77,8 @@ eXide.find.IncrementalSearch = (function () {
 eXide.namespace("eXide.find.Files");
 
 eXide.find.Files = (function() {
-    var dlg = null;
-    var dialogEl = null;
+    let dlg = null;
+    let dialogEl = null;
 
     function ensureDialog() {
         if (dlg) return;
@@ -94,7 +94,7 @@ eXide.find.Files = (function() {
     return {
         open: function(doc, project, callback) {
             ensureDialog();
-            var projectInput = dialogEl.querySelector("input.project");
+            const projectInput = dialogEl.querySelector("input.project");
             if (project) {
                 projectInput.disabled = false;
                 projectInput.value = project.root;
@@ -106,8 +106,8 @@ eXide.find.Files = (function() {
             dlg.setButtons({
                 "Close": function() { dlg.close(); },
                 "Search": function() {
-                    var form = dialogEl.querySelector("form");
-                    var params = new URLSearchParams(new FormData(form)).toString();
+                    const form = dialogEl.querySelector("form");
+                    const params = new URLSearchParams(new FormData(form)).toString();
                     callback(params);
                     dlg.close();
                 }

@@ -23,10 +23,10 @@ eXide.namespace("eXide.edit.Template");
  */
 eXide.edit.Template = (function () {
 	
-	var LINE_REGEX = /\n/;
+	const LINE_REGEX = /\n/;
 	
-	Constr = function(editor, range, code, type) {
-		var lines = code.split(LINE_REGEX).length;
+	const Constr = function(editor, range, code, type) {
+		const lines = code.split(LINE_REGEX).length;
 		this.code = code;
 		this.editor = editor.editor;
 		this.range = range;
@@ -35,7 +35,7 @@ eXide.edit.Template = (function () {
     		this.startLine = range.start.row;
             this.startColumn = range.start.column;
         } else {
-            var cursor = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
+            const cursor = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
             this.startLine = cursor.row;
             this.startColumn = cursor.column;
         }
@@ -55,21 +55,21 @@ eXide.edit.Template = (function () {
 		 */
 		insert: function() {
             if (this.range) {
-                var from = editorUtils.rowColToOffset(this.editor.state, this.range.start.row, this.range.start.column);
-                var to = editorUtils.rowColToOffset(this.editor.state, this.range.end.row, this.range.end.column);
+                const from = editorUtils.rowColToOffset(this.editor.state, this.range.start.row, this.range.start.column);
+                const to = editorUtils.rowColToOffset(this.editor.state, this.range.end.row, this.range.end.column);
                 this.editor.dispatch({ changes: { from: from, to: to } });
             }
-            var pos = this.editor.state.selection.main.head;
+            const pos = this.editor.state.selection.main.head;
             this.editor.dispatch({
                 changes: { from: pos, insert: this.code },
                 selection: { anchor: pos + this.code.length }
             });
-			var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
-			if (this.code.substring(0, 1) != "$" && lead.column > 0) {
-				var head = this.editor.state.selection.main.head;
+			const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
+			if (this.code.substring(0, 1) !== "$" && lead.column > 0) {
+				const head = this.editor.state.selection.main.head;
 				this.editor.dispatch({ selection: { anchor: head - 1 } });
 			}
-			if (this.type != "variable")
+			if (this.type !== "variable")
 				this.nextParam();
 			this.editor.focus();
 		},
@@ -79,24 +79,24 @@ eXide.edit.Template = (function () {
 		 * false to stop template mode.
 		 */
 		nextParam: function() {
-			var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
+			const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
 
 			console.log("lead.row = %i startLine = %i", lead.row, this.startLine);
 			// return immediately if the cursor is outside the template
 			if (lead.row < this.startLine || lead.row > this.endLine)
 				return false;
 
-			var loop = false;
-			var found = false;
+			let loop = false;
+			let found = false;
 			while (this.currentLine <= this.endLine) {
-				var lineNum = this.currentLine + 1;
-				var line = (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) ? this.editor.state.doc.line(lineNum).text : "";
+				const lineNum = this.currentLine + 1;
+				const line = (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) ? this.editor.state.doc.line(lineNum).text : "";
 				console.log("Checking line %s", line);
-				var match = this.regex.exec(line);
+				const match = this.regex.exec(line);
 				if (match) {
 					console.log("Matched %s", match[0]);
-					var from = editorUtils.rowColToOffset(this.editor.state, this.currentLine, match.index);
-					var to = editorUtils.rowColToOffset(this.editor.state, this.currentLine, match.index + match[0].length);
+					const from = editorUtils.rowColToOffset(this.editor.state, this.currentLine, match.index);
+					const to = editorUtils.rowColToOffset(this.editor.state, this.currentLine, match.index + match[0].length);
                     if (match[0].length === 1) {
                         this.editor.dispatch({ changes: { from: from, to: to } });
                     } else {

@@ -39,6 +39,9 @@ jobs:
       - name: Run npm CI
         run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
       - name: Run unit tests
         run: npm test
 

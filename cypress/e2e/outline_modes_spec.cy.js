@@ -47,7 +47,7 @@ describe('Outline modes and filter', () => {
 
     cy.get('#outline li a .outline-name').should('have.length.at.least', 2)
       .then(($names) => {
-        let names = []
+        const names = []
         $names.each(function () {
           names.push(Cypress.$(this).text().trim().replace(/^\$/, '').toLowerCase())
         })
@@ -59,7 +59,7 @@ describe('Outline modes and filter', () => {
 
   it('flat-doc mode preserves document order', function () {
     setup()
-    let nestedOrder = []
+    const nestedOrder = []
     cy.get('#outline li a .outline-name').then(($names) => {
       $names.each(function () {
         nestedOrder.push(Cypress.$(this).text().trim())
@@ -70,7 +70,7 @@ describe('Outline modes and filter', () => {
     cy.get('#outline li', { timeout: 5000 }).should('have.length.at.least', 2)
 
     cy.get('#outline li a .outline-name').then(($names) => {
-      let flatOrder = []
+      const flatOrder = []
       $names.each(function () {
         flatOrder.push(Cypress.$(this).text().trim())
       })

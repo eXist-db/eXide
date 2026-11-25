@@ -33,10 +33,10 @@ eXide.namespace("eXide.edit.CompletionSource");
 
 eXide.edit.CompletionSource = (function () {
 
-    var RE_FUNC_NAME = /^[\$\w:\-_\.]+/;
+    const RE_FUNC_NAME = /^[\$\w:\-_\.]+/;
 
     // Reference to the eXide Editor instance, set during init
-    var _editor = null;
+    let _editor = null;
 
     function init(editor) {
         _editor = editor;
@@ -49,9 +49,9 @@ eXide.edit.CompletionSource = (function () {
     function completionSource(context) {
         if (!_editor || !_editor.activeDoc) return null;
 
-        var doc = _editor.activeDoc;
-        var helper = doc.getModeHelper();
-        var syntax = doc.getSyntax();
+        const doc = _editor.activeDoc;
+        const helper = doc.getModeHelper();
+        const syntax = doc.getSyntax();
 
         if (syntax === "xquery" && helper && helper.parseXQuery) {
             return xqueryCompletion(context, doc, helper);
@@ -77,24 +77,25 @@ eXide.edit.CompletionSource = (function () {
     function xqueryCompletion(context, doc, helper) {
         helper.parseXQuery(doc);
 
-        var state = context.state;
-        var pos = context.pos;
-        var lead = editorUtils.offsetToRowCol(state, pos);
-        var token = "";
-        var mode = "templates";
-        var from = pos, to = pos;
+        const state = context.state;
+        const pos = context.pos;
+        const lead = editorUtils.offsetToRowCol(state, pos);
+        let token = "";
+        let mode = "templates";
+        let from = pos, to = pos;
+        let astNode = null;
 
         if (state.selection.main.empty) {
-            var astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+            astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
             if (!astNode) {
                 // No AST node: scan preceding text
                 mode = "functions";
-                var lineNum = lead.row + 1;
-                var line = (lineNum >= 1 && lineNum <= state.doc.lines) ? state.doc.line(lineNum).text : "";
-                var start = lead.column - 1;
-                var end = lead.column;
+                const lineNum = lead.row + 1;
+                const line = (lineNum >= 1 && lineNum <= state.doc.lines) ? state.doc.line(lineNum).text : "";
+                let start = lead.column - 1;
+                const end = lead.column;
                 while (start >= 0) {
-                    var ch = line.substring(start, end);
+                    const ch = line.substring(start, end);
                     if (ch.match(/^\$[\w:\-_\.]+$/)) break;
                     if (!ch.match(/^[\w:\-_\.]+$/)) { start++; break; }
                     start--;
@@ -112,7 +113,7 @@ eXide.edit.CompletionSource = (function () {
                     // Keep from at the $ character
                 }
             } else {
-                var parent = astNode.getParent;
+                const parent = astNode.getParent;
                 if (parent.name === "VarRef" || parent.name === "VarName") {
                     mode = "variables";
                     from = editorUtils.rowColToOffset(state, astNode.pos.sl,
@@ -124,19 +125,19 @@ eXide.edit.CompletionSource = (function () {
                     astNode = parent.name === "VarName" && parent.getParent &&
                         parent.getParent.name === "VarRef" ? parent.getParent : parent;
                 } else {
-                    var importStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "Import");
-                    var nsDeclStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "NamespaceDecl");
+                    const importStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "Import");
+                    const nsDeclStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "NamespaceDecl");
                     if (importStmt) {
                         mode = "modules";
                         if (astNode.name === "NCName") {
                             token = astNode.value;
                         } else if (astNode.name === "URILiteral") {
-                            var prefix = eXide.edit.XQueryUtils.findSibling(astNode, "NCName");
+                            const prefix = eXide.edit.XQueryUtils.findSibling(astNode, "NCName");
                             if (prefix) token = eXide.edit.XQueryUtils.getValue(prefix);
                         }
                         from = editorUtils.rowColToOffset(state, importStmt.pos.sl, importStmt.pos.sc);
-                        var endCol = importStmt.pos.ec;
-                        var separator = eXide.edit.XQueryUtils.findNext(importStmt, "Separator");
+                        let endCol = importStmt.pos.ec;
+                        const separator = eXide.edit.XQueryUtils.findNext(importStmt, "Separator");
                         if (separator) endCol = separator.pos.ec;
                         to = editorUtils.rowColToOffset(state, importStmt.pos.sl, endCol);
                     } else if (nsDeclStmt) {
@@ -144,12 +145,12 @@ eXide.edit.CompletionSource = (function () {
                         if (astNode.name === "NCName") {
                             token = astNode.value;
                         } else if (astNode.name === "URILiteral") {
-                            var nsPrefix = eXide.edit.XQueryUtils.findSibling(astNode, "NCName");
+                            const nsPrefix = eXide.edit.XQueryUtils.findSibling(astNode, "NCName");
                             if (nsPrefix) token = eXide.edit.XQueryUtils.getValue(nsPrefix);
                         }
                         from = editorUtils.rowColToOffset(state, nsDeclStmt.pos.sl, nsDeclStmt.pos.sc);
-                        var nsEndCol = nsDeclStmt.pos.ec;
-                        var nsSep = eXide.edit.XQueryUtils.findNext(nsDeclStmt, "Separator");
+                        let nsEndCol = nsDeclStmt.pos.ec;
+                        const nsSep = eXide.edit.XQueryUtils.findNext(nsDeclStmt, "Separator");
                         if (nsSep) nsEndCol = nsSep.pos.ec;
                         to = editorUtils.rowColToOffset(state, nsDeclStmt.pos.sl, nsEndCol);
                     } else if (astNode.name === "EQName") {
@@ -157,9 +158,9 @@ eXide.edit.CompletionSource = (function () {
                         token = astNode.value;
                         // Use cursor-relative scan for from/to instead of AST position,
                         // which can be unreliable for incomplete expressions
-                        var lineNum2 = lead.row + 1;
-                        var line2 = (lineNum2 >= 1 && lineNum2 <= state.doc.lines) ? state.doc.line(lineNum2).text : "";
-                        var start2 = lead.column - 1;
+                        const lineNum2 = lead.row + 1;
+                        const line2 = (lineNum2 >= 1 && lineNum2 <= state.doc.lines) ? state.doc.line(lineNum2).text : "";
+                        let start2 = lead.column - 1;
                         while (start2 >= 0 && /[\w:\-_\.]/.test(line2.charAt(start2))) start2--;
                         start2++;
                         from = editorUtils.rowColToOffset(state, lead.row, start2);
@@ -194,11 +195,11 @@ eXide.edit.CompletionSource = (function () {
     // -------------------------------------------------------------------
 
     function fetchFunctionCompletions(doc, helper, prefix, from, to) {
-        var code = doc.getText();
-        var basePath = "xmldb:exist://" + doc.getBasePath();
+        const code = doc.getText();
+        const basePath = "xmldb:exist://" + doc.getBasePath();
 
         // When prefix has no ":", also search default function namespace (fn:)
-        var prefixes = [prefix];
+        const prefixes = [prefix];
         if (prefix && prefix.indexOf(":") === -1) {
             prefixes.push("fn:" + prefix);
         }
@@ -211,13 +212,13 @@ eXide.edit.CompletionSource = (function () {
             }).then(function (response) { return response.json(); });
         }))
             .then(function (results) {
-                var serverFuncs = [];
-                for (var r = 0; r < results.length; r++) {
+                let serverFuncs = [];
+                for (let r = 0; r < results.length; r++) {
                     if (Array.isArray(results[r])) {
                         serverFuncs = serverFuncs.concat(results[r]);
                     }
                 }
-                var options = [];
+                const options = [];
 
                 // Server functions (from /api/query/completions via lang:completions())
                 // Includes both built-in/imported functions AND user-defined local functions
@@ -225,28 +226,28 @@ eXide.edit.CompletionSource = (function () {
                     // Determine if we need to add a namespace prefix to server results.
                     // The server returns unprefixed names; if the user typed "fn:conc"
                     // we need to prefix the label, snippet, and filterText with "fn:".
-                    var nsPart = "";
+                    let nsPart = "";
                     if (prefix.indexOf(":") !== -1) {
                         nsPart = prefix.substring(0, prefix.indexOf(":") + 1);
                     }
-                    for (var i = 0; i < serverFuncs.length; i++) {
-                        var f = serverFuncs[i];
+                    for (let i = 0; i < serverFuncs.length; i++) {
+                        const f = serverFuncs[i];
                         // Only add nsPart when the server result doesn't already
                         // start with it (e.g. fn: fallback for unprefixed input)
-                        var needsPrefix = nsPart && f.text && !f.text.startsWith(nsPart);
-                        var label = needsPrefix ? nsPart + f.text : f.text;
-                        var snip = f.snippet && needsPrefix ? nsPart + f.snippet : f.snippet;
-                        var opt = makeFunctionOption(
+                        const needsPrefix = nsPart && f.text && !f.text.startsWith(nsPart);
+                        const label = needsPrefix ? nsPart + f.text : f.text;
+                        const snip = f.snippet && needsPrefix ? nsPart + f.snippet : f.snippet;
+                        const opt = makeFunctionOption(
                             label, snip, null, f.description, null, null);
-                        var funcName = f.text ? f.text.replace(/\(.*$/, "") : "";
+                        const funcName = f.text ? f.text.replace(/\(.*$/, "") : "";
                         opt.filterText = needsPrefix ? nsPart + funcName : funcName;
                         options.push(opt);
                     }
                 }
 
                 // Template snippets
-                var templates = eXide.util.Snippets.getTemplates(doc, prefix);
-                for (var j = 0; j < templates.length; j++) {
+                const templates = eXide.util.Snippets.getTemplates(doc, prefix);
+                for (let j = 0; j < templates.length; j++) {
                     options.push({
                         label: "[S] " + templates[j].name,
                         type: "text",
@@ -262,12 +263,12 @@ eXide.edit.CompletionSource = (function () {
     }
 
     function makeFunctionOption(signature, snippet, helpHtml, description, args, path) {
-        var option = {
+        const option = {
             label: signature,
             type: "function",
             apply: function (view, completion, from, to) {
                 // Use the snippet template if available, otherwise parse from signature
-                var template = snippet || eXide.util.parseSignature(signature);
+                const template = snippet || eXide.util.parseSignature(signature);
                 view.dispatch({ changes: { from: from, to: to } });
                 editorUtils.insertSnippet(view, template);
             }
@@ -287,23 +288,23 @@ eXide.edit.CompletionSource = (function () {
      * or falls back to legacy HTML help.
      */
     function buildInfoDOM(signature, description, args, helpHtml, path) {
-        var div = document.createElement("div");
+        const div = document.createElement("div");
         div.className = "cm-completion-info-funcdoc";
 
         if (description || (args && args.length > 0)) {
             if (description) {
-                var p = document.createElement("p");
+                const p = document.createElement("p");
                 p.textContent = description;
                 div.appendChild(p);
             }
             if (args && args.length > 0) {
-                var dl = document.createElement("dl");
-                for (var i = 0; i < args.length; i++) {
-                    var dt = document.createElement("dt");
+                const dl = document.createElement("dl");
+                for (let i = 0; i < args.length; i++) {
+                    const dt = document.createElement("dt");
                     dt.textContent = "$" + args[i].name + " as " + args[i].type;
                     dl.appendChild(dt);
                     if (args[i].description) {
-                        var dd = document.createElement("dd");
+                        const dd = document.createElement("dd");
                         dd.textContent = args[i].description;
                         dl.appendChild(dd);
                     }
@@ -315,7 +316,7 @@ eXide.edit.CompletionSource = (function () {
         }
 
         if (path) {
-            var src = document.createElement("div");
+            const src = document.createElement("div");
             src.className = "cm-completion-info-source";
             src.textContent = path;
             div.appendChild(src);
@@ -329,15 +330,15 @@ eXide.edit.CompletionSource = (function () {
     // -------------------------------------------------------------------
 
     function getVariableCompletions(doc, helper, prefix, from, to, astNode) {
-        var options = [];
-        var prefixRegex = prefix ? new RegExp("^\\$?" + prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) : null;
+        const options = [];
+        const prefixRegex = prefix ? new RegExp("^\\$?" + prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) : null;
 
         // In-scope variables from AST visitor
         if (astNode) {
-            var visitor = new eXide.edit.InScopeVariables(doc.ast, astNode);
-            var variables = visitor.getStack();
+            const visitor = new eXide.edit.InScopeVariables(doc.ast, astNode);
+            const variables = visitor.getStack();
             if (variables) {
-                for (var i = 0; i < variables.length; i++) {
+                for (let i = 0; i < variables.length; i++) {
                     if (!prefix || prefixRegex.test(variables[i])) {
                         options.push({
                             label: "$" + variables[i],
@@ -355,7 +356,7 @@ eXide.edit.CompletionSource = (function () {
         }
 
         // Global variables from doc.functions
-        for (var j = 0; j < doc.functions.length; j++) {
+        for (let j = 0; j < doc.functions.length; j++) {
             if (doc.functions[j].type === "variable" && (!prefix || prefixRegex.test(doc.functions[j].name))) {
                 options.push({
                     label: "$" + doc.functions[j].name,
@@ -377,9 +378,9 @@ eXide.edit.CompletionSource = (function () {
             .then(function (response) { return response.json(); })
             .then(function (data) {
                 if (!data) return null;
-                var options = [];
-                for (var i = 0; i < data.length; i++) {
-                    var template;
+                const options = [];
+                for (let i = 0; i < data.length; i++) {
+                    let template;
                     if (data[i].at) {
                         template = "import module namespace " + data[i].prefix + "=\"" + data[i].uri +
                             "\" at \"" + data[i].at + "\";";
@@ -409,10 +410,10 @@ eXide.edit.CompletionSource = (function () {
             .then(function (response) { return response.json(); })
             .then(function (data) {
                 if (!data) return null;
-                var options = [];
-                for (var key in data) {
+                const options = [];
+                for (const key in data) {
                     if (!key || key === prefix) {
-                        var template = "declare namespace " + key + "=\"" + data[key] + "\";";
+                        const template = "declare namespace " + key + "=\"" + data[key] + "\";";
                         options.push({
                             label: key + " — " + data[key],
                             type: "keyword",
@@ -431,10 +432,10 @@ eXide.edit.CompletionSource = (function () {
     // -------------------------------------------------------------------
 
     function getTemplateCompletions(doc, helper, prefix, from, to) {
-        var templates = eXide.util.Snippets.getTemplates(doc, prefix);
+        const templates = eXide.util.Snippets.getTemplates(doc, prefix);
         if (templates.length === 0) return null;
-        var options = [];
-        for (var i = 0; i < templates.length; i++) {
+        const options = [];
+        for (let i = 0; i < templates.length; i++) {
             options.push({
                 label: "[S] " + templates[i].name,
                 type: "text",
@@ -451,31 +452,31 @@ eXide.edit.CompletionSource = (function () {
     function templateCompletion(context, doc, helper) {
         if (!context.explicit) return null;
 
-        var state = context.state;
-        var pos = context.pos;
-        var lead = editorUtils.offsetToRowCol(state, pos);
-        var from = pos, to = pos;
+        const state = context.state;
+        const pos = context.pos;
+        const lead = editorUtils.offsetToRowCol(state, pos);
+        let from = pos, to = pos;
 
         if (state.selection.main.empty) {
-            var lineNum = lead.row + 1;
-            var line = (lineNum >= 1 && lineNum <= state.doc.lines) ? state.doc.line(lineNum).text : "";
-            var start = lead.column - 1;
-            var end = lead.column;
+            const lineNum = lead.row + 1;
+            const line = (lineNum >= 1 && lineNum <= state.doc.lines) ? state.doc.line(lineNum).text : "";
+            let start = lead.column - 1;
+            const end = lead.column;
             while (start >= 0) {
-                var ch = line.substring(start, end);
+                const ch = line.substring(start, end);
                 if (ch.match(/^\$[\w:\-_\.]+$/)) break;
                 if (!ch.match(/^[\w:\-_\.]+$/)) { start++; break; }
                 start--;
             }
             if (start < 0) start = 0;
-            var token = line.substring(start, end);
+            const token = line.substring(start, end);
             from = editorUtils.rowColToOffset(state, lead.row, start);
             to = editorUtils.rowColToOffset(state, lead.row, end);
 
-            var templates = eXide.util.Snippets.getTemplates(doc, token);
+            const templates = eXide.util.Snippets.getTemplates(doc, token);
             if (templates.length === 0) return null;
-            var options = [];
-            for (var i = 0; i < templates.length; i++) {
+            const options = [];
+            for (let i = 0; i < templates.length; i++) {
                 options.push({
                     label: "[S] " + templates[i].name,
                     type: "text",

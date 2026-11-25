@@ -7,16 +7,16 @@
  * Browser global: staticAnalysis  (loaded via build.xml concat before xquery-helper.js)
  * Node/CommonJS:  module.exports = staticAnalysis
  */
-var staticAnalysis = (function () {
+const staticAnalysis = (function () {
 
     // ---- Marker constructors (same shape as xqlint Errors.js) ----
 
-    var ERROR = "error";
-    var WARNING = "warning";
-    var LANG = "xquery";
+    const ERROR = "error";
+    const WARNING = "warning";
+    const LANG = "xquery";
 
     // Registered module prefixes fetched from the server at startup
-    var registeredModulePrefixes = {};
+    let registeredModulePrefixes = {};
 
     function warningMarker(pos, msg) {
         return { pos: pos, lang: LANG, type: WARNING, level: WARNING, message: msg };
@@ -70,8 +70,8 @@ var staticAnalysis = (function () {
 
     function getNodeValue(node) {
         if (node.value !== undefined) return node.value;
-        var v = "";
-        for (var i = 0; i < node.children.length; i++) {
+        let v = "";
+        for (let i = 0; i < node.children.length; i++) {
             v += getNodeValue(node.children[i]);
         }
         return v;
@@ -80,10 +80,10 @@ var staticAnalysis = (function () {
     // ---- Main analysis ----
 
     function analyze(ast) {
-        var markers = [];
+        const markers = [];
 
         // -- Namespace tracking --
-        var namespaces = {
+        const namespaces = {
             // W3C standard prefixes (always known)
             "local": "http://www.w3.org/2005/xquery-local-functions",
             "xs": "http://www.w3.org/2001/XMLSchema",
@@ -95,17 +95,17 @@ var staticAnalysis = (function () {
             "output": "http://www.w3.org/2010/xslt-xquery-serialization"
         };
         // Merge server-registered module prefixes (fetched at startup)
-        for (var p in registeredModulePrefixes) {
+        for (const p in registeredModulePrefixes) {
             if (!namespaces[p]) {
                 namespaces[p] = registeredModulePrefixes[p];
             }
         }
-        var declaredNS = {
+        const declaredNS = {
             "jn": { ns: "http://www.jsoniq.org/functions", pos: { sl: 0, sc: 0, el: 0, ec: 0 }, type: "module", auto: true },
             "fn": { ns: "http://www.w3.org/2005/xpath-functions", pos: { sl: 0, sc: 0, el: 0, ec: 0 }, type: "module", auto: true }
         };
-        var referencedPrefixes = {};
-        var defaultFnNs = "http://www.w3.org/2005/xpath-functions";
+        const referencedPrefixes = {};
+        let defaultFnNs = "http://www.w3.org/2005/xpath-functions";
 
         // -- Variable scoping (simple scope stack, no StaticContext class) --
         function makeScope(pos, parent) {
@@ -113,11 +113,11 @@ var staticAnalysis = (function () {
                      parent: parent, children: [], varDecls: {}, varRefs: {} };
         }
 
-        var rootSctx = makeScope(ast.pos, undefined);
-        var sctx = rootSctx;
+        const rootSctx = makeScope(ast.pos, undefined);
+        let sctx = rootSctx;
 
         function pushSctx(pos) {
-            var child = makeScope(pos, sctx);
+            const child = makeScope(pos, sctx);
             sctx.children.push(child);
             sctx = child;
         }
@@ -127,23 +127,23 @@ var staticAnalysis = (function () {
                 sctx.pos.el = pos.el;
                 sctx.pos.ec = pos.ec;
             }
-            var varDecls = sctx.varDecls;
-            var varRefs = sctx.varRefs;
+            const varDecls = sctx.varDecls;
+            const varRefs = sctx.varRefs;
 
             // Unused variable warnings
-            for (var name in varDecls) {
+            for (const name in varDecls) {
                 if (varRefs[name] === undefined && varDecls[name].kind !== "VarDecl") {
                     markers.push(unusedVarMarker(varDecls[name].pos, name));
                 }
             }
 
             // Undeclared variable references
-            for (var name in varRefs) {
+            for (const name in varRefs) {
                 if (varDecls[name] === undefined) {
                     if (sctx.parent.parent === undefined) {
                         // At top-level: emit error
-                        var refs = varRefs[name];
-                        for (var j = 0; j < refs.length; j++) {
+                        const refs = varRefs[name];
+                        for (let j = 0; j < refs.length; j++) {
                             markers.push(XPST0008(refs[j].pos, name));
                         }
                     } else {
@@ -160,22 +160,22 @@ var staticAnalysis = (function () {
         }
 
         // -- Function tracking --
-        var declaredFunctions = {};
-        var declaredVariables = {};
+        const declaredFunctions = {};
+        const declaredVariables = {};
 
         // -- FLWOR clause counting --
-        var clauseCount = [];
-        var statementCount = [];
+        const clauseCount = [];
+        const statementCount = [];
 
         // -- Function declaration state --
-        var fnParams = [];
-        var isExternal = false;
-        var decl = {};
+        let fnParams = [];
+        let isExternal = false;
+        let decl = {};
 
         // -- FunctionCall state --
-        var fnCall = false;
-        var fnName = "";
-        var arity = 0;
+        let fnCall = false;
+        let fnName = "";
+        let arity = 0;
 
         // ---- VarHandler (for bindings) ----
         function VarHandler(node) {
@@ -184,7 +184,7 @@ var staticAnalysis = (function () {
             };
 
             this.VarName = this.EQName = function (varName) {
-                var value = getNodeValue(varName);
+                const value = getNodeValue(varName);
                 if (value.substring(0, 2) !== "Q{") {
                     if (sctx.varDecls[value] === undefined) {
                         sctx.varDecls[value] = { pos: varName.pos, kind: node.name };
@@ -198,11 +198,11 @@ var staticAnalysis = (function () {
         }
 
         // ---- Visitor ----
-        var visitor = {};
+        const visitor = {};
 
         visitor.visit = function (node) {
-            var name = node.name;
-            var skip = false;
+            const name = node.name;
+            let skip = false;
             if (typeof visitor[name] === "function") {
                 skip = visitor[name](node) === true;
             }
@@ -212,8 +212,8 @@ var staticAnalysis = (function () {
         };
 
         visitor.visitChildren = function (node, handler) {
-            for (var i = 0; i < node.children.length; i++) {
-                var child = node.children[i];
+            for (let i = 0; i < node.children.length; i++) {
+                const child = node.children[i];
                 if (handler !== undefined && typeof handler[child.name] === "function") {
                     handler[child.name](child);
                 } else {
@@ -223,8 +223,8 @@ var staticAnalysis = (function () {
         };
 
         visitor.visitExprSingles = function (node) {
-            for (var i = 0; i < node.children.length; i++) {
-                var child = node.children[i];
+            for (let i = 0; i < node.children.length; i++) {
+                const child = node.children[i];
                 if (child.name === "ExprSingle" || child.name === "VarValue" || child.name === "VarDefaultValue") {
                     visitor.visit(child);
                 }
@@ -239,13 +239,13 @@ var staticAnalysis = (function () {
             popSctx(node.pos);
 
             // Check for unused namespace prefixes
-            var dNS = {};
-            for (var prefix in declaredNS) {
-                var ns = declaredNS[prefix].ns;
-                var pos = declaredNS[prefix].pos;
-                var type = declaredNS[prefix].type;
+            const dNS = {};
+            for (const prefix in declaredNS) {
+                const ns = declaredNS[prefix].ns;
+                const pos = declaredNS[prefix].pos;
+                const type = declaredNS[prefix].type;
                 if (referencedPrefixes[prefix] === undefined && declaredNS[prefix].auto === undefined) {
-                    var err = warningMarker(pos, '"' + prefix + '": unused namespace prefix.');
+                    const err = warningMarker(pos, '"' + prefix + '": unused namespace prefix.');
                     err.prefix = prefix;
                     err.ns = ns;
                     err.nsType = type;
@@ -258,11 +258,11 @@ var staticAnalysis = (function () {
                 }
             }
             // Warn on duplicate NS URIs
-            for (var ns in dNS) {
-                var prefix = dNS[ns].prefix;
-                var positions = dNS[ns].positions;
+            for (const ns in dNS) {
+                const prefix = dNS[ns].prefix;
+                const positions = dNS[ns].positions;
                 if (positions.length > 1) {
-                    for (var i = 1; i < positions.length; i++) {
+                    for (let i = 1; i < positions.length; i++) {
                         markers.push(warningMarker(positions[i],
                             '"' + ns + '": is already available with the prefix "' + prefix + '".'));
                     }
@@ -272,11 +272,11 @@ var staticAnalysis = (function () {
         };
 
         visitor.ModuleDecl = function (node) {
-            var Handler = function () {
-                var prefix = "";
+            const Handler = function () {
+                let prefix = "";
                 this.NCName = function (ncname) { prefix = getNodeValue(ncname); };
                 this.URILiteral = function (uri) {
-                    var ns = getNodeValue(uri);
+                    let ns = getNodeValue(uri);
                     ns = ns.substring(1, ns.length - 1);
                     namespaces[prefix] = ns;
                 };
@@ -286,9 +286,9 @@ var staticAnalysis = (function () {
         };
 
         visitor.ModuleImport = function (node) {
-            var handler = new function () {
-                var prefix = "";
-                var moduleURI = null;
+            const handler = new function () {
+                let prefix = "";
+                let moduleURI = null;
                 this.NCName = function (ncname) { prefix = getNodeValue(ncname); };
                 this.URILiteral = function (uri) {
                     uri = getNodeValue(uri);
@@ -309,11 +309,11 @@ var staticAnalysis = (function () {
         };
 
         visitor.SchemaImport = function (node) {
-            var handler = new function () {
-                var prefix = "";
-                var schemaURI = null;
+            const handler = new function () {
+                let prefix = "";
+                let schemaURI = null;
                 this.SchemaPrefix = function (schemaPrefix) {
-                    var Handler = function () {
+                    const Handler = function () {
                         this.NCName = function (ncname) { prefix = getNodeValue(ncname); };
                     };
                     visitor.visitChildren(schemaPrefix, new Handler());
@@ -336,11 +336,11 @@ var staticAnalysis = (function () {
         };
 
         visitor.NamespaceDecl = function (node) {
-            var handler = new function () {
-                var prefix = "";
+            const handler = new function () {
+                let prefix = "";
                 this.NCName = function (ncname) { prefix = getNodeValue(ncname); };
                 this.URILiteral = function (uri) {
-                    var moduleURI = getNodeValue(uri);
+                    let moduleURI = getNodeValue(uri);
                     moduleURI = moduleURI.substring(1, moduleURI.length - 1);
                     if (declaredNS[prefix] === undefined) {
                         declaredNS[prefix] = { ns: moduleURI, pos: node.pos, type: "decl" };
@@ -354,13 +354,13 @@ var staticAnalysis = (function () {
         };
 
         visitor.DefaultNamespaceDecl = function (node) {
-            var Handler = function () {
-                var fn = false;
+            const Handler = function () {
+                let fn = false;
                 this.TOKEN = function (token) {
                     fn = fn ? true : (token.value === "function");
                 };
                 this.URILiteral = function (uri) {
-                    var ns = getNodeValue(uri);
+                    let ns = getNodeValue(uri);
                     ns = ns.substring(1, ns.length - 1);
                     if (fn) { defaultFnNs = ns; }
                 };
@@ -374,7 +374,7 @@ var staticAnalysis = (function () {
             pushSctx(node.pos);
             statementCount.push(0);
             visitor.visitChildren(node);
-            for (var i = 1; i <= statementCount[statementCount.length - 1]; i++) {
+            for (let i = 1; i <= statementCount[statementCount.length - 1]; i++) {
                 popSctx(node.pos);
             }
             statementCount.pop();
@@ -386,7 +386,7 @@ var staticAnalysis = (function () {
             pushSctx(node.pos);
             statementCount.push(0);
             visitor.visitChildren(node);
-            for (var i = 1; i <= statementCount[statementCount.length - 1]; i++) {
+            for (let i = 1; i <= statementCount[statementCount.length - 1]; i++) {
                 popSctx(node.pos);
             }
             statementCount.pop();
@@ -398,7 +398,7 @@ var staticAnalysis = (function () {
             pushSctx(node.pos);
             statementCount.push(0);
             visitor.visitChildren(node);
-            for (var i = 1; i <= statementCount[statementCount.length - 1]; i++) {
+            for (let i = 1; i <= statementCount[statementCount.length - 1]; i++) {
                 popSctx(node.pos);
             }
             statementCount.pop();
@@ -411,7 +411,7 @@ var staticAnalysis = (function () {
             pushSctx(node.pos);
             clauseCount.push(0);
             visitor.visitChildren(node);
-            for (var i = 1; i <= clauseCount[clauseCount.length - 1]; i++) {
+            for (let i = 1; i <= clauseCount[clauseCount.length - 1]; i++) {
                 popSctx(node.pos);
             }
             clauseCount.pop();
@@ -485,13 +485,13 @@ var staticAnalysis = (function () {
             return true;
         };
 
-        var isGroupDecl = false;
+        let isGroupDecl = false;
         visitor.GroupingSpec = function (node) {
             isGroupDecl = false;
             pushSctx(node.pos);
             clauseCount[clauseCount.length - 1]++;
 
-            for (var i = 0; i < node.children.length; i++) {
+            for (let i = 0; i < node.children.length; i++) {
                 if (node.children[i].value === ":=") {
                     isGroupDecl = true;
                 }
@@ -539,13 +539,13 @@ var staticAnalysis = (function () {
 
         // -- VarDecl / VarDeclStatement --
         visitor.VarDecl = visitor.VarDeclStatement = function (node) {
-            var isStmt = (node.name === "VarDeclStatement");
-            var varNames = [];
+            const isStmt = (node.name === "VarDeclStatement");
+            const varNames = [];
 
-            var VarDeclHandler = function (decls) {
+            const VarDeclHandler = function (decls) {
                 this.ExprSingle = function () { return true; };
                 this.VarName = function (vnode) {
-                    var varName = getNodeValue(vnode);
+                    const varName = getNodeValue(vnode);
                     varNames.push(varName);
                     if (decls[varName]) {
                         markers.push(XQST0049(vnode.pos, varName));
@@ -559,7 +559,7 @@ var staticAnalysis = (function () {
                 };
             };
 
-            var decls;
+            let decls;
             if (isStmt) {
                 visitor.visitExprSingles(node);
                 pushSctx(node.pos);
@@ -575,10 +575,10 @@ var staticAnalysis = (function () {
             visitor.visitChildren(node, new VarDeclHandler(decls));
 
             varNames.forEach(function (curName) {
-                var newDecl = { pos: node.pos, kind: node.name };
+                const newDecl = { pos: node.pos, kind: node.name };
                 decls[curName] = decls[curName] || newDecl;
                 if (!isStmt) {
-                    var firstSctx = rootSctx.children[0];
+                    const firstSctx = rootSctx.children[0];
                     if (firstSctx) {
                         firstSctx.varDecls[curName] = firstSctx.varDecls[curName] || newDecl;
                     }
@@ -592,14 +592,14 @@ var staticAnalysis = (function () {
         visitor.AnnotatedDecl = function (node) {
             decl = { pos: node.pos, annotations: {} };
 
-            var Handler = function () {
+            const Handler = function () {
                 this.FunctionDecl = function (fnode) {
                     isExternal = fnode.children[fnode.children.length - 1].value &&
                                  fnode.children[fnode.children.length - 1].value === "external";
                     fnParams = [];
-                    var eQName = "";
+                    let eQName = "";
                     pushSctx(fnode.pos);
-                    var FnHandler = function () {
+                    const FnHandler = function () {
                         this.EQName = function (eqnode) {
                             eQName = getNodeValue(eqnode);
                         };
@@ -607,7 +607,7 @@ var staticAnalysis = (function () {
                     visitor.visitChildren(fnode, new FnHandler());
                     popSctx();
 
-                    var fnArity = fnParams.length;
+                    const fnArity = fnParams.length;
                     fnode.arity = "" + fnArity;
                     if (declaredFunctions[eQName] &&
                         declaredFunctions[eQName][fnArity] !== undefined) {
@@ -644,13 +644,13 @@ var staticAnalysis = (function () {
 
         // -- EQName --
         visitor.EQName = function (node) {
-            var value = getNodeValue(node);
+            const value = getNodeValue(node);
             if (fnCall) {
                 fnName = value;
             }
             if (value.substring(0, 2) !== "Q{" && value.indexOf(":") !== -1) {
-                var prefix = value.substring(0, value.indexOf(":"));
-                var localName = value.substring(value.indexOf(":") + 1);
+                const prefix = value.substring(0, value.indexOf(":"));
+                const localName = value.substring(value.indexOf(":") + 1);
                 if (declaredNS[prefix] === undefined && namespaces[prefix] === undefined) {
                     markers.push(XPST0081(node.pos, prefix, localName));
                 } else {
@@ -661,17 +661,17 @@ var staticAnalysis = (function () {
         };
 
         visitor.QName = function (node) {
-            var value = getNodeValue(node);
+            const value = getNodeValue(node);
             if (value.indexOf(":") !== -1) {
-                var prefix = value.substring(0, value.indexOf(":"));
+                const prefix = value.substring(0, value.indexOf(":"));
                 referencedPrefixes[prefix] = true;
             }
             return false;
         };
 
         visitor.Wildcard = function (node) {
-            var value = getNodeValue(node);
-            var prefix = value.substring(0, value.indexOf(":"));
+            const value = getNodeValue(node);
+            const prefix = value.substring(0, value.indexOf(":"));
             if (prefix !== "*") {
                 referencedPrefixes[prefix] = true;
             }
@@ -680,12 +680,12 @@ var staticAnalysis = (function () {
 
         // -- VarRef --
         visitor.VarRef = function (node) {
-            var value = getNodeValue(node).substring(1);
+            const value = getNodeValue(node).substring(1);
             if (value.substring(0, 2) !== "Q{" && value.indexOf(":") === -1) {
                 if (sctx.varRefs[value] === undefined) {
                     sctx.varRefs[value] = [];
                 }
-                var pos = { sl: node.pos.sl, sc: node.pos.sc + 1, el: node.pos.el, ec: node.pos.ec };
+                const pos = { sl: node.pos.sl, sc: node.pos.sc + 1, el: node.pos.el, ec: node.pos.ec };
                 sctx.varRefs[value].push({ pos: pos });
             }
             visitor.visitChildren(node);
@@ -704,21 +704,21 @@ var staticAnalysis = (function () {
     }
 
     // Full module records from startup fetch (prefix, uri, at)
-    var registeredModules = [];
+    let registeredModules = [];
 
     return {
         analyze: analyze,
         setRegisteredModules: function (modules) {
             registeredModulePrefixes = {};
             registeredModules = modules || [];
-            for (var i = 0; i < modules.length; i++) {
+            for (let i = 0; i < modules.length; i++) {
                 if (modules[i].prefix && modules[i].uri) {
                     registeredModulePrefixes[modules[i].prefix] = modules[i].uri;
                 }
             }
         },
         getModuleByPrefix: function (prefix) {
-            for (var i = 0; i < registeredModules.length; i++) {
+            for (let i = 0; i < registeredModules.length; i++) {
                 if (registeredModules[i].prefix === prefix) {
                     return registeredModules[i];
                 }

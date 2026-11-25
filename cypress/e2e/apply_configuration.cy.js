@@ -45,7 +45,7 @@ describe('Apply configuration', () => {
 
   function setEditorContent(text) {
     cy.window().then((win) => {
-      let doc = win.eXide.app.getEditor().getActiveDocument()
+      const doc = win.eXide.app.getEditor().getActiveDocument()
       doc.setText(text)
     })
   }
@@ -84,7 +84,7 @@ describe('Apply configuration', () => {
   }
 
   function openFileDirectly(path) {
-    var name = path.split('/').pop()
+    const name = path.split('/').pop()
     cy.window().then((win) => {
       win.eXide.app.$doOpenDocument({ path: path, name: name })
     })

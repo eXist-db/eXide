@@ -24,7 +24,7 @@ eXide.namespace("eXide.edit.ModeHelper");
  */
 eXide.edit.ModeHelper = (function () {
 
-    Constr = function(editor) {
+    const Constr = function(editor) {
         this.parent = editor;
         this.editor = this.parent.editor;
 
@@ -50,10 +50,10 @@ eXide.edit.ModeHelper = (function () {
         },
 
         exec: function (command, doc, args) {
-            var fn = (this.commands && this.commands[command]) || this[command];
+            const fn = (this.commands && this.commands[command]) || this[command];
             if (typeof fn === "function") {
-                var nargs = [doc];
-                for (var i = 0; i < args.length; i++) {
+                const nargs = [doc];
+                for (let i = 0; i < args.length; i++) {
                     nargs.push(args[i]);
                 }
                 fn.apply(this, nargs);
@@ -68,18 +68,18 @@ eXide.edit.ModeHelper = (function () {
         },
 
         createOutline: function(doc, onComplete) {
-            var outline = document.getElementById("outline");
+            const outline = document.getElementById("outline");
             if (outline) outline.innerHTML = "";
         },
 
         collectErrors: function(doc) {
-            var state = this.editor.state;
-            var tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
+            const state = this.editor.state;
+            const tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
             tree.iterate({
                 enter: function(node) {
                     if (node.type.isError) {
-                        var line = state.doc.lineAt(node.from);
-                        var context = state.sliceDoc(
+                        const line = state.doc.lineAt(node.from);
+                        let context = state.sliceDoc(
                             Math.max(0, node.from - 10),
                             Math.min(state.doc.length, node.to + 20)
                         ).replace(/\n/g, " ").trim();
@@ -105,7 +105,7 @@ eXide.edit.ModeHelper = (function () {
         },
 
         locate: function(doc, type, row) {
-            if (typeof row == "number") {
+            if (typeof row === "number") {
                 editorUtils.gotoLine(this.editor, row + 1);
                 this.editor.focus();
             }
@@ -117,14 +117,14 @@ eXide.edit.ModeHelper = (function () {
                 eXide.util.message("format not supported in this mode.");
                 return;
             }
-            var self = this;
-            var sel = this.editor.state.selection.main;
-            var code = this.editor.state.sliceDoc(sel.from, sel.to);
-            var isSelection = code.length > 0;
+            const self = this;
+            const sel = this.editor.state.selection.main;
+            let code = this.editor.state.sliceDoc(sel.from, sel.to);
+            const isSelection = code.length > 0;
             if (!isSelection) {
                 code = doc.getText();
             }
-            var mode = doc.getSyntax();
+            const mode = doc.getSyntax();
             prettierFormat.format(code, mode).then(function (formatted) {
                 formatted = formatted.replace(/\n$/, "");
                 if (isSelection) {
@@ -132,7 +132,7 @@ eXide.edit.ModeHelper = (function () {
                         changes: { from: sel.from, to: sel.to, insert: formatted }
                     });
                 } else {
-                    var cursorOffset = self.editor.state.selection.main.head;
+                    const cursorOffset = self.editor.state.selection.main.head;
                     self.editor.dispatch({
                         changes: { from: 0, to: self.editor.state.doc.length, insert: formatted },
                         selection: { anchor: Math.min(cursorOffset, formatted.length) }
@@ -145,12 +145,12 @@ eXide.edit.ModeHelper = (function () {
         },
 
         gotoSymbol: function(doc) {
-            var self = this;
+            const self = this;
             if (!doc.functions || doc.functions.length === 0) {
                 eXide.util.message("No symbols found.");
                 return;
             }
-            var items = doc.functions.map(function(f) {
+            const items = doc.functions.map(function(f) {
                 return {
                     label: f.signature || f.name,
                     name: f.name,
@@ -177,9 +177,9 @@ eXide.edit.ModeHelper = (function () {
         },
 
         getTemplates: function (doc, prefix, popupItems) {
-            var templates = eXide.util.Snippets.getTemplates(doc, prefix);
-            for (var i = 0; i < templates.length; i++) {
-                var item = {
+            const templates = eXide.util.Snippets.getTemplates(doc, prefix);
+            for (let i = 0; i < templates.length; i++) {
+                const item = {
                     type: "template",
                     label: "[S] " + templates[i].name,
                     template: templates[i].template,

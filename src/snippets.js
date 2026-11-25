@@ -24,17 +24,17 @@ eXide.namespace("eXide.util.Snippets");
  */
 eXide.util.Snippets = (function () {
     
-    var snippetsForMode = {};
+    const snippetsForMode = {};
 
     /**
      * Parse snippet files into an array of {name, content} objects.
      */
     function parseSnippetFile(data) {
-        var snippets = [];
-        var lines = data.split("\n");
-        var current = null;
-        for (var i = 0; i < lines.length; i++) {
-            var line = lines[i];
+        const snippets = [];
+        const lines = data.split("\n");
+        let current = null;
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
             if (line.indexOf("snippet ") === 0) {
                 if (current) snippets.push(current);
                 current = { name: line.substring(8).trim(), content: "" };
@@ -60,16 +60,16 @@ eXide.util.Snippets = (function () {
     }
 
     function reload(mode, data) {
-        var snippets = parseSnippetFile(data);
+        const snippets = parseSnippetFile(data);
         console.log("Replacing snippets %o for mode %s", snippets, mode);
         snippetsForMode[mode] = snippets;
     }
     
     function getTemplates(doc, prefix) {
-        var snippets = snippetsForMode[doc.getSyntax()];
-        var templates = [];
-        for (var i = 0; i < snippets.length; i++) {
-            if (!prefix || snippets[i].name.indexOf(prefix) == 0) {
+        const snippets = snippetsForMode[doc.getSyntax()];
+        const templates = [];
+        for (let i = 0; i < snippets.length; i++) {
+            if (!prefix || snippets[i].name.indexOf(prefix) === 0) {
                 templates.push({
                     TYPE: eXide.edit.Document.TYPE_TEMPLATE,
                     name: snippets[i].name,
