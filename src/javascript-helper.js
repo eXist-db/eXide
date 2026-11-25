@@ -23,9 +23,9 @@ eXide.namespace("eXide.edit.JavascriptModeHelper");
  */
 eXide.edit.JavascriptModeHelper = (function () {
 
-    var RE_FUNC_NAME = /^[\$\w\-_]+/;
+    const RE_FUNC_NAME = /^[\$\w\-_]+/;
 
-    Constr = function(editor) {
+    const Constr = function(editor) {
         this.parent = editor;
         this.editor = this.parent.editor;
         this.addCommand("gotoDefinition", this.gotoDefinition);
@@ -37,31 +37,32 @@ eXide.edit.JavascriptModeHelper = (function () {
     eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
 
     Constr.prototype.createOutline = function(doc, onComplete) {
-        var state = this.editor.state;
-        var tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
+        const state = this.editor.state;
+        const tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
         tree.iterate({
             enter: function(node) {
-                var name = null, type = eXide.edit.Document.TYPE_FUNCTION, sig = null;
+                const type = eXide.edit.Document.TYPE_FUNCTION;
+                let name = null, sig = null;
                 if (node.name === "FunctionDeclaration") {
-                    var vn = node.node.getChild("VariableDefinition");
+                    const vn = node.node.getChild("VariableDefinition");
                     if (vn) name = state.sliceDoc(vn.from, vn.to);
                     if (name) sig = state.sliceDoc(node.from, Math.min(node.to, node.from + 80)).split("{")[0].trim();
                 } else if (node.name === "ClassDeclaration") {
-                    var cn = node.node.getChild("VariableDefinition");
+                    const cn = node.node.getChild("VariableDefinition");
                     if (cn) name = state.sliceDoc(cn.from, cn.to);
                     if (name) sig = "class " + name;
                 } else if (node.name === "MethodDeclaration") {
-                    var pn = node.node.getChild("PropertyDefinition");
+                    const pn = node.node.getChild("PropertyDefinition");
                     if (pn) name = state.sliceDoc(pn.from, pn.to);
                     if (name) sig = state.sliceDoc(node.from, Math.min(node.to, node.from + 80)).split("{")[0].trim();
                 } else if (node.name === "VariableDeclaration") {
-                    var child = node.node.firstChild;
-                    var keyword = child ? state.sliceDoc(child.from, child.to) : "var";
+                    let child = node.node.firstChild;
+                    const keyword = child ? state.sliceDoc(child.from, child.to) : "var";
                     child = child ? child.nextSibling : null;
                     while (child) {
                         if (child.name === "VariableDefinition") {
-                            var vname = state.sliceDoc(child.from, child.to);
-                            var nextSib = child.nextSibling;
+                            const vname = state.sliceDoc(child.from, child.to);
+                            const nextSib = child.nextSibling;
                             if (nextSib && (nextSib.name === "ArrowFunction" || nextSib.name === "FunctionExpression")) {
                                 name = vname;
                                 sig = keyword + " " + vname + " = " + (nextSib.name === "ArrowFunction" ? "() => …" : "function(…)");
@@ -71,7 +72,7 @@ eXide.edit.JavascriptModeHelper = (function () {
                     }
                 }
                 if (name) {
-                    var line = state.doc.lineAt(node.from);
+                    const line = state.doc.lineAt(node.from);
                     doc.functions.push({
                         type: type,
                         name: name,
@@ -91,7 +92,7 @@ eXide.edit.JavascriptModeHelper = (function () {
     };
 
     Constr.prototype.gotoSymbol = function(doc) {
-        var self = this;
+        const self = this;
         // Ensure outline is populated
         if (!doc.functions || doc.functions.length === 0) {
             doc.functions = [];
@@ -104,12 +105,12 @@ eXide.edit.JavascriptModeHelper = (function () {
     };
 
     Constr.prototype._showSymbolPicker = function(doc) {
-        var self = this;
+        const self = this;
         if (!doc.functions || doc.functions.length === 0) {
             eXide.util.message("No symbols found.");
             return;
         }
-        var items = doc.functions.map(function(f) {
+        const items = doc.functions.map(function(f) {
             return {
                 label: f.signature || f.name,
                 name: f.name,
@@ -135,18 +136,18 @@ eXide.edit.JavascriptModeHelper = (function () {
     };
 
     Constr.prototype.gotoDefinition = function (doc) {
-        var lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
-        var funcName = this.getFunctionAtCursor(lead);
+        const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
+        const funcName = this.getFunctionAtCursor(lead);
         if (funcName) {
             this.locate(doc, null, funcName);
         }
     };
 
     Constr.prototype.locate = function(doc, type, name) {
-        if (typeof name == "number") {
+        if (typeof name === "number") {
             editorUtils.gotoLine(this.editor, name + 1);
         } else {
-            var func = this.parent.outline.findDefinition(doc, name);
+            const func = this.parent.outline.findDefinition(doc, name);
             if (func && func.row) {
                 this.parent.history.push(doc.getPath(), doc.getCurrentLine());
                 editorUtils.gotoLine(this.editor, func.row + 1);
@@ -155,15 +156,15 @@ eXide.edit.JavascriptModeHelper = (function () {
     };
 
     Constr.prototype.getFunctionAtCursor = function (lead) {
-        var row = lead.row;
-        var lineNum = row + 1;
-        var line = (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) ? this.editor.state.doc.line(lineNum).text : "";
-        var start = lead.column;
+        const row = lead.row;
+        const lineNum = row + 1;
+        const line = (lineNum >= 1 && lineNum <= this.editor.state.doc.lines) ? this.editor.state.doc.line(lineNum).text : "";
+        let start = lead.column;
         do {
             start--;
         } while (start >= 0 && line.charAt(start).match(RE_FUNC_NAME));
         start++;
-        var end = lead.column;
+        let end = lead.column;
         while (end < line.length && line.charAt(end).match(RE_FUNC_NAME)) {
             end++;
         }

@@ -9,7 +9,7 @@ describe('Outline navigation', () => {
 
   function setEditorContent(text) {
     cy.window().then((win) => {
-      var view = win.eXide.app.getEditor().editor
+      const view = win.eXide.app.getEditor().editor
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: text }
       })
@@ -19,7 +19,7 @@ describe('Outline navigation', () => {
 
   function newDocument(type, content) {
     cy.window().then((win) => {
-      var editor = win.eXide.app.getEditor()
+      const editor = win.eXide.app.getEditor()
       editor.newDocument(null, type)
     })
     cy.wait(300)
@@ -34,7 +34,7 @@ describe('Outline navigation', () => {
   }
 
   describe('XML outline', () => {
-    var xml = [
+    const xml = [
       '<root>',
       '  <header>',
       '    <title>Test</title>',
@@ -101,7 +101,7 @@ describe('Outline navigation', () => {
   })
 
   describe('XML gotoSymbol', () => {
-    var xml = '<root>\n  <child1/>\n  <child2/>\n</root>'
+    const xml = '<root>\n  <child1/>\n  <child2/>\n</root>'
 
     it('opens QuickPicker with XPath items', () => {
       newDocument('xml', xml)
@@ -125,7 +125,7 @@ describe('Outline navigation', () => {
   })
 
   describe('JSON outline', () => {
-    var json = '{\n  "name": "test",\n  "version": "1.0",\n  "scripts": {\n    "build": "npm run build"\n  }\n}'
+    const json = '{\n  "name": "test",\n  "version": "1.0",\n  "scripts": {\n    "build": "npm run build"\n  }\n}'
 
     it('shows property keys in outline', () => {
       newDocument('json', json)
@@ -149,7 +149,7 @@ describe('Outline navigation', () => {
   })
 
   describe('CSS outline', () => {
-    var css = 'body {\n  color: red;\n}\n\n.header {\n  display: flex;\n}\n\n#main {\n  padding: 10px;\n}'
+    const css = 'body {\n  color: red;\n}\n\n.header {\n  display: flex;\n}\n\n#main {\n  padding: 10px;\n}'
 
     it('shows selectors in outline', () => {
       newDocument('css', css)
@@ -161,7 +161,7 @@ describe('Outline navigation', () => {
   })
 
   describe('JavaScript outline', () => {
-    var js = 'function greet(name) {\n  return "Hello " + name;\n}\n\nfunction add(a, b) {\n  return a + b;\n}'
+    const js = 'function greet(name) {\n  return "Hello " + name;\n}\n\nfunction add(a, b) {\n  return a + b;\n}'
 
     it('shows functions in outline', () => {
       newDocument('javascript', js)
@@ -173,7 +173,7 @@ describe('Outline navigation', () => {
   })
 
   describe('Markdown outline', () => {
-    var md = '# Title\n\n## Section 1\n\nContent\n\n## Section 2\n\nMore content\n\n### Subsection'
+    const md = '# Title\n\n## Section 1\n\nContent\n\n## Section 2\n\nMore content\n\n### Subsection'
 
     it('shows headings in outline', () => {
       newDocument('markdown', md)
@@ -195,7 +195,7 @@ describe('Outline navigation', () => {
 
       // Navigate to a line programmatically
       cy.window().then((win) => {
-        var view = win.eXide.app.getEditor().editor
+        const view = win.eXide.app.getEditor().editor
         win.editorUtils.gotoLine(view, 10, 0, true)
       })
 

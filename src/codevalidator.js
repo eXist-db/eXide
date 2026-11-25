@@ -5,10 +5,10 @@ eXide.namespace("eXide.edit.CodeValidator");
  */
 eXide.edit.CodeValidator = (function () {
 
-    var VALIDATE_TIMEOUT = 700;
+    const VALIDATE_TIMEOUT = 700;
 
     function canValidate(doc) {
-        var mode = doc.getModeHelper();
+        const mode = doc.getModeHelper();
         if (!(mode && mode.validate)) {
             return false;
         }
@@ -16,13 +16,13 @@ eXide.edit.CodeValidator = (function () {
     }
 
     function createDeferred() {
-        var resolve;
-        var promise = new Promise(function(r) { resolve = r; });
+        let resolve;
+        const promise = new Promise(function(r) { resolve = r; });
         promise.resolve = resolve;
         return promise;
     }
 
-    Constr = function(editor) {
+    const Constr = function(editor) {
         this.editor = editor;
         this.inProgress = false;
         this.enabled = true;
@@ -40,8 +40,8 @@ eXide.edit.CodeValidator = (function () {
         if (!doc.needsValidation()) {
             return;
         }
-        var self = this;
-        var time = new Date().getTime();
+        const self = this;
+        const time = new Date().getTime();
         if (this.validateTimeout && time - doc.lastChangeEvent < VALIDATE_TIMEOUT) {
             // cancel previous timeout
             clearTimeout(this.validateTimeout);
@@ -64,17 +64,17 @@ eXide.edit.CodeValidator = (function () {
             return this.deferred;
         }
 
-        var self = this;
+        const self = this;
         if (!this.deferred) {
             this.deferred = createDeferred();
         }
 
         this.inProgress = true;
-        var startedAt = new Date().getTime();
+        const startedAt = new Date().getTime();
         doc.getModeHelper().validate(doc, doc.getText(), function (success) {
             // Check if document changed while compile was in flight,
             // BEFORE updating lastValidation (which would mask the change)
-            var changedDuringValidation = doc.lastChangeEvent > startedAt;
+            const changedDuringValidation = doc.lastChangeEvent > startedAt;
 
             doc.lastValidation = new Date().getTime();
             self.inProgress = false;

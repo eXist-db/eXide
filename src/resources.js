@@ -22,31 +22,31 @@ function apiPath(dbPath) {
 }
 
 function permCheckbox(name, perms, index, char) {
-	var checked = perms.length > index && perms.charAt(index) === char ? ' checked="checked"' : '';
+	const checked = perms.length > index && perms.charAt(index) === char ? ' checked="checked"' : '';
 	return '<input type="checkbox" name="' + name + '" id="' + name + '"' + checked + '/>';
 }
 
 function permissionsFromForm(form) {
-	var parts = [];
+	const parts = [];
 	["u", "g", "o"].forEach(function(scope) {
 		["r", "w", "x"].forEach(function(perm) {
-			var cb = form.querySelector("#" + scope + perm);
+			const cb = form.querySelector("#" + scope + perm);
 			parts.push(scope + (cb && cb.checked ? "+" : "-") + perm);
 		});
 	});
 	// special bits: setuid, setgid, sticky
-	var us = form.querySelector("#us");
+	const us = form.querySelector("#us");
 	parts.push("u" + (us && us.checked ? "+" : "-") + "s");
-	var gs = form.querySelector("#gs");
+	const gs = form.querySelector("#gs");
 	parts.push("g" + (gs && gs.checked ? "+" : "-") + "s");
-	var ot = form.querySelector("#ot");
+	const ot = form.querySelector("#ot");
 	parts.push("o" + (ot && ot.checked ? "+" : "-") + "t");
 	return parts.join(",");
 }
 
 function buildPropertiesForm(data, accounts) {
-	var perms = data.permissions || "---------";
-	var html = '<form id="browsing-dialog-form" action="">';
+	const perms = data.permissions || "---------";
+	let html = '<form id="browsing-dialog-form" action="">';
 	html += '<fieldset>';
 	if (data.mime) {
 		html += '<div class="control-group"><label for="mime">Mime:</label>';
@@ -117,11 +117,11 @@ eXide.namespace("eXide.browse.ResourceBrowser");
  */
 eXide.browse.ResourceBrowser = (function () {
 
-    var useragent = { isMac: /Mac/.test(navigator.platform) };
-	var BATCH_SIZE = 50;
+    const useragent = { isMac: /Mac/.test(navigator.platform) };
+	const BATCH_SIZE = 50;
 
 	function fileIcon(item) {
-		var mime = item.mime || "";
+		const mime = item.mime || "";
 		if (mime) {
 			if (mime === "application/pdf") return "fa-file-pdf-o";
 			if (/^image\//.test(mime)) return "fa-file-image-o";
@@ -129,7 +129,7 @@ eXide.browse.ResourceBrowser = (function () {
 			if (/^text\/|javascript|json|css/.test(mime)) return "fa-file-text-o";
 			if (/zip|compress|archive|xar|jar/.test(mime)) return "fa-file-archive-o";
 		}
-		var name = item.name || "";
+		const name = item.name || "";
 		if (/\.(xml|xq|xquery|xql|xqm|xconf|xhtml|html|htm|svg|xsl|xslt|odd|rng|sch|wsdl)$/i.test(name)) return "fa-file-code-o";
 		if (/\.(css|less|scss|js|json|md|txt|csv|properties)$/i.test(name)) return "fa-file-text-o";
 		if (/\.(png|jpe?g|gif|ico|webp|bmp|tiff?)$/i.test(name)) return "fa-file-image-o";
@@ -138,8 +138,8 @@ eXide.browse.ResourceBrowser = (function () {
 		return "fa-file-o";
 	}
 
-	Constr = function(container, parentContainer) {
-		var self = this;
+	const Constr = function(container, parentContainer) {
+		const self = this;
 		this.container = typeof container === "string" ? document.querySelector(container) : container;
         this.breadcrumbs = parentContainer.querySelector(".eXide-browse-breadcrumbs");
 		this.loading = false;
@@ -162,7 +162,7 @@ eXide.browse.ResourceBrowser = (function () {
 		this._selectedIndices = new Set();
 		this._rowSelection = "multiple";
 
-		var wrapper = document.querySelector(".eXide-browse-resources");
+		const wrapper = document.querySelector(".eXide-browse-resources");
 		wrapper.innerHTML = "";
 
 		// Filter input
@@ -185,7 +185,7 @@ eXide.browse.ResourceBrowser = (function () {
 		this.table = document.createElement("table");
 		this.table.className = "browse-table";
 
-		var thead = document.createElement("thead");
+		const thead = document.createElement("thead");
 		thead.innerHTML = "<tr>" +
 			"<th class=\"col-name\">Name</th>" +
 			"<th class=\"col-permissions\">Permissions</th>" +
@@ -197,18 +197,18 @@ eXide.browse.ResourceBrowser = (function () {
 
 		// Column resize handles
 		thead.querySelectorAll("th").forEach(function(th) {
-			var handle = document.createElement("div");
+			const handle = document.createElement("div");
 			handle.className = "col-resize-handle";
 			th.appendChild(handle);
 			th.style.position = "relative";
-			var startX, startWidth;
+			let startX, startWidth;
 			handle.addEventListener("mousedown", function(e) {
 				e.preventDefault();
 				e.stopPropagation();
 				startX = e.clientX;
 				startWidth = th.offsetWidth;
 				function onMove(e) {
-					var newWidth = Math.max(40, startWidth + e.clientX - startX);
+					const newWidth = Math.max(40, startWidth + e.clientX - startX);
 					th.style.width = newWidth + "px";
 				}
 				function onUp() {
@@ -235,8 +235,8 @@ eXide.browse.ResourceBrowser = (function () {
 		this._setupContextMenu();
 		this._setupDragDrop();
 
-        var propsContentEl = document.getElementById("resource-properties-content");
-        var propsDialogEl = document.getElementById("resource-properties-dialog");
+        const propsContentEl = document.getElementById("resource-properties-content");
+        const propsDialogEl = document.getElementById("resource-properties-dialog");
         this.propertiesDialog = eXide.util.DialogManager.create(propsDialogEl, {
             title: "Properties",
             modal: true,
@@ -245,27 +245,27 @@ eXide.browse.ResourceBrowser = (function () {
             buttons: {
                 "Cancel": function () { this.close(); },
                 "Apply": function() {
-                    var dlg = this;
-                    var selected = self.getSelectedRows();
-                    if (selected.length == 0) {
+                    const dlg = this;
+                    const selected = self.getSelectedRows();
+                    if (selected.length === 0) {
                         return;
                     }
-                    var resources = [];
-                    for (var i = 0; i < selected.length; i++) {
+                    const resources = [];
+                    for (let i = 0; i < selected.length; i++) {
                         resources.push(selected[i].key);
                     }
-                    var form = propsDialogEl.querySelector("form");
-                    var body = {};
-                    var ownerEl = form.querySelector("select[name='owner']");
+                    const form = propsDialogEl.querySelector("form");
+                    const body = {};
+                    const ownerEl = form.querySelector("select[name='owner']");
                     if (ownerEl) body.owner = ownerEl.value;
-                    var groupEl = form.querySelector("select[name='group']");
+                    const groupEl = form.querySelector("select[name='group']");
                     if (groupEl) body.group = groupEl.value;
-                    var mimeEl = form.querySelector("[name='mime']");
+                    const mimeEl = form.querySelector("[name='mime']");
                     if (mimeEl) body.mime = mimeEl.value;
                     // Build permissions mode from checkboxes
                     body.mode = permissionsFromForm(form);
 
-                    var promises = resources.map(function(r) {
+                    const promises = resources.map(function(r) {
                         return fetch(apiPath(r), {
                             method: "PATCH",
                             headers: { "Content-Type": "application/json" },
@@ -285,7 +285,7 @@ eXide.browse.ResourceBrowser = (function () {
     eXide.util.oop.inherit(Constr, eXide.events.Sender);
 
 	Constr.prototype._setupIntersectionObserver = function() {
-		var self = this;
+		const self = this;
 		this._observer = new IntersectionObserver(function(entries) {
 			if (entries[0].isIntersecting && !self.loading && self.data.length < self.totalRows) {
 				self._loadBatch(self.data.length);
@@ -295,11 +295,11 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
 	Constr.prototype._setupClickHandlers = function() {
-		var self = this;
+		const self = this;
 		this.tbody.addEventListener("click", function(e) {
-			var tr = e.target.closest("tr");
+			const tr = e.target.closest("tr");
 			if (!tr || !tr.dataset.index) return;
-			var idx = parseInt(tr.dataset.index, 10);
+			const idx = parseInt(tr.dataset.index, 10);
 			if (self._rowSelection === "multiple" && (e.ctrlKey || e.metaKey)) {
 				if (self._selectedIndices.has(idx)) {
 					self._selectedIndices.delete(idx);
@@ -307,10 +307,10 @@ eXide.browse.ResourceBrowser = (function () {
 					self._selectedIndices.add(idx);
 				}
 			} else if (self._rowSelection === "multiple" && e.shiftKey && self._focusedRow >= 0) {
-				var start = Math.min(self._focusedRow, idx);
-				var end = Math.max(self._focusedRow, idx);
+				const start = Math.min(self._focusedRow, idx);
+				const end = Math.max(self._focusedRow, idx);
 				self._selectedIndices.clear();
-				for (var i = start; i <= end; i++) {
+				for (let i = start; i <= end; i++) {
 					self._selectedIndices.add(i);
 				}
 			} else {
@@ -324,14 +324,14 @@ eXide.browse.ResourceBrowser = (function () {
 		});
 
 		this.tbody.addEventListener("dblclick", function(e) {
-			var tr = e.target.closest("tr");
+			const tr = e.target.closest("tr");
 			if (!tr || !tr.dataset.index) return;
-			var idx = parseInt(tr.dataset.index, 10);
-			var item = self.data[idx];
+			const idx = parseInt(tr.dataset.index, 10);
+			const item = self.data[idx];
 			if (!item) return;
 			if (item.isCollection) {
-				var coll;
-				if (item.name == "..")
+				let coll;
+				if (item.name === "..")
 					coll = self._collection.replace(/\/[^\/]+$/, "");
 				else coll = item.key;
 				self.$triggerEvent("activateCollection", [coll, item.writable]);
@@ -347,8 +347,8 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
 	Constr.prototype._setupContextMenu = function() {
-		var self = this;
-		var ctxMenu = document.getElementById("browse-context-menu");
+		const self = this;
+		const ctxMenu = document.getElementById("browse-context-menu");
 		if (!ctxMenu) return;
 
 		this._browseCtxMenu = ctxMenu;
@@ -357,10 +357,10 @@ eXide.browse.ResourceBrowser = (function () {
 		this.tbody.addEventListener("contextmenu", function(e) {
 			e.preventDefault();
 			e.stopPropagation();
-			var tr = e.target.closest("tr");
+			const tr = e.target.closest("tr");
 			if (!tr || !tr.dataset.index) return;
-			var idx = parseInt(tr.dataset.index, 10);
-			var item = self.data[idx];
+			const idx = parseInt(tr.dataset.index, 10);
+			const item = self.data[idx];
 			if (!item) return;
 
 			self._browseCtxItem = item;
@@ -373,8 +373,8 @@ eXide.browse.ResourceBrowser = (function () {
 			self._fireSelectionChanged();
 
 			// Enable/disable items
-			var isCollection = item.isCollection;
-			var isParent = item.name === "..";
+			const isCollection = item.isCollection;
+			const isParent = item.name === "..";
 			ctxMenu.querySelector('[data-action="open"]').classList.toggle("disabled", !isCollection);
 			ctxMenu.querySelector('[data-action="create"]').classList.toggle("disabled", !isCollection);
 			ctxMenu.querySelector('[data-action="upload"]').classList.toggle("disabled", !isCollection);
@@ -384,28 +384,28 @@ eXide.browse.ResourceBrowser = (function () {
 			ctxMenu.querySelector('[data-action="paste"]').classList.toggle("disabled", self.clipboard.length === 0);
 
 			// Position
-			var x = e.clientX;
-			var y = e.clientY;
+			const x = e.clientX;
+			const y = e.clientY;
 			ctxMenu.style.left = x + "px";
 			ctxMenu.style.top = y + "px";
 			ctxMenu.classList.add("visible");
 
-			var rect = ctxMenu.getBoundingClientRect();
+			const rect = ctxMenu.getBoundingClientRect();
 			if (rect.right > window.innerWidth) ctxMenu.style.left = (x - rect.width) + "px";
 			if (rect.bottom > window.innerHeight) ctxMenu.style.top = (y - rect.height) + "px";
 		});
 
 		ctxMenu.addEventListener("click", function(e) {
-			var menuItem = e.target.closest(".ctx-item");
+			const menuItem = e.target.closest(".ctx-item");
 			if (!menuItem || menuItem.classList.contains("disabled")) return;
-			var action = menuItem.dataset.action;
+			const action = menuItem.dataset.action;
 			ctxMenu.classList.remove("visible");
-			var item = self._browseCtxItem;
+			const item = self._browseCtxItem;
 			if (!item) return;
 			switch (action) {
 				case "open":
 					if (item.isCollection) {
-						var coll = item.name === ".." ? self._collection.replace(/\/[^\/]+$/, "") : item.key;
+						const coll = item.name === ".." ? self._collection.replace(/\/[^\/]+$/, "") : item.key;
 						self.$triggerEvent("activateCollection", [coll, item.writable]);
 						self.update(coll, false);
 					}
@@ -434,7 +434,7 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
 	Constr.prototype._setupDragDrop = function() {
-		var self = this;
+		const self = this;
 
 		this.scrollContainer.addEventListener("dragover", function(e) {
 			e.preventDefault();
@@ -443,10 +443,10 @@ eXide.browse.ResourceBrowser = (function () {
 			self.tbody.querySelectorAll("tr.drag-highlight").forEach(function(el) {
 				el.classList.remove("drag-highlight");
 			});
-			var tr = e.target.closest("tr");
+			const tr = e.target.closest("tr");
 			if (tr && tr.dataset.index) {
-				var idx = parseInt(tr.dataset.index, 10);
-				var item = self.data[idx];
+				const idx = parseInt(tr.dataset.index, 10);
+				const item = self.data[idx];
 				if (item && item.isCollection && item.name !== "..") {
 					tr.classList.add("drag-highlight");
 				}
@@ -470,23 +470,23 @@ eXide.browse.ResourceBrowser = (function () {
 			});
 
 			if (!eXide.app.$checkLogin()) return;
-			var files = Array.from(e.dataTransfer.files);
+			const files = Array.from(e.dataTransfer.files);
 			if (files.length === 0) return;
 
 			// Determine target collection
-			var targetKey = self._collection;
-			var tr = e.target.closest("tr");
+			let targetKey = self._collection;
+			const tr = e.target.closest("tr");
 			if (tr && tr.dataset.index) {
-				var idx = parseInt(tr.dataset.index, 10);
-				var item = self.data[idx];
+				const idx = parseInt(tr.dataset.index, 10);
+				const item = self.data[idx];
 				if (item && item.isCollection && item.name !== "..") {
 					targetKey = item.key;
 				}
 			}
 
 			// Upload files
-			var promises = files.map(function(file) {
-				var filePath = targetKey + "/" + (file.webkitRelativePath || file.name);
+			const promises = files.map(function(file) {
+				const filePath = targetKey + "/" + (file.webkitRelativePath || file.name);
 				return fetch(apiPath(filePath), {
 					method: "PUT",
 					headers: { "Content-Type": file.type || "application/octet-stream" },
@@ -501,7 +501,7 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
 	Constr.prototype._setupKeyboardNav = function() {
-		var self = this;
+		const self = this;
 		this.scrollContainer.addEventListener("keydown", function(e) {
 			if (self.inEditor) return;
 
@@ -547,35 +547,37 @@ eXide.browse.ResourceBrowser = (function () {
 						self._fireSelectionChanged();
 					}
 					break;
-				case 13: // enter
-					e.stopPropagation(); e.preventDefault();
-					var item = self.data[self._focusedRow];
-					if (!item) break;
-					if (item.isCollection) {
-						var coll;
-						if (item.name === "..")
-							coll = self._collection.replace(/\/[^\/]+$/, "");
-						else
-							coll = item.key;
-						self.$triggerEvent("activateCollection", [coll, item.writable]);
-						self.update(coll, false);
-					} else {
-						eXide.app.openSelectedDocument({
-							name: item.name,
-							path: item.key,
-							writable: item.writable,
-						});
-					}
-					break;
-				case 8: // backspace
-					e.stopPropagation(); e.preventDefault();
-					var p = self._collection.lastIndexOf("/");
-					if (p > 0 && self._collection != "/db") {
-						var parent = self._collection.substring(0, p);
-						self.$triggerEvent("activateCollection", [parent, true]);
-						self.update(parent, false);
-					}
-					break;
+				case 13: { // enter
+						e.stopPropagation(); e.preventDefault();
+						const item = self.data[self._focusedRow];
+						if (!item) break;
+						if (item.isCollection) {
+							let coll;
+							if (item.name === "..")
+								coll = self._collection.replace(/\/[^\/]+$/, "");
+							else
+								coll = item.key;
+							self.$triggerEvent("activateCollection", [coll, item.writable]);
+							self.update(coll, false);
+						} else {
+							eXide.app.openSelectedDocument({
+								name: item.name,
+								path: item.key,
+								writable: item.writable,
+							});
+						}
+						break;
+				}
+				case 8: { // backspace
+						e.stopPropagation(); e.preventDefault();
+						const p = self._collection.lastIndexOf("/");
+						if (p > 0 && self._collection !== "/db") {
+							const parent = self._collection.substring(0, p);
+							self.$triggerEvent("activateCollection", [parent, true]);
+							self.update(parent, false);
+						}
+						break;
+				}
 				case 36: // home
 					e.stopPropagation(); e.preventDefault();
 					self.goto(0);
@@ -595,29 +597,30 @@ eXide.browse.ResourceBrowser = (function () {
 				case 33: // page up
 				case 34: // page down
 					break;
-				default:
-					e.stopPropagation(); e.preventDefault();
-					self.search += e.key;
-					if (self.searchTimeout) {
-						clearTimeout(self.searchTimeout);
-						self.searchTimeout = undefined;
-					}
-					var regex = new RegExp("^" + self.search, "i");
-					for (var i = self._focusedRow; i < self.data.length; i++) {
-						if (self.data[i] && regex.test(self.data[i].name)) {
-							self._focusedRow = i;
-							self._selectedIndices.clear();
-							self._selectedIndices.add(i);
-							self._updateSelectionDisplay();
-							self._scrollRowIntoView(i);
-							self._fireSelectionChanged();
-							break;
+				default: {
+						e.stopPropagation(); e.preventDefault();
+						self.search += e.key;
+						if (self.searchTimeout) {
+							clearTimeout(self.searchTimeout);
+							self.searchTimeout = undefined;
 						}
-					}
-					self.searchTimeout = setTimeout(function() {
-						self.search = "";
-					}, 2000);
-					break;
+						const regex = new RegExp("^" + self.search, "i");
+						for (let i = self._focusedRow; i < self.data.length; i++) {
+							if (self.data[i] && regex.test(self.data[i].name)) {
+								self._focusedRow = i;
+								self._selectedIndices.clear();
+								self._selectedIndices.add(i);
+								self._updateSelectionDisplay();
+								self._scrollRowIntoView(i);
+								self._fireSelectionChanged();
+								break;
+							}
+						}
+						self.searchTimeout = setTimeout(function() {
+							self.search = "";
+						}, 2000);
+						break;
+				}
 			}
 		});
 	};
@@ -632,11 +635,11 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
 	Constr.prototype._loadBatch = function(startRow) {
-		var self = this;
+		const self = this;
 		if (this.loading) return;
 		this.loading = true;
 
-		var params = new URLSearchParams();
+		const params = new URLSearchParams();
 		params.set("start", startRow + 1);
 		params.set("count", BATCH_SIZE);
 		if (this._filter) {
@@ -656,7 +659,7 @@ eXide.browse.ResourceBrowser = (function () {
 				if (!json || !json.items) return;
 
 				// Add parent ".." entry at position 0 when at start
-				var items = json.items.map(mapItem);
+				const items = json.items.map(mapItem);
 				if (startRow === 0 && self._collection !== "/db") {
 					items.unshift({ name: "..", key: "", isCollection: true });
 					self.totalRows = json.total + 1;
@@ -664,8 +667,8 @@ eXide.browse.ResourceBrowser = (function () {
 					self.totalRows = json.total + (self._collection !== "/db" ? 1 : 0);
 				}
 
-				for (var i = 0; i < items.length; i++) {
-					var rowIdx = startRow + i;
+				for (let i = 0; i < items.length; i++) {
+					const rowIdx = startRow + i;
 					self.data[rowIdx] = items[i];
 					self._renderRow(items[i], rowIdx);
 				}
@@ -686,33 +689,33 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
 	Constr.prototype._renderRow = function(item, index) {
-		var tr = document.createElement("tr");
+		const tr = document.createElement("tr");
 		tr.dataset.index = index;
 		tr.dataset.key = item.key || "";
 
-		var tdName = document.createElement("td");
+		const tdName = document.createElement("td");
 		tdName.className = "col-name";
 		if (item.isCollection) tdName.classList.add("collection");
-		var icon = document.createElement("i");
+		const icon = document.createElement("i");
 		icon.className = item.isCollection
 			? "fa fa-folder browse-icon"
 			: "fa " + fileIcon(item) + " browse-icon";
 		tdName.appendChild(icon);
 		tdName.appendChild(document.createTextNode(item.name));
 
-		var tdPerm = document.createElement("td");
+		const tdPerm = document.createElement("td");
 		tdPerm.className = "col-permissions";
 		tdPerm.textContent = item.permissions || "";
 
-		var tdOwner = document.createElement("td");
+		const tdOwner = document.createElement("td");
 		tdOwner.className = "col-owner";
 		tdOwner.textContent = item.owner || "";
 
-		var tdGroup = document.createElement("td");
+		const tdGroup = document.createElement("td");
 		tdGroup.className = "col-group";
 		tdGroup.textContent = item.group || "";
 
-		var tdMod = document.createElement("td");
+		const tdMod = document.createElement("td");
 		tdMod.className = "col-lastmod";
 		tdMod.textContent = item["last-modified"] || "";
 
@@ -725,9 +728,9 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
 	Constr.prototype._updateSelectionDisplay = function() {
-		var rows = this.tbody.querySelectorAll("tr");
-		for (var i = 0; i < rows.length; i++) {
-			var idx = parseInt(rows[i].dataset.index, 10);
+		const rows = this.tbody.querySelectorAll("tr");
+		for (let i = 0; i < rows.length; i++) {
+			const idx = parseInt(rows[i].dataset.index, 10);
 			if (this._selectedIndices.has(idx)) {
 				rows[i].classList.add("selected");
 				rows[i].setAttribute("aria-selected", "true");
@@ -744,28 +747,28 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
 	Constr.prototype._scrollRowIntoView = function(index) {
-		var row = this.tbody.querySelector("tr[data-index=\"" + index + "\"]");
+		const row = this.tbody.querySelector("tr[data-index=\"" + index + "\"]");
 		if (row) {
 			row.scrollIntoView({ block: "nearest" });
 		}
 	};
 
 	Constr.prototype._fireSelectionChanged = function() {
-		var rows = this.getSelectedRows();
-		var enableWrite = true;
-		for (var i = 0; i < rows.length; i++) {
+		const rows = this.getSelectedRows();
+		let enableWrite = true;
+		for (let i = 0; i < rows.length; i++) {
 			if (!rows[i].writable) {
 				enableWrite = false;
 				break;
 			}
 		}
-		var doc = (rows.length === 1 && !rows[0].isCollection) ? rows[0] : null;
+		const doc = (rows.length === 1 && !rows[0].isCollection) ? rows[0] : null;
 		this.$triggerEvent("activate", [doc, enableWrite]);
 	};
 
 	Constr.prototype.getSelectedRows = function() {
-		var result = [];
-		var self = this;
+		const result = [];
+		const self = this;
 		this._selectedIndices.forEach(function(idx) {
 			if (self.data[idx]) result.push(self.data[idx]);
 		});
@@ -782,17 +785,17 @@ eXide.browse.ResourceBrowser = (function () {
 
     Constr.prototype.updateBreadcrumbs = function() {
         this.breadcrumbs.innerHTML = "";
-        var self = this;
-        var parts = this._collection.split("/");
+        const self = this;
+        let parts = this._collection.split("/");
 		parts = parts.map(part => decodeURI(part));
-        var span = document.createElement("span");
+        const span = document.createElement("span");
         span.appendChild(document.createTextNode("/"));
-        var path = "/";
-        for (var i = 0; i < parts.length; i++) {
-            var part = parts[i];
+        let path = "/";
+        for (let i = 0; i < parts.length; i++) {
+            const part = parts[i];
             if (part && part.length > 0) {
                 path += part + "/";
-                var a = document.createElement("a");
+                const a = document.createElement("a");
                 a.href = "#";
                 a.textContent = part;
                 a.dataset.collection = path;
@@ -832,25 +835,25 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
     Constr.prototype.getSelected = function() {
-		var rows = this.getSelectedRows();
+		const rows = this.getSelectedRows();
 		return rows.length > 0 ? rows : null;
     };
 
 	Constr.prototype.startEditing = function() {
 		if (this._focusedRow < 0) return;
-		var item = this.data[this._focusedRow];
+		const item = this.data[this._focusedRow];
 		if (!item) return;
 
-		var self = this;
+		const self = this;
 		this.inEditor = true;
-		var row = this.tbody.querySelector("tr[data-index=\"" + this._focusedRow + "\"]");
+		const row = this.tbody.querySelector("tr[data-index=\"" + this._focusedRow + "\"]");
 		if (!row) return;
-		var cell = row.querySelector(".col-name");
+		const cell = row.querySelector(".col-name");
 		if (!cell) return;
 
-		var oldValue = item.name;
-		var finished = false;
-		var input = document.createElement("input");
+		const oldValue = item.name;
+		let finished = false;
+		const input = document.createElement("input");
 		input.type = "text";
 		input.className = "browse-inline-edit";
 		input.value = oldValue;
@@ -862,11 +865,11 @@ eXide.browse.ResourceBrowser = (function () {
 		function finish(commit) {
 			if (finished) return;
 			finished = true;
-			var newValue = input.value;
+			const newValue = input.value;
 			cell.textContent = commit && newValue ? newValue : oldValue;
 			setTimeout(function() { self.inEditor = false; }, 200);
 			if (commit && newValue && newValue !== oldValue) {
-				var renamePath = self._collection + "/" + oldValue;
+				const renamePath = self._collection + "/" + oldValue;
 				fetch(apiPath(renamePath), {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
@@ -892,14 +895,14 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
     Constr.prototype.createCollection = function () {
-    	var self = this;
+    	const self = this;
 		if (!eXide.app.$checkLogin())
 			return;
 		eXide.util.Dialog.input("Create Collection",
 			"<label for=\"collection\">Name: </label>" +
 			"<input type=\"text\" name=\"collection\" id=\"eXide-browse-collection-name\"/>",
 			function () {
-			    var spinner = document.getElementById("eXide-browse-spinner");
+			    const spinner = document.getElementById("eXide-browse-spinner");
 			    spinner.style.display = "";
 				fetch(apiPath(self._collection), {
 					method: "POST",
@@ -923,10 +926,10 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
 	Constr.prototype.deleteCollection = function () {
-		var self = this;
+		const self = this;
 		eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete collection " + self.selected + "?",
 			function () {
-			    var spinner = document.getElementById("eXide-browse-spinner");
+			    const spinner = document.getElementById("eXide-browse-spinner");
 			    spinner.style.display = "";
 				fetch(apiPath(self._collection), { method: "DELETE" })
 				.then(function(r) { return r.json(); })
@@ -942,28 +945,28 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
 	Constr.prototype.deleteResource = function(row) {
-		var selected = row ? [row] : this.getSelectedRows();
-		if (selected.length == 0) {
+		const selected = row ? [row] : this.getSelectedRows();
+		if (selected.length === 0) {
 			return;
 		}
-		var resources = [];
-		for (var i = 0; i < selected.length; i++) {
+		const resources = [];
+		for (let i = 0; i < selected.length; i++) {
 			resources.push(selected[i].key);
 		}
 		console.log('resources to delete: %o', selected);
-		var self = this;
+		const self = this;
 		eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete the selected resources?",
 				function () {
-				    var spinner = document.getElementById("eXide-browse-spinner");
+				    const spinner = document.getElementById("eXide-browse-spinner");
 				    spinner.style.display = "";
-					var promises = resources.map(function(r) {
+					const promises = resources.map(function(r) {
 						return fetch(apiPath(r), { method: "DELETE" })
 							.then(function(resp) { return resp.json(); });
 					});
 					Promise.all(promises).then(function (results) {
 						spinner.style.display = "none";
 						self.reload();
-						var err = results.find(function(d) { return d.error; });
+						const err = results.find(function(d) { return d.error; });
 						if (err) {
 							eXide.util.Dialog.warning("Delete Resource Error", err.error);
 						}
@@ -974,23 +977,23 @@ eXide.browse.ResourceBrowser = (function () {
     Constr.prototype.properties = function() {
 		if (!eXide.app.$checkLogin())
 			return;
-		var selected = this.getSelectedRows();
-    	if (selected.length == 0) {
+		const selected = this.getSelectedRows();
+    	if (selected.length === 0) {
 			return;
 		}
-		var resources = [];
-		for (var i = 0; i < selected.length; i++) {
-            if (selected[i].name != "..") {
+		const resources = [];
+		for (let i = 0; i < selected.length; i++) {
+            if (selected[i].name !== "..") {
 			    resources.push(selected[i].key);
             }
 		}
         if (resources.length > 0) {
-            var contentEl = document.getElementById("resource-properties-content");
-            var propsPromise = fetch(apiPath(resources[0])).then(function(r) { return r.json(); });
-            var accountsPromise = fetch("api/admin/accounts").then(function(r) { return r.ok ? r.json() : { users: [], groups: [] }; }).catch(function() { return { users: [], groups: [] }; });
+            const contentEl = document.getElementById("resource-properties-content");
+            const propsPromise = fetch(apiPath(resources[0])).then(function(r) { return r.json(); });
+            const accountsPromise = fetch("api/admin/accounts").then(function(r) { return r.ok ? r.json() : { users: [], groups: [] }; }).catch(function() { return { users: [], groups: [] }; });
             Promise.all([propsPromise, accountsPromise]).then(function(results) {
-                var data = results[0];
-                var accounts = results[1];
+                const data = results[0];
+                const accounts = results[1];
                 contentEl.innerHTML = buildPropertiesForm(data, accounts);
             });
             this.propertiesDialog.open();
@@ -1008,19 +1011,19 @@ eXide.browse.ResourceBrowser = (function () {
     };
 
     Constr.prototype.copy0 = function() {
-		var selected = this.getSelectedRows();
-		if (selected.length == 0) {
+		const selected = this.getSelectedRows();
+		if (selected.length === 0) {
 			return;
 		}
         this.clipboard = [];
-		for (var i = 0; i < selected.length; i++) {
+		for (let i = 0; i < selected.length; i++) {
             this.clipboard.push(selected[i].key);
 		}
         console.log("Clipboard: %o", this.clipboard);
     };
 
     Constr.prototype.paste = function() {
-        var self = this;
+        const self = this;
         console.log("Pasting resources %o to %s in mode %s", this.clipboard, this._collection, this.clipboardMode);
         fetch(apiPath(this._collection), {
             method: "POST",
@@ -1071,7 +1074,7 @@ eXide.namespace("eXide.browse.Upload");
 eXide.browse.Upload = (function () {
 
 	function isDirUploadSupported() {
-	    var tmpInput = document.createElement("input");
+	    const tmpInput = document.createElement("input");
 	    return ("webkitdirectory" in tmpInput
 	        || "mozdirectory" in tmpInput
 	        || "odirectory" in tmpInput
@@ -1081,32 +1084,32 @@ eXide.browse.Upload = (function () {
 
 	function uploadFiles(fileInput, collectionInput, deployInput, filesTable, thead, progressAll, spinner) {
 	    fileInput.addEventListener("change", function() {
-	        var files = Array.from(fileInput.files);
+	        const files = Array.from(fileInput.files);
 	        if (files.length === 0) return;
 
 	        thead.style.display = "";
 	        spinner.style.display = "";
 
-	        var totalSize = 0;
-	        var loadedSize = 0;
+	        let totalSize = 0;
+	        let loadedSize = 0;
 	        files.forEach(function(f) { totalSize += f.size; });
 
-	        var rows = filesTable.querySelectorAll("tr");
-	        var count = rows.length;
+	        const rows = filesTable.querySelectorAll("tr");
+	        let count = rows.length;
 
-	        var promises = [];
+	        const promises = [];
 	        files.forEach(function(file) {
 	            if (file.name === ".") return;
 
-	            var path = file.name;
+	            let path = file.name;
 	            if (file.webkitRelativePath) {
 	                path = file.webkitRelativePath;
 	            }
 
-	            var node = null;
+	            let node = null;
 	            if (count === 200) {
-	                var tr = document.createElement("tr");
-	                var td = document.createElement("td");
+	                const tr = document.createElement("tr");
+	                const td = document.createElement("td");
 	                td.colSpan = 3;
 	                td.textContent = "Only 200 files are shown. More follow...";
 	                tr.appendChild(td);
@@ -1115,13 +1118,13 @@ eXide.browse.Upload = (function () {
 	            } else if (count < 200) {
 	                node = document.createElement("tr");
 	                node.dataset.name = path;
-	                var tdName = document.createElement("td");
+	                const tdName = document.createElement("td");
 	                tdName.textContent = file.name;
-	                var tdSize = document.createElement("td");
+	                const tdSize = document.createElement("td");
 	                tdSize.textContent = file.size;
-	                var tdProg = document.createElement("td");
+	                const tdProg = document.createElement("td");
 	                tdProg.className = "file_upload_progress";
-	                var progBar = document.createElement("div");
+	                const progBar = document.createElement("div");
 	                progBar.className = "ui-progressbar-value";
 	                progBar.style.width = "0%";
 	                tdProg.appendChild(progBar);
@@ -1132,24 +1135,24 @@ eXide.browse.Upload = (function () {
 	                count++;
 	            }
 
-	            var uploadPath = collectionInput.value + "/" + path;
+	            const uploadPath = collectionInput.value + "/" + path;
 
-	            var p = new Promise(function(resolve, reject) {
-	                var xhr = new XMLHttpRequest();
+	            const p = new Promise(function(resolve, reject) {
+	                const xhr = new XMLHttpRequest();
 	                xhr.open("PUT", apiPath(uploadPath));
 	                xhr.upload.addEventListener("progress", function(evt) {
 	                    if (evt.lengthComputable) {
-	                        var pct = Math.round(evt.loaded / evt.total * 100);
-	                        var row = filesTable.querySelector('tr[data-name="' + CSS.escape(path) + '"]');
+	                        const pct = Math.round(evt.loaded / evt.total * 100);
+	                        const row = filesTable.querySelector('tr[data-name="' + CSS.escape(path) + '"]');
 	                        if (row) {
-	                            var bar = row.querySelector(".ui-progressbar-value");
+	                            const bar = row.querySelector(".ui-progressbar-value");
 	                            if (bar) bar.style.width = pct + "%";
 	                        }
 	                    }
 	                });
 	                xhr.onload = function() {
 	                    loadedSize += file.size;
-	                    var overallPct = Math.round(loadedSize / totalSize * 100);
+	                    const overallPct = Math.round(loadedSize / totalSize * 100);
 	                    progressAll.style.width = overallPct + "%";
 	                    progressAll.textContent = overallPct + "%";
 	                    if (node) node.remove();
@@ -1174,7 +1177,7 @@ eXide.browse.Upload = (function () {
 	            progressAll.style.width = "0%";
 	            // If deploy checkbox is checked, install .xar files as packages
 	            if (deployInput.checked) {
-	                var xarFiles = files.filter(function(f) { return /\.xar$/i.test(f.name); });
+	                const xarFiles = files.filter(function(f) { return /\.xar$/i.test(f.name); });
 	                xarFiles.forEach(function(f) {
 	                    fetch("api/packages", {
 	                        method: "POST",
@@ -1210,40 +1213,40 @@ eXide.browse.Upload = (function () {
 	    });
 	}
 
-	Constr = function () {
-		var self = this;
+	const Constr = function () {
+		const self = this;
 		this.container = document.getElementById("upload-dialog");
 
 		this.events = {
 			"done": []
 		};
 
-		var progressAll = document.getElementById("progress-all");
+		const progressAll = document.getElementById("progress-all");
 		if (progressAll) {
 		    progressAll.textContent = "";
 		    progressAll.style.width = "0%";
 		}
 
-		var filesTable = document.getElementById("files");
-		var thead = this.container.querySelector("#file_upload_table thead");
-		var spinner = null; // no spinner in standalone dialog
-		var collectionInput = this.container.querySelector('input[name="collection"]');
-		var deployInput = this.container.querySelector('input[name="deploy"]');
+		const filesTable = document.getElementById("files");
+		const thead = this.container.querySelector("#file_upload_table thead");
+		const spinner = null; // no spinner in standalone dialog
+		const collectionInput = this.container.querySelector('input[name="collection"]');
+		const deployInput = this.container.querySelector('input[name="deploy"]');
 
-		var fileUploadInput = document.getElementById("file_upload");
+		const fileUploadInput = document.getElementById("file_upload");
 		if (fileUploadInput) {
 		    uploadFiles(fileUploadInput, collectionInput, deployInput, filesTable, thead || document.createElement("thead"), progressAll || document.createElement("div"), spinner);
-		    var dropzone = this.container.querySelector(".file_upload_drop");
+		    const dropzone = this.container.querySelector(".file_upload_drop");
 		    initDragDrop(dropzone, fileUploadInput);
 		}
 
 		if (isDirUploadSupported()) {
-		    var dirUploadInput = document.getElementById("dir_upload");
+		    const dirUploadInput = document.getElementById("dir_upload");
 		    if (dirUploadInput) {
 		        uploadFiles(dirUploadInput, collectionInput, deployInput, filesTable, thead || document.createElement("thead"), progressAll || document.createElement("div"), spinner);
 		    }
 		} else {
-		    var dirUpload = document.getElementById("dir_upload");
+		    const dirUpload = document.getElementById("dir_upload");
 		    if (dirUpload && dirUpload.parentNode) {
 		        dirUpload.parentNode.style.display = "none";
 		    }
@@ -1271,11 +1274,11 @@ eXide.browse.Upload = (function () {
 	};
 
 	Constr.prototype.update = function(collection) {
-        var filesTable = document.getElementById("files");
+        const filesTable = document.getElementById("files");
         if (filesTable) filesTable.innerHTML = "";
-        var thead = this.container.querySelector("#file_upload_table thead");
+        const thead = this.container.querySelector("#file_upload_table thead");
         if (thead) thead.style.display = "none";
-		var collectionInput = this.container.querySelector('input[name="collection"]');
+		const collectionInput = this.container.querySelector('input[name="collection"]');
 		if (collectionInput) collectionInput.value = collection;
 	};
 
@@ -1291,24 +1294,24 @@ eXide.namespace("eXide.browse.Browser");
 eXide.browse.Browser = (function () {
 
     function createButton(toolbar, title, id, index, imgPath) {
-        var button = document.createElement("button");
+        const button = document.createElement("button");
     	button.title = title;
 		button.id = "eXide-browse-toolbar-" + id;
 		button.tabindex = index;
-		var img = document.createElement("span");
+		const img = document.createElement("span");
 		img.className = "fa fa-lg fa-" + imgPath;
 		button.appendChild(img);
 		toolbar.appendChild(button);
         return button;
     }
 
-	Constr = function (container) {
-		var self = this;
+	const Constr = function (container) {
+		const self = this;
         this.mode = "open";
 
-		var toolbar = container.querySelector(".eXide-browse-toolbar");
+		const toolbar = container.querySelector(".eXide-browse-toolbar");
 
-		var button = createButton(toolbar, "Reload", "reload", 1, "refresh");
+		let button = createButton(toolbar, "Reload", "reload", 1, "refresh");
 		button.addEventListener("click", function (ev) {
             self.resources.reload(true);
 		});
@@ -1345,9 +1348,9 @@ eXide.browse.Browser = (function () {
 		button = createButton(toolbar, "Open Selected", "open", 6, "folder-open-o");
 		button.addEventListener("click", function (ev) {
 			ev.preventDefault();
-			var rows = self.resources.getSelectedRows();
+			const rows = self.resources.getSelectedRows();
 			if (rows.length === 1 && rows[0].isCollection) {
-				var coll = rows[0].name === ".." ?
+				const coll = rows[0].name === ".." ?
 					self.resources._collection.replace(/\/[^\/]+$/, "") :
 					rows[0].key;
 				self.resources.update(coll, false);
@@ -1396,7 +1399,7 @@ eXide.browse.Browser = (function () {
         	ev.preventDefault();
 			self.resources.paste();
 		});
-		var spinner = document.getElementById("eXide-browse-spinner");
+		const spinner = document.getElementById("eXide-browse-spinner");
 		if (spinner) spinner.style.display = "none";
 	};
 
@@ -1413,8 +1416,8 @@ eXide.browse.Browser = (function () {
 			this.container.querySelectorAll(".eXide-browse-toolbar button").forEach(function(btn) {
 				btn.style.display = "none";
 			});
-			for (var i = 0; i < buttons.length; i++) {
-				var btn = document.getElementById("eXide-browse-toolbar-" + buttons[i]);
+			for (let i = 0; i < buttons.length; i++) {
+				const btn = document.getElementById("eXide-browse-toolbar-" + buttons[i]);
 				if (btn) btn.style.display = "";
 			}
 		}
@@ -1423,7 +1426,7 @@ eXide.browse.Browser = (function () {
         }
         this.resources.setMode(mode);
         this.resources.reload(true);
-		var browseForm = this.container.querySelector(".eXide-browse-form");
+		const browseForm = this.container.querySelector(".eXide-browse-form");
 		if (this.mode === "save") {
 			browseForm.style.display = "";
 			browseForm.focus();
@@ -1443,8 +1446,8 @@ eXide.browse.Browser = (function () {
     };
 
 	Constr.prototype.getSelection = function () {
-		var name = this.selection.value;
-		if (name == null || name == '')
+		const name = this.selection.value;
+		if (name == null || name === '')
 			return null;
 		return {
 			name: name,
@@ -1463,7 +1466,7 @@ eXide.browse.Browser = (function () {
 		} else {
 			this.selection.value = "";
 		}
-		if (this.mode != "open" && writable) {
+		if (this.mode !== "open" && writable) {
 			this.btnRenameResource.style.display = "";
 			this.btnDeleteResource.style.display = "";
             this.btnProperties.style.display = "";

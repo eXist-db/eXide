@@ -25,11 +25,11 @@ eXide.edit.XQueryUtils = (function () {
     
     return {
         findNode: function(ast, pos) {
-            var p = ast.pos;
+            const p = ast.pos;
             if(eXide.edit.XQueryUtils.inRange(p, pos, false) === true) {
-                for(var i in ast.children) {
-                    var child = ast.children[i];
-                    var n = eXide.edit.XQueryUtils.findNode(child, pos);
+                for(const i in ast.children) {
+                    const child = ast.children[i];
+                    const n = eXide.edit.XQueryUtils.findNode(child, pos);
                     if(n !== null)
                     return n;
                 }
@@ -40,11 +40,11 @@ eXide.edit.XQueryUtils = (function () {
         },
     
         findNodeForRange: function(ast, start, end) {
-            var p = ast.pos;
+            const p = ast.pos;
             if(eXide.edit.XQueryUtils.inRange(p, start) === true && eXide.edit.XQueryUtils.inRange(p, end) === true) {
-                for(var i in ast.children) {
-                    var child = ast.children[i];
-                    var n = eXide.edit.XQueryUtils.findNode(child, start, end);
+                for(const i in ast.children) {
+                    const child = ast.children[i];
+                    const n = eXide.edit.XQueryUtils.findNode(child, start, end);
                     if(n !== null) return n;
                 }
                 return ast;
@@ -57,9 +57,9 @@ eXide.edit.XQueryUtils = (function () {
             if(p && p.sl <= pos.line && pos.line <= p.el) {
                 if(p.sl < pos.line && pos.line < p.el)
                     return true;
-                else if(p.sl == pos.line && pos.line < p.el)
+                else if(p.sl === pos.line && pos.line < p.el)
                     return p.sc <= pos.col;
-                else if(p.sl == pos.line && p.el === pos.line)
+                else if(p.sl === pos.line && p.el === pos.line)
                     return p.sc <= pos.col && pos.col <= p.ec + (exclusive ? 1 : 0);
                 else if(p.sl < pos.line && p.el === pos.line)
                     return pos.col <= p.ec + (exclusive ? 1 : 0);
@@ -67,18 +67,18 @@ eXide.edit.XQueryUtils = (function () {
         },
         
         samePosition: function(pos1, pos2) {
-            return pos1.sl == pos2.sl &&
-                pos1.sc == pos2.sc &&
-                pos1.el == pos2.el &&
-                pos1.ec == pos2.ec;
+            return pos1.sl === pos2.sl &&
+                pos1.sc === pos2.sc &&
+                pos1.el === pos2.el &&
+                pos1.ec === pos2.ec;
         },
         
         findNext: function(node, type) {
-            var children = node.getParent.children;
-            for (var i = 0; i < children.length; i++) {
-                if (children[i] == node) {
-                    for (var j = i + 1; j < children.length; j++) {
-                        if (children[j].name == type) {
+            const children = node.getParent.children;
+            for (let i = 0; i < children.length; i++) {
+                if (children[i] === node) {
+                    for (let j = i + 1; j < children.length; j++) {
+                        if (children[j].name === type) {
                             return children[j];
                         }
                     }
@@ -88,9 +88,9 @@ eXide.edit.XQueryUtils = (function () {
         },
         
         findChild: function(node, type) {
-            var children = node.children;
-            for (var i = 0; i < children.length; i++) {
-                if (children[i].name == type) {
+            const children = node.children;
+            for (let i = 0; i < children.length; i++) {
+                if (children[i].name === type) {
                     return children[i];
                 }
             }
@@ -98,9 +98,9 @@ eXide.edit.XQueryUtils = (function () {
         },
         
         findSibling: function(node, type) {
-            var children = node.getParent.children;
-            for (var i = 0; i < children.length; i++) {
-                if (children[i].name == type) {
+            const children = node.getParent.children;
+            for (let i = 0; i < children.length; i++) {
+                if (children[i].name === type) {
                     return children[i];
                 }
             }
@@ -108,10 +108,10 @@ eXide.edit.XQueryUtils = (function () {
         },
         
         findSiblings: function(node, type) {
-            var children = node.getParent.children;
-            var siblings = [];
-            for (var i = 0; i < children.length; i++) {
-                if (children[i] != node && children[i].name == type) {
+            const children = node.getParent.children;
+            const siblings = [];
+            for (let i = 0; i < children.length; i++) {
+                if (children[i] !== node && children[i].name === type) {
                     siblings.push(children[i]);
                 }
             }
@@ -128,7 +128,7 @@ eXide.edit.XQueryUtils = (function () {
                 }
             } else {
                 while (node !== null) {
-                    if (node.name == type) {
+                    if (node.name === type) {
                         return node;
                     }
                     node = node.getParent;
@@ -138,7 +138,7 @@ eXide.edit.XQueryUtils = (function () {
         },
         
         findVariableContext: function(node, varName) {
-            var parent = node.getParent;
+            let parent = node.getParent;
             while (parent !== null) {
                 if ((parent.name === "FLWORExpr" || parent.name === "FunctionDecl") &&
                     eXide.edit.XQueryUtils.findVarDecl(parent, varName) !== null) {
@@ -153,11 +153,11 @@ eXide.edit.XQueryUtils = (function () {
         },
         
         getValue: function(node) {
-            var val = "";
+            let val = "";
             if (node.value) {
                 val = node.value;
             } else {
-                for (var i = 0; i < node.children.length; i++) {
+                for (let i = 0; i < node.children.length; i++) {
                     val += eXide.edit.XQueryUtils.getValue(node.children[i]);
                 }
             }
@@ -165,8 +165,8 @@ eXide.edit.XQueryUtils = (function () {
         },
         
         findVarDecl: function(node, name) {
-            var refs = new eXide.edit.VariableReferences(name, node).getReferences();
-            for (var i = 0; i < refs.length; i++) {
+            const refs = new eXide.edit.VariableReferences(name, node).getReferences();
+            for (let i = 0; i < refs.length; i++) {
                 if (refs[i].getParent && (refs[i].getParent.name === "LetBinding") || 
                     refs[i].getParent.name === "ForBinding" || refs[i].getParent.name === "Param") {
                     return refs[i];
@@ -176,7 +176,7 @@ eXide.edit.XQueryUtils = (function () {
         },
         
         getPath: function(node) {
-            var parts = [ node.name ];
+            const parts = [ node.name ];
             node = node.getParent;
             while (node) {
                 parts.push(node.name);
@@ -194,7 +194,7 @@ eXide.namespace("eXide.edit.VariableReferences");
  */
 eXide.edit.VariableReferences = (function () {
     
-    Constr = function(variable, ast) {
+    const Constr = function(variable, ast) {
         this.variable = variable;
         this.references = [];
         this.visit(ast);
@@ -203,14 +203,14 @@ eXide.edit.VariableReferences = (function () {
     eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
     
     Constr.prototype.VarName = function(node) {
-        var name = eXide.edit.XQueryUtils.getValue(node);
-        if (name == this.variable) {
+        const name = eXide.edit.XQueryUtils.getValue(node);
+        if (name === this.variable) {
             this.references.push(node);
         }
     };
     
     Constr.prototype.Param = function(node) {
-        for (var i = 0; i < node.children.length; i++) {
+        for (let i = 0; i < node.children.length; i++) {
             if (node.children[i].value === this.variable) {
                 this.references.push(node.children[i]);
             }
@@ -231,7 +231,7 @@ eXide.namespace("eXide.edit.InScopeVariables");
  */
 eXide.edit.InScopeVariables = (function () {
     
-    Constr = function(root, node) {
+    const Constr = function(root, node) {
         this.node = node;
         this.stack = [];
         this.variables = null;
@@ -241,25 +241,25 @@ eXide.edit.InScopeVariables = (function () {
     eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
     
     Constr.prototype.FLWORExpr = function(node) {
-        var pos = this.stack.length;
+        const pos = this.stack.length;
         this.visitChildren(node);
         this.stack.length = pos;
         return true;
     };
     
     Constr.prototype.VarName = function(node) {
-        if (node == this.node) {
+        if (node === this.node) {
             this.variables = this.deepCopy(this.stack);
             return true;
         }
         if (node.getParent.name === "ForBinding" || node.getParent.name === "LetBinding") {
-            var name = eXide.edit.XQueryUtils.getValue(node);
+            const name = eXide.edit.XQueryUtils.getValue(node);
             this.stack.push(name);
         }
     };
     
     Constr.prototype.VarRef = function(node) {
-        if (node == this.node) {
+        if (node === this.node) {
             this.variables = this.deepCopy(this.stack);
             return true;
         }
@@ -267,10 +267,10 @@ eXide.edit.InScopeVariables = (function () {
     };
     
     Constr.prototype.VarDecl = function(node) {
-        var self = this;
+        const self = this;
         this.visitChildren(node, {
             VarName: function(node) {
-                var value = eXide.edit.XQueryUtils.getValue(node);
+                const value = eXide.edit.XQueryUtils.getValue(node);
                 self.stack.push(value);
                 return true;
             },
@@ -282,14 +282,14 @@ eXide.edit.InScopeVariables = (function () {
     };
     
     Constr.prototype.FunctionDecl = function(node) {
-        var saved = this.deepCopy(this.stack);
+        const saved = this.deepCopy(this.stack);
         this.visitChildren(node);
         this.stack = saved;
         return true;
     };
     
     Constr.prototype.Param = function(node) {
-        var self = this;
+        const self = this;
         this.visitChildren(node, {
             EQName: function(node) {
                 self.stack.push(node.value);
@@ -299,8 +299,8 @@ eXide.edit.InScopeVariables = (function () {
     };
     
     Constr.prototype.deepCopy = function(arr) {
-        var copy = [];
-        for (var i = 0; i < arr.length; i++) {
+        const copy = [];
+        for (let i = 0; i < arr.length; i++) {
             copy.push(arr[i]);
         }
         return copy;
@@ -320,7 +320,7 @@ eXide.namespace("eXide.edit.FunctionParameters");
  */
 eXide.edit.FunctionParameters = (function () {
     
-    Constr = function(root) {
+    const Constr = function(root) {
         this.parameters = [];
         this.visit(root);
     };
@@ -328,7 +328,7 @@ eXide.edit.FunctionParameters = (function () {
     eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
     
     Constr.prototype.Argument = function(node) {
-        var name;
+        let name;
         this.visitChildren(node, {
             VarName: function(node) {
                 name = eXide.edit.XQueryUtils.getValue(node);
@@ -357,7 +357,7 @@ eXide.namespace("eXide.edit.FunctionCalls");
  */
 eXide.edit.FunctionCalls = (function () {
     
-    Constr = function(funcName, arity, ast) {
+    const Constr = function(funcName, arity, ast) {
         this.name = funcName;
         this.arity = arity;
         this.references = [];
@@ -371,7 +371,7 @@ eXide.edit.FunctionCalls = (function () {
         if (node.arity !== this.arity) {
             return false;
         }
-        var name = node.children[0].value;
+        const name = node.children[0].value;
         if (name === this.name) {
             this.references.push(node.children[0]);
         }
@@ -379,7 +379,7 @@ eXide.edit.FunctionCalls = (function () {
     };
     
     Constr.prototype.FunctionDecl = function(node) {
-        var self = this;
+        const self = this;
         if (parseInt(node.arity) === this.arity) {
             this.visitChildren(node, {
                 EQName: function(node) {
@@ -402,7 +402,7 @@ eXide.edit.FunctionCalls = (function () {
 
 eXide.edit.ModuleInfo = (function () {
     
-    Constr = function(ast) {
+    const Constr = function(ast) {
         this.modulePrefix = null;
         this.moduleNamespace = null;
         this.annotations = {};
@@ -418,7 +418,7 @@ eXide.edit.ModuleInfo = (function () {
     };
 
     Constr.prototype.hasTests = function() {
-        for (var anno in this.annotations) {
+        for (const anno in this.annotations) {
             if (/test\:/.test(anno)) {
                 return true;
             }
@@ -435,7 +435,7 @@ eXide.edit.ModuleInfo = (function () {
     };
 
     Constr.prototype.ModuleDecl = function(node) {
-        var self = this;
+        const self = this;
         this.visitChildren(node, {
             NCName: function(node) {
                 self.modulePrefix = eXide.edit.XQueryUtils.getValue(node);
@@ -451,7 +451,7 @@ eXide.edit.ModuleInfo = (function () {
     };
     
     Constr.prototype.Annotation = function(node) {
-        var self = this;
+        const self = this;
         this.visitChildren(node, {
             EQName: function(node) {
                 self.annotations[node.value] = 1;

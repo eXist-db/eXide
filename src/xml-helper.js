@@ -23,8 +23,8 @@ eXide.namespace("eXide.edit.XMLModeHelper");
  */
 eXide.edit.XMLModeHelper = (function () {
 
-    Constr = function(editor, menubar) {
-        var self = this;
+    const Constr = function(editor, menubar) {
+        const self = this;
         this.parent = editor;
         this.editor = this.parent.editor;
 
@@ -59,26 +59,26 @@ eXide.edit.XMLModeHelper = (function () {
         this.menu.style.display = "none";
     };
 
-    var ATTR_PRIORITY = { "xml:id": 0, "id": 1, "n": 2, "class": 3 };
+    const ATTR_PRIORITY = { "xml:id": 0, "id": 1, "n": 2, "class": 3 };
 
     function pickAttr(attrs) {
         if (attrs.length === 0) return null;
         if (attrs.length === 1) return attrs[0];
-        var best = attrs[0];
-        var bestRank = ATTR_PRIORITY[best.name] !== undefined ? ATTR_PRIORITY[best.name] : 99;
-        for (var i = 1; i < attrs.length; i++) {
-            var rank = ATTR_PRIORITY[attrs[i].name] !== undefined ? ATTR_PRIORITY[attrs[i].name] : 99;
+        let best = attrs[0];
+        let bestRank = ATTR_PRIORITY[best.name] !== undefined ? ATTR_PRIORITY[best.name] : 99;
+        for (let i = 1; i < attrs.length; i++) {
+            const rank = ATTR_PRIORITY[attrs[i].name] !== undefined ? ATTR_PRIORITY[attrs[i].name] : 99;
             if (rank < bestRank) { best = attrs[i]; bestRank = rank; }
         }
         return best;
     }
 
     Constr.prototype.createOutline = function(doc, onComplete) {
-        var state = this.editor.state;
-        var tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
-        var depth = 0;
-        var pathStack = [];    // track XPath steps with positional predicates
-        var siblingStack = [{}]; // stack of { tagName: count } maps per depth
+        const state = this.editor.state;
+        const tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
+        let depth = 0;
+        const pathStack = [];    // track XPath steps with positional predicates
+        const siblingStack = [{}]; // stack of { tagName: count } maps per depth
         tree.iterate({
             enter: function(node) {
                 // Skip SelfClosingTag when it's a child of Element (already handled)
@@ -86,20 +86,20 @@ eXide.edit.XMLModeHelper = (function () {
                     return false;
                 }
                 if (node.name === "Element" || node.name === "SelfClosingTag") {
-                    var tagNameNode = null;
-                    var attrs = [];
-                    var child = node.node.firstChild;
+                    let tagNameNode = null;
+                    const attrs = [];
+                    let child = node.node.firstChild;
                     while (child) {
                         if (child.name === "TagName") {
                             tagNameNode = child;
                         } else if (child.name === "OpenTag" || child.name === "SelfClosingTag") {
-                            var gc = child.firstChild;
+                            let gc = child.firstChild;
                             while (gc) {
                                 if (gc.name === "TagName") tagNameNode = gc;
                                 if (gc.name === "Attribute") {
-                                    var an = gc.firstChild;
-                                    var aname = null;
-                                    var aval = null;
+                                    let an = gc.firstChild;
+                                    let aname = null;
+                                    let aval = null;
                                     while (an) {
                                         if (an.name === "AttributeName") aname = state.sliceDoc(an.from, an.to);
                                         if (an.name === "AttributeValue") {
@@ -116,21 +116,21 @@ eXide.edit.XMLModeHelper = (function () {
                         child = child.nextSibling;
                     }
                     if (tagNameNode) {
-                        var tagName = state.sliceDoc(tagNameNode.from, tagNameNode.to);
+                        const tagName = state.sliceDoc(tagNameNode.from, tagNameNode.to);
                         // Track sibling position at current depth
-                        var siblings = siblingStack[siblingStack.length - 1];
+                        const siblings = siblingStack[siblingStack.length - 1];
                         siblings[tagName] = (siblings[tagName] || 0) + 1;
-                        var step = tagName + "[" + siblings[tagName] + "]";
+                        const step = tagName + "[" + siblings[tagName] + "]";
                         pathStack.push(step);
                         siblingStack.push({}); // new sibling scope for children
-                        var hint = "";
-                        var chosen = pickAttr(attrs);
+                        let hint = "";
+                        const chosen = pickAttr(attrs);
                         if (chosen) {
                             hint = chosen.value;
                             if (hint.length > 30) hint = hint.substring(0, 30) + "…";
                         }
-                        var xpath = "/" + pathStack.join("/");
-                        var line = state.doc.lineAt(node.from);
+                        const xpath = "/" + pathStack.join("/");
+                        const line = state.doc.lineAt(node.from);
                         doc.functions.push({
                             type: eXide.edit.Document.TYPE_FUNCTION,
                             name: tagName,
@@ -150,11 +150,11 @@ eXide.edit.XMLModeHelper = (function () {
                     }
                     depth++;
                 } else if (node.name === "Comment") {
-                    var text = state.sliceDoc(node.from, node.to);
+                    let text = state.sliceDoc(node.from, node.to);
                     text = text.replace(/^<!--\s*/, "").replace(/\s*-->$/, "");
                     if (text.length > 40) text = text.substring(0, 40) + "…";
                     if (text) {
-                        var line = state.doc.lineAt(node.from);
+                        const line = state.doc.lineAt(node.from);
                         doc.functions.push({
                             type: eXide.edit.Document.TYPE_FUNCTION,
                             name: text,
@@ -184,8 +184,8 @@ eXide.edit.XMLModeHelper = (function () {
     };
 
     Constr.prototype.closeTag = function (doc, text, row) {
-        var basePath = "xmldb:exist://" + doc.getBasePath();
-        var $this = this;
+        const basePath = "xmldb:exist://" + doc.getBasePath();
+        const $this = this;
         fetch("check/", {
             method: "PUT",
             headers: { "Content-Type": "application/octet-stream" },
@@ -193,13 +193,13 @@ eXide.edit.XMLModeHelper = (function () {
         })
         .then(function(response) { return response.json(); })
         .then(function(data) {
-            if (data.status && data.status == "invalid") {
-                var line = parseInt(data.message.line) - 1;
+            if (data.status && data.status === "invalid") {
+                const line = parseInt(data.message.line) - 1;
                 if (line <= row) {
-                    var tag = /element type "([^"]+)"/.exec(data.message["#text"]);
+                    const tag = /element type "([^"]+)"/.exec(data.message["#text"]);
                     if (tag && tag.length > 0) {
-                        var pos = $this.editor.state.selection.main.head;
-                        var text = tag[1] + ">";
+                        const pos = $this.editor.state.selection.main.head;
+                        const text = tag[1] + ">";
                         $this.editor.dispatch({
                             changes: { from: pos, insert: text },
                             selection: { anchor: pos + text.length }
@@ -225,17 +225,17 @@ eXide.edit.XMLModeHelper = (function () {
      * message when no position can be recovered.
      */
     function wellFormednessError(code, serverMessage) {
-        var line = 1;
-        var browserDetail = null;
+        let line = 1;
+        let browserDetail = null;
         try {
-            var parsed = new DOMParser().parseFromString(code, "application/xml");
-            var failure = parsed.querySelector("parsererror");
+            const parsed = new DOMParser().parseFromString(code, "application/xml");
+            const failure = parsed.querySelector("parsererror");
             if (failure) {
-                var text = (failure.textContent || "").replace(/\s+/g, " ").trim();
-                var at = text.match(/line\s+(\d+)/i);
+                const text = (failure.textContent || "").replace(/\s+/g, " ").trim();
+                const at = text.match(/line\s+(\d+)/i);
                 if (at) { line = parseInt(at[1], 10); }
                 // Keep the diagnosis, drop the page-rendering boilerplate.
-                var detail = text
+                const detail = text
                     .replace(/^.*?following errors:\s*/i, "")
                     .replace(/\s*Below is a rendering of the page.*$/i, "")
                     .trim();
@@ -256,7 +256,7 @@ eXide.edit.XMLModeHelper = (function () {
      */
     function cleanParseMessage(message) {
         if (!message) { return null; }
-        var cleaned = String(message)
+        const cleaned = String(message)
             .replace(/^String passed to fn:parse-xml is not a well-formed XML document\.\s*/i, "")
             .replace(/^parse-xml failed with:?\s*/i, "")
             .replace(/\s+/g, " ")
@@ -265,7 +265,7 @@ eXide.edit.XMLModeHelper = (function () {
     }
 
     Constr.prototype.validate = function(doc, code, onComplete) {
-        var $this = this;
+        const $this = this;
         fetch("api/editor/validate", {
             method: "POST",
             headers: { "Content-Type": "application/xml" },
@@ -279,8 +279,8 @@ eXide.edit.XMLModeHelper = (function () {
                 // response that just wasn't "invalid", the editor would clear
                 // the error list and report the document as clean.
                 if (!response.ok || !data.status) {
-                    var reported = data.value || data.description;
-                    var located = wellFormednessError(code, reported);
+                    const reported = data.value || data.description;
+                    const located = wellFormednessError(code, reported);
                     return {
                         status: "invalid",
                         grammar: "none",
@@ -302,10 +302,10 @@ eXide.edit.XMLModeHelper = (function () {
 
     Constr.prototype.compileError = function(data, doc) {
         console.log("Validation returned %o", data);
-        if (data.status && data.status == "invalid") {
-            var errors = data.errors || [];
-            var annotations = [];
-            for (var i = 0; i < errors.length; i++) {
+        if (data.status && data.status === "invalid") {
+            const errors = data.errors || [];
+            const annotations = [];
+            for (let i = 0; i < errors.length; i++) {
                 annotations.push({
                     row: parseInt(errors[i].line) - 1,
                     text: errors[i].message,
@@ -325,34 +325,16 @@ eXide.edit.XMLModeHelper = (function () {
         }
     };
 
-    Constr.prototype.suggest = function(doc, text, row, column) {
-        console.log("Getting suggestions for %s", text);
-        fetch("api/editor/validate?validate=false", {
-            method: "POST",
-            headers: { "Content-Type": "application/xml" },
-            body: text
-        })
-        .then(function(response) { return response.json(); })
-        .then(function(data) {
-            $this.compileError(data, doc);
-            onComplete.call(null, true);
-        })
-        .catch(function(err) {
-            onComplete.call(null, true);
-            console.log("Compile error: %s", err);
-        });
-    }
-
     Constr.prototype.documentSaved = function(doc) {
         if (/.*\.xconf$/.test(doc.getName())) {
-            var collection = doc.getBasePath();
+            const collection = doc.getBasePath();
             eXide.util.Dialog.input("Apply Configuration?", "You have saved a collection configuration file. Would you like to " +
                 "apply it to collection " + collection.replace(/^\/db\/system\/config/, "") + " now?", function() {
                     eXide.util.message("Apply configuration and reindex...");
-                    var basePath = doc.getBasePath();
+                    const basePath = doc.getBasePath();
                     // Extract app abbrev from /db/system/config/db/apps/{abbrev}/...
-                    var pathParts = basePath.replace(/^\/db\/system\/config/, "").split("/").filter(Boolean);
-                    var abbrev = pathParts.length >= 2 ? pathParts[1] : pathParts[0] || "unknown";
+                    const pathParts = basePath.replace(/^\/db\/system\/config/, "").split("/").filter(Boolean);
+                    const abbrev = pathParts.length >= 2 ? pathParts[1] : pathParts[0] || "unknown";
                     fetch("api/packages/" + encodeURIComponent(abbrev) + "/config", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -378,25 +360,25 @@ eXide.edit.XMLModeHelper = (function () {
      * Replaces the TokenIterator-based approach.
      */
     Constr.prototype.findStartEndTags = function(doc) {
-        var text = doc.getText();
-        var cursorOffset = this.editor.state.selection.main.head;
+        const text = doc.getText();
+        const cursorOffset = this.editor.state.selection.main.head;
 
         // Find all tags in the document
-        var tagRe = /<\/?([a-zA-Z][\w:\-.]*)(?:\s[^>]*)?\/?>/g;
-        var stack = [];
-        var match;
-        var startTag = null, endTag = null;
+        const tagRe = /<\/?([a-zA-Z][\w:\-.]*)(?:\s[^>]*)?\/?>/g;
+        const stack = [];
+        let match;
+        let startTag = null, endTag = null;
 
         while ((match = tagRe.exec(text)) !== null) {
-            var tagStart = match.index;
-            var tagEnd = tagStart + match[0].length;
-            var isClose = match[0].charAt(1) === "/";
-            var isSelfClose = match[0].charAt(match[0].length - 2) === "/";
-            var tagName = match[1];
+            const tagStart = match.index;
+            const tagEnd = tagStart + match[0].length;
+            const isClose = match[0].charAt(1) === "/";
+            const isSelfClose = match[0].charAt(match[0].length - 2) === "/";
+            const tagName = match[1];
 
             if (isSelfClose) {
                 if (cursorOffset >= tagStart && cursorOffset <= tagEnd) {
-                    var nameStart = tagStart + 1;
+                    const nameStart = tagStart + 1;
                     startTag = {
                         name: tagName,
                         nameOffset: nameStart,
@@ -408,7 +390,7 @@ eXide.edit.XMLModeHelper = (function () {
             }
 
             if (!isClose) {
-                var nameStart = tagStart + 1; // after '<'
+                const nameStart = tagStart + 1; // after '<'
                 stack.push({
                     name: tagName,
                     nameOffset: nameStart,
@@ -418,8 +400,8 @@ eXide.edit.XMLModeHelper = (function () {
                     startTag = stack[stack.length - 1];
                 }
             } else {
-                var last = stack.pop();
-                var nameStart = tagStart + 2; // after '</'
+                const last = stack.pop();
+                const nameStart = tagStart + 2; // after '</'
                 if (startTag === last || (cursorOffset >= tagStart && cursorOffset <= tagEnd)) {
                     if (!startTag) startTag = last;
                     endTag = {
@@ -443,14 +425,14 @@ eXide.edit.XMLModeHelper = (function () {
     };
 
     Constr.prototype.selectElement = function(doc) {
-        var tags = this.findStartEndTags(doc, false);
+        const tags = this.findStartEndTags(doc, false);
         if (!tags.start || !tags.end) return;
 
-        var text = doc.getText();
-        var startOffset = tags.start.offset;
-        var endIdx = text.indexOf(">", tags.end.offset);
+        const text = doc.getText();
+        const startOffset = tags.start.offset;
+        const endIdx = text.indexOf(">", tags.end.offset);
         if (endIdx < 0) return;
-        var endOffset = endIdx + 1;
+        const endOffset = endIdx + 1;
 
         this.editor.dispatch({
             selection: { anchor: startOffset, head: endOffset }
@@ -458,20 +440,20 @@ eXide.edit.XMLModeHelper = (function () {
     };
 
     Constr.prototype.rename = function(doc) {
-        var tags = this.findStartEndTags(doc);
+        const tags = this.findStartEndTags(doc);
         if (!tags.start) {
             eXide.util.message("Place cursor inside an element tag first.");
             return;
         }
 
-        var startFrom = tags.start.nameOffset;
-        var startTo = startFrom + tags.start.name.length;
+        const startFrom = tags.start.nameOffset;
+        const startTo = startFrom + tags.start.name.length;
 
         if (tags.end) {
             // Multi-cursor: select both open and close tag names
-            var endFrom = tags.end.nameOffset;
-            var endTo = endFrom + tags.end.name.length;
-            var ranges = [
+            const endFrom = tags.end.nameOffset;
+            const endTo = endFrom + tags.end.name.length;
+            const ranges = [
                 CM6.EditorSelection.range(startFrom, startTo),
                 CM6.EditorSelection.range(endFrom, endTo)
             ];
@@ -494,13 +476,13 @@ eXide.edit.XMLModeHelper = (function () {
     };
 
     Constr.prototype.deleteTags = function(doc) {
-        var tags = this.findStartEndTags(doc, false);
+        const tags = this.findStartEndTags(doc, false);
         if (!tags.start || !tags.end) return;
 
-        var text = doc.getText();
+        const text = doc.getText();
         // Remove end tag first (so offsets for start tag remain valid)
-        var endStart = tags.end.offset;
-        var endEnd = text.indexOf(">", endStart);
+        const endStart = tags.end.offset;
+        const endEnd = text.indexOf(">", endStart);
         if (endEnd >= 0) {
             this.editor.dispatch({
                 changes: { from: endStart, to: endEnd + 1 }
@@ -508,9 +490,9 @@ eXide.edit.XMLModeHelper = (function () {
         }
 
         // Remove start tag (re-read text since doc changed)
-        var startStart = tags.start.offset;
-        var currentText = this.editor.state.doc.toString();
-        var startEnd = currentText.indexOf(">", startStart);
+        const startStart = tags.start.offset;
+        const currentText = this.editor.state.doc.toString();
+        const startEnd = currentText.indexOf(">", startStart);
         if (startEnd >= 0) {
             this.editor.dispatch({
                 changes: { from: startStart, to: startEnd + 1 }

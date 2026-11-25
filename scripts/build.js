@@ -99,7 +99,7 @@ function deploy() {
 				};
 				console.log(chalk.cyan('Installing xar ...'));
 				request(options, function (error, response, body) {
-					if (error || !(response.statusCode == 200 || response.statusCode == 201)) {
+					if (error || !(response.statusCode === 200 || response.statusCode === 201)) {
 						console.error(`Installation failed with %s`, error);
 					} else {
 						console.log('DONE');

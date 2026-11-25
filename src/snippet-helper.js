@@ -23,7 +23,7 @@ eXide.namespace("eXide.edit.SnippetModeHelper");
  */
 eXide.edit.SnippetModeHelper = (function () {
     
-    Constr = function(editor) {
+    const Constr = function(editor) {
 		this.parent = editor;
 		this.editor = this.parent.editor;
 	};
@@ -31,8 +31,8 @@ eXide.edit.SnippetModeHelper = (function () {
 	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
 
     Constr.prototype.documentSaved = function(doc) {
-        var code = doc.getText();
-        var mode = doc.getName().replace(/\.snippets/, "");
+        const code = doc.getText();
+        const mode = doc.getName().replace(/\.snippets/, "");
         eXide.util.Snippets.reload(mode, code);
     };
     

@@ -50,7 +50,7 @@ eXide.edit.Projects = (function () {
         return clean;
     }
 
-    Constr = function () {
+    const Constr = function () {
         this.projects = {};
     };
 
@@ -64,7 +64,7 @@ eXide.edit.Projects = (function () {
     };
 
     Constr.prototype.getProject = function (collection, callback) {
-        const cb = typeof callback == "function" ? callback : function () { };
+        const cb = typeof callback === "function" ? callback : function () { };
         if (!collection || collection === "/db" || collection === "/db/" || collection.indexOf("__new__") !== -1) {
             cb(null);
             return;
@@ -137,7 +137,7 @@ eXide.namespace("eXide.edit.PackageEditor");
  */
 eXide.edit.PackageEditor = (function () {
 
-    Constr = function (projects) {
+    const Constr = function (projects) {
         const $this = this;
         this.projects = projects;
         this.currentProject = null;
@@ -177,7 +177,7 @@ eXide.edit.PackageEditor = (function () {
                 },
                 "Synchronize": function () {
                     const dir = syncDialogEl.querySelector("input[name=\"dir\"]").value;
-                    if (!dir || dir.length == 0) {
+                    if (!dir || dir.length === 0) {
                         document.getElementById("synchronize-report").textContent = "No output directory specified!";
                         return;
                     }
@@ -249,7 +249,7 @@ eXide.edit.PackageEditor = (function () {
                         start = form.querySelector("[name='start']").value,
                         statusEl = document.getElementById("git-commit-status");
 
-                    if (!title || title.length == 0) {
+                    if (!title || title.length === 0) {
                         statusEl.textContent = "title for commit message is required";
                         return;
                     }

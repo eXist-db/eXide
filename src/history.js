@@ -5,13 +5,13 @@ eXide.namespace("eXide.edit.History");
  */
 eXide.edit.History = (function () {
     
-    Constr = function() {
+    const Constr = function() {
         this.history = [];
     };
     
     Constr.prototype.push = function(path, line) {
         if (this.history.length > 0) {
-            var last = this.history[this.history.length - 1];
+            const last = this.history[this.history.length - 1];
             if (last.path === path && last.line === line) {
                 return;
             }

@@ -17,15 +17,15 @@ eXide.namespace("eXide.ws");
 eXide.ws = (function () {
     "use strict";
 
-    var socket = null;
-    var connected = false;
-    var reconnectTimer = null;
-    var reconnectDelay = 1000;
-    var maxReconnectDelay = 30000;
-    var requestId = 0;
-    var pendingRequests = {};
-    var listeners = {};
-    var url = null;
+    let socket = null;
+    let connected = false;
+    let reconnectTimer = null;
+    let reconnectDelay = 1000;
+    const maxReconnectDelay = 30000;
+    let requestId = 0;
+    const pendingRequests = {};
+    const listeners = {};
+    let url = null;
 
     /**
      * Connect to the WebSocket endpoint.
@@ -59,7 +59,7 @@ eXide.ws = (function () {
             if (event.data === "ping") return;
 
             try {
-                var msg = JSON.parse(event.data);
+                const msg = JSON.parse(event.data);
                 // console:log format: { timestamp, source, line, column, message }
                 // ws:send format: direct JSON object with "type" field
                 // Handle both formats
@@ -70,7 +70,7 @@ eXide.ws = (function () {
 
                 // Response to a request
                 if (msg.id !== undefined && pendingRequests[msg.id]) {
-                    var callback = pendingRequests[msg.id];
+                    const callback = pendingRequests[msg.id];
                     delete pendingRequests[msg.id];
                     if (msg.error) {
                         callback(null, msg.error);
@@ -110,8 +110,8 @@ eXide.ws = (function () {
             return;
         }
 
-        var id = ++requestId;
-        var msg = {
+        const id = ++requestId;
+        const msg = {
             jsonrpc: "2.0",
             id: id,
             method: method,
@@ -131,7 +131,7 @@ eXide.ws = (function () {
     function notify(method, params) {
         if (!connected || !socket) return;
 
-        var msg = {
+        const msg = {
             jsonrpc: "2.0",
             method: method,
             params: params || {}
@@ -161,9 +161,9 @@ eXide.ws = (function () {
     }
 
     function emit(method, data) {
-        var cbs = listeners[method];
+        const cbs = listeners[method];
         if (cbs) {
-            for (var i = 0; i < cbs.length; i++) {
+            for (let i = 0; i < cbs.length; i++) {
                 try {
                     cbs[i](data);
                 } catch (e) {
@@ -207,10 +207,10 @@ eXide.ws = (function () {
      * Uses the same /exist/ws endpoint as monex's console module.
      */
     function autoConnect() {
-        var loc = window.location;
-        var rootContext = loc.pathname.replace(/^(.*?)\/apps\/.*$/, "$1");
-        var wsProtocol = loc.protocol === "https:" ? "wss:" : "ws:";
-        var wsUrl = wsProtocol + "//" + loc.host + rootContext + "/ws";
+        const loc = window.location;
+        const rootContext = loc.pathname.replace(/^(.*?)\/apps\/.*$/, "$1");
+        const wsProtocol = loc.protocol === "https:" ? "wss:" : "ws:";
+        const wsUrl = wsProtocol + "//" + loc.host + rootContext + "/ws";
         connect(wsUrl);
     }
 

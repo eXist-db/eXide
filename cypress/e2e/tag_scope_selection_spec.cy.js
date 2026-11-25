@@ -9,13 +9,13 @@ describe('Tag matching, scope breadcrumb, and selection match', () => {
 
   function newDocument(type, content) {
     cy.window().then((win) => {
-      var editor = win.eXide.app.getEditor()
+      const editor = win.eXide.app.getEditor()
       editor.newDocument(null, type)
     })
     cy.wait(300)
     if (content) {
       cy.window().then((win) => {
-        var view = win.eXide.app.getEditor().editor
+        const view = win.eXide.app.getEditor().editor
         view.dispatch({
           changes: { from: 0, to: view.state.doc.length, insert: content }
         })
@@ -26,16 +26,16 @@ describe('Tag matching, scope breadcrumb, and selection match', () => {
 
   function setCursorAt(line, col) {
     cy.window().then((win) => {
-      var view = win.eXide.app.getEditor().editor
-      var lineInfo = view.state.doc.line(line)
-      var offset = lineInfo.from + col
+      const view = win.eXide.app.getEditor().editor
+      const lineInfo = view.state.doc.line(line)
+      const offset = lineInfo.from + col
       view.dispatch({ selection: { anchor: offset } })
       view.focus()
     })
   }
 
   describe('Tag matching (XML/HTML)', () => {
-    var xml = '<root>\n  <child>text</child>\n  <other/>\n</root>'
+    const xml = '<root>\n  <child>text</child>\n  <other/>\n</root>'
 
     it('has tag matching CSS styles defined', () => {
       // Verify the cm-matchingTag CSS class is defined in the stylesheet
@@ -43,12 +43,12 @@ describe('Tag matching, scope breadcrumb, and selection match', () => {
       // CM6's syntax tree parsing and ViewPlugin update timing is unpredictable
       // in headless browsers)
       cy.document().then((doc) => {
-        var sheets = doc.styleSheets
-        var found = false
-        for (var i = 0; i < sheets.length; i++) {
+        const sheets = doc.styleSheets
+        let found = false
+        for (let i = 0; i < sheets.length; i++) {
           try {
-            var rules = sheets[i].cssRules
-            for (var j = 0; j < rules.length; j++) {
+            const rules = sheets[i].cssRules
+            for (let j = 0; j < rules.length; j++) {
               if (rules[j].selectorText && rules[j].selectorText.includes('cm-matchingTag')) {
                 found = true
                 break
@@ -64,7 +64,7 @@ describe('Tag matching, scope breadcrumb, and selection match', () => {
 
   describe('Scope breadcrumb', () => {
     it('shows XPath scope for XML documents', () => {
-      var xml = '<root>\n  <header>\n    <title>Test</title>\n  </header>\n</root>'
+      const xml = '<root>\n  <header>\n    <title>Test</title>\n  </header>\n</root>'
       newDocument('xml', xml)
 
       // Place cursor inside <title> content
@@ -79,11 +79,11 @@ describe('Tag matching, scope breadcrumb, and selection match', () => {
     })
 
     it('shows scope for XQuery function body', () => {
-      var code = 'declare function local:test() {\n  let $x := 1\n  return $x\n};'
+      const code = 'declare function local:test() {\n  let $x := 1\n  return $x\n};'
       cy.window().then((win) => {
-        var editor = win.eXide.app.getEditor()
-        var view = editor.editor
-        var doc = editor.getActiveDocument()
+        const editor = win.eXide.app.getEditor()
+        const view = editor.editor
+        const doc = editor.getActiveDocument()
         editor.validator.setEnabled(false)
         view.dispatch({
           changes: { from: 0, to: view.state.doc.length, insert: code }
@@ -114,9 +114,9 @@ describe('Tag matching, scope breadcrumb, and selection match', () => {
 
   describe('Selection match highlighting', () => {
     it('highlights matching text when a word is selected', () => {
-      var code = 'let $total := 42\nlet $other := $total\nreturn $total'
+      const code = 'let $total := 42\nlet $other := $total\nreturn $total'
       cy.window().then((win) => {
-        var view = win.eXide.app.getEditor().editor
+        const view = win.eXide.app.getEditor().editor
         view.dispatch({
           changes: { from: 0, to: view.state.doc.length, insert: code }
         })
@@ -133,9 +133,9 @@ describe('Tag matching, scope breadcrumb, and selection match', () => {
     })
 
     it('removes highlights when selection is cleared', () => {
-      var code = 'let $total := 42\nreturn $total'
+      const code = 'let $total := 42\nreturn $total'
       cy.window().then((win) => {
-        var view = win.eXide.app.getEditor().editor
+        const view = win.eXide.app.getEditor().editor
         view.dispatch({
           changes: { from: 0, to: view.state.doc.length, insert: code }
         })
@@ -147,7 +147,7 @@ describe('Tag matching, scope breadcrumb, and selection match', () => {
 
       // Clear selection by clicking
       cy.window().then((win) => {
-        var view = win.eXide.app.getEditor().editor
+        const view = win.eXide.app.getEditor().editor
         view.dispatch({ selection: { anchor: 0 } })
       })
       cy.wait(300)

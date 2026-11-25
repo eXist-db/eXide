@@ -24,7 +24,7 @@ eXide.namespace("eXide.util.Preferences");
  */
 eXide.util.Preferences = (function () {
 
-    var defaultPreferences = {
+    const defaultPreferences = {
         theme: "light",
 		fontSize: 14,
         font: "Default",
@@ -68,12 +68,12 @@ eXide.util.Preferences = (function () {
         collectionsView: "tree"
 	};
     
-    Constr = function(editor) {
+    const Constr = function(editor) {
         this.editor = editor;
         this.preferences = Object.assign({}, defaultPreferences);
-        var $this = this;
+        const $this = this;
 
-        var container = document.getElementById("preferences-dialog");
+        const container = document.getElementById("preferences-dialog");
         container.querySelectorAll("select, input").forEach(function(el) {
             el.addEventListener("change", function() {
                 $this.updatePreferences();
@@ -112,7 +112,7 @@ eXide.util.Preferences = (function () {
     };
     
     Constr.prototype.updateForm = function() {
-        var form = document.querySelector("#preferences-dialog form");
+        const form = document.querySelector("#preferences-dialog form");
         form.querySelector('select[name="theme"]').value = this.preferences.theme;
 		form.querySelector('select[name="font-size"]').value = this.preferences.fontSize;
         form.querySelector('select[name="font"]').value = this.preferences.font;
@@ -160,8 +160,8 @@ eXide.util.Preferences = (function () {
 		form.querySelector('select[name="prettier-html-ws"]').value = this.preferences.prettierHtmlWhitespaceSensitivity;
 		form.querySelector('select[name="xquery-version"]').value = this.preferences.xqueryVersion;
 
-        var indent = this.preferences.indent;
-        var indentSize = this.preferences.indentSize;
+        let indent = this.preferences.indent;
+        const indentSize = this.preferences.indentSize;
         if (indent === 0) {
             indent = "Tabs";
         } else if (indent === -1) {
@@ -170,7 +170,7 @@ eXide.util.Preferences = (function () {
         form.querySelector('select[name="indent"]').value = indent;
         form.querySelector('select[name="indent-size"]').value = indentSize;
 
-        var wrap = this.preferences.softWrap;
+        let wrap = this.preferences.softWrap;
         if (wrap === 0) {
             wrap = "off";
         } else if (wrap === -1) {
@@ -180,7 +180,7 @@ eXide.util.Preferences = (function () {
     };
     
     Constr.prototype.updatePreferences = function() {
-        var form = document.querySelector("#preferences-dialog form");
+        const form = document.querySelector("#preferences-dialog form");
         this.preferences.theme = form.querySelector('select[name="theme"]').value;
 		this.preferences.fontSize = parseInt(form.querySelector('select[name="font-size"]').value);
         this.preferences.font = form.querySelector('select[name="font"]').value;
@@ -219,8 +219,8 @@ eXide.util.Preferences = (function () {
         this.preferences.omitXMLDeclarationOnDownload = form.querySelector('input[name="omit-xml-decl-on-download"]').checked;
         this.preferences.omitXMLDeclarationOnDownloadPackage = form.querySelector('input[name="omit-xml-decl-on-download-package"]').checked;
 
-        var indent = form.querySelector('select[name="indent"]').value;
-        var indentSize = parseInt(form.querySelector('select[name="indent-size"]').value, 10);
+        let indent = form.querySelector('select[name="indent"]').value;
+        const indentSize = parseInt(form.querySelector('select[name="indent-size"]').value, 10);
         if (indent === "Spaces") {
             indent = -1;
         } else if (indent === "Tabs") {
@@ -229,7 +229,7 @@ eXide.util.Preferences = (function () {
         this.preferences.indent = parseInt(indent, 10);
         this.preferences.indentSize = parseInt(indentSize, 10);
 
-        var wrap = form.querySelector('select[name="soft-wrap"]').value;
+        let wrap = form.querySelector('select[name="soft-wrap"]').value;
         if (wrap === "free") {
             wrap = -1;
         } else if (wrap === "off") {
@@ -240,7 +240,7 @@ eXide.util.Preferences = (function () {
     };
     
     // Map old Ace theme names to "light" or "dark"
-    var ACE_DARK_THEMES = {
+    const ACE_DARK_THEMES = {
         ambiance: true, chaos: true, clouds_midnight: true, cobalt: true,
         dracula: true, idle_fingers: true, kr_theme: true, merbivore: true,
         merbivore_soft: true, mono_industrial: true, monokai: true,
@@ -278,7 +278,7 @@ eXide.util.Preferences = (function () {
         // Indent/tab settings are applied when building extensions
 
         if (this.preferences.font && this.preferences.font !== "Default") {
-            var font = this.preferences.font + ", monospace";
+            const font = this.preferences.font + ", monospace";
             document.querySelectorAll("#editor .cm-editor, #editor .cm-content").forEach(function(el) {
                 el.style.fontFamily = font;
             });
@@ -294,11 +294,11 @@ eXide.util.Preferences = (function () {
 
         // Reconfigure CM6 compartments
         if (this.editor.editor) {
-            var effects = [];
+            const effects = [];
 
             // Auto-pair brackets/quotes
             if (this.editor._autoPairCompartment) {
-                var ap = this.preferences.autoPair;
+                const ap = this.preferences.autoPair;
                 effects.push(this.editor._autoPairCompartment.reconfigure(
                     ap ? [CM6.closeBrackets(), CM6.keymap.of(CM6.closeBracketsKeymap)] : []
                 ));
@@ -306,7 +306,7 @@ eXide.util.Preferences = (function () {
 
             // Line wrapping
             if (this.editor._lineWrappingCompartment) {
-                var wrap = this.preferences.softWrap;
+                const wrap = this.preferences.softWrap;
                 effects.push(this.editor._lineWrappingCompartment.reconfigure(
                     wrap !== 0 ? [CM6.EditorView.lineWrapping] : []
                 ));
@@ -314,7 +314,7 @@ eXide.util.Preferences = (function () {
 
             // Show invisibles (whitespace characters)
             if (this.editor._showInvisiblesCompartment) {
-                var inv = this.preferences.showInvisibles;
+                const inv = this.preferences.showInvisibles;
                 effects.push(this.editor._showInvisiblesCompartment.reconfigure(
                     inv ? [CM6.highlightWhitespace(), CM6.highlightTrailingWhitespace()] : []
                 ));
@@ -342,8 +342,8 @@ eXide.util.Preferences = (function () {
             el.style.fontSize = this.preferences.fontSize + "px";
         }.bind(this));
         // Split pane
-        var pw = document.querySelector('.panel-west');
-        var btn = document.getElementById('toggle-split-pane');
+        const pw = document.querySelector('.panel-west');
+        const btn = document.getElementById('toggle-split-pane');
         if (pw) {
             pw.classList.toggle('split-pane', !!this.preferences.splitPane);
         }
@@ -381,7 +381,7 @@ eXide.util.Preferences = (function () {
     };
     
     Constr.prototype.read = function() {
-        var sameVersion = true;
+        let sameVersion = true;
         if (localStorage["eXide.preferences"]) {
             const loaded = JSON.parse(localStorage.getItem("eXide.preferences"));
             this.preferences = Object.assign({}, defaultPreferences, loaded);

@@ -25,7 +25,7 @@ eXide.namespace("eXide.edit.Directory");
  */
 eXide.edit.Directory = (function () {
 
-	Constr = function() {
+	const Constr = function() {
 		this.currentDoc = null;
         this.__activated = false;
 
@@ -34,15 +34,15 @@ eXide.edit.Directory = (function () {
 		initDragDrop();
 		initFlatView();
 
-		var filterEl = document.getElementById("directory-filter");
+		const filterEl = document.getElementById("directory-filter");
 		if (filterEl) {
 			filterEl.addEventListener("keyup", function() {
-				var regex = new RegExp(this.value, "i");
-				var items = document.querySelectorAll("#directory li");
-				for (var i = 0; i < items.length; i++) {
-					var li = items[i];
+				const regex = new RegExp(this.value, "i");
+				const items = document.querySelectorAll("#directory li");
+				for (let i = 0; i < items.length; i++) {
+					const li = items[i];
 					if (li.id === "tree-root") continue;
-					var span = li.querySelector("span");
+					const span = li.querySelector("span");
 					if (span) {
 						li.style.display = regex.test(span.textContent) ? "" : "none";
 					}
@@ -52,7 +52,7 @@ eXide.edit.Directory = (function () {
 	};
 
 	function fileIcon(d) {
-		var mime = d.mime || "";
+		const mime = d.mime || "";
 		if (mime) {
 			if (mime === "application/pdf") return "fa-file-pdf-o";
 			if (/^image\//.test(mime)) return "fa-file-image-o";
@@ -61,7 +61,7 @@ eXide.edit.Directory = (function () {
 			if (/zip|compress|archive|xar|jar/.test(mime)) return "fa-file-archive-o";
 		}
 		// Fallback to extension
-		var name = d.name || "";
+		const name = d.name || "";
 		if (/\.(xml|xq|xquery|xql|xqm|xconf|xhtml|html|htm|svg|xsl|xslt|odd|rng|sch|wsdl)$/i.test(name)) return "fa-file-code-o";
 		if (/\.(css|less|scss|js|json|md|txt|csv|properties)$/i.test(name)) return "fa-file-text-o";
 		if (/\.(png|jpe?g|gif|ico|webp|bmp|tiff?)$/i.test(name)) return "fa-file-image-o";
@@ -76,13 +76,13 @@ eXide.edit.Directory = (function () {
 	}
 
 	function build(data) {
-		var sel = this instanceof d3.selection ? this : d3.select(this),
+		const sel = this instanceof d3.selection ? this : d3.select(this),
 			editor = eXide.app.getEditor();
 		if(sel.empty()) {return}
-		var fn = function(d) {
+		const fn = function(d) {
 			sel.selectAll('ul, span, i').remove()
 
-			var li = sel.datum(d)
+			const li = sel.datum(d)
 						.attr('class', function(d) {return (d.isCollection ? "collection" : "resource") + (d.isResourceOpen ? " open" : "")})
 						.attr("data-key", function(d){return d.key})
 						.style('cursor','pointer')
@@ -110,27 +110,27 @@ eXide.edit.Directory = (function () {
 		};
 
 		if(data) {
-			var d = data.length ? data[0]: data
+			const d = data.length ? data[0]: data
 			if(!d.isCollection) {
 				d.isResourceOpen = !!editor.getDocument(d.key)
 			}
 			return fn(d)
 		}
-		var path = sel.datum().key || "/db";
+		const path = sel.datum().key || "/db";
 		fetch(apiPath(path)).then(function(r) { return r.json(); }).then(function(data) {
-			var d = sel.datum()
+			const d = sel.datum()
 			d.isOpen = true;
 			d.isLoaded = true;
-			d.children = (data.items || []).filter(function(i){return i.name != ".."}).map(mapItem)
+			d.children = (data.items || []).filter(function(i){return i.name !== ".."}).map(mapItem)
 			fn(d)
 		}).catch(function() {})
 	};
 
 	function init() {
-		var root = {key:'/db',isCollection: true, isOpen:false, name:'db', isLoaded: false};
+		const root = {key:'/db',isCollection: true, isOpen:false, name:'db', isLoaded: false};
 		build.call(d3.select("#tree-root"), [root]);
 		// Auto-expand the db root
-		var rootEl = document.getElementById("tree-root");
+		const rootEl = document.getElementById("tree-root");
 		if (rootEl) {
 			toggleFolder.call(rootEl, root);
 		}
@@ -138,7 +138,7 @@ eXide.edit.Directory = (function () {
 
 	function toggleFolder(d) {
 		d.isOpen = !d.isOpen;
-		var sel = d3.select(this)
+		const sel = d3.select(this)
 		sel.select("i.fa").attr('class', setClass)
 		if(d.isOpen) {
 		   return build.call(this)
@@ -180,9 +180,11 @@ eXide.edit.Directory = (function () {
 
 	// ── Context menu ─────────────────────────────────────────────────────
 
-	var ctxMenu = null;
-	var ctxNode = null;  // the d3 datum of the right-clicked node
-	var ctxEl = null;    // the DOM <li> element of the right-clicked node
+	let flatViewActive = false;
+	let flatCollection = "/db";
+	let ctxMenu = null;
+	let ctxNode = null;  // the d3 datum of the right-clicked node
+	let ctxEl = null;    // the DOM <li> element of the right-clicked node
 
 	function initContextMenu() {
 		ctxMenu = document.getElementById("directory-context-menu");
@@ -190,9 +192,9 @@ eXide.edit.Directory = (function () {
 
 		// Delegate clicks on menu items
 		ctxMenu.addEventListener("click", function(e) {
-			var item = e.target.closest(".ctx-item");
+			const item = e.target.closest(".ctx-item");
 			if (!item || item.classList.contains("disabled")) return;
-			var action = item.dataset.action;
+			const action = item.dataset.action;
 			hideContextMenu();
 			if (ctxNode) {
 				handleAction(action, ctxNode, ctxEl);
@@ -225,8 +227,8 @@ eXide.edit.Directory = (function () {
 		ctxEl.classList.add("ctx-highlight");
 
 		// Enable/disable items based on context
-		var isCollection = d.isCollection;
-		var isRoot = d.key === "/db";
+		const isCollection = d.isCollection;
+		const isRoot = d.key === "/db";
 		ctxMenu.querySelector('[data-action="new-collection"]').classList.toggle("disabled", !isCollection);
 		ctxMenu.querySelector('[data-action="new-resource"]').classList.toggle("disabled", !isCollection);
 		ctxMenu.querySelector('[data-action="upload"]').classList.toggle("disabled", !isCollection);
@@ -236,14 +238,14 @@ eXide.edit.Directory = (function () {
 		ctxMenu.querySelector('[data-action="properties"]').classList.toggle("disabled", isRoot);
 
 		// Position the menu
-		var x = e.clientX;
-		var y = e.clientY;
+		const x = e.clientX;
+		const y = e.clientY;
 		ctxMenu.style.left = x + "px";
 		ctxMenu.style.top = y + "px";
 		ctxMenu.classList.add("visible");
 
 		// Adjust if menu overflows viewport
-		var rect = ctxMenu.getBoundingClientRect();
+		const rect = ctxMenu.getBoundingClientRect();
 		if (rect.right > window.innerWidth) {
 			ctxMenu.style.left = (x - rect.width) + "px";
 		}
@@ -291,30 +293,30 @@ eXide.edit.Directory = (function () {
 	}
 
 	function permCheckbox(name, perms, index, char) {
-		var checked = perms.length > index && perms.charAt(index) === char ? ' checked="checked"' : '';
+		const checked = perms.length > index && perms.charAt(index) === char ? ' checked="checked"' : '';
 		return '<input type="checkbox" name="' + name + '" id="' + name + '"' + checked + '/>';
 	}
 
 	function permissionsFromForm(form) {
-		var parts = [];
+		const parts = [];
 		["u", "g", "o"].forEach(function(scope) {
 			["r", "w", "x"].forEach(function(perm) {
-				var cb = form.querySelector("#" + scope + perm);
+				const cb = form.querySelector("#" + scope + perm);
 				parts.push(scope + (cb && cb.checked ? "+" : "-") + perm);
 			});
 		});
-		var us = form.querySelector("#us");
+		const us = form.querySelector("#us");
 		parts.push("u" + (us && us.checked ? "+" : "-") + "s");
-		var gs = form.querySelector("#gs");
+		const gs = form.querySelector("#gs");
 		parts.push("g" + (gs && gs.checked ? "+" : "-") + "s");
-		var ot = form.querySelector("#ot");
+		const ot = form.querySelector("#ot");
 		parts.push("o" + (ot && ot.checked ? "+" : "-") + "t");
 		return parts.join(",");
 	}
 
 	function buildPropertiesForm(data, accounts) {
-		var perms = data.permissions || "---------";
-		var html = '<form id="browsing-dialog-form" action="">';
+		const perms = data.permissions || "---------";
+		let html = '<form id="browsing-dialog-form" action="">';
 		html += '<fieldset>';
 		if (data.mime) {
 			html += '<div class="control-group"><label for="mime">Mime:</label>';
@@ -363,7 +365,7 @@ eXide.edit.Directory = (function () {
 			'<label for="dir-new-collection">Name: </label>' +
 			'<input type="text" name="collection" id="dir-new-collection"/>',
 			function() {
-				var name = document.getElementById("dir-new-collection").value;
+				const name = document.getElementById("dir-new-collection").value;
 				if (!name) return;
 				fetch(apiPath(d.key), {
 					method: "POST",
@@ -389,11 +391,11 @@ eXide.edit.Directory = (function () {
 
 	function uploadToCollection(d, el) {
 		if (!eXide.app.$checkLogin()) return;
-		var input = document.createElement("input");
+		const input = document.createElement("input");
 		input.type = "file";
 		input.multiple = true;
 		input.addEventListener("change", function() {
-			var files = Array.from(input.files);
+			const files = Array.from(input.files);
 			if (files.length === 0) return;
 			uploadFiles(files, d.key).then(function() {
 				reloadNode(d, el);
@@ -405,9 +407,9 @@ eXide.edit.Directory = (function () {
 	}
 
 	function uploadFiles(files, collection) {
-		var promises = files.map(function(file) {
-			var name = file.webkitRelativePath || file.name;
-			var path = collection + "/" + name;
+		const promises = files.map(function(file) {
+			const name = file.webkitRelativePath || file.name;
+			const path = collection + "/" + name;
 			return fetch(apiPath(path), {
 				method: "PUT",
 				headers: { "Content-Type": file.type || "application/octet-stream" },
@@ -423,13 +425,13 @@ eXide.edit.Directory = (function () {
 
 	function renameItem(d, el) {
 		if (!eXide.app.$checkLogin()) return;
-		var spanEl = el.querySelector("span");
+		const spanEl = el.querySelector("span");
 		if (!spanEl) return;
 
-		var oldName = d.name;
+		const oldName = d.name;
 		spanEl.style.display = "none";
 
-		var input = document.createElement("input");
+		const input = document.createElement("input");
 		input.type = "text";
 		input.className = "inline-edit";
 		input.value = oldName;
@@ -438,11 +440,11 @@ eXide.edit.Directory = (function () {
 		input.select();
 
 		function finish(save) {
-			var newName = input.value.trim();
+			const newName = input.value.trim();
 			input.remove();
 			spanEl.style.display = "";
 			if (save && newName && newName !== oldName) {
-				var parentKey = d.key.substring(0, d.key.lastIndexOf("/"));
+				const parentKey = d.key.substring(0, d.key.lastIndexOf("/"));
 				fetch(apiPath(d.key), {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
@@ -452,7 +454,7 @@ eXide.edit.Directory = (function () {
 						eXide.util.Dialog.warning("Rename Error", data.error);
 					} else {
 						// Reload the parent in tree view
-						var parentSel = d3.select("[data-key='" + parentKey + "']");
+						const parentSel = d3.select("[data-key='" + parentKey + "']");
 						if (!parentSel.empty()) {
 							build.call(parentSel);
 						}
@@ -473,7 +475,7 @@ eXide.edit.Directory = (function () {
 
 	function deleteItem(d, el) {
 		if (!eXide.app.$checkLogin()) return;
-		var label = d.isCollection ? "collection" : "resource";
+		const label = d.isCollection ? "collection" : "resource";
 		eXide.util.Dialog.input("Confirm Deletion",
 			"Are you sure you want to delete " + label + " <strong>" + d.name + "</strong>?",
 			function() {
@@ -483,8 +485,8 @@ eXide.edit.Directory = (function () {
 						eXide.util.Dialog.warning("Delete Error", data.error);
 					} else {
 						// Reload the parent collection in tree view
-						var parentKey = d.key.substring(0, d.key.lastIndexOf("/"));
-						var parentSel = d3.select("[data-key='" + parentKey + "']");
+						const parentKey = d.key.substring(0, d.key.lastIndexOf("/"));
+						const parentSel = d3.select("[data-key='" + parentKey + "']");
 						if (!parentSel.empty()) {
 							build.call(parentSel);
 						}
@@ -504,22 +506,22 @@ eXide.edit.Directory = (function () {
 		}
 	}
 
-	var propertiesDialog = null;
-	var propertiesTarget = null;
+	let propertiesDialog = null;
+	let propertiesTarget = null;
 
 	function showProperties(d) {
 		if (!eXide.app.$checkLogin()) return;
-		var contentEl = document.getElementById("resource-properties-content");
+		const contentEl = document.getElementById("resource-properties-content");
 		if (!contentEl) return;
-		var propsPromise = fetch(apiPath(d.key)).then(function(r) { return r.json(); });
-		var accountsPromise = fetch("api/admin/accounts").then(function(r) { return r.ok ? r.json() : { users: [], groups: [] }; }).catch(function() { return { users: [], groups: [] }; });
+		const propsPromise = fetch(apiPath(d.key)).then(function(r) { return r.json(); });
+		const accountsPromise = fetch("api/admin/accounts").then(function(r) { return r.ok ? r.json() : { users: [], groups: [] }; }).catch(function() { return { users: [], groups: [] }; });
 		Promise.all([propsPromise, accountsPromise]).then(function(results) {
-			var data = results[0];
-			var accounts = results[1];
+			const data = results[0];
+			const accounts = results[1];
 			contentEl.innerHTML = buildPropertiesForm(data, accounts);
 		});
 
-		var dialog = document.getElementById("resource-properties-dialog");
+		const dialog = document.getElementById("resource-properties-dialog");
 		if (!dialog) return;
 		propertiesTarget = d;
 		if (!propertiesDialog) {
@@ -540,15 +542,15 @@ eXide.edit.Directory = (function () {
 	}
 
 	function applyProperties(d, dialog, dlg) {
-		var form = dialog.querySelector("form");
+		const form = dialog.querySelector("form");
 		if (!form) return;
-		var body = {};
-		var owner = form.querySelector("select[name='owner']");
+		const body = {};
+		const owner = form.querySelector("select[name='owner']");
 		if (owner) body.owner = owner.value;
-		var group = form.querySelector("select[name='group']");
+		const group = form.querySelector("select[name='group']");
 		if (group) body.group = group.value;
 		body.mode = permissionsFromForm(form);
-		var mime = form.querySelector("[name='mime']");
+		const mime = form.querySelector("[name='mime']");
 		if (mime) body.mime = mime.value;
 
 		fetch(apiPath(d.key), {
@@ -581,13 +583,13 @@ eXide.edit.Directory = (function () {
 	// ── Drag & drop upload ───────────────────────────────────────────────
 
 	function initDragDrop() {
-		var directoryBody = document.getElementById("directory-body");
+		const directoryBody = document.getElementById("directory-body");
 		if (!directoryBody) return;
 
 		directoryBody.addEventListener("dragover", function(e) {
 			e.preventDefault();
 			e.stopPropagation();
-			var target = findDropTarget(e.target);
+			const target = findDropTarget(e.target);
 			clearDropHighlight();
 			if (target) target.classList.add("ctx-highlight");
 			e.dataTransfer.dropEffect = "copy";
@@ -604,16 +606,16 @@ eXide.edit.Directory = (function () {
 			e.stopPropagation();
 			clearDropHighlight();
 
-			var target = findDropTarget(e.target);
+			const target = findDropTarget(e.target);
 			if (!target) return;
 
-			var sel = d3.select(target);
-			var d = sel.datum();
+			const sel = d3.select(target);
+			const d = sel.datum();
 			if (!d || !d.isCollection) return;
 
 			if (!eXide.app.$checkLogin()) return;
 
-			var files = Array.from(e.dataTransfer.files);
+			const files = Array.from(e.dataTransfer.files);
 			if (files.length === 0) return;
 
 			uploadFiles(files, d.key).then(function() {
@@ -642,21 +644,19 @@ eXide.edit.Directory = (function () {
 
 	// ── Flat (folder) view ───────────────────────────────────────────────
 
-	var flatViewActive = false;
-	var flatCollection = "/db";
 
 	function initFlatView() {
-		var toggleBtn = document.getElementById("toggle-dir-view");
+		const toggleBtn = document.getElementById("toggle-dir-view");
 		if (toggleBtn) {
 			toggleBtn.addEventListener("click", function() {
-				var newView = flatViewActive ? "tree" : "folder";
+				const newView = flatViewActive ? "tree" : "folder";
 				if (typeof eXide !== 'undefined' && eXide.app && eXide.app.setCollectionsView) {
 					eXide.app.setCollectionsView(newView);
 				}
 				// Persist to preferences
 				if (typeof eXide !== 'undefined' && eXide.app && eXide.app.getPreference) {
 					try {
-						var prefs = JSON.parse(localStorage.getItem('eXide.preferences') || '{}');
+						const prefs = JSON.parse(localStorage.getItem('eXide.preferences') || '{}');
 						prefs.collectionsView = newView;
 						localStorage.setItem('eXide.preferences', JSON.stringify(prefs));
 					} catch(e) {}
@@ -665,16 +665,16 @@ eXide.edit.Directory = (function () {
 		}
 
 		// Refresh button
-		var refreshBtn = document.getElementById("refresh-dir");
+		const refreshBtn = document.getElementById("refresh-dir");
 		if (refreshBtn) {
 			refreshBtn.addEventListener("click", function() {
 				if (flatViewActive) {
 					loadFlatView(flatCollection);
 				} else {
 					// Reload tree view root
-					var rootSel = d3.select("#tree-root");
+					const rootSel = d3.select("#tree-root");
 					if (!rootSel.empty()) {
-						var d = rootSel.datum();
+						const d = rootSel.datum();
 						if (d) {
 							d.isLoaded = false;
 							d.isOpen = true;
@@ -686,13 +686,13 @@ eXide.edit.Directory = (function () {
 		}
 
 		// Drag & drop upload for flat view
-		var flatView = document.getElementById("dir-flat-view");
+		const flatView = document.getElementById("dir-flat-view");
 		if (flatView) {
 			flatView.addEventListener("dragover", function(e) {
 				e.preventDefault();
 				e.stopPropagation();
 				clearDropHighlight();
-				var target = findFlatDropTarget(e.target);
+				const target = findFlatDropTarget(e.target);
 				if (target) target.classList.add("ctx-highlight");
 				e.dataTransfer.dropEffect = "copy";
 			});
@@ -706,11 +706,11 @@ eXide.edit.Directory = (function () {
 				e.stopPropagation();
 				clearDropHighlight();
 				if (!eXide.app.$checkLogin()) return;
-				var files = Array.from(e.dataTransfer.files);
+				const files = Array.from(e.dataTransfer.files);
 				if (files.length === 0) return;
 				// Drop on a collection item uploads there; otherwise use current collection
-				var target = findFlatDropTarget(e.target);
-				var targetKey = flatCollection;
+				const target = findFlatDropTarget(e.target);
+				let targetKey = flatCollection;
 				if (target && target._flatItem && target._flatItem.isCollection) {
 					targetKey = target._flatItem.key;
 				}
@@ -734,7 +734,7 @@ eXide.edit.Directory = (function () {
 	function loadFlatView(collection) {
 		flatCollection = collection;
 		updateFlatBreadcrumbs(collection);
-		var list = document.getElementById("dir-flat-list");
+		const list = document.getElementById("dir-flat-list");
 		if (!list) return;
 		list.innerHTML = '<li class="dir-flat-loading">Loading\u2026</li>';
 
@@ -749,7 +749,7 @@ eXide.edit.Directory = (function () {
 			})
 			.then(function(data) {
 				list.innerHTML = "";
-				var items = (data.items || []).map(mapItem);
+				const items = (data.items || []).map(mapItem);
 				// Add parent link if not at /db
 				if (collection !== "/db") {
 					items.unshift({ name: "..", isCollection: true, key: collection.substring(0, collection.lastIndexOf("/")) || "/db" });
@@ -760,7 +760,7 @@ eXide.edit.Directory = (function () {
 				}
 				items.forEach(function(item) {
 					if (item.name === "..") {
-						var li = document.createElement("li");
+						const li = document.createElement("li");
 						li.className = "dir-flat-item dir-flat-collection";
 						li.innerHTML = '<i class="fa fa-folder"></i> <span>..</span>';
 						li.addEventListener("click", function() {
@@ -769,10 +769,10 @@ eXide.edit.Directory = (function () {
 						list.appendChild(li);
 						return;
 					}
-					var li = document.createElement("li");
-					var isOpen = !item.isCollection && !!eXide.app.getEditor().getDocument(item.key);
+					const li = document.createElement("li");
+					const isOpen = !item.isCollection && !!eXide.app.getEditor().getDocument(item.key);
 					li.className = "dir-flat-item" + (item.isCollection ? " dir-flat-collection" : "") + (isOpen ? " open" : "");
-					var iconClass = item.isCollection ? "fa fa-folder" : "fa " + fileIcon(item);
+					const iconClass = item.isCollection ? "fa fa-folder" : "fa " + fileIcon(item);
 					li.innerHTML = '<i class="' + iconClass + '"></i> <span>' + escapeHtml(item.name) + '</span>';
 					if (item.isCollection) {
 						li._flatItem = item;
@@ -801,18 +801,18 @@ eXide.edit.Directory = (function () {
 	}
 
 	function updateFlatBreadcrumbs(collection) {
-		var bc = document.getElementById("dir-flat-breadcrumbs");
+		const bc = document.getElementById("dir-flat-breadcrumbs");
 		if (!bc) return;
 		bc.innerHTML = "";
-		var parts = collection.split("/").filter(function(p) { return p.length > 0; });
-		var path = "";
-		for (var i = 0; i < parts.length; i++) {
+		const parts = collection.split("/").filter(function(p) { return p.length > 0; });
+		let path = "";
+		for (let i = 0; i < parts.length; i++) {
 			path += "/" + parts[i];
-			var sep = document.createElement("span");
+			const sep = document.createElement("span");
 			sep.className = "dir-bc-sep";
 			sep.textContent = "/";
 			bc.appendChild(sep);
-			var a = document.createElement("a");
+			const a = document.createElement("a");
 			a.href = "#";
 			a.textContent = parts[i];
 			a.dataset.path = path;
@@ -825,7 +825,7 @@ eXide.edit.Directory = (function () {
 	}
 
 	function escapeHtml(str) {
-		var d = document.createElement("div");
+		const d = document.createElement("div");
 		d.textContent = str;
 		return d.innerHTML;
 	}
@@ -842,11 +842,11 @@ eXide.edit.Directory = (function () {
 		},
 
 		clearDirectory: function() {
-			var el = document.getElementById("directory");
+			const el = document.getElementById("directory");
 			if (el) el.innerHTML = "";
 		},
 		reload : function (key) {
-			var sel = d3.select("[data-key='"+ key +"']")
+			const sel = d3.select("[data-key='"+ key +"']")
 			if(sel.empty()) {return}
 			build.call(sel)
 			// Also refresh flat view if active and showing the same collection
@@ -862,9 +862,9 @@ eXide.edit.Directory = (function () {
 		},
 		toggleEdit : function(key, state) {
 
-			var sel = d3.select("[data-key='"+ key +"']")
+			const sel = d3.select("[data-key='"+ key +"']")
 			if(sel.empty()) {return}
-			var d = sel.datum()
+			const d = sel.datum()
 			if (!d) {return}
 			d.isResourceOpen = state || !d.isResourceOpen
 			sel.attr("class", (d.isCollection ? "collection" : "resource") + (d.isResourceOpen ? " open" : ""))

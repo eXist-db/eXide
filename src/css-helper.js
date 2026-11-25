@@ -23,7 +23,7 @@ eXide.namespace("eXide.edit.CssModeHelper");
  */
 eXide.edit.CssModeHelper = (function () {
 
-    Constr = function(editor) {
+    const Constr = function(editor) {
         this.parent = editor;
         this.editor = this.parent.editor;
         this.addCommand("locate", this.locate);
@@ -34,20 +34,20 @@ eXide.edit.CssModeHelper = (function () {
     eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
 
     Constr.prototype.createOutline = function(doc, onComplete) {
-        var state = this.editor.state;
-        var tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
+        const state = this.editor.state;
+        const tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
         tree.iterate({
             enter: function(node) {
                 if (node.name === "RuleSet") {
-                    var blockStart = node.to;
-                    var child = node.node.firstChild;
+                    let blockStart = node.to;
+                    let child = node.node.firstChild;
                     while (child) {
                         if (child.name === "Block") { blockStart = child.from; break; }
                         child = child.nextSibling;
                     }
-                    var selector = state.sliceDoc(node.from, blockStart).trim();
+                    const selector = state.sliceDoc(node.from, blockStart).trim();
                     if (selector) {
-                        var line = state.doc.lineAt(node.from);
+                        const line = state.doc.lineAt(node.from);
                         doc.functions.push({
                             type: eXide.edit.Document.TYPE_FUNCTION,
                             name: selector,
@@ -62,11 +62,11 @@ eXide.edit.CssModeHelper = (function () {
                     return false;
                 }
                 if (node.name === "MediaStatement" || node.name === "KeyframesStatement") {
-                    var text = state.sliceDoc(node.from, node.to);
-                    var braceIdx = text.indexOf("{");
+                    let text = state.sliceDoc(node.from, node.to);
+                    const braceIdx = text.indexOf("{");
                     if (braceIdx >= 0) text = text.substring(0, braceIdx).trim();
                     if (text.length > 60) text = text.substring(0, 60) + "…";
-                    var line = state.doc.lineAt(node.from);
+                    const line = state.doc.lineAt(node.from);
                     doc.functions.push({
                         type: eXide.edit.Document.TYPE_FUNCTION,
                         name: text,
@@ -85,9 +85,9 @@ eXide.edit.CssModeHelper = (function () {
     };
 
     Constr.prototype.gotoSymbol = function(doc) {
-        var self = this;
-        var items = [];
-        for (var i = 0; i < doc.functions.length; i++) {
+        const self = this;
+        const items = [];
+        for (let i = 0; i < doc.functions.length; i++) {
             if (doc.functions[i].name !== "") {
                 items.push({
                     label: doc.functions[i].name,

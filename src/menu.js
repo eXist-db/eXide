@@ -23,31 +23,31 @@ eXide.namespace("eXide.util.Menubar");
  */
 eXide.util.Menubar = (function() {
 
-    Constr = function (container) {
-        var $this = this;
+    const Constr = function (container) {
+        const $this = this;
         this.container = typeof container === "string" ? document.querySelector(container) : container;
         this.editor = null;
         this.commands = {};
 
-        var menuVisible = false;
+        let menuVisible = false;
 
         // Display sub menu on click
-        var topLinks = this.container.querySelectorAll("ul li > a");
-        for (var i = 0; i < topLinks.length; i++) {
+        const topLinks = this.container.querySelectorAll("ul li > a");
+        for (let i = 0; i < topLinks.length; i++) {
             topLinks[i].addEventListener("click", function(ev) {
                 ev.preventDefault();
                 ev.stopPropagation();
-                var link = this;
-                var wasOpen = link.classList.contains("open");
-                var openMenus = $this.container.querySelectorAll("ul li > a.open");
-                for (var j = 0; j < openMenus.length; j++) {
+                const link = this;
+                const wasOpen = link.classList.contains("open");
+                const openMenus = $this.container.querySelectorAll("ul li > a.open");
+                for (let j = 0; j < openMenus.length; j++) {
                     openMenus[j].classList.remove("open");
-                    var sub = openMenus[j].nextElementSibling;
+                    const sub = openMenus[j].nextElementSibling;
                     if (sub && sub.tagName === "UL") sub.style.display = "none";
                 }
                 if (!wasOpen) {
                     link.classList.add("open");
-                    var nextUl = link.nextElementSibling;
+                    const nextUl = link.nextElementSibling;
                     if (nextUl && nextUl.tagName === "UL") nextUl.style.display = "block";
                     menuVisible = true;
                 } else {
@@ -57,26 +57,26 @@ eXide.util.Menubar = (function() {
         }
         document.body.addEventListener("click", function() {
             if (menuVisible) {
-                var subs = $this.container.querySelectorAll("ul li ul");
-                for (var j = 0; j < subs.length; j++) subs[j].style.display = "none";
-                var opens = $this.container.querySelectorAll("ul li > a.open");
-                for (var j = 0; j < opens.length; j++) opens[j].classList.remove("open");
+                const subs = $this.container.querySelectorAll("ul li ul");
+                for (let j = 0; j < subs.length; j++) subs[j].style.display = "none";
+                const opens = $this.container.querySelectorAll("ul li > a.open");
+                for (let j = 0; j < opens.length; j++) opens[j].classList.remove("open");
                 menuVisible = false;
             }
         });
     };
 
     function closeMenus($this) {
-        var subs = $this.container.querySelectorAll("ul li ul");
-        for (var j = 0; j < subs.length; j++) subs[j].style.display = "none";
-        var opens = $this.container.querySelectorAll("ul li > a.open");
-        for (var j = 0; j < opens.length; j++) opens[j].classList.remove("open");
+        const subs = $this.container.querySelectorAll("ul li ul");
+        for (let j = 0; j < subs.length; j++) subs[j].style.display = "none";
+        const opens = $this.container.querySelectorAll("ul li > a.open");
+        for (let j = 0; j < opens.length; j++) opens[j].classList.remove("open");
     }
 
     Constr.prototype.commandPalette = function() {
-        var self = this;
-        var items = [];
-        for (var key in self.commands) {
+        const self = this;
+        const items = [];
+        for (const key in self.commands) {
             items.push(self.commands[key]);
         }
         if (items.length > 0) {
@@ -90,24 +90,24 @@ eXide.util.Menubar = (function() {
     };
 
     Constr.prototype.click = function(selector, callback, action) {
-        var $this = this;
-        var item = document.querySelector(selector);
+        const $this = this;
+        const item = document.querySelector(selector);
         if (!item) return;
-        var label = item.textContent;
+        const label = item.textContent;
         if (!action) {
             action = item.getAttribute("data-command");
         }
         if (action) {
-            var shortcut = eXide.edit.commands.getShortcut(action);
+            const shortcut = eXide.edit.commands.getShortcut(action);
             if (shortcut) {
-                var span = document.createElement("span");
+                const span = document.createElement("span");
                 span.className = "shortcut";
                 span.appendChild(document.createTextNode(shortcut));
                 item.appendChild(span);
             }
         }
         if (item.id) {
-            var shortcutEl = item.querySelector(".shortcut");
+            const shortcutEl = item.querySelector(".shortcut");
             $this.commands[item.id] = {
                 label: [label, shortcutEl ? shortcutEl.textContent : ""],
                 callback: callback
@@ -119,11 +119,11 @@ eXide.util.Menubar = (function() {
             if ($this.editor) {
                 $this.editor.focus();
             }
-            var loginDialog = document.getElementById("login-dialog");
+            const loginDialog = document.getElementById("login-dialog");
             if (loginDialog) {
-                var parentDialog = loginDialog.closest("dialog");
+                const parentDialog = loginDialog.closest("dialog");
                 if (parentDialog && parentDialog.open) {
-                    var firstInput = loginDialog.querySelector("input");
+                    const firstInput = loginDialog.querySelector("input");
                     if (firstInput) firstInput.focus();
                 }
             }
@@ -132,19 +132,19 @@ eXide.util.Menubar = (function() {
     };
 
     Constr.prototype.add = function(menu, label, title, index, onclick) {
-        var $this = this;
-        var shortcut = "";
+        const $this = this;
+        let shortcut = "";
         if (index < 10) {
             shortcut = "<span class=\"shortcut\">" + eXide.edit.commands.getShortcut("gotoTab" + index) + "</span>";
         }
-        var menuEl = this.container.querySelector("ul li[title=\"" + menu + "\"]");
+        const menuEl = this.container.querySelector("ul li[title=\"" + menu + "\"]");
         if (!menuEl) return;
-        var ul = menuEl.querySelector("ul");
+        const ul = menuEl.querySelector("ul");
         if (!ul) return;
-        var li = document.createElement("li");
+        const li = document.createElement("li");
         li.innerHTML = "<a href=\"#\" title=\"" + title + "\">" + label + shortcut + "</a>";
         ul.appendChild(li);
-        var itemLink = li.querySelector("a");
+        const itemLink = li.querySelector("a");
         itemLink.addEventListener("click", function(ev) {
             ev.preventDefault();
             closeMenus($this);
@@ -156,14 +156,14 @@ eXide.util.Menubar = (function() {
     };
 
     Constr.prototype.remove = function(menu, title) {
-        var menuEl = this.container.querySelector("ul li[title=\"" + menu + "\"]");
+        const menuEl = this.container.querySelector("ul li[title=\"" + menu + "\"]");
         if (!menuEl) return;
-        var link = menuEl.querySelector("ul li a[title=\"" + title + "\"]");
+        const link = menuEl.querySelector("ul li a[title=\"" + title + "\"]");
         if (link && link.parentNode) link.parentNode.remove();
     };
 
     Constr.prototype.removeAll = function(menu) {
-        var menuEl = this.container.querySelector("ul li[title=\"" + menu + "\"] ul");
+        const menuEl = this.container.querySelector("ul li[title=\"" + menu + "\"] ul");
         if (menuEl) menuEl.innerHTML = "";
     };
 

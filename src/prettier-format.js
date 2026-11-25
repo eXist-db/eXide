@@ -21,9 +21,9 @@
  * Thin wrapper around Prettier for use by eXide mode helpers.
  * Requires prettierBundle global (loaded from prettier-bundle.js).
  */
-var prettierFormat = (function () {
+const prettierFormat = (function () {
 
-    var MODE_CONFIG = {
+    const MODE_CONFIG = {
         "xquery":     { parser: "xquery" },
         "xml":        { parser: "xml", hasXmlOptions: true },
         "html":       { parser: "html", hasXmlOptions: true, hasHtmlOptions: true },
@@ -45,7 +45,7 @@ var prettierFormat = (function () {
             if (typeof prettierBundle === "undefined") {
                 return Promise.reject(new Error("Prettier is not loaded."));
             }
-            var config = MODE_CONFIG[mode];
+            const config = MODE_CONFIG[mode];
             if (!config) {
                 return Promise.reject(new Error("No formatter available for mode: " + mode));
             }
@@ -54,9 +54,9 @@ var prettierFormat = (function () {
             if (mode === "xquery" && /xquery\s+version\s+["']4\.0["']/.test(code)) {
                 return Promise.reject(new Error("Formatting is not yet supported for XQuery 4.0 code."));
             }
-            var prefs = (typeof eXide !== "undefined" && eXide.app && eXide.app.editor && eXide.app.editor._preferences) || {};
-            var useTabs = prefs.indent === 0;
-            var options = {
+            const prefs = (typeof eXide !== "undefined" && eXide.app && eXide.app.editor && eXide.app.editor._preferences) || {};
+            const useTabs = prefs.indent === 0;
+            const options = {
                 parser: config.parser,
                 plugins: prettierBundle.plugins,
                 tabWidth: prefs.indentSize || 4,

@@ -55,7 +55,7 @@ describe('Monitor panel', () => {
     cy.get('.panel-east').should('not.be.visible')
 
     cy.get('@wsPoll.all').then((interceptions) => {
-      var count = interceptions.length
+      const count = interceptions.length
       // Need a real wait here — we're asserting nothing NEW happens
       cy.wait(3000)
       cy.get('@wsPoll.all').should('have.length', count)
@@ -70,8 +70,8 @@ describe('Monitor panel', () => {
 
     // Run a slow query in the background via the editor
     cy.window().then((win) => {
-      var editor = win.eXide.app.getEditor()
-      var view = editor.editor
+      const editor = win.eXide.app.getEditor()
+      const view = editor.editor
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: 'util:wait(10000)' }
       })

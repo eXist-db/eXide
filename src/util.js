@@ -22,16 +22,16 @@ window.eXide = window.eXide || {};
  * Namespace function. Required by all other classes.
  */
 eXide.namespace = function (ns_string) {
-	var parts = ns_string.split('.'),
+	let parts = ns_string.split('.'),
 		parent = eXide,
 		i;
-	if (parts[0] == "eXide") {
+	if (parts[0] === "eXide") {
 		parts = parts.slice(1);
 	}
 	
 	for (i = 0; i < parts.length; i++) {
 		// create a property if it doesn't exist
-		if (typeof parent[parts[i]] == "undefined") {
+		if (typeof parent[parts[i]] === "undefined") {
 			parent[parts[i]] = {};
 		}
 		parent = parent[parts[i]];
@@ -46,7 +46,7 @@ eXide.namespace("eXide.util");
  */
 eXide.util = (function () {
 
-	var toastContainer = null;
+	let toastContainer = null;
 
 	function getToastContainer() {
 		if (!toastContainer) {
@@ -58,17 +58,17 @@ eXide.util = (function () {
 	}
 
 	function showToast(message, type, title) {
-		var container = getToastContainer();
-		var el = document.createElement("div");
+		const container = getToastContainer();
+		const el = document.createElement("div");
 		el.className = "eXide-toast eXide-toast-" + (type || "info");
 		if (title) {
-			var titleEl = document.createElement("strong");
+			const titleEl = document.createElement("strong");
 			titleEl.textContent = title;
 			el.appendChild(titleEl);
 			el.appendChild(document.createElement("br"));
 		}
 		el.appendChild(document.createTextNode(message));
-		var closer = document.createElement("span");
+		const closer = document.createElement("span");
 		closer.className = "eXide-toast-close";
 		closer.textContent = "\u00d7";
 		closer.addEventListener("click", function() { removeToast(el); });
@@ -120,11 +120,11 @@ eXide.util = (function () {
             if (!path)
                 return path;
             path = path.replace(/^xmldb:exist:\/\//, "");
-            var newComponents = [],
+            const newComponents = [],
                 components = path.split("/"),
                 length = components.length;
-            for (var i = 0 ; i < length; i++) {
-                if (components[i] == ".." ) {
+            for (let i = 0 ; i < length; i++) {
+                if (components[i] === ".." ) {
                     //i--;
                     newComponents.pop();
                 } else {
@@ -139,13 +139,13 @@ eXide.util = (function () {
 		 * Removes type declarations.
 		 */
 		parseSignature: function (signature) {
-			var p = signature.indexOf("(");
+			const p = signature.indexOf("(");
 			if (p > -1) {
-				var parsed = signature.substring(0, p + 1);
+				let parsed = signature.substring(0, p + 1);
 				signature = signature.substring(p);
-				var vars = signature.match(/\$[^\s,\)]+/g);
+				const vars = signature.match(/\$[^\s,\)]+/g);
 				if (vars) {
-					for (var i = 0; i < vars.length; i++) {
+					for (let i = 0; i < vars.length; i++) {
 						if (i > 0)
 							parsed += ", ";
 						parsed += "${" + (i + 1) + ":$" + vars[i].substring(1) + "}";
@@ -183,13 +183,13 @@ eXide.namespace("eXide.util.Dialog");
  */
 eXide.util.Dialog = (function () {
 
-	var msgDlg = null;
-	var inputDlg = null;
-	var callback = null;
+	let msgDlg = null;
+	let inputDlg = null;
+	let callback = null;
 
 	function ensureMessageDialog() {
 		if (msgDlg) return;
-		var el = document.createElement("div");
+		const el = document.createElement("div");
 		el.id = "eXide-dialog-message";
 		el.innerHTML = '<span id="eXide-dialog-message-icon" class="fa fa-4x fa-info-circle"></span>' +
 			'<div id="eXide-dialog-message-body"></div>';
@@ -204,7 +204,7 @@ eXide.util.Dialog = (function () {
 
 	function ensureInputDialog() {
 		if (inputDlg) return;
-		var el = document.createElement("div");
+		const el = document.createElement("div");
 		el.id = "eXide-dialog-input";
 		el.innerHTML = '<span class="fa fa-4x fa-info-circle"></span>' +
 			'<div id="eXide-dialog-input-body"></div>';
@@ -221,7 +221,7 @@ eXide.util.Dialog = (function () {
 			ensureMessageDialog();
 			msgDlg.setTitle(title);
 			document.getElementById("eXide-dialog-message-body").innerHTML = msg || "";
-			var icon = document.getElementById("eXide-dialog-message-icon");
+			const icon = document.getElementById("eXide-dialog-message-icon");
 			if (icon) {
 				icon.className = "fa fa-4x fa-info-circle";
 			}
@@ -232,7 +232,7 @@ eXide.util.Dialog = (function () {
 			ensureMessageDialog();
 			msgDlg.setTitle(title);
 			document.getElementById("eXide-dialog-message-body").innerHTML = msg || "";
-			var icon = document.getElementById("eXide-dialog-message-icon");
+			const icon = document.getElementById("eXide-dialog-message-icon");
 			if (icon) {
 				icon.className = "fa fa-4x fa-exclamation-triangle";
 			}
@@ -251,7 +251,7 @@ eXide.util.Dialog = (function () {
 			options = options || {};
 			ensureInputDialog();
 			callback = okCallback;
-			var buttons = {
+			const buttons = {
 				"Cancel": function() { this.close(); }
 			};
 			buttons[options.action || "OK"] = {
@@ -267,7 +267,7 @@ eXide.util.Dialog = (function () {
 			inputDlg.setTitle(title);
 			document.getElementById("eXide-dialog-input-body").innerHTML = msg || "";
 			inputDlg.open();
-			var firstInput = document.querySelector("#eXide-dialog-input-body input");
+			const firstInput = document.querySelector("#eXide-dialog-input-body input");
 			if (firstInput) {
 				firstInput.focus();
 				firstInput.addEventListener("keyup", function handler(e) {
@@ -294,7 +294,7 @@ eXide.namespace("eXide.util.mimeTypes");
  */
 eXide.util.mimeTypes = (function () {
 	
-    var TYPES = {
+    const TYPES = {
         'xml': [/^text\/xml$/, /^application\/.*\+xml$/, /^application\/xml$/],
         'xquery': [/^application\/xquery$/],
         'css': [/^text\/css$/],
@@ -310,16 +310,16 @@ eXide.util.mimeTypes = (function () {
     return {
     
     	getMime: function (mimeType) {
-	    	var p = mimeType.indexOf(";");
+	    	const p = mimeType.indexOf(";");
 	    	if (p > -1)
 	    		mimeType = mimeType.substring(0, p);
 	    	return mimeType;
 	    },
     
 		getLangFromMime: function (mimeType) {
-	        for (var lang in TYPES) {
-				var info = TYPES[lang];
-				for (var i = 0; i < info.length; i++) {
+	        for (const lang in TYPES) {
+				const info = TYPES[lang];
+				for (let i = 0; i < info.length; i++) {
 					if (info[i].test(mimeType))
 	                    return lang;
 	            }
@@ -341,7 +341,7 @@ eXide.namespace("eXide.util.oop");
  */
 eXide.util.oop.inherit = (function() {
 	
-	var F = function() {};
+	const F = function() {};
 	return function(C, P) {
 		F.prototype = P.prototype;
 		C.prototype = new F();

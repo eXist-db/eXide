@@ -24,9 +24,9 @@ eXide.namespace("eXide.edit.Document");
  */
 eXide.edit.Document = (function() {
 
-    var EditorState = CM6.EditorState;
+    const EditorState = CM6.EditorState;
 
-    Constr = function(name, path, stateOrText) {
+    const Constr = function(name, path, stateOrText) {
         this.name = name;
         this.path = path.replace(/\/{2,}/g, "/");
         this.mime = null;
@@ -136,7 +136,7 @@ eXide.edit.Document = (function() {
     };
 
     Constr.prototype.isXQuery = function() {
-        return this.mime == "application/xquery";
+        return this.mime === "application/xquery";
     };
 
     Constr.prototype.setModeHelper = function(mode) {
@@ -172,37 +172,37 @@ eXide.namespace("eXide.edit.Editor");
  */
 eXide.edit.Editor = (function () {
 
-    var EditorView = CM6.EditorView;
-    var EditorState = CM6.EditorState;
-    var Compartment = CM6.Compartment;
-    var keymap = CM6.keymap;
+    const EditorView = CM6.EditorView;
+    const EditorState = CM6.EditorState;
+    const Compartment = CM6.Compartment;
+    const keymap = CM6.keymap;
 
     // Language compartment for switching syntax modes
-    var languageCompartment = new Compartment();
+    const languageCompartment = new Compartment();
     // Theme compartment for switching themes
-    var themeCompartment = new Compartment();
+    const themeCompartment = new Compartment();
     // Read-only compartment
-    var readOnlyCompartment = new Compartment();
+    const readOnlyCompartment = new Compartment();
     // Auto-pair brackets/quotes compartment
-    var autoPairCompartment = new Compartment();
+    const autoPairCompartment = new Compartment();
     // Line wrapping compartment
-    var lineWrappingCompartment = new Compartment();
+    const lineWrappingCompartment = new Compartment();
     // Show invisibles (whitespace) compartment
-    var showInvisiblesCompartment = new Compartment();
+    const showInvisiblesCompartment = new Compartment();
     // Rectangular selection compartment
-    var rectangularSelectionCompartment = new Compartment();
+    const rectangularSelectionCompartment = new Compartment();
     // Autocompletion compartment (for toggling activateOnTyping)
-    var autocompletionCompartment = new Compartment();
+    const autocompletionCompartment = new Compartment();
 
     function parseErrMsg(error) {
-        var msg;
+        let msg;
         if (error.line) {
             msg = error["#text"];
         } else {
             msg = error;
         }
-        var str = /.*line:?\s(\d+)/i.exec(msg);
-        var line = -1;
+        const str = /.*line:?\s(\d+)/i.exec(msg);
+        let line = -1;
         if (str) {
             line = parseInt(str[1]) - 1;
         } else if (error.line) {
@@ -300,7 +300,7 @@ eXide.edit.Editor = (function () {
             EditorView.domEventHandlers({
                 click: function(event, view) {
                     // Cmd+Click (Mac) or Ctrl+Click (other) → go to definition
-                    var isMac = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
+                    const isMac = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
                     if ((isMac && event.metaKey) || (!isMac && event.ctrlKey)) {
                         event.preventDefault();
                         $this.exec("gotoDefinition");
@@ -308,13 +308,13 @@ eXide.edit.Editor = (function () {
                     }
                 },
                 keydown: function(event, view) {
-                    var isMac = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
+                    const isMac = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
                     if ((isMac && event.key === "Meta") || (!isMac && event.key === "Control")) {
                         view.contentDOM.classList.add("cm-goto-clickable");
                     }
                 },
                 keyup: function(event, view) {
-                    var isMac = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
+                    const isMac = /Mac|iPhone|iPod|iPad/.test(navigator.platform);
                     if ((isMac && event.key === "Meta") || (!isMac && event.key === "Control")) {
                         view.contentDOM.classList.remove("cm-goto-clickable");
                     }
@@ -335,32 +335,32 @@ eXide.edit.Editor = (function () {
                     $this.history.push($this.activeDoc.getPath(), $this.activeDoc.getCurrentLine());
                 }
                 if (update.selectionSet || update.docChanged) {
-                    var head = update.state.selection.main.head;
-                    var line = update.state.doc.lineAt(head);
-                    var col = head - line.from + 1;
-                    var el = document.getElementById("status-cursor");
+                    const head = update.state.selection.main.head;
+                    const line = update.state.doc.lineAt(head);
+                    const col = head - line.from + 1;
+                    const el = document.getElementById("status-cursor");
                     if (el) {
                         el.textContent = "Ln " + line.number + ", Col " + col;
                     }
                     // Update scope breadcrumb
-                    var scopeEl = document.getElementById("status-scope");
-                    var scopeSep = document.getElementById("status-scope-sep");
+                    const scopeEl = document.getElementById("status-scope");
+                    const scopeSep = document.getElementById("status-scope-sep");
                     if (scopeEl && $this.activeDoc) {
-                        var syntax = $this.activeDoc.getSyntax();
-                        var scopePath = null;
+                        const syntax = $this.activeDoc.getSyntax();
+                        let scopePath = null;
 
                         if (syntax === "xquery" && $this.activeDoc.ast) {
-                            var pos = { line: line.number - 1, col: col - 1 };
-                            var node = eXide.edit.XQueryUtils.findNode($this.activeDoc.ast, pos);
+                            const pos = { line: line.number - 1, col: col - 1 };
+                            const node = eXide.edit.XQueryUtils.findNode($this.activeDoc.ast, pos);
                             if (node) {
                                 scopePath = eXide.edit.XQueryUtils.getPath(node);
                             }
                         } else if (syntax === "xml" || syntax === "html") {
                             // Walk CM6 syntax tree to build XPath at cursor
-                            var tree = CM6.syntaxTree(update.state);
-                            var treeNode = tree.resolveInner(head, -1);
-                            var steps = [];
-                            var cur = treeNode;
+                            const tree = CM6.syntaxTree(update.state);
+                            const treeNode = tree.resolveInner(head, -1);
+                            const steps = [];
+                            let cur = treeNode;
                             while (cur) {
                                 // Skip SelfClosingTag when parent is Element (avoid double-counting)
                                 if (cur.name === "SelfClosingTag" && cur.parent && cur.parent.name === "Element") {
@@ -369,14 +369,14 @@ eXide.edit.Editor = (function () {
                                 }
                                 if (cur.name === "Element" || cur.name === "SelfClosingTag") {
                                     // Find TagName child
-                                    var child = cur.firstChild;
+                                    let child = cur.firstChild;
                                     while (child) {
                                         if (child.name === "TagName") {
                                             steps.unshift(update.state.sliceDoc(child.from, child.to));
                                             break;
                                         }
                                         if (child.name === "OpenTag" || child.name === "SelfClosingTag") {
-                                            var gc = child.firstChild;
+                                            let gc = child.firstChild;
                                             while (gc) {
                                                 if (gc.name === "TagName") {
                                                     steps.unshift(update.state.sliceDoc(gc.from, gc.to));
@@ -410,8 +410,8 @@ eXide.edit.Editor = (function () {
         ];
     }
 
-    Constr = function(container, menubar, projects) {
-        var $this = this;
+    const Constr = function(container, menubar, projects) {
+        const $this = this;
         $this.container = container;
         $this.menubar = menubar;
         $this.projects = projects;
@@ -474,9 +474,9 @@ eXide.edit.Editor = (function () {
         this.validationStatusSep = document.getElementById("validation-status-sep");
         this.status.addEventListener("click", function (ev) {
             ev.preventDefault();
-            var path = this.pathname;
-            var line = this.hash.substring(1);
-            var doc = $this.getDocument(path);
+            const path = this.pathname;
+            const line = this.hash.substring(1);
+            const doc = $this.getDocument(path);
             if (doc) {
                 $this.switchTo(doc);
                 editorUtils.gotoLine($this.editor, parseInt(line) + 1);
@@ -487,7 +487,7 @@ eXide.edit.Editor = (function () {
         this.validationEnabled = true;
 
         // register mode helpers
-        var xmlModeHelper = new eXide.edit.XMLModeHelper($this, menubar);
+        const xmlModeHelper = new eXide.edit.XMLModeHelper($this, menubar);
         $this.modes = {
             "xquery": new eXide.edit.XQueryModeHelper($this, menubar),
             "xml": xmlModeHelper,
@@ -503,7 +503,7 @@ eXide.edit.Editor = (function () {
         // Initialize CM6 completion source with editor reference
         eXide.edit.CompletionSource.init($this);
 
-        var gotoLineEl = document.getElementById("dialog-goto-line");
+        const gotoLineEl = document.getElementById("dialog-goto-line");
         this._gotoLineDlg = eXide.util.DialogManager.create(gotoLineEl, {
             modal: false,
             width: 300,
@@ -512,9 +512,9 @@ eXide.edit.Editor = (function () {
             buttons: {
                 "Cancel": function () { $this._gotoLineDlg.close(); $this.editor.focus(); },
                 "Go": function() {
-                    var line = gotoLineEl.querySelector('input[name="row"]').value;
-                    var column = gotoLineEl.querySelector('input[name="column"]').value;
-                    if (column && column != "") {
+                    const line = gotoLineEl.querySelector('input[name="row"]').value;
+                    const column = gotoLineEl.querySelector('input[name="column"]').value;
+                    if (column && column !== "") {
                         editorUtils.gotoLine($this.editor, parseInt(line), parseInt(column) - 1, true);
                     } else {
                         editorUtils.gotoLine($this.editor, parseInt(line), 0, true);
@@ -527,15 +527,15 @@ eXide.edit.Editor = (function () {
         // Handle Enter key in goto-line dialog inputs
         gotoLineEl.querySelectorAll("input").forEach(function(input) {
             input.addEventListener("keyup", function(e) {
-                if (e.keyCode == 13) {
-                    var gotoBtn = $this._gotoLineDlg.dialog.querySelector(".eXide-dialog-buttons button:last-child");
+                if (e.keyCode === 13) {
+                    const gotoBtn = $this._gotoLineDlg.dialog.querySelector(".eXide-dialog-buttons button:last-child");
                     if (gotoBtn) gotoBtn.click();
                 }
             });
         });
 
         // drop handler for appending tab to the end
-        var dropPlaceholderTab = $this.tabs.querySelector(".drop-placeholder .tab");
+        const dropPlaceholderTab = $this.tabs.querySelector(".drop-placeholder .tab");
         if (dropPlaceholderTab) {
             dropPlaceholderTab.addEventListener("dragover", function(ev) {
                 ev.preventDefault();
@@ -549,15 +549,15 @@ eXide.edit.Editor = (function () {
                 ev.stopPropagation();
                 ev.preventDefault();
                 this.classList.remove("dragover");
-                var sourceIdx = parseInt(ev.dataTransfer.getData("text/plain"), 10);
+                const sourceIdx = parseInt(ev.dataTransfer.getData("text/plain"), 10);
                 if (isNaN(sourceIdx)) return;
-                var allTabs = $this.tabs.querySelectorAll(".tab");
-                var sourceTab = allTabs[sourceIdx];
+                const allTabs = $this.tabs.querySelectorAll(".tab");
+                const sourceTab = allTabs[sourceIdx];
                 if (!sourceTab) return;
-                var doc = $this.documents[sourceIdx];
-                var li = sourceTab.parentNode;
+                const doc = $this.documents[sourceIdx];
+                const li = sourceTab.parentNode;
                 li.parentNode.removeChild(li);
-                var placeholder = $this.tabs.querySelector(".drop-placeholder");
+                const placeholder = $this.tabs.querySelector(".drop-placeholder");
                 placeholder.parentNode.insertBefore(li, placeholder);
                 $this.documents.splice(sourceIdx, 1);
                 $this.documents.push(doc);
@@ -566,11 +566,11 @@ eXide.edit.Editor = (function () {
         }
 
          // Set up west panel tab bar (collections / outline)
-        var outlineData = [{label: "collections", cls: "directory"},{label:'outline', cls:"outline"}];
-        var tabsOutline = document.getElementById("tabs-outline");
+        const outlineData = [{label: "collections", cls: "directory"},{label:'outline', cls:"outline"}];
+        const tabsOutline = document.getElementById("tabs-outline");
         outlineData.forEach(function(d, i) {
-            var li = document.createElement("li");
-            var a = document.createElement("a");
+            const li = document.createElement("li");
+            const a = document.createElement("a");
             a.className = "tab";
             a.textContent = d.label;
             a.addEventListener("click", function() {
@@ -592,10 +592,10 @@ eXide.edit.Editor = (function () {
     eXide.util.oop.inherit(Constr, eXide.events.Sender);
 
     Constr.prototype.init = function() {
-        if (this.documents.length == 0)
+        if (this.documents.length === 0)
             this.newDocument(null, "xquery");
         this.initializing = false;
-        var currentDoc = this.getActiveDocument();
+        const currentDoc = this.getActiveDocument();
         this.$triggerEvent("activate", [currentDoc]);
     };
 
@@ -605,9 +605,9 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.exec = function () {
-        var helper = this.activeDoc.getModeHelper();
+        const helper = this.activeDoc.getModeHelper();
         if (helper) {
-            var args = Array.prototype.slice.call(arguments, 1);
+            const args = Array.prototype.slice.call(arguments, 1);
             helper.exec(arguments[0], this.activeDoc, args);
         } else {
             eXide.util.message("Not supported in this mode.");
@@ -623,24 +623,24 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.newDocument = function(data, type) {
-        var $this = this;
-        var newDocId = 0;
-        for (var i = 0; i < $this.documents.length; i++) {
-            var doc = $this.documents[i];
+        const $this = this;
+        let newDocId = 0;
+        for (let i = 0; i < $this.documents.length; i++) {
+            const doc = $this.documents[i];
             if (doc.path.match(/^__new__(\d+)/)) {
                 newDocId = parseInt(RegExp.$1);
             }
         }
         newDocId++;
-        var text;
-        if (data && typeof data == "string") {
+        let text;
+        if (data && typeof data === "string") {
             text = data;
         } else if (type && type === "xquery") {
             text = "xquery version \"3.1\";\n\n";
         } else {
             text = "";
         }
-        var newDocument = new eXide.edit.Document("untitled-" + newDocId,
+        const newDocument = new eXide.edit.Document("untitled-" + newDocId,
                 "__new__" + newDocId, text);
         newDocument.saved = true;
         if (type) {
@@ -652,7 +652,7 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.newDocumentWithText = function(data, mime, resource) {
-        var doc = new eXide.edit.Document(resource.name, resource.path, data);
+        const doc = new eXide.edit.Document(resource.name, resource.path, data);
         doc.editable = resource.writable;
         doc.mime = mime;
         doc.syntax = eXide.util.mimeTypes.getLangFromMime(mime);
@@ -664,23 +664,23 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.newDocumentFromTemplate = function(mode, template) {
-        if (!template || template.length == 0) {
+        if (!template || template.length === 0) {
             this.newDocument(null, mode);
             return;
         }
-        var self = this;
+        const self = this;
         fetch("api/templates/" + encodeURIComponent(template))
         .then(function(response) { return response.text(); })
         .then(function(data) {
-            var newDocId = 0;
-            for (var i = 0; i < self.documents.length; i++) {
-                var doc = self.documents[i];
+            let newDocId = 0;
+            for (let i = 0; i < self.documents.length; i++) {
+                const doc = self.documents[i];
                 if (doc.path.match(/^__new__(\d+)/)) {
                     newDocId = parseInt(RegExp.$1);
                 }
             }
             newDocId++;
-            var newDocument = new eXide.edit.Document("untitled-" + newDocId,
+            const newDocument = new eXide.edit.Document("untitled-" + newDocId,
                     "__new__" + newDocId, data);
             newDocument.setSyntax(mode);
             newDocument.template = template;
@@ -692,7 +692,7 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.openDocument = function(data, mime, resource, externalPath) {
-        var $this = this;
+        const $this = this;
         if (!resource.writable)
             eXide.util.message("Opening " + encodeURI(resource.path) + " readonly!");
         else
@@ -703,7 +703,7 @@ eXide.edit.Editor = (function () {
             mime = "application/less";
         }
         console.log("mime type: %s", mime);
-        var doc = new eXide.edit.Document(resource.name, resource.path, data);
+        const doc = new eXide.edit.Document(resource.name, resource.path, data);
         doc.editable = resource.writable;
         doc.mime = mime;
         doc.syntax = eXide.util.mimeTypes.getLangFromMime(mime);
@@ -715,7 +715,7 @@ eXide.edit.Editor = (function () {
         console.log("opening %s, mime: %s, syntax: %s, line: %i", resource.name, doc.mime, doc.syntax, resource.line);
         this.updateStatus("");
         if (this.activeDoc) {
-            var helper = this.activeDoc.getModeHelper();
+            const helper = this.activeDoc.getModeHelper();
             if (helper) {
                 helper.deactivate(doc);
             }
@@ -725,7 +725,7 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.$initDocument = function (doc, setMime) {
-        var $this = this;
+        const $this = this;
 
         // Save old document state before switching
         if ($this.activeDoc) {
@@ -757,8 +757,8 @@ eXide.edit.Editor = (function () {
     Constr.prototype.$switchView = function(doc) {
         this._switching = true;
         try {
-            var text = doc._text || "";
-            var langExt = getLanguageExtension(doc.getSyntax());
+            const text = doc._text || "";
+            const langExt = getLanguageExtension(doc.getSyntax());
 
             // IMPORTANT: Disable read-only FIRST so the content change is not
             // silently rejected by CM6's readOnly facet (which filters out
@@ -788,7 +788,7 @@ eXide.edit.Editor = (function () {
             // Restore cursor position if saved
             if (typeof doc._cursorOffset === "number" && doc._cursorOffset > 0) {
                 // If stored as a line number (from openDocument), convert to offset
-                var offset;
+                let offset;
                 if (doc._cursorOffset < this.editor.state.doc.lines) {
                     offset = editorUtils.rowColToOffset(this.editor.state, doc._cursorOffset, 0);
                 } else {
@@ -814,7 +814,7 @@ eXide.edit.Editor = (function () {
         this.activeDoc.syntax = mode;
         this.$setMode(this.activeDoc, true);
         // Reconfigure language
-        var langExt = getLanguageExtension(mode);
+        const langExt = getLanguageExtension(mode);
         this.editor.dispatch({
             effects: this._languageCompartment.reconfigure(langExt)
         });
@@ -839,7 +839,7 @@ eXide.edit.Editor = (function () {
             break;
         case "html":
             if (setMime) {
-                if (doc.template == 'html')
+                if (doc.template === 'html')
                     doc.mime = "text/html";
                     else doc.mime = "application/xhtml+xml";
             }
@@ -873,7 +873,7 @@ eXide.edit.Editor = (function () {
                 doc.mime = "text/x-markdown";
         }
         eXide.util.Snippets.init(doc.getSyntax());
-        var mode = this.modes[doc.getSyntax()];
+        let mode = this.modes[doc.getSyntax()];
         if (!mode) {
             mode = new eXide.edit.ModeHelper(this);
         }
@@ -881,24 +881,24 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.closeDocument = function(docToClose) {
-        var doc = docToClose || this.activeDoc;
+        const doc = docToClose || this.activeDoc;
         this.$triggerEvent("close", [doc]);
-        var tabLink = document.querySelector("#tabs a[title=\"" + doc.path + "\"]");
+        const tabLink = document.querySelector("#tabs a[title=\"" + doc.path + "\"]");
         if (tabLink) tabLink.parentNode.remove();
         this.menubar.remove("editors", doc.path);
-        for (var i = 0; i < this.documents.length; i++) {
-            if (this.documents[i].path == doc.path) {
+        for (let i = 0; i < this.documents.length; i++) {
+            if (this.documents[i].path === doc.path) {
                 this.documents.splice(i, 1);
             }
         }
         // Clear view reference
         doc._view = null;
 
-        if (this.documents.length == 0)
+        if (this.documents.length === 0)
             this.newDocument(null, "xquery");
         else {
             this.activeDoc = this.documents[this.documents.length - 1];
-            var activeTabLink = document.querySelector("#tabs a[title=\"" + this.activeDoc.path + "\"]");
+            const activeTabLink = document.querySelector("#tabs a[title=\"" + this.activeDoc.path + "\"]");
             if (activeTabLink) activeTabLink.classList.add("active");
             this.$switchView(this.activeDoc);
             this.directory.toggleEdit(doc.getPath(), false)
@@ -907,9 +907,9 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.saveDocument = function(resource, successHandler, errorHandler) {
-        var $this = this;
-        var oldPath = $this.activeDoc.path;
-        var oldName = $this.activeDoc.name;
+        const $this = this;
+        const oldPath = $this.activeDoc.path;
+        const oldName = $this.activeDoc.name;
         if (resource) {
             $this.activeDoc.path = resource.path,
             $this.activeDoc.name = resource.name
@@ -917,7 +917,7 @@ eXide.edit.Editor = (function () {
 
         eXide.util.message("Storing resource " + $this.activeDoc.name + "...");
 
-        var encodedPath = $this.activeDoc.path.replace(/^\//, "").split("/").map(encodeURIComponent).join("/");
+        const encodedPath = $this.activeDoc.path.replace(/^\//, "").split("/").map(encodeURIComponent).join("/");
         fetch("api/storage/" + encodedPath, {
             method: "PUT",
             headers: {
@@ -950,7 +950,7 @@ eXide.edit.Editor = (function () {
             return response.json();
         })
         .then(function(data) {
-            if (data.status == "error") {
+            if (data.status === "error") {
                 $this.activeDoc.path = oldPath;
                 $this.activeDoc.name = oldName;
                 if (errorHandler) {
@@ -968,7 +968,7 @@ eXide.edit.Editor = (function () {
                     eXide.util.success($this.activeDoc.name + " stored.");
                 }
 
-                var mode = $this.activeDoc.getModeHelper();
+                const mode = $this.activeDoc.getModeHelper();
                 if (mode) {
                     mode.documentSaved($this.activeDoc);
                 }
@@ -997,22 +997,22 @@ eXide.edit.Editor = (function () {
 
     Constr.prototype.getDocument = function(path) {
         path = eXide.util.normalizePath(path);
-        for (var i = 0; i < this.documents.length; i++) {
-            if (this.documents[i].path == path)
+        for (let i = 0; i < this.documents.length; i++) {
+            if (this.documents[i].path === path)
                 return this.documents[i];
         }
         return null;
     };
 
     Constr.prototype.onInput = function (doc, delta) {
-        var mode = doc.getModeHelper();
+        const mode = doc.getModeHelper();
         if (mode && mode.onInput) {
             mode.onInput(doc, delta);
         }
     };
 
     Constr.prototype.historyBack = function() {
-        var item = this.history.pop();
+        const item = this.history.pop();
         if (item) {
             console.log("history event: going to %s at line %d", item.path, item.line);
             eXide.app.findDocument(item.path, item.line + 1);
@@ -1028,7 +1028,7 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.getOffset = function() {
-        var rect = this.container.getBoundingClientRect();
+        const rect = this.container.getBoundingClientRect();
         return { left: rect.left + window.pageXOffset, top: rect.top + window.pageYOffset };
     };
 
@@ -1042,7 +1042,7 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.toggleDiagnostics = function () {
-        var panel = this.editor.dom.querySelector(".cm-panel-lint");
+        const panel = this.editor.dom.querySelector(".cm-panel-lint");
         if (panel) {
             CM6.closeLintPanel(this.editor);
         } else {
@@ -1051,39 +1051,39 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.forEachDocument = function(callback) {
-        var docs = this.documents.slice(0);
-        for (var i = 0; i < docs.length; i++) {
+        const docs = this.documents.slice(0);
+        for (let i = 0; i < docs.length; i++) {
             callback(docs[i]);
         }
     };
 
     Constr.prototype.gotoLine = function() {
-        var gotoLineEl = this._gotoLineDlg.content;
+        const gotoLineEl = this._gotoLineDlg.content;
         gotoLineEl.querySelectorAll("input[type='text']").forEach(function(inp) { inp.value = ""; });
         this._gotoLineDlg.open();
-        var rowInput = gotoLineEl.querySelector('input[name="row"]');
+        const rowInput = gotoLineEl.querySelector('input[name="row"]');
         if (rowInput) rowInput.focus();
     };
 
     Constr.prototype.addTab = function(doc) {
-        var $this = this;
-        var tabId = "t" + $this.tabCounter++;
-        var label = doc.name;
+        const $this = this;
+        const tabId = "t" + $this.tabCounter++;
+        let label = doc.name;
         if (label.length > 16) {
             label = label.substring(0, 13) + "...";
         }
 
         $this.tabs.querySelectorAll("li a").forEach(function(a) { a.classList.remove("active"); });
 
-        var li = document.createElement("li");
-        var tab = document.createElement("a");
-        var tabLabel = document.createElement("span");
+        const li = document.createElement("li");
+        const tab = document.createElement("a");
+        const tabLabel = document.createElement("span");
         tabLabel.className = "tab-label";
         tabLabel.textContent = label;
         tab.appendChild(tabLabel);
-        var indicator = document.createElement("span");
+        const indicator = document.createElement("span");
         indicator.className = "tab-indicator";
-        var closeBtn = document.createElement("span");
+        const closeBtn = document.createElement("span");
         closeBtn.className = "tab-close";
         closeBtn.textContent = "\u00d7";
         closeBtn.addEventListener("click", function(ev) {
@@ -1092,7 +1092,7 @@ eXide.edit.Editor = (function () {
             $this.closeDocument(doc);
         });
         indicator.appendChild(closeBtn);
-        var modDot = document.createElement("span");
+        const modDot = document.createElement("span");
         modDot.className = "tab-modified";
         indicator.appendChild(modDot);
         tab.appendChild(indicator);
@@ -1109,26 +1109,26 @@ eXide.edit.Editor = (function () {
 
         // Native HTML5 drag start
         tab.addEventListener("dragstart", function(ev) {
-            var allTabs = Array.prototype.slice.call($this.tabs.querySelectorAll(".tab"));
-            var idx = allTabs.indexOf(this);
+            const allTabs = Array.prototype.slice.call($this.tabs.querySelectorAll(".tab"));
+            const idx = allTabs.indexOf(this);
             ev.dataTransfer.setData("text/plain", String(idx));
             ev.dataTransfer.effectAllowed = "move";
             this.style.opacity = "0.8";
-            var dropPlaceholder = $this.tabs.querySelector(".drop-placeholder .tab");
+            const dropPlaceholder = $this.tabs.querySelector(".drop-placeholder .tab");
             if (dropPlaceholder) dropPlaceholder.style.display = "";
         });
         tab.addEventListener("dragend", function(ev) {
             this.style.opacity = "";
-            var dropPlaceholder = $this.tabs.querySelector(".drop-placeholder .tab");
+            const dropPlaceholder = $this.tabs.querySelector(".drop-placeholder .tab");
             if (dropPlaceholder) dropPlaceholder.style.display = "none";
         });
 
         // Native HTML5 drop target (for reordering between tabs)
         tab.addEventListener("dragover", function(ev) {
             ev.preventDefault();
-            var rect = this.getBoundingClientRect();
-            var onRight = (ev.clientX - rect.left) > rect.width / 2;
-            var li = this.parentNode;
+            const rect = this.getBoundingClientRect();
+            const onRight = (ev.clientX - rect.left) > rect.width / 2;
+            const li = this.parentNode;
             li.classList.remove("drop-left", "drop-right");
             li.classList.add(onRight ? "drop-right" : "drop-left");
         });
@@ -1139,17 +1139,17 @@ eXide.edit.Editor = (function () {
             ev.stopImmediatePropagation();
             ev.stopPropagation();
             ev.preventDefault();
-            var li = this.parentNode;
-            var insertAfter = li.classList.contains("drop-right");
+            const li = this.parentNode;
+            const insertAfter = li.classList.contains("drop-right");
             li.classList.remove("drop-left", "drop-right");
-            var allTabs = Array.prototype.slice.call($this.tabs.querySelectorAll(".tab"));
-            var sourceIdx = parseInt(ev.dataTransfer.getData("text/plain"), 10);
-            var targetIdx = allTabs.indexOf(this);
+            const allTabs = Array.prototype.slice.call($this.tabs.querySelectorAll(".tab"));
+            const sourceIdx = parseInt(ev.dataTransfer.getData("text/plain"), 10);
+            const targetIdx = allTabs.indexOf(this);
             if (isNaN(sourceIdx) || sourceIdx === targetIdx) return;
-            var sourceTab = allTabs[sourceIdx];
+            const sourceTab = allTabs[sourceIdx];
             if (!sourceTab) return;
-            var sourceLi = sourceTab.parentNode;
-            var targetLi = this.parentNode;
+            const sourceLi = sourceTab.parentNode;
+            const targetLi = this.parentNode;
             sourceLi.parentNode.removeChild(sourceLi);
             if (insertAfter) {
                 targetLi.parentNode.insertBefore(sourceLi, targetLi.nextSibling);
@@ -1157,11 +1157,11 @@ eXide.edit.Editor = (function () {
                 targetLi.parentNode.insertBefore(sourceLi, targetLi);
             }
             // Rebuild documents array from new tab order
-            var newTabs = $this.tabs.querySelectorAll(".tab");
-            var newDocs = [];
-            for (var i = 0; i < newTabs.length; i++) {
-                var path = newTabs[i].title;
-                for (var j = 0; j < $this.documents.length; j++) {
+            const newTabs = $this.tabs.querySelectorAll(".tab");
+            const newDocs = [];
+            for (let i = 0; i < newTabs.length; i++) {
+                const path = newTabs[i].title;
+                for (let j = 0; j < $this.documents.length; j++) {
                     if ($this.documents[j].path === path) {
                         newDocs.push($this.documents[j]);
                         break;
@@ -1172,7 +1172,7 @@ eXide.edit.Editor = (function () {
             $this.rebuildBuffersMenu();
         });
 
-        var placeholder = $this.tabs.querySelector(".drop-placeholder");
+        const placeholder = $this.tabs.querySelector(".drop-placeholder");
         if (placeholder) {
             placeholder.parentNode.insertBefore(li, placeholder);
         } else {
@@ -1192,10 +1192,10 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.rebuildBuffersMenu = function() {
-        var self = this;
+        const self = this;
         self.menubar.removeAll("editors");
         self.documents.forEach(function(doc, idx) {
-            var label = doc.name;
+            let label = doc.name;
             if (label.length > 16) {
                 label = label.substring(0, 13) + "...";
             }
@@ -1208,12 +1208,12 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.selectTab = function(pos) {
-        var self = this;
+        const self = this;
         if (pos >= 0 && pos < this.documents.length) {
             this.switchTo(this.documents[pos]);
         } else {
-            var items = [];
-            for (var i = 0; i < this.documents.length; i++) {
+            const items = [];
+            for (let i = 0; i < this.documents.length; i++) {
                 items.push({
                     label: this.documents[i].name,
                     pos: i
@@ -1237,7 +1237,7 @@ eXide.edit.Editor = (function () {
             this.activeDoc._annotations = editorUtils.getAnnotations(this.editor);
             this.activeDoc._view = null;
 
-            var helper = this.activeDoc.getModeHelper();
+            const helper = this.activeDoc.getModeHelper();
             if (helper) {
                 helper.deactivate(doc);
             }
@@ -1245,9 +1245,9 @@ eXide.edit.Editor = (function () {
 
         this.$switchView(doc);
         this.activeDoc = doc;
-        var $this = this;
+        const $this = this;
         $this.tabs.querySelectorAll("a").forEach(function (el) {
-            if (el.title == doc.path) {
+            if (el.title === doc.path) {
                 el.classList.add("active");
                 $this.scrollToTab(el);
             } else {
@@ -1259,7 +1259,7 @@ eXide.edit.Editor = (function () {
         this.$triggerEvent("activate", [doc]);
 
         eXide.app.toggleRunStatus(doc);
-        var helper = doc.getModeHelper();
+        const helper = doc.getModeHelper();
         if (helper) {
             helper.activate(doc);
         }
@@ -1269,14 +1269,14 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.updateTabStatus = function(oldPath, doc) {
-        var label = doc.name;
+        let label = doc.name;
         if (label.length > 16) {
             label = label.substring(0, 13) + "...";
         }
-        var tabLink = this.tabs.querySelector("a[title=\"" + oldPath + "\"]");
+        const tabLink = this.tabs.querySelector("a[title=\"" + oldPath + "\"]");
         if (tabLink) {
             tabLink.setAttribute("title", doc.path);
-            var tabLabel = tabLink.querySelector(".tab-label");
+            const tabLabel = tabLink.querySelector(".tab-label");
             if (tabLabel) {
                 tabLabel.textContent = label;
             }
@@ -1285,15 +1285,15 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.scrollToTab = function (current) {
-        var strip = document.getElementById("tab-strip-wrap");
+        const strip = document.getElementById("tab-strip-wrap");
         if (!strip) return;
         current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
     };
 
     Constr.prototype.setTheme = function(theme) {
         console.log("Changing theme to %s", theme);
-        var isDark = (theme === "dark");
-        var themeExt = isDark ? [
+        const isDark = (theme === "dark");
+        const themeExt = isDark ? [
             CM6.oneDarkTheme,
             CM6.syntaxHighlighting(CM6.oneDarkHighlightStyle),
             CM6.xqueryDarkHighlightStyle ? CM6.syntaxHighlighting(CM6.xqueryDarkHighlightStyle) : []
@@ -1338,8 +1338,8 @@ eXide.edit.Editor = (function () {
         if (!this.validationStatus) {
             return;
         }
-        var text = msg || "";
-        var label = this.validationStatusLabel || this.validationStatus;
+        const text = msg || "";
+        const label = this.validationStatusLabel || this.validationStatus;
         label.textContent = text;
         if (text) {
             this.validationStatus.hidden = false;
@@ -1366,11 +1366,11 @@ eXide.edit.Editor = (function () {
         // Prefer the structured line number from errObj when provided;
         // otherwise parse "line N" out of the formatted message string
         // (older code paths that don't supply errObj).
-        var line = -1;
+        let line = -1;
         if (errObj && typeof errObj.line === "number" && errObj.line > 0) {
             line = errObj.line;
         } else {
-            var str = /.*line\s(\d+)/i.exec(msg);
+            const str = /.*line\s(\d+)/i.exec(msg);
             if (str) {
                 line = parseInt(str[1]);
             }
@@ -1380,7 +1380,7 @@ eXide.edit.Editor = (function () {
             editorUtils.gotoLine(this.editor, line);
         }
 
-        var annotation = [{
+        const annotation = [{
                 row: line - 1,
                 text: msg,
                 type: "error"
@@ -1410,11 +1410,11 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.saveState = function() {
-        var $this = this;
-        var i = 0;
+        const $this = this;
+        let i = 0;
         this.documents.forEach(function (doc, index) {
             if (doc.path.match('^__new__.*')) {
-                var data = doc.getText();
+                const data = doc.getText();
                 if (data && data.length > 0) {
                     localStorage["eXide." + i + ".path"] = doc.path;
                     localStorage["eXide." + i + ".name"] = doc.name;

@@ -24,18 +24,18 @@ eXide.namespace("eXide.events.Sender");
  */
 eXide.events.Sender = (function() {
 
-    Constr = function() {
+    const Constr = function() {
     };
     
     Constr.prototype = {
         
         addEventListener: function (name, obj, callback) {
-            if (typeof obj == "function") {
+            if (typeof obj === "function") {
                 callback = obj;
                 obj = null;
             }
             this.events = this.events || {};
-    		var event = this.events[name];
+    		let event = this.events[name];
             if (!event) {
                 event = new Array();
                 this.events[name] = event;
@@ -48,22 +48,22 @@ eXide.events.Sender = (function() {
         
 		$triggerEvent: function (name, args) {
             this.events = this.events || {};
-			var event = this.events[name];
+			const event = this.events[name];
 			if (event) {
-				for (var i = 0; i < event.length; i++) {
+				for (let i = 0; i < event.length; i++) {
 					event[i].callback.apply(event[i].obj, args);
 				}
 			}
 		},
 	removeEventListener:function(name, obj, callback){
-		if (typeof obj == "function") {
+		if (typeof obj === "function") {
 	            callback = obj;
 	            obj = null;
 	        }
-		var events = this.events || {};
-		var event = events[name];
+		const events = this.events || {};
+		const event = events[name];
 		if (event) {
-			var i = 0;
+			let i = 0;
 			for (; i < event.length; i++) {
 				if(event[i].obj===obj && event[i].callback===callback) break;
 			}

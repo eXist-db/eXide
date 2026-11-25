@@ -7,7 +7,7 @@ describe('Find and Replace', () => {
 
   function setEditorContent(text) {
     cy.window().then((win) => {
-      var doc = win.eXide.app.getEditor().getActiveDocument()
+      const doc = win.eXide.app.getEditor().getActiveDocument()
       doc.setText(text)
     })
   }

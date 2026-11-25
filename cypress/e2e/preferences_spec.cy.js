@@ -40,7 +40,7 @@ describe('Preferences dialog', () => {
     openPreferences()
     // Check current state
     cy.get('#pref-show-invisibles').then(($cb) => {
-      var wasChecked = $cb.prop('checked')
+      const wasChecked = $cb.prop('checked')
       // Toggle it
       cy.get('#pref-show-invisibles').click()
       // Verify it changed

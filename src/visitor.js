@@ -23,13 +23,13 @@ eXide.namespace("eXide.edit.Visitor");
  */
 eXide.edit.Visitor = (function () {
 
-    Constr = function() {
+    const Constr = function() {
     };
     
     Constr.prototype.visit = function(node, handler) {
         if (node) {
-            var name = node.name;
-            var skip = false;
+            const name = node.name;
+            let skip = false;
             
             if (typeof this[name] === "function") skip = this[name](node) === true ? true : false;
             
@@ -41,8 +41,8 @@ eXide.edit.Visitor = (function () {
 
     Constr.prototype.visitChildren = function(node, handler) {
         if (node) {
-            for (var i = 0; i < node.children.length; i++) {
-                var child = node.children[i];
+            for (let i = 0; i < node.children.length; i++) {
+                const child = node.children[i];
                 if (handler !== undefined && typeof handler[child.name] === "function") {
                     handler[child.name](child);
                 } else {

@@ -23,13 +23,13 @@ eXide.namespace("eXide.util.Help");
  */
 eXide.util.Help = (function () {
 
-    var sections = null;
-    var currentPage = -1;
-    var helpDlg = null;
+    let sections = null;
+    let currentPage = -1;
+    let helpDlg = null;
 
     function ensureDialog() {
         if (helpDlg) return;
-        var el = document.createElement("div");
+        const el = document.createElement("div");
         el.id = "eXide-dialog-help";
         el.innerHTML = '<div class="help" id="eXide-dialog-help-body"></div>';
         document.body.appendChild(el);
@@ -56,8 +56,8 @@ eXide.util.Help = (function () {
     // The primary button reads "Done" on the last page, where it closes the tour,
     // and "Next" everywhere else. "Previous" is disabled on the first page.
     function updateButtons() {
-        var buttons = helpDlg.dialog.querySelectorAll(".eXide-dialog-buttons button");
-        var previousBtn = buttons[1], nextBtn = buttons[2];
+        const buttons = helpDlg.dialog.querySelectorAll(".eXide-dialog-buttons button");
+        const previousBtn = buttons[1], nextBtn = buttons[2];
         if (previousBtn) previousBtn.disabled = currentPage <= 0;
         if (nextBtn) nextBtn.textContent = sections && currentPage + 1 >= sections.length ? "Done" : "Next";
     }
@@ -93,8 +93,8 @@ eXide.util.Help = (function () {
         showFirstTime: function() {
             if (!eXide.util.supportsHtml5Storage)
                 return;
-            var showHints = localStorage.getItem("eXide.hints");
-            if (!showHints || showHints == 1) {
+            const showHints = localStorage.getItem("eXide.hints");
+            if (!showHints || showHints === "1") {
                 eXide.util.Help.show();
             }
         },
@@ -106,11 +106,11 @@ eXide.util.Help = (function () {
                 return response.text();
             })
             .then(function(html) {
-                var parser = new DOMParser();
-                var doc = parser.parseFromString(html, "text/html");
-                var sectionEls = doc.querySelectorAll("section");
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, "text/html");
+                const sectionEls = doc.querySelectorAll("section");
                 sections = [];
-                for (var i = 0; i < sectionEls.length; i++) {
+                for (let i = 0; i < sectionEls.length; i++) {
                     sections.push(sectionEls[i].innerHTML);
                 }
                 eXide.util.Help.show();

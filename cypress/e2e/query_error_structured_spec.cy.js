@@ -27,7 +27,7 @@ describe('Query error display — structured fields', () => {
 
   function setEditorContent(text) {
     cy.window().then((win) => {
-      var doc = win.eXide.app.getEditor().getActiveDocument()
+      const doc = win.eXide.app.getEditor().getActiveDocument()
       doc.setText(text)
     })
   }
@@ -100,7 +100,7 @@ describe('Query error display — structured fields', () => {
     // to drive editor.evalError directly with no errObj, mirroring legacy
     // callers — then assert the panel still works.
     cy.window().then((win) => {
-      var editor = win.eXide.app.getEditor()
+      const editor = win.eXide.app.getEditor()
       editor.evalError('Cannot compile xquery: legacy unstructured error', false)
     })
     cy.get('#exide-err-pill.has-error', { timeout: 5000 }).should('exist')
@@ -111,7 +111,7 @@ describe('Query error display — structured fields', () => {
     // (no extra fields available). The legacy path may omit `title`
     // entirely or set it to the raw text — either is acceptable.
     cy.get('#exide-err-pill').then(($pill) => {
-      var title = $pill.attr('title')
+      const title = $pill.attr('title')
       if (title) {
         expect(title).not.to.include('Code:')
         expect(title).not.to.include('Description:')

@@ -23,16 +23,16 @@ eXide.namespace("eXide.edit.commands");
  */
 eXide.edit.commands = (function () {
 
-    var isMac = /Mac/.test(navigator.platform);
-    var bindings = {};
-    var commandList = [];
+    const isMac = /Mac/.test(navigator.platform);
+    const bindings = {};
+    const commandList = [];
 
     /**
      * Convert CM6 key string to platform-native display string for menus.
      */
     function displayKey(cm6Key) {
         if (!cm6Key) return "";
-        var str = cm6Key
+        const str = cm6Key
             .replace(/ArrowLeft/g, "←")
             .replace(/ArrowRight/g, "→")
             .replace(/ArrowUp/g, "↑")
@@ -61,14 +61,14 @@ eXide.edit.commands = (function () {
 
     function getKeyBinding(bindingsObj, name) {
         if (!bindingsObj || !bindingsObj[name]) return null;
-        var entry = bindingsObj[name];
+        const entry = bindingsObj[name];
         if (isMac) {
             return entry.mac || entry.key;
         }
         return entry.key;
     }
 
-    var nameLabels = {
+    const nameLabels = {
         undo: "Undo", redo: "Redo", gotoLine: "Go to Line",
         historyBack: "Go to Last Edit", fold: "Fold", unfold: "Unfold",
         saveDocument: "Save", runQuery: "Eval", runQueryOrApp: "Run",
@@ -93,7 +93,7 @@ eXide.edit.commands = (function () {
     function humanName(id) {
         if (nameLabels[id]) return nameLabels[id];
         // gotoTab1 → "Go to Tab 1"
-        var tabMatch = id.match(/^gotoTab(\d)$/);
+        const tabMatch = id.match(/^gotoTab(\d)$/);
         if (tabMatch) return "Go to Tab " + tabMatch[1];
         // fallback: camelCase → "Camel Case"
         return id.replace(/([a-z])([A-Z])/g, "$1 $2")
@@ -101,7 +101,7 @@ eXide.edit.commands = (function () {
     }
 
     function addCommand(name, key, exec) {
-        var cmd = { name: name, key: key, exec: exec };
+        const cmd = { name: name, key: key, exec: exec };
         commandList.push(cmd);
         if (key) {
             bindings[name] = key;
@@ -112,11 +112,11 @@ eXide.edit.commands = (function () {
 
         init: function (parent) {
             // Synchronous load — keybindings must be configured before editor is interactive
-            var xhr = new XMLHttpRequest();
+            const xhr = new XMLHttpRequest();
             xhr.open("GET", "keybindings.js", false);
             xhr.send();
             if (xhr.status === 200) {
-                var kb = JSON.parse(xhr.responseText);
+                const kb = JSON.parse(xhr.responseText);
                 (function() {
                     // Display-only entries for built-in CM6 commands (no exec — handled by CM6)
                     addCommand("undo", getKeyBinding(kb, "undo"), null);
@@ -203,9 +203,9 @@ eXide.edit.commands = (function () {
                         return true;
                     });
                     addCommand("escape", getKeyBinding(kb, "escape"), function() {
-                        var doc = parent.getActiveDocument();
+                        const doc = parent.getActiveDocument();
                         doc.template = null;
-                        var head = parent.editor.state.selection.main.head;
+                        const head = parent.editor.state.selection.main.head;
                         parent.editor.dispatch({ selection: { anchor: head } });
                         return true;
                     });
@@ -277,15 +277,15 @@ eXide.edit.commands = (function () {
                         };
                     }
 
-                    for (var i = 1; i < 10; i++) {
-                        var tab = i;
+                    for (let i = 1; i < 10; i++) {
+                        const tab = i;
                         addCommand("gotoTab" + tab, getKeyBinding(kb, "gotoTab" + tab), createExec(tab));
                     }
 
                     // Build CM6 keymap from collected commands
-                    var keymapEntries = [];
-                    for (var j = 0; j < commandList.length; j++) {
-                        var cmd = commandList[j];
+                    const keymapEntries = [];
+                    for (let j = 0; j < commandList.length; j++) {
+                        const cmd = commandList[j];
                         if (cmd.key && cmd.exec) {
                             keymapEntries.push({
                                 key: cmd.key,
@@ -306,19 +306,19 @@ eXide.edit.commands = (function () {
         },
 
         help: function (container, editor) {
-            var el = typeof container === "string" ? document.querySelector(container) : container;
-            var tbody = el.querySelector("#keybindings tbody");
+            const el = typeof container === "string" ? document.querySelector(container) : container;
+            const tbody = el.querySelector("#keybindings tbody");
             if (!tbody) return;
             tbody.innerHTML = "";
-            for (var i = 0; i < commandList.length; i++) {
-                var cmd = commandList[i];
-                var tr = document.createElement("tr");
-                var td = document.createElement("td");
+            for (let i = 0; i < commandList.length; i++) {
+                const cmd = commandList[i];
+                const tr = document.createElement("tr");
+                let td = document.createElement("td");
                 td.textContent = humanName(cmd.name);
                 tr.appendChild(td);
                 td = document.createElement("td");
                 if (cmd.key) {
-                    var span = document.createElement("span");
+                    const span = document.createElement("span");
                     span.className = "shortcut";
                     span.textContent = displayKey(cmd.key);
                     td.appendChild(span);
@@ -327,16 +327,16 @@ eXide.edit.commands = (function () {
                 tbody.appendChild(tr);
             }
             // Wire filter input
-            var filterInput = el.querySelector("#keybindings-filter");
+            const filterInput = el.querySelector("#keybindings-filter");
             if (filterInput) {
-                var newInput = filterInput.cloneNode(true);
+                const newInput = filterInput.cloneNode(true);
                 filterInput.parentNode.replaceChild(newInput, filterInput);
                 newInput.value = "";
                 newInput.addEventListener("input", function() {
-                    var q = this.value.trim().toLowerCase();
-                    var trs = tbody.querySelectorAll("tr");
+                    const q = this.value.trim().toLowerCase();
+                    const trs = tbody.querySelectorAll("tr");
                     trs.forEach(function(tr) {
-                        var text = tr.textContent.toLowerCase();
+                        const text = tr.textContent.toLowerCase();
                         tr.style.display = (!q || text.indexOf(q) >= 0) ? "" : "none";
                     });
                 });

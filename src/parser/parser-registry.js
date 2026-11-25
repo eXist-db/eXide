@@ -6,15 +6,15 @@
  * - XQuery 4.0 → XQueryParser40 (lazy-loaded on first use)
  */
 
-var VERSION_RE = /xquery\s+version\s+["'](\d+\.\d+)["']/;
-var parser40Promise = null;
+const VERSION_RE = /xquery\s+version\s+["'](\d+\.\d+)["']/;
+let parser40Promise = null;
 
 /**
  * Detect XQuery version from source code.
  * Scans first 500 characters for `xquery version "X.X"`.
  */
 function detectVersion(code) {
-    var match = VERSION_RE.exec(code.substring(0, 500));
+    const match = VERSION_RE.exec(code.substring(0, 500));
     if (match && match[1] === "4.0") return "4.0";
     return "3.1";
 }
@@ -29,7 +29,7 @@ function detectVersion(code) {
  * @returns {{ parser: Function, version: string, pending: boolean }}
  */
 function getParser(code, versionPref) {
-    var version = (versionPref && versionPref !== "auto") ? versionPref : detectVersion(code);
+    const version = (versionPref && versionPref !== "auto") ? versionPref : detectVersion(code);
 
     if (version === "4.0") {
         if (globalThis.XQueryParser40) {
@@ -53,10 +53,10 @@ function loadParser40() {
     }
     if (!parser40Promise) {
         parser40Promise = new Promise(function (resolve, reject) {
-            var script = document.createElement("script");
+            const script = document.createElement("script");
             // Resolve path relative to eXide's base URL
-            var base = document.querySelector('base');
-            var baseHref = base ? base.getAttribute('href') : '';
+            const base = document.querySelector('base');
+            const baseHref = base ? base.getAttribute('href') : '';
             script.src = baseHref + "resources/scripts/xquery-parser-40.js";
             script.onload = function () {
                 if (globalThis.XQueryParser40) {
@@ -83,7 +83,7 @@ function preload40() {
 }
 
 // Browser global
-var parserRegistry = {
+const parserRegistry = {
     detectVersion: detectVersion,
     getParser: getParser,
     loadParser40: loadParser40,

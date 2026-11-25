@@ -13,26 +13,26 @@ eXide.namespace("eXide.app.Monitor");
 
 eXide.app.Monitor = (function () {
 
-    var JMX_NS = "http://exist-db.org/jmx";
-    var CATEGORIES = "c=instances&c=processes&c=memory";
+    const JMX_NS = "http://exist-db.org/jmx";
+    const CATEGORIES = "c=instances&c=processes&c=memory";
 
     function jmx2js(node) {
         if (!node) return null;
         if (!(node.firstChild || node.attributes.length > 0)) return null;
-        var parent = {};
+        let parent = {};
         if (node.nodeType === Node.ELEMENT_NODE) {
-            for (var i = 0; i < node.attributes.length; i++) {
+            for (let i = 0; i < node.attributes.length; i++) {
                 parent[node.attributes[i].localName] = node.attributes[i].nodeValue;
             }
         }
-        var child = node.firstChild;
+        let child = node.firstChild;
         while (child) {
             if (child.nodeType === Node.ELEMENT_NODE) {
                 if (child.localName === "row") {
                     if (!(parent instanceof Array)) parent = [];
                     parent.push(jmx2js(child));
                 } else {
-                    var existing = parent[child.localName];
+                    let existing = parent[child.localName];
                     if (existing) {
                         if (!(existing instanceof Array)) {
                             parent[child.localName] = [existing];
@@ -52,14 +52,14 @@ eXide.app.Monitor = (function () {
     }
 
     function formatUptime(ms) {
-        var uptime = parseInt(ms);
-        var cd = 24 * 60 * 60 * 1000;
-        var ch = 60 * 60 * 1000;
-        var d = Math.floor(uptime / cd);
-        var h = Math.floor((uptime - d * cd) / ch);
-        var m = Math.round((uptime - d * cd - h * ch) / 60000);
-        var hh = ("0" + h).slice(-2);
-        var mm = ("0" + m).slice(-2);
+        const uptime = parseInt(ms);
+        const cd = 24 * 60 * 60 * 1000;
+        const ch = 60 * 60 * 1000;
+        const d = Math.floor(uptime / cd);
+        const h = Math.floor((uptime - d * cd) / ch);
+        const m = Math.round((uptime - d * cd - h * ch) / 60000);
+        const hh = ("0" + h).slice(-2);
+        const mm = ("0" + m).slice(-2);
         return d > 0 ? d + "d " + hh + "h" : hh + "h" + mm + "m";
     }
 
@@ -68,7 +68,7 @@ eXide.app.Monitor = (function () {
     }
 
     function escapeHtml(str) {
-        var d = document.createElement("div");
+        const d = document.createElement("div");
         d.textContent = str;
         return d.innerHTML;
     }
@@ -82,7 +82,7 @@ eXide.app.Monitor = (function () {
     }
 
     function renderSourceCell(sourceKey, sourceType) {
-        var src = formatSource(sourceKey, sourceType);
+        const src = formatSource(sourceKey, sourceType);
         if (!src) return '<td class="mon-source"></td>';
         // Database paths become clickable links that open in eXide
         if (/^\/db\//.test(src)) {
@@ -92,7 +92,7 @@ eXide.app.Monitor = (function () {
         return '<td class="mon-source" title="' + escapeHtml(sourceKey || "") + '">' + escapeHtml(src) + '</td>';
     }
 
-    Constr = function () {
+    const Constr = function () {
         this.token = null;
         this.polling = false;
         this.pollInterval = 2000;
@@ -101,10 +101,10 @@ eXide.app.Monitor = (function () {
     };
 
     Constr.prototype.init = function () {
-        var self = this;
+        const self = this;
 
         // interval selector
-        var intervalSelect = document.getElementById("monitor-interval");
+        const intervalSelect = document.getElementById("monitor-interval");
         if (intervalSelect) {
             intervalSelect.addEventListener("change", function () {
                 self.pollInterval = parseInt(this.value);
@@ -114,18 +114,18 @@ eXide.app.Monitor = (function () {
         // open db paths in eXide
         if (this.panel) {
             this.panel.addEventListener("click", function (e) {
-                var link = e.target.closest(".mon-open");
+                const link = e.target.closest(".mon-open");
                 if (link) {
                     e.preventDefault();
-                    var path = link.getAttribute("data-path");
+                    const path = link.getAttribute("data-path");
                     if (path) {
                         eXide.app.openDocument({ path: path });
                     }
                 }
-                var killBtn = e.target.closest(".mon-kill");
+                const killBtn = e.target.closest(".mon-kill");
                 if (killBtn) {
                     e.preventDefault();
-                    var id = killBtn.getAttribute("data-id");
+                    const id = killBtn.getAttribute("data-id");
                     if (id) {
                         self.killQuery(id);
                         eXide.util.message("Killing query " + id + "...");
@@ -139,7 +139,7 @@ eXide.app.Monitor = (function () {
         if (this.polling) return;
         this.polling = true;
 
-        var self = this;
+        const self = this;
         this._useWs = false;
         this._tokenRetries = 0;
 
@@ -179,7 +179,7 @@ eXide.app.Monitor = (function () {
      * which pushes metrics to all WebSocket subscribers including this client.
      */
     Constr.prototype.pollWs = function () {
-        var self = this;
+        const self = this;
         if (!self.polling) return;
 
         fetch("api/ws/monitor", { method: "POST", headers: { "Content-Type": "application/json" } })
@@ -208,30 +208,30 @@ eXide.app.Monitor = (function () {
 
         // Memory
         if (data.memory) {
-            var used = formatMB(data.memory.used);
-            var max = formatMB(data.memory.max);
-            var usedPct = Math.round((data.memory.used / data.memory.max) * 100);
-            var totalPct = Math.round((data.memory.total / data.memory.max) * 100);
+            const used = formatMB(data.memory.used);
+            const max = formatMB(data.memory.max);
+            const usedPct = Math.round((data.memory.used / data.memory.max) * 100);
+            const totalPct = Math.round((data.memory.total / data.memory.max) * 100);
 
-            var memNums = document.getElementById("mon-mem-nums");
+            const memNums = document.getElementById("mon-mem-nums");
             if (memNums) memNums.textContent = used + " / " + max + " MB";
 
-            var memUsed = document.getElementById("mon-mem-used");
+            const memUsed = document.getElementById("mon-mem-used");
             if (memUsed) memUsed.style.width = usedPct + "%";
 
-            var memCommitted = document.getElementById("mon-mem-committed");
+            const memCommitted = document.getElementById("mon-mem-committed");
             if (memCommitted) memCommitted.style.width = totalPct + "%";
         }
 
         // Running queries
-        var queries = data.queries || [];
-        var runBody = document.getElementById("mon-running-body");
+        const queries = data.queries || [];
+        const runBody = document.getElementById("mon-running-body");
         if (runBody) {
             if (queries.length === 0) {
                 runBody.innerHTML = '<tr><td colspan="3" class="mon-empty">none</td></tr>';
             } else {
                 runBody.innerHTML = queries.map(function (q) {
-                    var elapsed = q.elapsed ? (parseInt(q.elapsed) / 1000).toFixed(1) + "s" : "";
+                    const elapsed = q.elapsed ? (parseInt(q.elapsed) / 1000).toFixed(1) + "s" : "";
                     return '<tr class="mon-running">' +
                         '<td><button class="mon-kill" data-id="' + escapeHtml(q.id) + '" title="Kill query">x</button></td>' +
                         '<td>' + escapeHtml(elapsed) + '</td>' +
@@ -240,20 +240,20 @@ eXide.app.Monitor = (function () {
                 }).join("");
             }
 
-            var runCount = document.getElementById("mon-running-count");
+            const runCount = document.getElementById("mon-running-count");
             if (runCount) runCount.textContent = queries.length;
         }
 
         // Recent queries
-        var recentQueries = data.recentQueries || [];
-        var recentBody = document.getElementById("mon-recent-body");
+        const recentQueries = data.recentQueries || [];
+        const recentBody = document.getElementById("mon-recent-body");
         if (recentBody) {
             if (recentQueries.length === 0) {
                 recentBody.innerHTML = '<tr><td colspan="2" class="mon-empty">none</td></tr>';
             } else {
                 recentBody.innerHTML = recentQueries.map(function (q) {
-                    var ms = parseInt(q.mostRecentExecutionDuration || 0);
-                    var color = ms > 100 ? "#c0392b" : "#27ae60";
+                    const ms = parseInt(q.mostRecentExecutionDuration || 0);
+                    const color = ms > 100 ? "#c0392b" : "#27ae60";
                     return '<tr>' +
                         '<td style="color:' + color + ';font-weight:700">' + ms + '</td>' +
                         '<td class="mon-source">' + escapeHtml(q.sourceKey || "") + '</td>' +
@@ -264,17 +264,17 @@ eXide.app.Monitor = (function () {
 
         // DB brokers
         if (data.db) {
-            var dbChip = document.getElementById("mon-chip-db");
+            const dbChip = document.getElementById("mon-chip-db");
             if (dbChip) dbChip.innerHTML = "DB <b>" + (data.db.activeBrokers || "--") + "/" + (data.db.maxBrokers || "--") + "</b>";
         }
 
         // Uptime
-        var upChip = document.getElementById("mon-chip-uptime");
+        const upChip = document.getElementById("mon-chip-uptime");
         if (upChip && data.uptime) {
-            var match = String(data.uptime).match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+            const match = String(data.uptime).match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
             if (match) {
-                var h = parseInt(match[1] || 0);
-                var m = parseInt(match[2] || 0);
+                const h = parseInt(match[1] || 0);
+                const m = parseInt(match[2] || 0);
                 upChip.innerHTML = "Up <b>" + h + "h " + m + "m</b>";
             }
         }
@@ -296,10 +296,10 @@ eXide.app.Monitor = (function () {
     // yet. Retry a few times first; if the WebSocket takes over in the
     // meantime, start()'s "connected" handler clears this timer and _useWs
     // short-circuits any in-flight retry.
-    var TOKEN_FETCH_MAX_RETRIES = 5;
+    const TOKEN_FETCH_MAX_RETRIES = 5;
 
     Constr.prototype.fetchToken = function () {
-        var self = this;
+        const self = this;
         if (self._useWs) return; // WebSocket took over
         fetch("api/admin/status")
             .then(function (r) { return r.json(); })
@@ -326,25 +326,25 @@ eXide.app.Monitor = (function () {
             this.showError(msg);
             return;
         }
-        var self = this;
+        const self = this;
         this.timer = setTimeout(function () { self.fetchToken(); }, 2000);
     };
 
     Constr.prototype.poll = function () {
-        var self = this;
+        const self = this;
         if (!self.polling || self._useWs) return;
 
-        var context = eXide.configuration.context || "";
-        var url = context + "/status?" + CATEGORIES + "&token=" + self.token;
+        const context = eXide.configuration.context || "";
+        const url = context + "/status?" + CATEGORIES + "&token=" + self.token;
         fetch(url)
             .then(function (r) {
                 if (!r.ok) throw new Error("Status " + r.status);
                 return r.text();
             })
             .then(function (text) {
-                var parser = new DOMParser();
-                var xml = parser.parseFromString(text, "text/xml");
-                var data = jmx2js(xml.documentElement);
+                const parser = new DOMParser();
+                const xml = parser.parseFromString(text, "text/xml");
+                const data = jmx2js(xml.documentElement);
                 if (data) self.update(data);
                 if (self.polling) {
                     self.timer = setTimeout(function () { self.poll(); }, self.pollInterval);
@@ -362,40 +362,40 @@ eXide.app.Monitor = (function () {
         this.clearBanner();
 
         // Memory
-        var mem = data.MemoryImpl && data.MemoryImpl.HeapMemoryUsage;
+        const mem = data.MemoryImpl && data.MemoryImpl.HeapMemoryUsage;
         if (mem) {
-            var used = formatMB(mem.used);
-            var committed = formatMB(mem.committed);
-            var max = formatMB(mem.max);
-            var usedPct = Math.round((parseInt(mem.used) / parseInt(mem.max)) * 100);
-            var committedPct = Math.round((parseInt(mem.committed) / parseInt(mem.max)) * 100);
+            const used = formatMB(mem.used);
+            const committed = formatMB(mem.committed);
+            const max = formatMB(mem.max);
+            const usedPct = Math.round((parseInt(mem.used) / parseInt(mem.max)) * 100);
+            const committedPct = Math.round((parseInt(mem.committed) / parseInt(mem.max)) * 100);
 
-            var memNums = document.getElementById("mon-mem-nums");
+            const memNums = document.getElementById("mon-mem-nums");
             if (memNums) memNums.textContent = used + " / " + max + " MB";
 
-            var memUsed = document.getElementById("mon-mem-used");
+            const memUsed = document.getElementById("mon-mem-used");
             if (memUsed) memUsed.style.width = usedPct + "%";
 
-            var memCommitted = document.getElementById("mon-mem-committed");
+            const memCommitted = document.getElementById("mon-mem-committed");
             if (memCommitted) memCommitted.style.width = committedPct + "%";
         }
 
         // Running queries
-        var proc = data.ProcessReport;
-        var running = [];
+        const proc = data.ProcessReport;
+        let running = [];
         if (proc && proc.RunningQueries) {
             running = proc.RunningQueries instanceof Array ? proc.RunningQueries : [proc.RunningQueries];
         }
-        var runBody = document.getElementById("mon-running-body");
+        const runBody = document.getElementById("mon-running-body");
         if (runBody) {
             // Unwrap row key/value structure from jmx2js
-            var unwrapped = running.map(function(q) { return q.value || q; });
-            var filtered = unwrapped.filter(function(q) { return q.caller !== "true"; });
+            const unwrapped = running.map(function(q) { return q.value || q; });
+            const filtered = unwrapped.filter(function(q) { return q.caller !== "true"; });
             if (filtered.length === 0) {
                 runBody.innerHTML = '<tr><td colspan="3" class="mon-empty">none</td></tr>';
             } else {
                 runBody.innerHTML = filtered.map(function (q) {
-                    var elapsed = q.elapsed ? (parseInt(q.elapsed) / 1000).toFixed(1) + "s" : "";
+                    const elapsed = q.elapsed ? (parseInt(q.elapsed) / 1000).toFixed(1) + "s" : "";
                     return '<tr class="mon-running">' +
                         '<td><button class="mon-kill" data-id="' + escapeHtml(q.id) + '" title="Kill query">x</button></td>' +
                         '<td>' + escapeHtml(elapsed) + '</td>' +
@@ -404,16 +404,16 @@ eXide.app.Monitor = (function () {
                 }).join("");
             }
 
-            var runCount = document.getElementById("mon-running-count");
+            const runCount = document.getElementById("mon-running-count");
             if (runCount) runCount.textContent = filtered.length;
         }
 
         // Recent queries
-        var recent = [];
+        let recent = [];
         if (proc && proc.RecentQueryHistory) {
             recent = proc.RecentQueryHistory instanceof Array ? proc.RecentQueryHistory : [proc.RecentQueryHistory];
         }
-        var recentBody = document.getElementById("mon-recent-body");
+        const recentBody = document.getElementById("mon-recent-body");
         if (recentBody) {
             // Unwrap row key/value structure from jmx2js
             recent = recent.map(function(q) { return q.value || q; });
@@ -421,8 +421,8 @@ eXide.app.Monitor = (function () {
                 recentBody.innerHTML = '<tr><td colspan="2" class="mon-empty">none</td></tr>';
             } else {
                 recentBody.innerHTML = recent.map(function (q) {
-                    var ms = parseInt(q.mostRecentExecutionDuration || 0);
-                    var color = ms > 100 ? "#c0392b" : "#27ae60";
+                    const ms = parseInt(q.mostRecentExecutionDuration || 0);
+                    const color = ms > 100 ? "#c0392b" : "#27ae60";
                     return '<tr>' +
                         '<td style="color:' + color + ';font-weight:700">' + ms + '</td>' +
                         renderSourceCell(q.sourceKey, q.sourceType) +
@@ -432,22 +432,22 @@ eXide.app.Monitor = (function () {
         }
 
         // DB brokers and uptime
-        var db = data.Database;
+        const db = data.Database;
         if (db) {
-            var dbChip = document.getElementById("mon-chip-db");
+            const dbChip = document.getElementById("mon-chip-db");
             if (dbChip) dbChip.innerHTML = "DB <b>" + (db.ActiveBrokers || "?") + "/" + (db.MaxBrokers || "?") + "</b>";
 
-            var upChip = document.getElementById("mon-chip-uptime");
+            const upChip = document.getElementById("mon-chip-uptime");
             if (upChip && db.Uptime) upChip.innerHTML = "Up <b>" + formatUptime(db.Uptime) + "</b>";
         }
 
         // Waiting threads count
-        var waitCount = 0;
+        let waitCount = 0;
         if (data.LockTable && data.LockTable.Attempting) {
-            var att = data.LockTable.Attempting;
+            const att = data.LockTable.Attempting;
             waitCount = att instanceof Array ? att.length : (att ? 1 : 0);
         }
-        var waitChip = document.getElementById("mon-chip-wait");
+        const waitChip = document.getElementById("mon-chip-wait");
         if (waitChip) waitChip.innerHTML = "Wait <b>" + waitCount + "</b>";
     };
 
@@ -469,7 +469,7 @@ eXide.app.Monitor = (function () {
     };
 
     Constr.prototype._showBanner = function (msg, kindClass) {
-        var banner = document.getElementById("mon-banner");
+        const banner = document.getElementById("mon-banner");
         if (!banner) return;
         banner.textContent = msg || "";
         banner.className = "mon-banner " + (kindClass || "");
@@ -477,7 +477,7 @@ eXide.app.Monitor = (function () {
     };
 
     Constr.prototype.clearBanner = function () {
-        var banner = document.getElementById("mon-banner");
+        const banner = document.getElementById("mon-banner");
         if (!banner) return;
         banner.textContent = "";
         banner.className = "mon-banner";

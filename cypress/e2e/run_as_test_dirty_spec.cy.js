@@ -12,8 +12,8 @@
  *   3. Clean buffer → api/test fires directly (existing behaviour).
  */
 describe('Run as test — dirty editor buffer', () => {
-  var testCollection = '/db'
-  var testFile = 'cypress-test-run-' + Date.now() + '.xq'
+  const testCollection = '/db'
+  const testFile = 'cypress-test-run-' + Date.now() + '.xq'
 
   before(() => {
     cy.cleanupTestFiles()
@@ -29,7 +29,7 @@ describe('Run as test — dirty editor buffer', () => {
 
   function setEditorContent(text) {
     cy.window().then((win) => {
-      var doc = win.eXide.app.getEditor().getActiveDocument()
+      const doc = win.eXide.app.getEditor().getActiveDocument()
       doc.setText(text)
     })
   }
@@ -39,7 +39,7 @@ describe('Run as test — dirty editor buffer', () => {
   }
 
   // Minimal XQSuite testsuite that always passes.
-  var initialSuite =
+  const initialSuite =
     'xquery version "3.1";\n' +
     'module namespace t = "http://example.com/cypress-test";\n' +
     'declare namespace test = "http://exist-db.org/xquery/xqsuite";\n' +
@@ -48,7 +48,7 @@ describe('Run as test — dirty editor buffer', () => {
     'function t:initial() { "a" };\n'
 
   // Same suite, edited to assert "b" instead — must surface in the run.
-  var editedSuite = initialSuite.replace(/"a"/g, '"b"')
+  const editedSuite = initialSuite.replace(/"a"/g, '"b"')
 
   it('untitled buffer → user error, no api/test call', () => {
     cy.intercept('POST', '**/api/test').as('runTest')
@@ -74,7 +74,7 @@ describe('Run as test — dirty editor buffer', () => {
     })
     setEditorContent(initialSuite)
     cy.window().then((win) => {
-      var ed = win.eXide.app.getEditor()
+      const ed = win.eXide.app.getEditor()
       return new Cypress.Promise((resolve) => {
         ed.saveDocument(null, resolve, function (msg) {
           throw new Error('initial save failed: ' + msg)

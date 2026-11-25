@@ -40,15 +40,15 @@ eXide.namespace("eXide.util.QuickPicker");
 
 eXide.util.QuickPicker = (function () {
 
-    var dialog = null;
-    var filterInput = null;
-    var listEl = null;
-    var detailPane = null;
-    var items = [];
-    var filteredItems = [];
-    var selectedIndex = 0;
-    var onSelect = null;
-    var parentEditor = null;
+    let dialog = null;
+    let filterInput = null;
+    let listEl = null;
+    let detailPane = null;
+    let items = [];
+    let filteredItems = [];
+    let selectedIndex = 0;
+    let onSelect = null;
+    let parentEditor = null;
 
     function ensureDOM() {
         if (dialog) return;
@@ -73,9 +73,9 @@ eXide.util.QuickPicker = (function () {
         dialog.querySelector(".quick-picker-close").addEventListener("click", cancel);
 
         // Drag support via title bar
-        var titleBar = dialog.querySelector(".quick-picker-titlebar");
+        const titleBar = dialog.querySelector(".quick-picker-titlebar");
         titleBar.style.cursor = "move";
-        var dragState = null;
+        let dragState = null;
         titleBar.addEventListener("mousedown", function(e) {
             if (e.target.classList.contains("quick-picker-close")) return;
             e.preventDefault();
@@ -122,7 +122,7 @@ eXide.util.QuickPicker = (function () {
         dialog.addEventListener("close", function () {
             // Browser-initiated close (e.g. Escape on <dialog>)
             if (onSelect) {
-                var cb = onSelect;
+                const cb = onSelect;
                 onSelect = null;
                 cb(null);
             }
@@ -130,9 +130,9 @@ eXide.util.QuickPicker = (function () {
         });
 
         listEl.addEventListener("click", function (ev) {
-            var li = ev.target.closest("li");
+            const li = ev.target.closest("li");
             if (!li) return;
-            var idx = Array.prototype.indexOf.call(listEl.children, li);
+            const idx = Array.prototype.indexOf.call(listEl.children, li);
             if (idx >= 0) {
                 selectedIndex = idx;
                 renderSelection();
@@ -146,8 +146,8 @@ eXide.util.QuickPicker = (function () {
         ensureDOM();
 
         items = (itemsIn || []).slice().sort(function (a, b) {
-            var la = Array.isArray(a.label) ? a.label[0] : a.label;
-            var lb = Array.isArray(b.label) ? b.label[0] : b.label;
+            const la = Array.isArray(a.label) ? a.label[0] : a.label;
+            const lb = Array.isArray(b.label) ? b.label[0] : b.label;
             return la < lb ? -1 : la > lb ? 1 : 0;
         });
         filteredItems = items;
@@ -158,7 +158,7 @@ eXide.util.QuickPicker = (function () {
         if (options.placeholder) filterInput.placeholder = options.placeholder;
         else filterInput.placeholder = "Type to filter\u2026";
 
-        var titleEl = dialog.querySelector(".quick-picker-title");
+        const titleEl = dialog.querySelector(".quick-picker-title");
         titleEl.textContent = options.title || "";
 
         // Reset position for each open
@@ -176,9 +176,9 @@ eXide.util.QuickPicker = (function () {
         if (!text) {
             filteredItems = items;
         } else {
-            var regex = new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
+            const regex = new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i");
             filteredItems = items.filter(function (item) {
-                var label = Array.isArray(item.label) ? item.label.join(" ") : item.label;
+                const label = Array.isArray(item.label) ? item.label.join(" ") : item.label;
                 return regex.test(label);
             });
         }
@@ -188,27 +188,27 @@ eXide.util.QuickPicker = (function () {
 
     function renderList() {
         listEl.innerHTML = "";
-        for (var i = 0; i < filteredItems.length; i++) {
-            var item = filteredItems[i];
-            var li = document.createElement("li");
+        for (let i = 0; i < filteredItems.length; i++) {
+            const item = filteredItems[i];
+            const li = document.createElement("li");
             li.setAttribute("role", "option");
 
             if (Array.isArray(item.label)) {
-                for (var j = 0; j < item.label.length; j++) {
-                    var span = document.createElement("span");
+                for (let j = 0; j < item.label.length; j++) {
+                    const span = document.createElement("span");
                     span.className = j === 0 ? "quick-picker-label" : "quick-picker-shortcut";
                     span.textContent = item.label[j];
                     li.appendChild(span);
                 }
             } else {
-                var span = document.createElement("span");
+                const span = document.createElement("span");
                 span.className = "quick-picker-label";
                 span.textContent = item.label;
                 li.appendChild(span);
             }
 
             if (item.detail) {
-                var detail = document.createElement("span");
+                const detail = document.createElement("span");
                 detail.className = "quick-picker-item-detail";
                 detail.textContent = item.detail;
                 li.appendChild(detail);
@@ -221,18 +221,18 @@ eXide.util.QuickPicker = (function () {
     }
 
     function renderSelection() {
-        var lis = listEl.querySelectorAll("li");
-        for (var i = 0; i < lis.length; i++) {
+        const lis = listEl.querySelectorAll("li");
+        for (let i = 0; i < lis.length; i++) {
             lis[i].classList.toggle("selected", i === selectedIndex);
         }
         // Scroll selected into view
-        var sel = listEl.querySelector("li.selected");
+        const sel = listEl.querySelector("li.selected");
         if (sel) sel.scrollIntoView({ block: "nearest" });
         updateDetail();
     }
 
     function updateDetail() {
-        var item = filteredItems[selectedIndex];
+        const item = filteredItems[selectedIndex];
         if (item && item.tooltip) {
             detailPane.innerHTML = item.tooltip;
             detailPane.classList.add("visible");
@@ -249,8 +249,8 @@ eXide.util.QuickPicker = (function () {
     }
 
     function confirm() {
-        var selected = filteredItems[selectedIndex] || null;
-        var cb = onSelect;
+        const selected = filteredItems[selectedIndex] || null;
+        const cb = onSelect;
         onSelect = null;
         if (dialog.hasAttribute("open")) dialog.close();
         returnFocus();
@@ -258,7 +258,7 @@ eXide.util.QuickPicker = (function () {
     }
 
     function cancel() {
-        var cb = onSelect;
+        const cb = onSelect;
         onSelect = null;
         if (dialog.hasAttribute("open")) dialog.close();
         returnFocus();

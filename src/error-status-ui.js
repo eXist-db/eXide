@@ -20,7 +20,7 @@
      */
     function makeShortLabel(raw) {
         if (!raw) return '';
-        var s = raw;
+        let s = raw;
         // Strip "Cannot compile xquery: " prefix (present on server-side errors)
         s = s.replace(/^Cannot compile xquery:\s*/i, '');
         // Strip error code like "err:XPST0017 "
@@ -41,7 +41,7 @@
      */
     function formatPanelHtml(raw) {
         if (!raw) return '';
-        var s = escapeHtml(raw);
+        let s = escapeHtml(raw);
         // Highlight error code (e.g. err:XPST0017)
         s = s.replace(/(err:[A-Z0-9]+)/g, '<span class="ep-code">$1</span>');
         // Highlight location clause
@@ -61,7 +61,7 @@
      */
     function formatStructuredPanelHtml(errObj, raw) {
         if (!errObj) return formatPanelHtml(raw);
-        var rows = [];
+        const rows = [];
         function row(label, value, cssClass) {
             if (value === null || value === undefined || value === '') return;
             rows.push(
@@ -72,7 +72,7 @@
             );
         }
         row('Code', errObj.code, 'code');
-        var loc = '';
+        let loc = '';
         if (errObj.line) {
             loc = 'line ' + errObj.line;
             if (errObj.column) loc += ', column ' + errObj.column;
@@ -92,10 +92,10 @@
      */
     function formatTitleDump(errObj, raw) {
         if (!errObj) return raw;
-        var lines = [];
+        const lines = [];
         if (errObj.code) lines.push('Code:        ' + errObj.code);
         if (errObj.line) {
-            var l = 'Location:    line ' + errObj.line;
+            let l = 'Location:    line ' + errObj.line;
             if (errObj.column) l += ', column ' + errObj.column;
             lines.push(l);
         }
@@ -110,25 +110,25 @@
 
     function init() {
     // ── Element references ───────────────────────────────────────────────────
-    var errSource  = document.getElementById('error-status');       // eXide writes here
-    var pill       = document.getElementById('exide-err-pill');
-    var pillLabel  = document.getElementById('exide-err-pill-label');
-    var pillArrow  = document.getElementById('exide-err-pill-arrow');
-    var panel      = document.getElementById('exide-err-panel');
-    var panelBody  = document.getElementById('exide-err-panel-body');
-    var closeBtn   = document.getElementById('exide-err-panel-close');
-    var copyBtn    = document.getElementById('exide-err-panel-copy');
+    const errSource  = document.getElementById('error-status');       // eXide writes here
+    const pill       = document.getElementById('exide-err-pill');
+    const pillLabel  = document.getElementById('exide-err-pill-label');
+    const pillArrow  = document.getElementById('exide-err-pill-arrow');
+    const panel      = document.getElementById('exide-err-panel');
+    const panelBody  = document.getElementById('exide-err-panel-body');
+    const closeBtn   = document.getElementById('exide-err-panel-close');
+    const copyBtn    = document.getElementById('exide-err-panel-copy');
     if (!errSource || !pill || !panel) {
         console.warn('[error-status-ui] Required elements not found — aborting.');
         return;
     }
     // ── State ────────────────────────────────────────────────────────────────
-    var currentRaw  = '';
-    var currentErr  = null;   // structured payload from editor.evalError, or null
-    var panelOpen   = false;
+    let currentRaw  = '';
+    let currentErr  = null;   // structured payload from editor.evalError, or null
+    let panelOpen   = false;
     // ── Rendering ────────────────────────────────────────────────────────────
     function readStructured() {
-        var json = errSource.dataset.error;
+        const json = errSource.dataset.error;
         if (!json) return null;
         try { return JSON.parse(json); } catch (e) { return null; }
     }
@@ -142,7 +142,7 @@
         // Expose full structured dump (when available) on hover, so the
         // user can read every field — code, location, description,
         // module, value — without expanding the panel.
-        var dump = formatTitleDump(currentErr, raw);
+        const dump = formatTitleDump(currentErr, raw);
         if (dump) {
             pill.setAttribute('title', dump);
         } else {
@@ -195,11 +195,11 @@
     // ── MutationObserver ─────────────────────────────────────────────────────
     // Watches #error-status (which eXide owns). We never write to it,
     // so there is no risk of a feedback loop.
-    var observer = new MutationObserver(function () {
-        var raw = errSource.textContent.trim();
-        var struct = readStructured();
-        var structJson = struct ? JSON.stringify(struct) : null;
-        var currentStructJson = currentErr ? JSON.stringify(currentErr) : null;
+    const observer = new MutationObserver(function () {
+        const raw = errSource.textContent.trim();
+        const struct = readStructured();
+        const structJson = struct ? JSON.stringify(struct) : null;
+        const currentStructJson = currentErr ? JSON.stringify(currentErr) : null;
         if (raw !== currentRaw || structJson !== currentStructJson) {
             onErrorChange(raw);
         }
@@ -230,7 +230,7 @@
     // review) getting an error stuck on-screen with 'the only way to get rid
     // of it was by reloading the website' — the existing × button only hid
     // the panel; the pill stayed visible.
-    var dismissBtn = document.getElementById('exide-err-panel-dismiss');
+    const dismissBtn = document.getElementById('exide-err-panel-dismiss');
     if (dismissBtn) {
         dismissBtn.addEventListener('click', function () {
             errSource.textContent = '';
@@ -242,7 +242,7 @@
             // When the structured payload is available, copy the full dump
             // (every field, one per line). Otherwise fall back to the raw
             // formatted message that the pill displays.
-            var text = currentErr
+            const text = currentErr
                 ? formatTitleDump(currentErr, currentRaw)
                 : currentRaw;
             navigator.clipboard.writeText(text).then(function () {
@@ -256,7 +256,7 @@
     });
     // ── Initialize with current state ────────────────────────────────────────
     // (The page may already have an error set when this script runs.)
-    var initial = errSource.textContent.trim();
+    const initial = errSource.textContent.trim();
     if (initial) {
         onErrorChange(initial);
     }

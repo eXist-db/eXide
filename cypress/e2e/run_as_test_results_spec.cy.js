@@ -18,9 +18,9 @@
  *      `$result/self::testsuite` vs `$result/testsuite` mismatch).
  */
 describe('Run as test — results rendering', () => {
-  var testCollection = '/db'
-  var testFile = 'cypress-test-results-' + Date.now() + '.xqm'
-  var testPath = testCollection + '/' + testFile
+  const testCollection = '/db'
+  const testFile = 'cypress-test-results-' + Date.now() + '.xqm'
+  const testPath = testCollection + '/' + testFile
 
   before(() => {
     cy.cleanupTestFiles()
@@ -44,7 +44,7 @@ describe('Run as test — results rendering', () => {
   function runSuite(source) {
     cy.intercept('POST', '**/api/test').as('runTest')
     cy.window().then((win) => {
-      var doc = win.eXide.app.getEditor().activeDoc
+      const doc = win.eXide.app.getEditor().activeDoc
       doc.setPath(testPath, testFile)
       doc.editable = true
       doc.syntax = 'xquery'
@@ -52,7 +52,7 @@ describe('Run as test — results rendering', () => {
       doc.setText(source)
     })
     cy.window().then((win) => {
-      var ed = win.eXide.app.getEditor()
+      const ed = win.eXide.app.getEditor()
       return new Cypress.Promise((resolve, reject) => {
         ed.saveDocument(null, resolve, function (msg) {
           reject(new Error('save failed: ' + msg))
@@ -65,7 +65,7 @@ describe('Run as test — results rendering', () => {
   }
 
   it('all-pass module: summary + per-row status, no expanders', () => {
-    var src =
+    const src =
       'xquery version "3.1";\n' +
       'module namespace t = "http://example.com/cy-pass";\n' +
       'declare namespace test = "http://exist-db.org/xquery/xqsuite";\n' +
@@ -89,7 +89,7 @@ describe('Run as test — results rendering', () => {
   })
 
   it('failure: expected + actual surfaced in expandable detail', () => {
-    var src =
+    const src =
       'xquery version "3.1";\n' +
       'module namespace t = "http://example.com/cy-fail";\n' +
       'declare namespace test = "http://exist-db.org/xquery/xqsuite";\n' +
@@ -109,7 +109,7 @@ describe('Run as test — results rendering', () => {
   })
 
   it('runtime error: type surfaced in detail', () => {
-    var src =
+    const src =
       'xquery version "3.1";\n' +
       'module namespace t = "http://example.com/cy-err";\n' +
       'declare namespace test = "http://exist-db.org/xquery/xqsuite";\n' +
@@ -130,7 +130,7 @@ describe('Run as test — results rendering', () => {
   })
 
   it('mixed: pass + failure + error in one suite', () => {
-    var src =
+    const src =
       'xquery version "3.1";\n' +
       'module namespace t = "http://example.com/cy-mix";\n' +
       'declare namespace test = "http://exist-db.org/xquery/xqsuite";\n' +
@@ -152,7 +152,7 @@ describe('Run as test — results rendering', () => {
   })
 
   it('%test:assertError (expected throw) counts as pass', () => {
-    var src =
+    const src =
       'xquery version "3.1";\n' +
       'module namespace t = "http://example.com/cy-assert-err";\n' +
       'declare namespace test = "http://exist-db.org/xquery/xqsuite";\n' +
@@ -169,7 +169,7 @@ describe('Run as test — results rendering', () => {
   })
 
   it('%test:pending renders distinct pending row + summary count', () => {
-    var src =
+    const src =
       'xquery version "3.1";\n' +
       'module namespace t = "http://example.com/cy-pending";\n' +
       'declare namespace test = "http://exist-db.org/xquery/xqsuite";\n' +
@@ -185,7 +185,7 @@ describe('Run as test — results rendering', () => {
   })
 
   it('setup-failure renders distinct panel instead of empty table', () => {
-    var src =
+    const src =
       'xquery version "3.1";\n' +
       'module namespace t = "http://example.com/cy-setup";\n' +
       'declare namespace test = "http://exist-db.org/xquery/xqsuite";\n' +
@@ -204,7 +204,7 @@ describe('Run as test — results rendering', () => {
   })
 
   it('JUnit XML download button appears and is wired to a blob', () => {
-    var src =
+    const src =
       'xquery version "3.1";\n' +
       'module namespace t = "http://example.com/cy-junit";\n' +
       'declare namespace test = "http://exist-db.org/xquery/xqsuite";\n' +
@@ -219,7 +219,7 @@ describe('Run as test — results rendering', () => {
   })
 
   it('clicking a test row jumps to the annotation line in the editor', () => {
-    var src =
+    const src =
       'xquery version "3.1";\n' +                                  // 1
       'module namespace t = "http://example.com/cy-jump";\n' +     // 2
       'declare namespace test = "http://exist-db.org/xquery/xqsuite";\n' + // 3
@@ -238,13 +238,13 @@ describe('Run as test — results rendering', () => {
         .and('match', /^\d+$/)
       // Click second-row → editor cursor should move to that line.
       cy.get('tr.test-clickable').eq(1).then(($row) => {
-        var line = parseInt($row.attr('data-line'), 10)
+        const line = parseInt($row.attr('data-line'), 10)
         expect(line, 'data-line is a positive int').to.be.greaterThan(0)
         cy.wrap($row).click()
         cy.window().then((win) => {
-          var view = win.eXide.app.getEditor().editor
-          var head = view.state.selection.main.head
-          var cursorLine = view.state.doc.lineAt(head).number
+          const view = win.eXide.app.getEditor().editor
+          const head = view.state.selection.main.head
+          const cursorLine = view.state.doc.lineAt(head).number
           // CM6 .number is 1-indexed, matching data-line.
           expect(cursorLine).to.eq(line)
         })
@@ -257,7 +257,7 @@ describe('Run as test — results rendering', () => {
     // matched the actual <testsuites><testsuite/></testsuites> shape, so
     // the time attribute was always empty in the JSON response and the
     // summary line never displayed parentheses.
-    var src =
+    const src =
       'xquery version "3.1";\n' +
       'module namespace t = "http://example.com/cy-time";\n' +
       'declare namespace test = "http://exist-db.org/xquery/xqsuite";\n' +

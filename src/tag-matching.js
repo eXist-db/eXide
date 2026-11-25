@@ -9,21 +9,21 @@ eXide.namespace("eXide.edit.TagMatching");
 
 eXide.edit.TagMatching = (function () {
 
-    var Decoration = CM6.Decoration;
-    var ViewPlugin = CM6.ViewPlugin;
-    var StateField = CM6.StateField;
-    var StateEffect = CM6.StateEffect;
+    const Decoration = CM6.Decoration;
+    const ViewPlugin = CM6.ViewPlugin;
+    const StateField = CM6.StateField;
+    const StateEffect = CM6.StateEffect;
 
-    var matchDeco = Decoration.mark({ class: "cm-matchingTag" });
-    var matchEffect = StateEffect.define();
-    var clearEffect = StateEffect.define();
+    const matchDeco = Decoration.mark({ class: "cm-matchingTag" });
+    const matchEffect = StateEffect.define();
+    const clearEffect = StateEffect.define();
 
-    var matchField = StateField.define({
+    const matchField = StateField.define({
         create: function () { return Decoration.none; },
         update: function (value, tr) {
-            for (var i = 0; i < tr.effects.length; i++) {
+            for (let i = 0; i < tr.effects.length; i++) {
                 if (tr.effects[i].is(matchEffect)) {
-                    var ranges = tr.effects[i].value;
+                    const ranges = tr.effects[i].value;
                     return Decoration.set(ranges.map(function (r) {
                         return matchDeco.range(r.from, r.to);
                     }), true);
@@ -37,22 +37,22 @@ eXide.edit.TagMatching = (function () {
         provide: function (f) { return CM6.EditorView.decorations.from(f); }
     });
 
-    var tagPlugin = ViewPlugin.fromClass(function TagMatchingPlugin(view) {
+    const tagPlugin = ViewPlugin.fromClass(function TagMatchingPlugin(view) {
         this.view = view;
         this.lastHead = -1;
     }, {
         update: function (update) {
             if (!update.selectionSet && !update.docChanged) return;
 
-            var view = update.view;
-            var state = update.state;
-            var head = state.selection.main.head;
+            const view = update.view;
+            const state = update.state;
+            const head = state.selection.main.head;
 
             // Only for XML/HTML modes
-            var doc = typeof eXide !== "undefined" && eXide.app && eXide.app.getEditor &&
+            const doc = typeof eXide !== "undefined" && eXide.app && eXide.app.getEditor &&
                       eXide.app.getEditor() && eXide.app.getEditor().getActiveDocument();
             if (!doc) return;
-            var syntax = doc.getSyntax();
+            const syntax = doc.getSyntax();
             if (syntax !== "xml" && syntax !== "html") {
                 if (this.lastHead !== -1) {
                     view.dispatch({ effects: clearEffect.of(null) });
@@ -61,12 +61,12 @@ eXide.edit.TagMatching = (function () {
                 return;
             }
 
-            var tree = CM6.syntaxTree(state);
-            var node = tree.resolveInner(head, 0);
+            const tree = CM6.syntaxTree(state);
+            const node = tree.resolveInner(head, 0);
 
             // Find the Element ancestor
-            var element = null;
-            var cur = node;
+            let element = null;
+            let cur = node;
             while (cur) {
                 if (cur.name === "Element") {
                     element = cur;
@@ -84,9 +84,9 @@ eXide.edit.TagMatching = (function () {
             }
 
             // Find OpenTag and CloseTag children
-            var openTag = null;
-            var closeTag = null;
-            var child = element.firstChild;
+            let openTag = null;
+            let closeTag = null;
+            let child = element.firstChild;
             while (child) {
                 if (child.name === "OpenTag") openTag = child;
                 if (child.name === "CloseTag") closeTag = child;
@@ -103,8 +103,8 @@ eXide.edit.TagMatching = (function () {
             }
 
             // Find TagName in each
-            var openTagName = findTagName(openTag);
-            var closeTagName = findTagName(closeTag);
+            const openTagName = findTagName(openTag);
+            const closeTagName = findTagName(closeTag);
 
             if (!openTagName || !closeTagName) {
                 if (this.lastHead !== -1) {
@@ -115,8 +115,8 @@ eXide.edit.TagMatching = (function () {
             }
 
             // Check if cursor is inside the open or close tag
-            var inOpen = head >= openTag.from && head <= openTag.to;
-            var inClose = head >= closeTag.from && head <= closeTag.to;
+            const inOpen = head >= openTag.from && head <= openTag.to;
+            const inClose = head >= closeTag.from && head <= closeTag.to;
 
             if (!inOpen && !inClose) {
                 if (this.lastHead !== -1) {
@@ -127,7 +127,7 @@ eXide.edit.TagMatching = (function () {
             }
 
             // Highlight the matching tag name (the other one)
-            var ranges = [];
+            const ranges = [];
             if (inOpen) {
                 ranges.push({ from: closeTagName.from, to: closeTagName.to });
             } else {
@@ -146,7 +146,7 @@ eXide.edit.TagMatching = (function () {
     });
 
     function findTagName(tagNode) {
-        var child = tagNode.firstChild;
+        let child = tagNode.firstChild;
         while (child) {
             if (child.name === "TagName") return child;
             child = child.nextSibling;
