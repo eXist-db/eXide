@@ -12,6 +12,26 @@
     <finish/>
     <permissions xmlns:repo="http://exist-db.org/xquery/repo" password="eXide" user="eXide" group="eXide" mode="0775"/>
     <changelog>
+        <change version="4.2.0">
+            <ul xmlns="http://www.w3.org/1999/xhtml">
+                <li>New: editor: validate XML with native eXist schemas</li>
+                <li>Fix: check for optional documents with doc-available</li>
+                <li>Fix: editor: close schemaLocation file-read gap, require root corroboration</li>
+                <li>Fix: editor: corroborate shared eXist namespace, show validation mode in status</li>
+                <li>Fix: editor: keep CDATA sections intact on both save and open</li>
+                <li>Fix: editor: report malformed XML instead of showing the document as clean</li>
+                <li>Fix: editor: send the save buffer as opaque bytes</li>
+                <li>Fix: editor: show XML validation outcome outside the error pill</li>
+                <li>Fix: editor: stop module catalogue from fetching namespaces over HTTP</li>
+                <li>Fix: editor: style XML validation status as a calm green pill</li>
+                <li>Fix: login: give primary styling to login button instead of cancel</li>
+                <li>Fix: monitor: keep panel markup when showing errors</li>
+                <li>Fix: monitor: resolve JMX token via function-lookup, not get-exist-home()</li>
+                <li>Fix: monitor: retry token fetch instead of wiping panel on reload</li>
+                <li>Fix: view: avoid raw @ in xqdoc comments</li>
+                <li>Fix: view: import the request module namespace</li>
+            </ul>
+        </change>
         <change version="4.1.0">
             <ul xmlns="http://www.w3.org/1999/xhtml">
                 <li>New: auth: serve the eXide shell via a Roaster route with a hard guest gate</li>
