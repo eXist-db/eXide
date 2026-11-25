@@ -369,7 +369,7 @@ eXide.edit.XMLModeHelper = (function () {
                     .catch(function(err) {
                         eXide.util.error("Failed to apply configuration: " + err);
                     });
-            });
+            }, { action: "Apply" });
         }
     };
 

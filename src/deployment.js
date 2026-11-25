@@ -145,6 +145,7 @@ eXide.edit.PackageEditor = (function () {
         const runDialogEl = document.getElementById("dialog-run-app");
         this.runDialog = eXide.util.DialogManager.create(runDialogEl, {
             appendTo: "#layout-container",
+            title: "Run Application",
             modal: false,
             width: 300,
             height: 240,
@@ -165,6 +166,7 @@ eXide.edit.PackageEditor = (function () {
             width: 500,
             height: 440,
             buttons: {
+                "Close": function () { this.close(); },
                 "Apply": function () {
                     const dir = syncDialogEl.querySelector("input[name=\"dir\"]").value;
                     if (dir && dir.length > 0) {
@@ -205,8 +207,7 @@ eXide.edit.PackageEditor = (function () {
                     }).then(function (data) {
                         reportEl.textContent = data.error || ("Updated: " + (data.updated || 0) + " files");
                     });
-                },
-                "Close": function () { this.close(); }
+                }
             }
         });
         this.syncDialogEl = syncDialogEl;
@@ -219,6 +220,7 @@ eXide.edit.PackageEditor = (function () {
             width: 500,
             height: 240,
             buttons: {
+                "Cancel": function () { this.close(); },
                 "Switch Branch": function () {
                     const branch = gitCheckoutEl.querySelector("form [name='git-checkout']").value;
                     eXide.app.git.command($this.currentProject, 'checkout', branch, function (data) {
@@ -226,19 +228,19 @@ eXide.edit.PackageEditor = (function () {
                         document.getElementById("menu-git-active").textContent = branch;
                     });
                     this.close();
-                },
-                "Cancel": function () { this.close(); }
+                }
             }
         });
 
         const gitCommitEl = document.getElementById("dialog-git-commit");
         this.gitCommitDialog = eXide.util.DialogManager.create(gitCommitEl, {
             appendTo: "#layout-container",
-            title: "Synchonize and Commit",
+            title: "Synchronize and Commit",
             modal: false,
             width: 500,
             height: 360,
             buttons: {
+                "Cancel": function () { this.close(); },
                 "Sync and Commit": function () {
                     const form = gitCommitEl.querySelector("form"),
                         title = form.querySelector("[name='git-commit-title']").value,
@@ -268,8 +270,7 @@ eXide.edit.PackageEditor = (function () {
                     });
 
                     this.close();
-                },
-                "Cancel": function () { this.close(); }
+                }
             }
         });
 

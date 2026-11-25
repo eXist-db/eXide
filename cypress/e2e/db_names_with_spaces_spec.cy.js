@@ -141,7 +141,7 @@ describe('Names containing spaces (eXide#820)', () => {
     // Create in the default collection (/db), as the manager opens there.
     cy.get('#eXide-browse-toolbar-create').click()
     cy.get('#eXide-browse-collection-name').type(uiColl)
-    cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
+    cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button').contains('Create').click()
 
     cy.get('div.eXide-browse-main').within(() => {
       cy.contains('.browse-table tbody td.col-name', uiColl, { timeout: 10000 })
@@ -154,7 +154,7 @@ describe('Names containing spaces (eXide#820)', () => {
       cy.contains('.browse-table tbody td.col-name', uiColl).click()
     })
     cy.get('#eXide-browse-toolbar-delete-resource').click()
-    cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button:first-of-type').click()
+    cy.get('dialog.eXide-dialog[open] .eXide-dialog-buttons button').contains('Delete').click()
     cy.get('div.eXide-browse-main').within(() => {
       cy.contains('.browse-table tbody td.col-name', uiColl).should('not.exist')
     })

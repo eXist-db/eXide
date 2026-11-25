@@ -3846,6 +3846,22 @@ div.eXide-dialog {
 .eXide-dialog-buttons button:last-child:hover {
     background: #2c5282;
 }
+.eXide-dialog-buttons button.destructive:last-child {
+    background: #c53030;
+    box-shadow: 0 1px 3px rgba(197,48,48,0.40);
+}
+.eXide-dialog-buttons button.destructive:last-child:hover {
+    background: #9b2c2c;
+}
+.eXide-dialog-buttons button:disabled {
+    opacity: .45;
+    cursor: default;
+    pointer-events: none;
+}
+/* An action kept apart from the dialog's main choices (e.g. "Reset to Defaults") */
+.eXide-dialog-buttons button.separate {
+    margin-right: auto;
+}
 
 .eXide-btn {
     padding: 6px 14px;
@@ -4141,6 +4157,14 @@ body.dark .eXide-dialog-buttons button:last-child {
 body.dark .eXide-dialog-buttons button:last-child:hover {
     background: #2c5282;
     border-color: #2c5282;
+}
+body.dark .eXide-dialog-buttons button.destructive:last-child {
+    background: #c53030;
+    border-color: #c53030;
+}
+body.dark .eXide-dialog-buttons button.destructive:last-child:hover {
+    background: #9b2c2c;
+    border-color: #9b2c2c;
 }
 body.dark #preferences-dialog legend {
     color: #63b3ed;

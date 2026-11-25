@@ -653,7 +653,7 @@ eXide.app = (function(util) {
             } else {
                 util.Dialog.input("Reload Document", "Do you really want to reload the document?", function() {
                     app.$reloadDocument(doc);
-                });
+                }, { action: "Reload" });
             }
         },
 
@@ -675,12 +675,21 @@ eXide.app = (function(util) {
 				            modal: true,
 				            width: 420,
 				            buttons: {
-				                "Close": function() {
-				                    dialogs["dialog-confirm-close"].close();
-				                    editor.closeDocument();
+				                "Close Without Saving": {
+				                    separate: true,
+				                    click: function() {
+				                        dialogs["dialog-confirm-close"].close();
+				                        editor.closeDocument();
+				                    }
 				                },
 				                "Cancel": function() {
 				                    dialogs["dialog-confirm-close"].close();
+				                },
+				                "Save": function() {
+				                    dialogs["dialog-confirm-close"].close();
+				                    app.saveDocument(function() {
+				                        editor.closeDocument();
+				                    });
 				                }
 				            }
 				        }
@@ -702,7 +711,12 @@ eXide.app = (function(util) {
             });
         },
 
-		saveDocument: function() {
+		/**
+		 * @param onSaved optional function, called once the document was stored.
+		 *   (Also used as a click handler, so anything but a function is ignored.)
+		 */
+		saveDocument: function(onSaved) {
+            var afterSave = typeof onSaved === "function" ? onSaved : function() {};
             app.requireLogin(function () {
                 if (editor.getActiveDocument().getPath().match('^__new__')) {
                     dbBrowser.changeToCollection("/db");
@@ -724,6 +738,7 @@ eXide.app = (function(util) {
                                 app.updateStatus(this);
 								app.syncDirectory(this.getBasePath())
                                 app.liveReload();
+                                afterSave();
     						}, function (msg) {
     							util.Dialog.warning("Failed to Save Document", msg);
     						});
@@ -737,6 +752,7 @@ eXide.app = (function(util) {
     					util.message(editor.getActiveDocument().getName() + " stored.");
                         deploymentEditor.autoSync(editor.getActiveDocument().getBasePath());
                         app.liveReload();
+                        afterSave();
     				}, function (msg) {
     					util.Dialog.warning("Failed to Save Document", msg);
     				});
@@ -752,7 +768,7 @@ eXide.app = (function(util) {
                     dbBrowser.changeToCollection(editor.getActiveDocument().getBasePath());
                 }
                 dbBrowser.reload(["reload", "create"], "save");
-    			dialogs["open-dialog"].setTitle("Save Document As ...");
+    			dialogs["open-dialog"].setTitle("Save As\u2026");
     			dialogs["open-dialog"].setButtons({
     				"Cancel": function() {
                         dialogs["open-dialog"].close();
@@ -1379,7 +1395,7 @@ eXide.app = (function(util) {
                 			}, function (msg) {
                 				util.Dialog.warning("Failed to Save Document", msg);
                 			});
-                    });
+                    }, { action: "Save" });
                 });
             } else {
                 callback();
@@ -1871,7 +1887,7 @@ eXide.app = (function(util) {
 			        dialogs["login-dialog"].close();
 			        editor.focus();
 			    },
-			    "Login": function() {
+			    "Log in": function() {
                     var user = document.querySelector("#login-form input[name=\"user\"]").value;
                     var password = document.querySelector("#login-form input[name=\"password\"]").value;
                     var formData = new URLSearchParams();
@@ -1927,7 +1943,7 @@ eXide.app = (function(util) {
 			            if (e.keyCode == 13) {
 			                var loginBtn = Array.prototype.find.call(
 						    dialogs["login-dialog"].dialog.querySelectorAll(".eXide-dialog-buttons button"),
-						    function(btn) { return btn.textContent === "Login"; });
+						    function(btn) { return btn.textContent === "Log in"; });
 			                if (loginBtn) loginBtn.click();
 			            }
 			        });

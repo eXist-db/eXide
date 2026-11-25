@@ -510,7 +510,8 @@ eXide.edit.Editor = (function () {
             height: 200,
             title: "Go to Line",
             buttons: {
-                "Goto": function() {
+                "Cancel": function () { $this._gotoLineDlg.close(); $this.editor.focus(); },
+                "Go": function() {
                     var line = gotoLineEl.querySelector('input[name="row"]').value;
                     var column = gotoLineEl.querySelector('input[name="column"]').value;
                     if (column && column != "") {
@@ -520,15 +521,14 @@ eXide.edit.Editor = (function () {
                     }
                     $this._gotoLineDlg.close();
                     $this.editor.focus();
-                },
-                "Cancel": function () { $this._gotoLineDlg.close(); $this.editor.focus(); }
+                }
             }
         });
         // Handle Enter key in goto-line dialog inputs
         gotoLineEl.querySelectorAll("input").forEach(function(input) {
             input.addEventListener("keyup", function(e) {
                 if (e.keyCode == 13) {
-                    var gotoBtn = $this._gotoLineDlg.dialog.querySelector(".eXide-dialog-buttons button");
+                    var gotoBtn = $this._gotoLineDlg.dialog.querySelector(".eXide-dialog-buttons button:last-child");
                     if (gotoBtn) gotoBtn.click();
                 }
             });
