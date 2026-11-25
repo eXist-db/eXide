@@ -13,96 +13,93 @@ import { eXide, namespace } from "./namespace.js";
 import { util } from "./util.js";
 import { ws } from "./ws-transport.js";
 
-export const Monitor = (function () {
+const CATEGORIES = "c=instances&c=processes&c=memory";
 
-    const JMX_NS = "http://exist-db.org/jmx";
-    const CATEGORIES = "c=instances&c=processes&c=memory";
-
-    function jmx2js(node) {
-        if (!node) return null;
-        if (!(node.firstChild || node.attributes.length > 0)) return null;
-        let parent = {};
-        if (node.nodeType === Node.ELEMENT_NODE) {
-            for (let i = 0; i < node.attributes.length; i++) {
-                parent[node.attributes[i].localName] = node.attributes[i].nodeValue;
-            }
+function jmx2js(node) {
+    if (!node) return null;
+    if (!(node.firstChild || node.attributes.length > 0)) return null;
+    let parent = {};
+    if (node.nodeType === Node.ELEMENT_NODE) {
+        for (let i = 0; i < node.attributes.length; i++) {
+            parent[node.attributes[i].localName] = node.attributes[i].nodeValue;
         }
-        let child = node.firstChild;
-        while (child) {
-            if (child.nodeType === Node.ELEMENT_NODE) {
-                if (child.localName === "row") {
-                    if (!(parent instanceof Array)) parent = [];
-                    parent.push(jmx2js(child));
-                } else {
-                    let existing = parent[child.localName];
-                    if (existing) {
-                        if (!(existing instanceof Array)) {
-                            parent[child.localName] = [existing];
-                            existing = parent[child.localName];
-                        }
-                        existing.push(jmx2js(child));
-                    } else {
-                        parent[child.localName] = jmx2js(child);
+    }
+    let child = node.firstChild;
+    while (child) {
+        if (child.nodeType === Node.ELEMENT_NODE) {
+            if (child.localName === "row") {
+                if (!(parent instanceof Array)) parent = [];
+                parent.push(jmx2js(child));
+            } else {
+                let existing = parent[child.localName];
+                if (existing) {
+                    if (!(existing instanceof Array)) {
+                        parent[child.localName] = [existing];
+                        existing = parent[child.localName];
                     }
+                    existing.push(jmx2js(child));
+                } else {
+                    parent[child.localName] = jmx2js(child);
                 }
-            } else if (node.childNodes.length === 1) {
-                return child.nodeValue;
             }
-            child = child.nextSibling;
+        } else if (node.childNodes.length === 1) {
+            return child.nodeValue;
         }
-        return parent;
+        child = child.nextSibling;
     }
+    return parent;
+}
 
-    function formatUptime(ms) {
-        const uptime = parseInt(ms);
-        const cd = 24 * 60 * 60 * 1000;
-        const ch = 60 * 60 * 1000;
-        const d = Math.floor(uptime / cd);
-        const h = Math.floor((uptime - d * cd) / ch);
-        const m = Math.round((uptime - d * cd - h * ch) / 60000);
-        const hh = ("0" + h).slice(-2);
-        const mm = ("0" + m).slice(-2);
-        return d > 0 ? d + "d " + hh + "h" : hh + "h" + mm + "m";
+function formatUptime(ms) {
+    const uptime = parseInt(ms);
+    const cd = 24 * 60 * 60 * 1000;
+    const ch = 60 * 60 * 1000;
+    const d = Math.floor(uptime / cd);
+    const h = Math.floor((uptime - d * cd) / ch);
+    const m = Math.round((uptime - d * cd - h * ch) / 60000);
+    const hh = (`0${h}`).slice(-2);
+    const mm = (`0${m}`).slice(-2);
+    return d > 0 ? `${d}d ${hh}h` : `${hh}h${mm}m`;
+}
+
+function formatMB(bytes) {
+    return Math.round(parseInt(bytes) / 1024 / 1024);
+}
+
+function escapeHtml(str) {
+    const d = document.createElement("div");
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+function formatSource(sourceKey, sourceType) {
+    if (!sourceKey) return "";
+    // String-based queries (e.g. from eXide's execute endpoint) have sourceType "String"
+    // and a hash like "String/1234567890". Show a short label instead.
+    if (sourceType === "String" || /^String\//.test(sourceKey)) return "(eval)";
+    return sourceKey;
+}
+
+function renderSourceCell(sourceKey, sourceType) {
+    const src = formatSource(sourceKey, sourceType);
+    if (!src) return '<td class="mon-source"></td>';
+    // Database paths become clickable links that open in eXide
+    if (/^\/db\//.test(src)) {
+        return `<td class="mon-source"><a href="#" class="mon-open" data-path="${escapeHtml(src)}" title="${escapeHtml(src)}">${escapeHtml(src)}</a></td>`;
     }
+    return `<td class="mon-source" title="${escapeHtml(sourceKey || "")}">${escapeHtml(src)}</td>`;
+}
 
-    function formatMB(bytes) {
-        return Math.round(parseInt(bytes) / 1024 / 1024);
-    }
-
-    function escapeHtml(str) {
-        const d = document.createElement("div");
-        d.textContent = str;
-        return d.innerHTML;
-    }
-
-    function formatSource(sourceKey, sourceType) {
-        if (!sourceKey) return "";
-        // String-based queries (e.g. from eXide's execute endpoint) have sourceType "String"
-        // and a hash like "String/1234567890". Show a short label instead.
-        if (sourceType === "String" || /^String\//.test(sourceKey)) return "(eval)";
-        return sourceKey;
-    }
-
-    function renderSourceCell(sourceKey, sourceType) {
-        const src = formatSource(sourceKey, sourceType);
-        if (!src) return '<td class="mon-source"></td>';
-        // Database paths become clickable links that open in eXide
-        if (/^\/db\//.test(src)) {
-            return '<td class="mon-source"><a href="#" class="mon-open" data-path="' +
-                escapeHtml(src) + '" title="' + escapeHtml(src) + '">' + escapeHtml(src) + '</a></td>';
-        }
-        return '<td class="mon-source" title="' + escapeHtml(sourceKey || "") + '">' + escapeHtml(src) + '</td>';
-    }
-
-    const Constr = function () {
+export class Monitor {
+    constructor() {
         this.token = null;
         this.polling = false;
         this.pollInterval = 2000;
         this.timer = null;
         this.panel = document.getElementById("monitor-panel");
-    };
+    }
 
-    Constr.prototype.init = function () {
+    init() {
         const self = this;
 
         // interval selector
@@ -115,13 +112,13 @@ export const Monitor = (function () {
 
         // open db paths in eXide
         if (this.panel) {
-            this.panel.addEventListener("click", function (e) {
+            this.panel.addEventListener("click", (e) => {
                 const link = e.target.closest(".mon-open");
                 if (link) {
                     e.preventDefault();
                     const path = link.getAttribute("data-path");
                     if (path) {
-                        eXide.app.openDocument({ path: path });
+                        eXide.app.openDocument({ path });
                     }
                 }
                 const killBtn = e.target.closest(".mon-kill");
@@ -130,14 +127,14 @@ export const Monitor = (function () {
                     const id = killBtn.getAttribute("data-id");
                     if (id) {
                         self.killQuery(id);
-                        util.message("Killing query " + id + "...");
+                        util.message(`Killing query ${id}...`);
                     }
                 }
             });
         }
-    };
+    }
 
-    Constr.prototype.start = function () {
+    start() {
         if (this.polling) return;
         this.polling = true;
 
@@ -147,7 +144,7 @@ export const Monitor = (function () {
 
         // Register WebSocket listener regardless of current connection state
         if (typeof ws !== "undefined") {
-            ws.on("exist/metrics", function (data) {
+            ws.on("exist/metrics", (data) => {
                 if (data && self.polling) self.updateFromWs(data);
             });
 
@@ -159,7 +156,7 @@ export const Monitor = (function () {
             }
 
             // WebSocket not yet connected — listen for connection and switch
-            ws.on("connected", function () {
+            ws.on("connected", () => {
                 if (self.polling && !self._useWs) {
                     console.log("[monitor] Switching to WebSocket");
                     self._useWs = true;
@@ -174,37 +171,36 @@ export const Monitor = (function () {
 
         // Start with HTTP polling; will switch to WebSocket when connected
         this.fetchToken();
-    };
+    }
 
     /**
      * Poll via the WebSocket push endpoint. Triggers a server-side ws:send()
      * which pushes metrics to all WebSocket subscribers including this client.
      */
-    Constr.prototype.pollWs = function () {
+    async pollWs() {
         const self = this;
         if (!self.polling) return;
 
-        fetch("api/ws/monitor", { method: "POST", headers: { "Content-Type": "application/json" } })
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                // The data also arrives via WebSocket, but use HTTP response as fallback
-                if (!self._wsReceived && data) self.updateFromWs(data);
-                self._wsReceived = false;
-                if (self.polling) {
-                    self.timer = setTimeout(function () { self.pollWs(); }, self.pollInterval);
-                }
-            })
-            .catch(function () {
-                if (self.polling) {
-                    self.timer = setTimeout(function () { self.pollWs(); }, 5000);
-                }
-            });
-    };
+        try {
+            const r = await fetch("api/ws/monitor", { method: "POST", headers: { "Content-Type": "application/json" } });
+            const data = await r.json();
+            // The data also arrives via WebSocket, but use HTTP response as fallback
+            if (!self._wsReceived && data) self.updateFromWs(data);
+            self._wsReceived = false;
+            if (self.polling) {
+                self.timer = setTimeout(() => { self.pollWs(); }, self.pollInterval);
+            }
+        } catch {
+            if (self.polling) {
+                self.timer = setTimeout(() => { self.pollWs(); }, 5000);
+            }
+        }
+    }
 
     /**
      * Update the monitor UI from WebSocket-pushed metrics data.
      */
-    Constr.prototype.updateFromWs = function (data) {
+    updateFromWs(data) {
         this._wsReceived = true;
         this.clearBanner();
 
@@ -216,13 +212,13 @@ export const Monitor = (function () {
             const totalPct = Math.round((data.memory.total / data.memory.max) * 100);
 
             const memNums = document.getElementById("mon-mem-nums");
-            if (memNums) memNums.textContent = used + " / " + max + " MB";
+            if (memNums) memNums.textContent = `${used} / ${max} MB`;
 
             const memUsed = document.getElementById("mon-mem-used");
-            if (memUsed) memUsed.style.width = usedPct + "%";
+            if (memUsed) memUsed.style.width = `${usedPct}%`;
 
             const memCommitted = document.getElementById("mon-mem-committed");
-            if (memCommitted) memCommitted.style.width = totalPct + "%";
+            if (memCommitted) memCommitted.style.width = `${totalPct}%`;
         }
 
         // Running queries
@@ -232,13 +228,13 @@ export const Monitor = (function () {
             if (queries.length === 0) {
                 runBody.innerHTML = '<tr><td colspan="3" class="mon-empty">none</td></tr>';
             } else {
-                runBody.innerHTML = queries.map(function (q) {
-                    const elapsed = q.elapsed ? (parseInt(q.elapsed) / 1000).toFixed(1) + "s" : "";
-                    return '<tr class="mon-running">' +
-                        '<td><button class="mon-kill" data-id="' + escapeHtml(q.id) + '" title="Kill query">x</button></td>' +
-                        '<td>' + escapeHtml(elapsed) + '</td>' +
-                        '<td class="mon-source">' + escapeHtml(q.sourceKey || "") + '</td>' +
-                        '</tr>';
+                runBody.innerHTML = queries.map((q) => {
+                    const elapsed = q.elapsed ? `${(parseInt(q.elapsed) / 1000).toFixed(1)}s` : "";
+                    return `<tr class="mon-running">` +
+                        `<td><button class="mon-kill" data-id="${escapeHtml(q.id)}" title="Kill query">x</button></td>` +
+                        `<td>${escapeHtml(elapsed)}</td>` +
+                        `<td class="mon-source">${escapeHtml(q.sourceKey || "")}</td>` +
+                        `</tr>`;
                 }).join("");
             }
 
@@ -253,13 +249,13 @@ export const Monitor = (function () {
             if (recentQueries.length === 0) {
                 recentBody.innerHTML = '<tr><td colspan="2" class="mon-empty">none</td></tr>';
             } else {
-                recentBody.innerHTML = recentQueries.map(function (q) {
+                recentBody.innerHTML = recentQueries.map((q) => {
                     const ms = parseInt(q.mostRecentExecutionDuration || 0);
                     const color = ms > 100 ? "#c0392b" : "#27ae60";
-                    return '<tr>' +
-                        '<td style="color:' + color + ';font-weight:700">' + ms + '</td>' +
-                        '<td class="mon-source">' + escapeHtml(q.sourceKey || "") + '</td>' +
-                        '</tr>';
+                    return `<tr>` +
+                        `<td style="color:${color};font-weight:700">${ms}</td>` +
+                        `<td class="mon-source">${escapeHtml(q.sourceKey || "")}</td>` +
+                        `</tr>`;
                 }).join("");
             }
         }
@@ -267,7 +263,7 @@ export const Monitor = (function () {
         // DB brokers
         if (data.db) {
             const dbChip = document.getElementById("mon-chip-db");
-            if (dbChip) dbChip.innerHTML = "DB <b>" + (data.db.activeBrokers || "--") + "/" + (data.db.maxBrokers || "--") + "</b>";
+            if (dbChip) dbChip.innerHTML = `DB <b>${data.db.activeBrokers || "--"}/${data.db.maxBrokers || "--"}</b>`;
         }
 
         // Uptime
@@ -277,51 +273,40 @@ export const Monitor = (function () {
             if (match) {
                 const h = parseInt(match[1] || 0);
                 const m = parseInt(match[2] || 0);
-                upChip.innerHTML = "Up <b>" + h + "h " + m + "m</b>";
+                upChip.innerHTML = `Up <b>${h}h ${m}m</b>`;
             }
         }
-    };
+    }
 
-    Constr.prototype.stop = function () {
+    stop() {
         this.polling = false;
         if (this.timer) {
             clearTimeout(this.timer);
             this.timer = null;
         }
-    };
+    }
 
-    // Right after a page reload the monitor is started (from restored panel
-    // state) before eXide.ws has reconnected, so this HTTP path is always
-    // tried first even on setups where the WebSocket will shortly take over.
-    // A single failed attempt used to call showError() immediately and look
-    // like a permanently broken setup when the token was merely not ready
-    // yet. Retry a few times first; if the WebSocket takes over in the
-    // meantime, start()'s "connected" handler clears this timer and _useWs
-    // short-circuits any in-flight retry.
-    const TOKEN_FETCH_MAX_RETRIES = 5;
-
-    Constr.prototype.fetchToken = function () {
+    async fetchToken() {
         const self = this;
         if (self._useWs) return; // WebSocket took over
-        fetch("api/admin/status")
-            .then(function (r) { return r.json(); })
-            .then(function (data) {
-                if (self._useWs) return; // WebSocket took over while this was in flight
-                if (data.jmxToken) {
-                    self._tokenRetries = 0;
-                    self.token = data.jmxToken;
-                    self.poll();
-                } else {
-                    self._retryTokenOrFail("Could not obtain JMX token. DBA login required.");
-                }
-            })
-            .catch(function (err) {
-                console.error("Monitor: fetchToken failed", err);
-                self._retryTokenOrFail("Failed to connect to monitor endpoint.");
-            });
-    };
+        try {
+            const r = await fetch("api/admin/status");
+            const data = await r.json();
+            if (self._useWs) return; // WebSocket took over while this was in flight
+            if (data.jmxToken) {
+                self._tokenRetries = 0;
+                self.token = data.jmxToken;
+                self.poll();
+            } else {
+                self._retryTokenOrFail("Could not obtain JMX token. DBA login required.");
+            }
+        } catch (err) {
+            console.error("Monitor: fetchToken failed", err);
+            self._retryTokenOrFail("Failed to connect to monitor endpoint.");
+        }
+    }
 
-    Constr.prototype._retryTokenOrFail = function (msg) {
+    _retryTokenOrFail(msg) {
         if (!this.polling || this._useWs) return;
         this._tokenRetries = (this._tokenRetries || 0) + 1;
         if (this._tokenRetries > TOKEN_FETCH_MAX_RETRIES) {
@@ -329,57 +314,53 @@ export const Monitor = (function () {
             return;
         }
         const self = this;
-        this.timer = setTimeout(function () { self.fetchToken(); }, 2000);
-    };
+        this.timer = setTimeout(() => { self.fetchToken(); }, 2000);
+    }
 
-    Constr.prototype.poll = function () {
+    async poll() {
         const self = this;
         if (!self.polling || self._useWs) return;
 
         const context = eXide.configuration.context || "";
-        const url = context + "/status?" + CATEGORIES + "&token=" + self.token;
-        fetch(url)
-            .then(function (r) {
-                if (!r.ok) throw new Error("Status " + r.status);
-                return r.text();
-            })
-            .then(function (text) {
-                const parser = new DOMParser();
-                const xml = parser.parseFromString(text, "text/xml");
-                const data = jmx2js(xml.documentElement);
-                if (data) self.update(data);
-                if (self.polling) {
-                    self.timer = setTimeout(function () { self.poll(); }, self.pollInterval);
-                }
-            })
-            .catch(function (err) {
-                console.error("Monitor: poll failed", err);
-                if (self.polling) {
-                    self.timer = setTimeout(function () { self.poll(); }, 5000);
-                }
-            });
-    };
+        const url = `${context}/status?${CATEGORIES}&token=${self.token}`;
+        try {
+            const r = await fetch(url);
+            if (!r.ok) throw new Error(`Status ${r.status}`);
+            const text = await r.text();
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(text, "text/xml");
+            const data = jmx2js(xml.documentElement);
+            if (data) self.update(data);
+            if (self.polling) {
+                self.timer = setTimeout(() => { self.poll(); }, self.pollInterval);
+            }
+        } catch (err) {
+            console.error("Monitor: poll failed", err);
+            if (self.polling) {
+                self.timer = setTimeout(() => { self.poll(); }, 5000);
+            }
+        }
+    }
 
-    Constr.prototype.update = function (data) {
+    update(data) {
         this.clearBanner();
 
         // Memory
         const mem = data.MemoryImpl && data.MemoryImpl.HeapMemoryUsage;
         if (mem) {
             const used = formatMB(mem.used);
-            const committed = formatMB(mem.committed);
             const max = formatMB(mem.max);
             const usedPct = Math.round((parseInt(mem.used) / parseInt(mem.max)) * 100);
             const committedPct = Math.round((parseInt(mem.committed) / parseInt(mem.max)) * 100);
 
             const memNums = document.getElementById("mon-mem-nums");
-            if (memNums) memNums.textContent = used + " / " + max + " MB";
+            if (memNums) memNums.textContent = `${used} / ${max} MB`;
 
             const memUsed = document.getElementById("mon-mem-used");
-            if (memUsed) memUsed.style.width = usedPct + "%";
+            if (memUsed) memUsed.style.width = `${usedPct}%`;
 
             const memCommitted = document.getElementById("mon-mem-committed");
-            if (memCommitted) memCommitted.style.width = committedPct + "%";
+            if (memCommitted) memCommitted.style.width = `${committedPct}%`;
         }
 
         // Running queries
@@ -391,18 +372,16 @@ export const Monitor = (function () {
         const runBody = document.getElementById("mon-running-body");
         if (runBody) {
             // Unwrap row key/value structure from jmx2js
-            const unwrapped = running.map(function(q) { return q.value || q; });
-            const filtered = unwrapped.filter(function(q) { return q.caller !== "true"; });
+            const unwrapped = running.map((q) => { return q.value || q; });
+            const filtered = unwrapped.filter((q) => { return q.caller !== "true"; });
             if (filtered.length === 0) {
                 runBody.innerHTML = '<tr><td colspan="3" class="mon-empty">none</td></tr>';
             } else {
-                runBody.innerHTML = filtered.map(function (q) {
-                    const elapsed = q.elapsed ? (parseInt(q.elapsed) / 1000).toFixed(1) + "s" : "";
-                    return '<tr class="mon-running">' +
-                        '<td><button class="mon-kill" data-id="' + escapeHtml(q.id) + '" title="Kill query">x</button></td>' +
-                        '<td>' + escapeHtml(elapsed) + '</td>' +
-                        renderSourceCell(q.sourceKey, q.sourceType) +
-                        '</tr>';
+                runBody.innerHTML = filtered.map((q) => {
+                    const elapsed = q.elapsed ? `${(parseInt(q.elapsed) / 1000).toFixed(1)}s` : "";
+                    return `<tr class="mon-running">` +
+                        `<td><button class="mon-kill" data-id="${escapeHtml(q.id)}" title="Kill query">x</button></td>` +
+                        `<td>${escapeHtml(elapsed)}</td>${renderSourceCell(q.sourceKey, q.sourceType)}</tr>`;
                 }).join("");
             }
 
@@ -418,17 +397,15 @@ export const Monitor = (function () {
         const recentBody = document.getElementById("mon-recent-body");
         if (recentBody) {
             // Unwrap row key/value structure from jmx2js
-            recent = recent.map(function(q) { return q.value || q; });
+            recent = recent.map((q) => { return q.value || q; });
             if (recent.length === 0) {
                 recentBody.innerHTML = '<tr><td colspan="2" class="mon-empty">none</td></tr>';
             } else {
-                recentBody.innerHTML = recent.map(function (q) {
+                recentBody.innerHTML = recent.map((q) => {
                     const ms = parseInt(q.mostRecentExecutionDuration || 0);
                     const color = ms > 100 ? "#c0392b" : "#27ae60";
-                    return '<tr>' +
-                        '<td style="color:' + color + ';font-weight:700">' + ms + '</td>' +
-                        renderSourceCell(q.sourceKey, q.sourceType) +
-                        '</tr>';
+                    return `<tr>` +
+                        `<td style="color:${color};font-weight:700">${ms}</td>${renderSourceCell(q.sourceKey, q.sourceType)}</tr>`;
                 }).join("");
             }
         }
@@ -437,10 +414,10 @@ export const Monitor = (function () {
         const db = data.Database;
         if (db) {
             const dbChip = document.getElementById("mon-chip-db");
-            if (dbChip) dbChip.innerHTML = "DB <b>" + (db.ActiveBrokers || "?") + "/" + (db.MaxBrokers || "?") + "</b>";
+            if (dbChip) dbChip.innerHTML = `DB <b>${db.ActiveBrokers || "?"}/${db.MaxBrokers || "?"}</b>`;
 
             const upChip = document.getElementById("mon-chip-uptime");
-            if (upChip && db.Uptime) upChip.innerHTML = "Up <b>" + formatUptime(db.Uptime) + "</b>";
+            if (upChip && db.Uptime) upChip.innerHTML = `Up <b>${formatUptime(db.Uptime)}</b>`;
         }
 
         // Waiting threads count
@@ -450,44 +427,52 @@ export const Monitor = (function () {
             waitCount = att instanceof Array ? att.length : (att ? 1 : 0);
         }
         const waitChip = document.getElementById("mon-chip-wait");
-        if (waitChip) waitChip.innerHTML = "Wait <b>" + waitCount + "</b>";
-    };
+        if (waitChip) waitChip.innerHTML = `Wait <b>${waitCount}</b>`;
+    }
 
-    Constr.prototype.killQuery = function (id) {
-        fetch("api/admin/queries/" + encodeURIComponent(id), { method: "DELETE" })
-            .catch(function () { /* fire-and-forget; admin endpoint failures are non-fatal */ });
-    };
+    killQuery(id) {
+        fetch(`api/admin/queries/${encodeURIComponent(id)}`, { method: "DELETE" })
+            .catch(() => { /* fire-and-forget; admin endpoint failures are non-fatal */ });
+    }
 
     // Write into #mon-banner only — never replace .mon-body.innerHTML.
     // Replacing the body used to destroy #mon-mem-nums and friends, so a later
     // successful WebSocket/HTTP update had nothing left to paint into.
-    Constr.prototype.showError = function (msg) {
+    showError(msg) {
         this._showBanner(msg, "mon-banner-error");
-    };
+    }
 
     // Used by eXide.app.toggleMonitor for non-DBA users (not dead).
-    Constr.prototype.showMessage = function (msg) {
+    showMessage(msg) {
         this._showBanner(msg, "mon-banner-info");
-    };
+    }
 
-    Constr.prototype._showBanner = function (msg, kindClass) {
+    _showBanner(msg, kindClass) {
         const banner = document.getElementById("mon-banner");
         if (!banner) return;
         banner.textContent = msg || "";
-        banner.className = "mon-banner " + (kindClass || "");
+        banner.className = `mon-banner ${kindClass || ""}`;
         banner.hidden = false;
-    };
+    }
 
-    Constr.prototype.clearBanner = function () {
+    clearBanner() {
         const banner = document.getElementById("mon-banner");
         if (!banner) return;
         banner.textContent = "";
         banner.className = "mon-banner";
         banner.hidden = true;
-    };
+    }
+}
 
-    return Constr;
-}());
+// Right after a page reload the monitor is started (from restored panel
+// state) before eXide.ws has reconnected, so this HTTP path is always
+// tried first even on setups where the WebSocket will shortly take over.
+// A single failed attempt used to call showError() immediately and look
+// like a permanently broken setup when the token was merely not ready
+// yet. Retry a few times first; if the WebSocket takes over in the
+// meantime, start()'s "connected" handler clears this timer and _useWs
+// short-circuits any in-flight retry.
+const TOKEN_FETCH_MAX_RETRIES = 5;
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.app").Monitor = Monitor;

@@ -21,65 +21,62 @@ import { eXide, namespace } from "./namespace.js";
 import { DialogManager } from "./dialog-utils.js";
 import { Sender } from "./events.js";
 import { util } from "./util.js";
-import { oop } from "./oop.js";
 
-export const Projects = (function () {
+// localStorage["eXide.projects"] is shared between eXide versions running
+// against the same browser. eXide 3.x stores it as a flat map of
+// abbrev -> project object, and its getProjectFor() reads
+// `project.root.length` for EVERY entry with no guard (eXide <= 3.5.x,
+// src/deployment.js). So any value lacking a string `root` crashes 3.x
+// hard on load with "Cannot read properties of undefined (reading
+// 'length')". To stay compatible when a user alternates between 3.x and
+// 4.x against the same storage, every entry we keep — and everything we
+// persist — must be a real project with a string `root`. In particular we
+// must never write the malformed `{ "undefined": { packages: [...] } }`
+// entry that a non-app `api/packages` response would otherwise produce.
+function isProject(value) {
+    return value != null && typeof value === "object" &&
+        typeof value.root === "string" && value.root.length > 0;
+}
 
-    // localStorage["eXide.projects"] is shared between eXide versions running
-    // against the same browser. eXide 3.x stores it as a flat map of
-    // abbrev -> project object, and its getProjectFor() reads
-    // `project.root.length` for EVERY entry with no guard (eXide <= 3.5.x,
-    // src/deployment.js). So any value lacking a string `root` crashes 3.x
-    // hard on load with "Cannot read properties of undefined (reading
-    // 'length')". To stay compatible when a user alternates between 3.x and
-    // 4.x against the same storage, every entry we keep — and everything we
-    // persist — must be a real project with a string `root`. In particular we
-    // must never write the malformed `{ "undefined": { packages: [...] } }`
-    // entry that a non-app `api/packages` response would otherwise produce.
-    function isProject(value) {
-        return value != null && typeof value === "object" &&
-            typeof value.root === "string" && value.root.length > 0;
+// Keep only well-formed project entries (and drop the "undefined" key),
+// so a malformed entry can neither be persisted nor survive a reload.
+function sanitizeProjects(projects) {
+    const clean = {};
+    if (projects && typeof projects === "object") {
+        Object.keys(projects).forEach((key) => {
+            if (key !== "undefined" && isProject(projects[key])) {
+                clean[key] = projects[key];
+            }
+        });
     }
+    return clean;
+}
 
-    // Keep only well-formed project entries (and drop the "undefined" key),
-    // so a malformed entry can neither be persisted nor survive a reload.
-    function sanitizeProjects(projects) {
-        const clean = {};
-        if (projects && typeof projects === "object") {
-            Object.keys(projects).forEach(function (key) {
-                if (key !== "undefined" && isProject(projects[key])) {
-                    clean[key] = projects[key];
-                }
-            });
-        }
-        return clean;
-    }
-
-    const Constr = function () {
+export class Projects {
+    constructor() {
         this.projects = {};
-    };
+    }
 
-    Constr.prototype.findProject = function (collection, callback) {
+    findProject(collection, callback) {
         const project = this.getProjectFor(collection);
         if (project && project !== null) {
             callback(project);
         } else {
             this.getProject(collection, callback);
         }
-    };
+    }
 
-    Constr.prototype.getProject = function (collection, callback) {
+    async getProject(collection, callback) {
         const cb = typeof callback === "function" ? callback : function () { };
         if (!collection || collection === "/db" || collection === "/db/" || collection.indexOf("__new__") !== -1) {
             cb(null);
             return;
         }
         const $this = this;
-        const url = "api/packages/?collection=" + encodeURIComponent(collection);
-        fetch(url).then(function(response) {
-            if (!response.ok) return null;
-            return response.json();
-        }).then(function (data) {
+        const url = `api/packages/?collection=${encodeURIComponent(collection)}`;
+        try {
+            const response = await fetch(url);
+            const data = response.ok ? await response.json() : null;
             // A non-app collection yields a response without an abbrev/root
             // (e.g. the full `{ packages: [...] }` list). Treat that as "no
             // project" rather than storing it under the key "undefined", which
@@ -96,25 +93,25 @@ export const Projects = (function () {
                 $this.projects[data.abbrev] = data;
                 cb(data);
             }
-        }).catch(function () {
+        } catch {
             cb(null);
-        });
-    };
+        }
+    }
 
-    Constr.prototype.getProjectFor = function (collection) {
+    getProjectFor(collection) {
         const filteredProjects = Object.values(this.projects)
             .filter(project => isProject(project) && collection.startsWith(project.root));
 
         return filteredProjects[0] || null;
-    };
+    }
 
-    Constr.prototype.saveState = function () {
+    saveState() {
         // Sanitize on the way out so a malformed in-memory entry can never be
         // persisted — this is what keeps a later eXide 3.x load from crashing.
         localStorage["eXide.projects"] = JSON.stringify(sanitizeProjects(this.projects));
-    };
+    }
 
-    Constr.prototype.restoreState = function () {
+    restoreState() {
         const $this = this;
         if (localStorage["eXide.projects"]) {
             // Sanitize on the way in so storage already poisoned by an earlier
@@ -123,24 +120,21 @@ export const Projects = (function () {
         }
         // refresh state to see if app package config has chaged in the db (e.g added Git)
         const projects = this.projects;
-        Object.keys(projects).forEach(function (key) {
+        Object.keys(projects).forEach((key) => {
             const project = projects[key];
             if (project.root) {
                 $this.getProject(project.root);
             }
         });
 
-    };
-
-    return Constr;
-}(oop));
-
+    }
+}
 /**
  * Edit deployment descriptors.
  */
-export const PackageEditor = (function () {
-
-    const Constr = function (projects) {
+export class PackageEditor extends Sender {
+    constructor(projects) {
+        super();
         const $this = this;
         this.projects = projects;
         this.currentProject = null;
@@ -153,7 +147,7 @@ export const PackageEditor = (function () {
             width: 300,
             height: 240,
             buttons: {
-                "Done": function () { this.close(); }
+                "Done" () { this.close(); }
             }
         });
         runDialogEl.querySelector("input[name='live-reload']").addEventListener("click", function (ev) {
@@ -169,8 +163,8 @@ export const PackageEditor = (function () {
             width: 500,
             height: 440,
             buttons: {
-                "Close": function () { this.close(); },
-                "Apply": function () {
+                "Close" () { this.close(); },
+                "Apply" () {
                     const dir = syncDialogEl.querySelector("input[name=\"dir\"]").value;
                     if (dir && dir.length > 0) {
                         $this.currentProject.dir = dir;
@@ -178,7 +172,7 @@ export const PackageEditor = (function () {
                     $this.currentProject.autoSync = syncDialogEl.querySelector("input[name=\"auto\"]").checked;
                     this.close();
                 },
-                "Synchronize": function () {
+                async "Synchronize" () {
                     const dir = syncDialogEl.querySelector("input[name=\"dir\"]").value;
                     if (!dir || dir.length === 0) {
                         document.getElementById("synchronize-report").textContent = "No output directory specified!";
@@ -186,30 +180,19 @@ export const PackageEditor = (function () {
                     }
                     $this.currentProject.dir = dir;
 
-                    const params = new URLSearchParams({
-                        start: syncDialogEl.querySelector("input[name=\"start\"]").value,
-                        dir: dir,
-                        auto: syncDialogEl.querySelector("input[name=\"auto\"]").value,
-                        collection: syncDialogEl.querySelector("input[name=\"collection\"]").value,
-                        indent: document.getElementById("indent-on-download-package").checked,
-                        "expand-xincludes": document.getElementById("expand-xincludes-on-download-package").checked,
-                        "omit-xml-declarationaration": document.getElementById("omit-xml-declaration-on-download-package").checked
-                    });
                     const reportEl = document.getElementById("synchronize-report");
                     reportEl.textContent = "Synchronization in progress ...";
-                    fetch("api/sync", {
+                    const response = await fetch("api/sync", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
                             collection: syncDialogEl.querySelector("input[name=\"collection\"]").value,
-                            dir: dir,
+                            dir,
                             after: syncDialogEl.querySelector("input[name=\"start\"]").value
                         })
-                    }).then(function (response) {
-                        return response.json();
-                    }).then(function (data) {
-                        reportEl.textContent = data.error || ("Updated: " + (data.updated || 0) + " files");
                     });
+                    const data = await response.json();
+                    reportEl.textContent = data.error || (`Updated: ${data.updated || 0} files`);
                 }
             }
         });
@@ -223,10 +206,10 @@ export const PackageEditor = (function () {
             width: 500,
             height: 240,
             buttons: {
-                "Cancel": function () { this.close(); },
-                "Switch Branch": function () {
+                "Cancel" () { this.close(); },
+                "Switch Branch" () {
                     const branch = gitCheckoutEl.querySelector("form [name='git-checkout']").value;
-                    eXide.app.git.command($this.currentProject, 'checkout', branch, function (data) {
+                    eXide.app.git.command($this.currentProject, 'checkout', branch, (data) => {
                         document.getElementById("toolbar-current-branch").textContent = branch;
                         document.getElementById("menu-git-active").textContent = branch;
                     });
@@ -243,12 +226,12 @@ export const PackageEditor = (function () {
             width: 500,
             height: 360,
             buttons: {
-                "Cancel": function () { this.close(); },
-                "Sync and Commit": function () {
+                "Cancel" () { this.close(); },
+                "Sync and Commit" () {
                     const form = gitCommitEl.querySelector("form"),
                         title = form.querySelector("[name='git-commit-title']").value,
                         desc = form.querySelector("[name='git-commit-desc']").value,
-                        option = title + '\n\n' + desc,
+                        option = `${title}\n\n${desc}`,
                         start = form.querySelector("[name='start']").value,
                         statusEl = document.getElementById("git-commit-status");
 
@@ -265,10 +248,10 @@ export const PackageEditor = (function () {
                             collection: $this.currentProject.root,
                             after: start
                         })
-                    }).then(function (response) {
+                    }).then((response) => {
                         return response.json();
-                    }).then(function (data) {
-                        statusEl.textContent = data.error || ("Updated: " + (data.updated || 0) + " files");
+                    }).then((data) => {
+                        statusEl.textContent = data.error || (`Updated: ${data.updated || 0} files`);
                         eXide.app.git.command($this.currentProject, 'commit', option);
                     });
 
@@ -277,46 +260,39 @@ export const PackageEditor = (function () {
             }
         });
 
-    };
+    }
 
-    // Extend eXide.events.Sender for event support
-    oop.inherit(Constr, Sender);
-
-    Constr.prototype.download = function (collection) {
-        const $this = this;
-        this.projects.findProject(collection, function (project) {
+    download(collection) {
+        this.projects.findProject(collection, async (project) => {
             if (!project) {
                 util.error("Application not found.");
                 return;
             }
             // POST triggers XAR build + download via Roaster
-            fetch("api/packages/" + encodeURIComponent(project.abbrev) + "/build", {
-                method: "POST"
-            })
-                .then(function (response) {
-                    if (!response.ok) throw new Error("Build failed: " + response.status);
-                    return response.blob();
-                })
-                .then(function (blob) {
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
-                    a.download = project.abbrev + "-" + (project.version || "0.1") + ".xar";
-                    a.click();
-                    URL.revokeObjectURL(url);
-                })
-                .catch(function (err) {
-                    util.error("Download failed: " + err.message);
+            try {
+                const response = await fetch(`api/packages/${encodeURIComponent(project.abbrev)}/build`, {
+                    method: "POST"
                 });
+                if (!response.ok) throw new Error(`Build failed: ${response.status}`);
+                const blob = await response.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `${project.abbrev}-${project.version || "0.1"}.xar`;
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                util.error(`Download failed: ${err.message}`);
+            }
         });
-    };
+    }
 
     /**
      * Synchronize current application package to file system directory.
      */
-    Constr.prototype.synchronize = function (collection) {
+    synchronize(collection) {
         const $this = this;
-        $this.projects.findProject(collection, function (project) {
+        $this.projects.findProject(collection, (project) => {
             if (!project) {
                 util.error("Application not found: The document currently opened in the editor " +
                     "should belong to an application package.");
@@ -342,12 +318,12 @@ export const PackageEditor = (function () {
             el.querySelector("input[name=\"auto\"]").checked = project.autoSync;
             $this.syncDialog.open();
         });
-    };
+    }
 
-    Constr.prototype.autoSync = function (collection) {
+    async autoSync(collection) {
         const project = this.projects.getProjectFor(collection);
         if (project && project.autoSync) {
-            fetch("api/sync", {
+            const response = await fetch("api/sync", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -355,17 +331,16 @@ export const PackageEditor = (function () {
                     dir: project.dir,
                     after: project.deployed
                 })
-            }).then(function (response) {
-                if (response.ok) {
-                    util.message("Synchronized directory");
-                }
             });
+            if (response.ok) {
+                util.message("Synchronized directory");
+            }
         }
-    };
+    }
 
-    Constr.prototype.runApp = function (collection, firstLoad) {
+    runApp(collection, firstLoad) {
         const $this = this;
-        $this.projects.findProject(collection, function (project) {
+        $this.projects.findProject(collection, (project) => {
             if (!project) {
                 util.error("Application not found: The document currently opened in the editor " +
                     "should belong to an application package.");
@@ -377,7 +352,7 @@ export const PackageEditor = (function () {
 
             $this.currentProject = project;
             const url = project.url.replace(/\/{2,}/, "/");
-            const link = eXide.configuration.context + url + "/";
+            const link = `${eXide.configuration.context + url}/`;
 
             const a = runEl.querySelector("a");
             a.setAttribute("href", link);
@@ -393,22 +368,22 @@ export const PackageEditor = (function () {
             }
             $this.runDialog.open();
         });
-    };
+    }
 
-    Constr.prototype.saveState = function () {
+    saveState() {
         this.projects.saveState();
-    };
+    }
 
-    Constr.prototype.restoreState = function () {
+    restoreState() {
         this.projects.restoreState();
-    };
+    }
 
     /**
      * Git Checkout.
      */
-    Constr.prototype.gitCheckout = function (collection) {
+    gitCheckout(collection) {
         const $this = this;
-        $this.projects.findProject(collection, function (project) {
+        $this.projects.findProject(collection, (project) => {
             if (!project) {
                 util.error("Application not found: The document currently opened in the editor " +
                     "should belong to an application package.");
@@ -424,7 +399,7 @@ export const PackageEditor = (function () {
             const select = document.getElementById("git-checkout-select");
             if (select) {
                 select.innerHTML = "";
-                project.gitBranch.forEach(function (branch) {
+                project.gitBranch.forEach((branch) => {
                     const opt = document.createElement("option");
                     opt.value = branch;
                     opt.textContent = branch;
@@ -435,12 +410,13 @@ export const PackageEditor = (function () {
             $this.gitCheckoutDialog.open();
         })
     }
+
     /**
      * Git Commit.
      */
-    Constr.prototype.gitCommit = function (collection) {
+    gitCommit(collection) {
         const $this = this;
-        $this.projects.findProject(collection, function (project) {
+        $this.projects.findProject(collection, (project) => {
             if (!project) {
                 util.error("Application not found: The document currently opened in the editor " +
                     "should belong to an application package.");
@@ -455,10 +431,7 @@ export const PackageEditor = (function () {
             $this.gitCommitDialog.open();
         })
     }
-
-
-    return Constr;
-}());
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").Projects = Projects;

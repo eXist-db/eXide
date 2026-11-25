@@ -22,12 +22,8 @@ import { namespace } from "./namespace.js";
 /**
  * XQuery specific helper methods.
  */
-export const Visitor = (function () {
-
-    const Constr = function() {
-    };
-    
-    Constr.prototype.visit = function(node, handler) {
+export class Visitor {
+    visit(node, handler) {
         if (node) {
             const name = node.name;
             let skip = false;
@@ -38,9 +34,9 @@ export const Visitor = (function () {
                 this.visitChildren(node, handler);
             }
         }
-    };
+    }
 
-    Constr.prototype.visitChildren = function(node, handler) {
+    visitChildren(node, handler) {
         if (node) {
             for (let i = 0; i < node.children.length; i++) {
                 const child = node.children[i];
@@ -51,10 +47,8 @@ export const Visitor = (function () {
                 }
             }
         }
-    };
-    
-    return Constr;
-}());
+    }
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").Visitor = Visitor;

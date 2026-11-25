@@ -25,7 +25,7 @@ describe('Semantic highlighting', () => {
   }
 
   function semSpans(cls) {
-    return cy.get('.cm-editor .cm-content').find('.' + cls, { timeout: 5000 })
+    return cy.get('.cm-editor .cm-content').find(`.${cls}`, { timeout: 5000 })
   }
 
   it('highlights function names in declarations and calls', () => {

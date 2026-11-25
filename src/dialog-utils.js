@@ -33,7 +33,7 @@ export const DialogManager = (function() {
     function installEscapeHandler() {
         if (escapeHandlerInstalled) return;
         escapeHandlerInstalled = true;
-        document.addEventListener("keydown", function(e) {
+        document.addEventListener("keydown", (e) => {
             if (e.key === "Escape" && openStack.length > 0) {
                 const topModal = document.querySelector("dialog[open]");
                 if (topModal) return; // let the modal handle it
@@ -49,16 +49,16 @@ export const DialogManager = (function() {
         const el = typeof contentEl === "string" ? document.querySelector(contentEl) : contentEl;
         if (!el) {
             console.warn("DialogManager.create: element not found", contentEl);
-            return { dialog: document.createElement("dialog"), content: document.createElement("div"), open: function(){}, close: function(){}, setTitle: function(){}, setButtons: function(){} };
+            return { dialog: document.createElement("dialog"), content: document.createElement("div"), open(){}, close(){}, setTitle(){}, setButtons(){} };
         }
 
         const isModal = options.modal !== false;
         // Use <dialog> for modal, <div> for non-modal (avoids top-layer stacking issues)
         const dialog = document.createElement(isModal ? "dialog" : "div");
         dialog.className = "eXide-dialog";
-        if (options.width) dialog.style.width = options.width + "px";
+        if (options.width) dialog.style.width = `${options.width}px`;
         if (options.height) {
-            dialog.style.height = options.height + "px";
+            dialog.style.height = `${options.height}px`;
             dialog.style.flexDirection = "column";
         }
         if (isModal) {
@@ -89,7 +89,7 @@ export const DialogManager = (function() {
         if (options.draggable !== false) {
             titleBar.style.cursor = "move";
             let dragState = null;
-            titleBar.addEventListener("mousedown", function(e) {
+            titleBar.addEventListener("mousedown", (e) => {
                 if (e.target === closeBtn) return;
                 e.preventDefault();
                 // On first drag, resolve CSS centering to fixed pixel position.
@@ -101,13 +101,13 @@ export const DialogManager = (function() {
                         // Top-layer: position relative to viewport
                         dialog.style.inset = "auto";
                         dialog.style.margin = "0";
-                        dialog.style.left = rect.left + "px";
-                        dialog.style.top = rect.top + "px";
+                        dialog.style.left = `${rect.left}px`;
+                        dialog.style.top = `${rect.top}px`;
                     } else {
                         const parentRect = (dialog.offsetParent || document.body).getBoundingClientRect();
                         dialog.style.transform = "none";
-                        dialog.style.left = (rect.left - parentRect.left) + "px";
-                        dialog.style.top = (rect.top - parentRect.top) + "px";
+                        dialog.style.left = `${rect.left - parentRect.left}px`;
+                        dialog.style.top = `${rect.top - parentRect.top}px`;
                     }
                     dragResolved = true;
                 }
@@ -116,8 +116,8 @@ export const DialogManager = (function() {
                 dragState = { startX: e.clientX, startY: e.clientY, origLeft: left, origTop: top };
                 function onMove(e) {
                     if (!dragState) return;
-                    dialog.style.left = (dragState.origLeft + e.clientX - dragState.startX) + "px";
-                    dialog.style.top = (dragState.origTop + e.clientY - dragState.startY) + "px";
+                    dialog.style.left = `${dragState.origLeft + e.clientX - dragState.startX}px`;
+                    dialog.style.top = `${dragState.origTop + e.clientY - dragState.startY}px`;
                 }
                 function onUp() {
                     dragState = null;
@@ -150,9 +150,9 @@ export const DialogManager = (function() {
         appendTo.appendChild(dialog);
 
         const controller = {
-            dialog: dialog,
+            dialog,
             content: el,
-            open: function() {
+            open() {
                 // The same content element may be wrapped by more than one dialog
                 // (e.g. resource properties, from both the DB manager and the
                 // sidebar tree); take it back if another wrapper holds it.
@@ -187,7 +187,7 @@ export const DialogManager = (function() {
                     openStack.push(controller);
                 }
             },
-            close: function() {
+            close() {
                 if (isModal) {
                     if (dialog.hasAttribute("open")) dialog.close();
                     dialog.style.display = "";
@@ -199,14 +199,14 @@ export const DialogManager = (function() {
                     dialog.dispatchEvent(new Event("close"));
                 }
             },
-            setTitle: function(title) {
+            setTitle(title) {
                 titleSpan.textContent = title || "";
             },
-            setButtons: function(buttons) {
+            setButtons(buttons) {
                 buttonBar.innerHTML = "";
                 if (!buttons) return;
                 for (const label in buttons) {
-                    if (buttons.hasOwnProperty(label)) {
+                    if (Object.hasOwn(buttons, label)) {
                         (function(spec) {
                             const fn = typeof spec === "function" ? spec : spec.click;
                             const btn = document.createElement("button");
@@ -214,7 +214,7 @@ export const DialogManager = (function() {
                             btn.textContent = label;
                             if (spec.destructive) btn.classList.add("destructive");
                             if (spec.separate) btn.classList.add("separate");
-                            btn.addEventListener("click", function() {
+                            btn.addEventListener("click", () => {
                                 fn.call(controller);
                             });
                             buttonBar.appendChild(btn);
@@ -230,13 +230,13 @@ export const DialogManager = (function() {
         }
 
         // Close button
-        closeBtn.addEventListener("click", function() {
+        closeBtn.addEventListener("click", () => {
             controller.close();
         });
 
         // ESC key closes
         if (isModal) {
-            dialog.addEventListener("cancel", function(e) {
+            dialog.addEventListener("cancel", (e) => {
                 e.preventDefault();
                 controller.close();
             });
@@ -247,7 +247,7 @@ export const DialogManager = (function() {
     }
 
     return {
-        create: create
+        create
     };
 }());
 

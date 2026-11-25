@@ -15,7 +15,6 @@
     const LanguageSupport = CM6.LanguageSupport;
     const indentUnit = CM6.indentUnit;
     const bracketMatching = CM6.bracketMatching;
-    const syntaxHighlighting = CM6.syntaxHighlighting;
     const HighlightStyle = CM6.HighlightStyle;
     const tags = CM6.tags;
     const xQuery = CM6.legacyModes.xQuery;

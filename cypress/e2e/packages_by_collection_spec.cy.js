@@ -40,7 +40,7 @@ context('GET /api/packages?collection=', () => {
 
   it('returns 404 for a collection not inside any app (no abbrev-less list to poison localStorage)', () => {
     cy.request({
-      url: '/eXide/api/packages?collection=/db/not-an-app-' + Date.now(),
+      url: `/eXide/api/packages?collection=/db/not-an-app-${Date.now()}`,
       failOnStatusCode: false
     }).then((r) => {
       expect(r.status).to.eq(404)
@@ -108,7 +108,7 @@ context('GET /api/packages with missing optional descriptors', () => {
 
   it('returns 404 for an unknown abbrev', () => {
     cy.request({
-      url: '/eXide/api/packages/zz-nope-' + Date.now(),
+      url: `/eXide/api/packages/zz-nope-${Date.now()}`,
       failOnStatusCode: false
     }).then((r) => {
       expect(r.status).to.eq(404)

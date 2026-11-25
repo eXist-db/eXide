@@ -14,8 +14,8 @@ function findNode(n, name) {
 
 // ── findNode ─────────────────────────────────────────────────
 
-describe("XQueryUtils.findNode", function () {
-    it("finds deepest node at cursor position", function () {
+describe("XQueryUtils.findNode", () => {
+    it("finds deepest node at cursor position", () => {
         const { ast } = parse("1 + 2");
         // col 5 lands inside IntegerLiteral "2" (pos 0:4-0:5)
         const node = XQueryUtils.findNode(ast, { line: 0, col: 5 });
@@ -24,13 +24,13 @@ describe("XQueryUtils.findNode", function () {
         assert.equal(node.value, "2");
     });
 
-    it("returns null for position outside AST", function () {
+    it("returns null for position outside AST", () => {
         const { ast } = parse("1");
         const node = XQueryUtils.findNode(ast, { line: 10, col: 0 });
         assert.equal(node, null);
     });
 
-    it("finds correct node in multiline code", function () {
+    it("finds correct node in multiline code", () => {
         const { ast } = parse("let $x := 1\nreturn $x");
         // Line 1, col 7 is inside the VarRef "$x"
         const node = XQueryUtils.findNode(ast, { line: 1, col: 7 });
@@ -42,8 +42,8 @@ describe("XQueryUtils.findNode", function () {
 
 // ── findAncestor ─────────────────────────────────────────────
 
-describe("XQueryUtils.findAncestor", function () {
-    it("finds ancestor by single type", function () {
+describe("XQueryUtils.findAncestor", () => {
+    it("finds ancestor by single type", () => {
         const { ast } = parse("let $x := 1 return $x");
         const eqname = findNode(ast, "EQName");
         const flwor = XQueryUtils.findAncestor(eqname, "FLWORExpr");
@@ -51,7 +51,7 @@ describe("XQueryUtils.findAncestor", function () {
         assert.equal(flwor.name, "FLWORExpr");
     });
 
-    it("finds ancestor by type array", function () {
+    it("finds ancestor by type array", () => {
         const { ast } = parse("let $x := 1 return $x");
         const eqname = findNode(ast, "EQName");
         const result = XQueryUtils.findAncestor(eqname, ["FLWORExpr", "FunctionDecl"]);
@@ -59,13 +59,13 @@ describe("XQueryUtils.findAncestor", function () {
         assert.equal(result.name, "FLWORExpr");
     });
 
-    it("returns null when no ancestor matches", function () {
+    it("returns null when no ancestor matches", () => {
         const { ast } = parse("1 + 2");
         const lit = findNode(ast, "IntegerLiteral");
         assert.equal(XQueryUtils.findAncestor(lit, "FLWORExpr"), null);
     });
 
-    it("returns the node itself if it matches", function () {
+    it("returns the node itself if it matches", () => {
         const { ast } = parse("let $x := 1 return $x");
         const flwor = findNode(ast, "FLWORExpr");
         assert.equal(XQueryUtils.findAncestor(flwor, "FLWORExpr"), flwor);
@@ -74,8 +74,8 @@ describe("XQueryUtils.findAncestor", function () {
 
 // ── findChild ────────────────────────────────────────────────
 
-describe("XQueryUtils.findChild", function () {
-    it("finds first child by type", function () {
+describe("XQueryUtils.findChild", () => {
+    it("finds first child by type", () => {
         const { ast } = parse("let $x := 1 return $x");
         const flwor = findNode(ast, "FLWORExpr");
         const ret = XQueryUtils.findChild(flwor, "ReturnClause");
@@ -83,7 +83,7 @@ describe("XQueryUtils.findChild", function () {
         assert.equal(ret.name, "ReturnClause");
     });
 
-    it("returns null when no child matches", function () {
+    it("returns null when no child matches", () => {
         const { ast } = parse("1 + 2");
         assert.equal(XQueryUtils.findChild(ast, "FLWORExpr"), null);
     });
@@ -91,14 +91,14 @@ describe("XQueryUtils.findChild", function () {
 
 // ── getValue ─────────────────────────────────────────────────
 
-describe("XQueryUtils.getValue", function () {
-    it("returns value for terminal nodes", function () {
+describe("XQueryUtils.getValue", () => {
+    it("returns value for terminal nodes", () => {
         const { ast } = parse("$foo");
         const eqname = findNode(ast, "EQName");
         assert.equal(XQueryUtils.getValue(eqname), "foo");
     });
 
-    it("concatenates descendant values for nonterminals", function () {
+    it("concatenates descendant values for nonterminals", () => {
         const { ast } = parse("let $x := 1 return $x");
         const binding = findNode(ast, "LetBinding");
         const val = XQueryUtils.getValue(binding);
@@ -109,7 +109,7 @@ describe("XQueryUtils.getValue", function () {
         assert.ok(val.includes("1"));
     });
 
-    it("returns empty string for empty node", function () {
+    it("returns empty string for empty node", () => {
         const empty = { value: undefined, children: [] };
         assert.equal(XQueryUtils.getValue(empty), "");
     });
@@ -117,30 +117,30 @@ describe("XQueryUtils.getValue", function () {
 
 // ── inRange ──────────────────────────────────────────────────
 
-describe("XQueryUtils.inRange", function () {
-    it("returns true for point inside single-line range", function () {
+describe("XQueryUtils.inRange", () => {
+    it("returns true for point inside single-line range", () => {
         const p = { sl: 0, sc: 5, el: 0, ec: 10 };
         assert.equal(XQueryUtils.inRange(p, { line: 0, col: 7 }), true);
     });
 
-    it("returns undefined for point outside range", function () {
+    it("returns undefined for point outside range", () => {
         const p = { sl: 0, sc: 5, el: 0, ec: 10 };
         assert.ok(!XQueryUtils.inRange(p, { line: 0, col: 3 }));
         assert.ok(!XQueryUtils.inRange(p, { line: 1, col: 0 }));
     });
 
-    it("handles multiline ranges", function () {
+    it("handles multiline ranges", () => {
         const p = { sl: 0, sc: 0, el: 2, ec: 10 };
         assert.equal(XQueryUtils.inRange(p, { line: 1, col: 5 }), true);
     });
 
-    it("checks start boundary", function () {
+    it("checks start boundary", () => {
         const p = { sl: 0, sc: 5, el: 0, ec: 10 };
         assert.equal(XQueryUtils.inRange(p, { line: 0, col: 5 }), true);
         assert.ok(!XQueryUtils.inRange(p, { line: 0, col: 4 }));
     });
 
-    it("checks end boundary with exclusive flag", function () {
+    it("checks end boundary with exclusive flag", () => {
         const p = { sl: 0, sc: 5, el: 0, ec: 10 };
         // Without exclusive: col 10 is in range, col 11 is not
         assert.equal(XQueryUtils.inRange(p, { line: 0, col: 10 }), true);
@@ -149,20 +149,20 @@ describe("XQueryUtils.inRange", function () {
         assert.equal(XQueryUtils.inRange(p, { line: 0, col: 11 }, true), true);
     });
 
-    it("returns undefined for null pos", function () {
+    it("returns undefined for null pos", () => {
         assert.ok(!XQueryUtils.inRange(null, { line: 0, col: 0 }));
     });
 });
 
 // ── samePosition ─────────────────────────────────────────────
 
-describe("XQueryUtils.samePosition", function () {
-    it("returns true for identical positions", function () {
+describe("XQueryUtils.samePosition", () => {
+    it("returns true for identical positions", () => {
         const p = { sl: 1, sc: 2, el: 3, ec: 4 };
         assert.equal(XQueryUtils.samePosition(p, { sl: 1, sc: 2, el: 3, ec: 4 }), true);
     });
 
-    it("returns false for different positions", function () {
+    it("returns false for different positions", () => {
         const p = { sl: 1, sc: 2, el: 3, ec: 4 };
         assert.equal(XQueryUtils.samePosition(p, { sl: 1, sc: 2, el: 3, ec: 5 }), false);
     });
@@ -170,8 +170,8 @@ describe("XQueryUtils.samePosition", function () {
 
 // ── getPath ──────────────────────────────────────────────────
 
-describe("XQueryUtils.getPath", function () {
-    it("returns slash-separated ancestor path", function () {
+describe("XQueryUtils.getPath", () => {
+    it("returns slash-separated ancestor path", () => {
         const { ast } = parse("$foo");
         const eqname = findNode(ast, "EQName");
         const path = XQueryUtils.getPath(eqname);
@@ -182,8 +182,8 @@ describe("XQueryUtils.getPath", function () {
 
 // ── findSibling / findSiblings ───────────────────────────────
 
-describe("XQueryUtils.findSibling", function () {
-    it("finds sibling by type", function () {
+describe("XQueryUtils.findSibling", () => {
+    it("finds sibling by type", () => {
         const { ast } = parse("let $x := 1 return $x");
         const flwor = findNode(ast, "FLWORExpr");
         const ret = findNode(flwor, "ReturnClause");
@@ -193,8 +193,8 @@ describe("XQueryUtils.findSibling", function () {
     });
 });
 
-describe("XQueryUtils.findSiblings", function () {
-    it("finds all siblings of given type excluding self", function () {
+describe("XQueryUtils.findSiblings", () => {
+    it("finds all siblings of given type excluding self", () => {
         const { ast } = parse("declare function local:f($a, $b) { 1 };");
         const fd = findNode(ast, "FunctionDecl");
         const paramList = findNode(fd, "ParamList");

@@ -18,7 +18,6 @@
  */
 
 import { namespace } from "./namespace.js";
-import { oop } from "./oop.js";
 import { Visitor } from "./visitor.js";
 
 /**
@@ -27,7 +26,7 @@ import { Visitor } from "./visitor.js";
 export const XQueryUtils = (function () {
     
     return {
-        findNode: function(ast, pos) {
+        findNode(ast, pos) {
             const p = ast.pos;
             if(XQueryUtils.inRange(p, pos, false) === true) {
                 for(const i in ast.children) {
@@ -42,7 +41,7 @@ export const XQueryUtils = (function () {
             }
         },
     
-        findNodeForRange: function(ast, start, end) {
+        findNodeForRange(ast, start, end) {
             const p = ast.pos;
             if(XQueryUtils.inRange(p, start) === true && XQueryUtils.inRange(p, end) === true) {
                 for(const i in ast.children) {
@@ -56,7 +55,7 @@ export const XQueryUtils = (function () {
             }
         },
         
-        inRange: function(p, pos, exclusive) {
+        inRange(p, pos, exclusive) {
             if(p && p.sl <= pos.line && pos.line <= p.el) {
                 if(p.sl < pos.line && pos.line < p.el)
                     return true;
@@ -69,14 +68,14 @@ export const XQueryUtils = (function () {
             }
         },
         
-        samePosition: function(pos1, pos2) {
+        samePosition(pos1, pos2) {
             return pos1.sl === pos2.sl &&
                 pos1.sc === pos2.sc &&
                 pos1.el === pos2.el &&
                 pos1.ec === pos2.ec;
         },
         
-        findNext: function(node, type) {
+        findNext(node, type) {
             const children = node.getParent.children;
             for (let i = 0; i < children.length; i++) {
                 if (children[i] === node) {
@@ -90,7 +89,7 @@ export const XQueryUtils = (function () {
             return null;
         },
         
-        findChild: function(node, type) {
+        findChild(node, type) {
             const children = node.children;
             for (let i = 0; i < children.length; i++) {
                 if (children[i].name === type) {
@@ -100,7 +99,7 @@ export const XQueryUtils = (function () {
             return null;
         },
         
-        findSibling: function(node, type) {
+        findSibling(node, type) {
             const children = node.getParent.children;
             for (let i = 0; i < children.length; i++) {
                 if (children[i].name === type) {
@@ -110,7 +109,7 @@ export const XQueryUtils = (function () {
             return null;
         },
         
-        findSiblings: function(node, type) {
+        findSiblings(node, type) {
             const children = node.getParent.children;
             const siblings = [];
             for (let i = 0; i < children.length; i++) {
@@ -121,7 +120,7 @@ export const XQueryUtils = (function () {
             return siblings;
         },
         
-        findAncestor: function(node, type) {
+        findAncestor(node, type) {
             if (type instanceof Array) {
                 while (node !== null) {
                     if (type.indexOf(node.name) > -1) {
@@ -140,7 +139,7 @@ export const XQueryUtils = (function () {
             return null;
         },
         
-        findVariableContext: function(node, varName) {
+        findVariableContext(node, varName) {
             let parent = node.getParent;
             while (parent !== null) {
                 if ((parent.name === "FLWORExpr" || parent.name === "FunctionDecl") &&
@@ -155,7 +154,7 @@ export const XQueryUtils = (function () {
             return null;
         },
         
-        getValue: function(node) {
+        getValue(node) {
             let val = "";
             if (node.value) {
                 val = node.value;
@@ -167,7 +166,7 @@ export const XQueryUtils = (function () {
             return val;
         },
         
-        findVarDecl: function(node, name) {
+        findVarDecl(node, name) {
             const refs = new VariableReferences(name, node).getReferences();
             for (let i = 0; i < refs.length; i++) {
                 if (refs[i].getParent && (refs[i].getParent.name === "LetBinding") || 
@@ -178,7 +177,7 @@ export const XQueryUtils = (function () {
             return null;
         },
         
-        getPath: function(node) {
+        getPath(node) {
             const parts = [ node.name ];
             node = node.getParent;
             while (node) {
@@ -193,60 +192,54 @@ export const XQueryUtils = (function () {
 /**
  * XQuery specific helper methods.
  */
-export const VariableReferences = (function () {
-    
-    const Constr = function(variable, ast) {
+export class VariableReferences extends Visitor {
+    constructor(variable, ast) {
+        super();
         this.variable = variable;
         this.references = [];
         this.visit(ast);
-    };
-    
-    oop.inherit(Constr, Visitor);
-    
-    Constr.prototype.VarName = function(node) {
+    }
+
+    VarName(node) {
         const name = XQueryUtils.getValue(node);
         if (name === this.variable) {
             this.references.push(node);
         }
-    };
-    
-    Constr.prototype.Param = function(node) {
+    }
+
+    Param(node) {
         for (let i = 0; i < node.children.length; i++) {
             if (node.children[i].value === this.variable) {
                 this.references.push(node.children[i]);
             }
         }
-    };
-    
-    Constr.prototype.getReferences = function() {
+    }
+
+    getReferences() {
         return this.references;
-    };
-    
-    return Constr;
-}());
+    }
+}
 
 /**
  * XQuery specific helper methods.
  */
-export const InScopeVariables = (function () {
-    
-    const Constr = function(root, node) {
+export class InScopeVariables extends Visitor {
+    constructor(root, node) {
+        super();
         this.node = node;
         this.stack = [];
         this.variables = null;
         this.visit(root);
-    };
-    
-    oop.inherit(Constr, Visitor);
-    
-    Constr.prototype.FLWORExpr = function(node) {
+    }
+
+    FLWORExpr(node) {
         const pos = this.stack.length;
         this.visitChildren(node);
         this.stack.length = pos;
         return true;
-    };
-    
-    Constr.prototype.VarName = function(node) {
+    }
+
+    VarName(node) {
         if (node === this.node) {
             this.variables = this.deepCopy(this.stack);
             return true;
@@ -255,79 +248,75 @@ export const InScopeVariables = (function () {
             const name = XQueryUtils.getValue(node);
             this.stack.push(name);
         }
-    };
-    
-    Constr.prototype.VarRef = function(node) {
+    }
+
+    VarRef(node) {
         if (node === this.node) {
             this.variables = this.deepCopy(this.stack);
             return true;
         }
         return false;
-    };
-    
-    Constr.prototype.VarDecl = function(node) {
+    }
+
+    VarDecl(node) {
         const self = this;
         this.visitChildren(node, {
-            VarName: function(node) {
+            VarName(node) {
                 const value = XQueryUtils.getValue(node);
                 self.stack.push(value);
                 return true;
             },
-            VarValue: function(node) {
+            VarValue(node) {
                 return true; // skip
             }
         });
         return true;
-    };
-    
-    Constr.prototype.FunctionDecl = function(node) {
+    }
+
+    FunctionDecl(node) {
         const saved = this.deepCopy(this.stack);
         this.visitChildren(node);
         this.stack = saved;
         return true;
-    };
-    
-    Constr.prototype.Param = function(node) {
+    }
+
+    Param(node) {
         const self = this;
         this.visitChildren(node, {
-            EQName: function(node) {
+            EQName(node) {
                 self.stack.push(node.value);
             }
         });
         return true;
-    };
-    
-    Constr.prototype.deepCopy = function(arr) {
+    }
+
+    deepCopy(arr) {
         const copy = [];
         for (let i = 0; i < arr.length; i++) {
             copy.push(arr[i]);
         }
         return copy;
-    };
-    
-    Constr.prototype.getStack = function() {
+    }
+
+    getStack() {
         return this.variables;
-    };
-    
-    return Constr;
-}());
+    }
+}
 
 /**
  * XQuery specific helper methods.
  */
-export const FunctionParameters = (function () {
-    
-    const Constr = function(root) {
+export class FunctionParameters extends Visitor {
+    constructor(root) {
+        super();
         this.parameters = [];
         this.visit(root);
-    };
-    
-    oop.inherit(Constr, Visitor);
-    
-    Constr.prototype.Argument = function(node) {
+    }
+
+    Argument(node) {
         let name;
         this.visitChildren(node, {
-            VarName: function(node) {
+            VarName(node) {
                 name = XQueryUtils.getValue(node);
                 return false;
             }
@@ -335,34 +324,30 @@ export const FunctionParameters = (function () {
         if (name) {
             this.parameters.push(name);
         } else {
-            this.parameters.push("argument" + this.parameters.length);
+            this.parameters.push(`argument${this.parameters.length}`);
         }
         return true;
-    };
-    
-    Constr.prototype.getParameters = function() {
+    }
+
+    getParameters() {
         return this.parameters;
-    };
-    
-    return Constr;
-}());
+    }
+}
 
 /**
  * XQuery specific helper methods.
  */
-export const FunctionCalls = (function () {
-    
-    const Constr = function(funcName, arity, ast) {
+export class FunctionCalls extends Visitor {
+    constructor(funcName, arity, ast) {
+        super();
         this.name = funcName;
         this.arity = arity;
         this.references = [];
         this.declaration = null;
         this.visit(ast);
-    };
-    
-    oop.inherit(Constr, Visitor);
-    
-    Constr.prototype.FunctionCall = function(node) {
+    }
+
+    FunctionCall(node) {
         if (node.arity !== this.arity) {
             return false;
         }
@@ -371,13 +356,13 @@ export const FunctionCalls = (function () {
             this.references.push(node.children[0]);
         }
         return false;
-    };
-    
-    Constr.prototype.FunctionDecl = function(node) {
+    }
+
+    FunctionDecl(node) {
         const self = this;
         if (parseInt(node.arity) === this.arity) {
             this.visitChildren(node, {
-                EQName: function(node) {
+                EQName(node) {
                     if (node.value === self.name) {
                         self.declaration = node;
                         return true;
@@ -386,78 +371,72 @@ export const FunctionCalls = (function () {
             });
         }
         return false;
-    };
-    
-    Constr.prototype.getReferences = function() {
-        return this.references;
-    };
-    
-    return Constr;
-}());
+    }
 
-export const ModuleInfo = (function () {
-    
-    const Constr = function(ast) {
+    getReferences() {
+        return this.references;
+    }
+}
+
+export class ModuleInfo extends Visitor {
+    constructor(ast) {
+        super();
         this.modulePrefix = null;
         this.moduleNamespace = null;
         this.annotations = {};
         this.functions = [];
         this.prolog = null;
         this.visit(ast);
-    };
+    }
 
-    oop.inherit(Constr, Visitor);
-
-    Constr.prototype.isModule = function() {
+    isModule() {
         return this.moduleNamespace !== null;
-    };
+    }
 
-    Constr.prototype.hasTests = function() {
+    hasTests() {
         for (const anno in this.annotations) {
-            if (/test\:/.test(anno)) {
+            if (/test:/.test(anno)) {
                 return true;
             }
         }
         return false;
-    };
+    }
 
-    Constr.prototype.Prolog = function(prolog) {
+    Prolog(prolog) {
         this.prolog = prolog;
-    };
+    }
 
-    Constr.prototype.FunctionDecl = function(node) {
+    FunctionDecl(node) {
         this.functions.push(node);
-    };
+    }
 
-    Constr.prototype.ModuleDecl = function(node) {
+    ModuleDecl(node) {
         const self = this;
         this.visitChildren(node, {
-            NCName: function(node) {
+            NCName(node) {
                 self.modulePrefix = XQueryUtils.getValue(node);
                 return false;
             },
 
-            URILiteral: function(node) {
+            URILiteral(node) {
                 self.moduleNamespace = node.value;
                 return false;
             }
         });
         return false;
-    };
-    
-    Constr.prototype.Annotation = function(node) {
+    }
+
+    Annotation(node) {
         const self = this;
         this.visitChildren(node, {
-            EQName: function(node) {
+            EQName(node) {
                 self.annotations[node.value] = 1;
                 return false;
             }
         });
         return false;
-    };
-    
-    return Constr;
-}());
+    }
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").XQueryUtils = XQueryUtils;

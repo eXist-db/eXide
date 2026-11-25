@@ -88,7 +88,7 @@ const getConf = function (executeQuery, restrictAccess) {
 `
 }
 
-Cypress.Commands.add("setConf", function (executeQuery, restrictAccess) {
+Cypress.Commands.add("setConf", (executeQuery, restrictAccess) => {
     cy.loginXHR('admin', '')
     const body = getConf(executeQuery, restrictAccess);
     const confFilePath = "/apps/eXide/configuration.xml"

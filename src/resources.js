@@ -21,32 +21,31 @@ import { eXide, namespace } from "./namespace.js";
 import { DialogManager } from "./dialog-utils.js";
 import { Sender } from "./events.js";
 import { Dialog, util } from "./util.js";
-import { oop } from "./oop.js";
 
 function apiPath(dbPath) {
-	return "api/storage/" + dbPath.replace(/^\//, "").split("/").map(encodeURIComponent).join("/");
+	return `api/storage/${dbPath.replace(/^\//, "").split("/").map(encodeURIComponent).join("/")}`;
 }
 
 function permCheckbox(name, perms, index, char) {
 	const checked = perms.length > index && perms.charAt(index) === char ? ' checked="checked"' : '';
-	return '<input type="checkbox" name="' + name + '" id="' + name + '"' + checked + '/>';
+	return `<input type="checkbox" name="${name}" id="${name}"${checked}/>`;
 }
 
 function permissionsFromForm(form) {
 	const parts = [];
-	["u", "g", "o"].forEach(function(scope) {
-		["r", "w", "x"].forEach(function(perm) {
-			const cb = form.querySelector("#" + scope + perm);
+	["u", "g", "o"].forEach((scope) => {
+		["r", "w", "x"].forEach((perm) => {
+			const cb = form.querySelector(`#${scope}${perm}`);
 			parts.push(scope + (cb && cb.checked ? "+" : "-") + perm);
 		});
 	});
 	// special bits: setuid, setgid, sticky
 	const us = form.querySelector("#us");
-	parts.push("u" + (us && us.checked ? "+" : "-") + "s");
+	parts.push(`u${us && us.checked ? "+" : "-"}s`);
 	const gs = form.querySelector("#gs");
-	parts.push("g" + (gs && gs.checked ? "+" : "-") + "s");
+	parts.push(`g${gs && gs.checked ? "+" : "-"}s`);
 	const ot = form.querySelector("#ot");
-	parts.push("o" + (ot && ot.checked ? "+" : "-") + "t");
+	parts.push(`o${ot && ot.checked ? "+" : "-"}t`);
 	return parts.join(",");
 }
 
@@ -56,18 +55,18 @@ function buildPropertiesForm(data, accounts) {
 	html += '<fieldset>';
 	if (data.mime) {
 		html += '<div class="control-group"><label for="mime">Mime:</label>';
-		html += '<input type="text" name="mime" value="' + data.mime + '"/></div>';
+		html += `<input type="text" name="mime" value="${data.mime}"/></div>`;
 	}
 	html += '<div class="control-group"><label for="owner">Owner:</label>';
 	html += '<select name="owner">';
-	(accounts.users || []).sort().forEach(function(u) {
-		html += '<option value="' + u + '"' + (u === data.owner ? ' selected="selected"' : '') + '>' + u + '</option>';
+	(accounts.users || []).sort().forEach((u) => {
+		html += `<option value="${u}"${u === data.owner ? ' selected="selected"' : ''}>${u}</option>`;
 	});
 	html += '</select></div>';
 	html += '<div class="control-group"><label for="group">Group:</label>';
 	html += '<select name="group">';
-	(accounts.groups || []).sort().forEach(function(g) {
-		html += '<option value="' + g + '"' + (g === data.group ? ' selected="selected"' : '') + '>' + g + '</option>';
+	(accounts.groups || []).sort().forEach((g) => {
+		html += `<option value="${g}"${g === data.group ? ' selected="selected"' : ''}>${g}</option>`;
 	});
 	html += '</select></div>';
 	html += '</fieldset>';
@@ -75,27 +74,27 @@ function buildPropertiesForm(data, accounts) {
 	html += '<table><tr><th>User</th><th>Group</th><th>Other</th></tr>';
 	// read row
 	html += '<tr>';
-	html += '<td>' + permCheckbox("ur", perms, 0, "r") + '<label for="ur">read</label></td>';
-	html += '<td>' + permCheckbox("gr", perms, 3, "r") + '<label for="gr">read</label></td>';
-	html += '<td>' + permCheckbox("or", perms, 6, "r") + '<label for="or">read</label></td>';
+	html += `<td>${permCheckbox("ur", perms, 0, "r")}<label for="ur">read</label></td>`;
+	html += `<td>${permCheckbox("gr", perms, 3, "r")}<label for="gr">read</label></td>`;
+	html += `<td>${permCheckbox("or", perms, 6, "r")}<label for="or">read</label></td>`;
 	html += '</tr>';
 	// write row
 	html += '<tr>';
-	html += '<td>' + permCheckbox("uw", perms, 1, "w") + '<label for="uw">write</label></td>';
-	html += '<td>' + permCheckbox("gw", perms, 4, "w") + '<label for="gw">write</label></td>';
-	html += '<td>' + permCheckbox("ow", perms, 7, "w") + '<label for="ow">write</label></td>';
+	html += `<td>${permCheckbox("uw", perms, 1, "w")}<label for="uw">write</label></td>`;
+	html += `<td>${permCheckbox("gw", perms, 4, "w")}<label for="gw">write</label></td>`;
+	html += `<td>${permCheckbox("ow", perms, 7, "w")}<label for="ow">write</label></td>`;
 	html += '</tr>';
 	// execute row
 	html += '<tr>';
-	html += '<td>' + permCheckbox("ux", perms, 2, "x") + '<label for="ux">execute</label></td>';
-	html += '<td>' + permCheckbox("gx", perms, 5, "x") + '<label for="gx">execute</label></td>';
-	html += '<td>' + permCheckbox("ox", perms, 8, "x") + '<label for="ox">execute</label></td>';
+	html += `<td>${permCheckbox("ux", perms, 2, "x")}<label for="ux">execute</label></td>`;
+	html += `<td>${permCheckbox("gx", perms, 5, "x")}<label for="gx">execute</label></td>`;
+	html += `<td>${permCheckbox("ox", perms, 8, "x")}<label for="ox">execute</label></td>`;
 	html += '</tr>';
 	// setuid/setgid/sticky row
 	html += '<tr>';
-	html += '<td>' + permCheckbox("us", perms, 2, "s") + '<label for="us">setuid</label></td>';
-	html += '<td>' + permCheckbox("gs", perms, 5, "s") + '<label for="gs">setgid</label></td>';
-	html += '<td>' + permCheckbox("ot", perms, 8, "t") + '<label for="ot">sticky</label></td>';
+	html += `<td>${permCheckbox("us", perms, 2, "s")}<label for="us">setuid</label></td>`;
+	html += `<td>${permCheckbox("gs", perms, 5, "s")}<label for="gs">setgid</label></td>`;
+	html += `<td>${permCheckbox("ot", perms, 8, "t")}<label for="ot">sticky</label></td>`;
 	html += '</tr>';
 	html += '</table></fieldset></form>';
 	return html;
@@ -119,30 +118,30 @@ function mapItem(item) {
  * Manages a table view of resources within a collection.
  * Replaces AG Grid with a vanilla HTML table and scroll-based lazy loading.
  */
-export const ResourceBrowser = (function () {
+const useragent = { isMac: /Mac/.test(navigator.platform) };
+const BATCH_SIZE = 50;
 
-    const useragent = { isMac: /Mac/.test(navigator.platform) };
-	const BATCH_SIZE = 50;
-
-	function fileIcon(item) {
-		const mime = item.mime || "";
-		if (mime) {
-			if (mime === "application/pdf") return "fa-file-pdf-o";
-			if (/^image\//.test(mime)) return "fa-file-image-o";
-			if (/xml|html/.test(mime)) return "fa-file-code-o";
-			if (/^text\/|javascript|json|css/.test(mime)) return "fa-file-text-o";
-			if (/zip|compress|archive|xar|jar/.test(mime)) return "fa-file-archive-o";
-		}
-		const name = item.name || "";
-		if (/\.(xml|xq|xquery|xql|xqm|xconf|xhtml|html|htm|svg|xsl|xslt|odd|rng|sch|wsdl)$/i.test(name)) return "fa-file-code-o";
-		if (/\.(css|less|scss|js|json|md|txt|csv|properties)$/i.test(name)) return "fa-file-text-o";
-		if (/\.(png|jpe?g|gif|ico|webp|bmp|tiff?)$/i.test(name)) return "fa-file-image-o";
-		if (/\.pdf$/i.test(name)) return "fa-file-pdf-o";
-		if (/\.(zip|tar|gz|xar|jar|war|ear)$/i.test(name)) return "fa-file-archive-o";
-		return "fa-file-o";
+function fileIcon(item) {
+	const mime = item.mime || "";
+	if (mime) {
+		if (mime === "application/pdf") return "fa-file-pdf-o";
+		if (/^image\//.test(mime)) return "fa-file-image-o";
+		if (/xml|html/.test(mime)) return "fa-file-code-o";
+		if (/^text\/|javascript|json|css/.test(mime)) return "fa-file-text-o";
+		if (/zip|compress|archive|xar|jar/.test(mime)) return "fa-file-archive-o";
 	}
+	const name = item.name || "";
+	if (/\.(xml|xq|xquery|xql|xqm|xconf|xhtml|html|htm|svg|xsl|xslt|odd|rng|sch|wsdl)$/i.test(name)) return "fa-file-code-o";
+	if (/\.(css|less|scss|js|json|md|txt|csv|properties)$/i.test(name)) return "fa-file-text-o";
+	if (/\.(png|jpe?g|gif|ico|webp|bmp|tiff?)$/i.test(name)) return "fa-file-image-o";
+	if (/\.pdf$/i.test(name)) return "fa-file-pdf-o";
+	if (/\.(zip|tar|gz|xar|jar|war|ear)$/i.test(name)) return "fa-file-archive-o";
+	return "fa-file-o";
+}
 
-	const Constr = function(container, parentContainer) {
+export class ResourceBrowser extends Sender {
+    constructor(container, parentContainer) {
+		super();
 		const self = this;
 		this.container = typeof container === "string" ? document.querySelector(container) : container;
         this.breadcrumbs = parentContainer.querySelector(".eXide-browse-breadcrumbs");
@@ -174,7 +173,7 @@ export const ResourceBrowser = (function () {
 		this.filterInput.type = "text";
 		this.filterInput.className = "browse-filter";
 		this.filterInput.placeholder = "Filter by name…";
-		this.filterInput.addEventListener("input", function() {
+		this.filterInput.addEventListener("input", () => {
 			self._filter = self.filterInput.value;
 			self._resetAndLoad();
 		});
@@ -200,20 +199,20 @@ export const ResourceBrowser = (function () {
 		this.table.appendChild(thead);
 
 		// Column resize handles
-		thead.querySelectorAll("th").forEach(function(th) {
+		thead.querySelectorAll("th").forEach((th) => {
 			const handle = document.createElement("div");
 			handle.className = "col-resize-handle";
 			th.appendChild(handle);
 			th.style.position = "relative";
 			let startX, startWidth;
-			handle.addEventListener("mousedown", function(e) {
+			handle.addEventListener("mousedown", (e) => {
 				e.preventDefault();
 				e.stopPropagation();
 				startX = e.clientX;
 				startWidth = th.offsetWidth;
 				function onMove(e) {
 					const newWidth = Math.max(40, startWidth + e.clientX - startX);
-					th.style.width = newWidth + "px";
+					th.style.width = `${newWidth}px`;
 				}
 				function onUp() {
 					document.removeEventListener("mousemove", onMove);
@@ -239,7 +238,6 @@ export const ResourceBrowser = (function () {
 		this._setupContextMenu();
 		this._setupDragDrop();
 
-        const propsContentEl = document.getElementById("resource-properties-content");
         const propsDialogEl = document.getElementById("resource-properties-dialog");
         this.propertiesDialog = DialogManager.create(propsDialogEl, {
             title: "Properties",
@@ -247,8 +245,8 @@ export const ResourceBrowser = (function () {
             height: 380,
             width: 460,
             buttons: {
-                "Cancel": function () { this.close(); },
-                "Apply": function() {
+                "Cancel" () { this.close(); },
+                async "Apply"() {
                     const dlg = this;
                     const selected = self.getSelectedRows();
                     if (selected.length === 0) {
@@ -269,38 +267,35 @@ export const ResourceBrowser = (function () {
                     // Build permissions mode from checkboxes
                     body.mode = permissionsFromForm(form);
 
-                    const promises = resources.map(function(r) {
-                        return fetch(apiPath(r), {
+                    const promises = resources.map(async (r) => {
+                        const response = await fetch(apiPath(r), {
                             method: "PATCH",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify(body)
-                        }).then(function(r) { return r.json(); });
+                        });
+                        return response.json();
                     });
-                    Promise.all(promises).then(function() {
-                        dlg.close();
-                        self.reload();
-                    });
+                    await Promise.all(promises);
+                    dlg.close();
+                    self.reload();
                 }
             }
         });
-	};
+	}
 
-    // Extend eXide.events.Sender for event support
-    oop.inherit(Constr, Sender);
-
-	Constr.prototype._setupIntersectionObserver = function() {
+    _setupIntersectionObserver() {
 		const self = this;
-		this._observer = new IntersectionObserver(function(entries) {
+		this._observer = new IntersectionObserver(((entries) => {
 			if (entries[0].isIntersecting && !self.loading && self.data.length < self.totalRows) {
 				self._loadBatch(self.data.length);
 			}
-		}, { root: this.scrollContainer, threshold: 0.1 });
+		}), { root: this.scrollContainer, threshold: 0.1 });
 		this._observer.observe(this.sentinel);
-	};
+	}
 
-	Constr.prototype._setupClickHandlers = function() {
+    _setupClickHandlers() {
 		const self = this;
-		this.tbody.addEventListener("click", function(e) {
+		this.tbody.addEventListener("click", (e) => {
 			const tr = e.target.closest("tr");
 			if (!tr || !tr.dataset.index) return;
 			const idx = parseInt(tr.dataset.index, 10);
@@ -327,7 +322,7 @@ export const ResourceBrowser = (function () {
 			self.scrollContainer.focus();
 		});
 
-		this.tbody.addEventListener("dblclick", function(e) {
+		this.tbody.addEventListener("dblclick", (e) => {
 			const tr = e.target.closest("tr");
 			if (!tr || !tr.dataset.index) return;
 			const idx = parseInt(tr.dataset.index, 10);
@@ -336,7 +331,7 @@ export const ResourceBrowser = (function () {
 			if (item.isCollection) {
 				let coll;
 				if (item.name === "..")
-					coll = self._collection.replace(/\/[^\/]+$/, "");
+					coll = self._collection.replace(/\/[^/]+$/, "");
 				else coll = item.key;
 				self.$triggerEvent("activateCollection", [coll, item.writable]);
 				self.update(coll, false);
@@ -348,9 +343,9 @@ export const ResourceBrowser = (function () {
 				});
 			}
 		});
-	};
+	}
 
-	Constr.prototype._setupContextMenu = function() {
+    _setupContextMenu() {
 		const self = this;
 		const ctxMenu = document.getElementById("browse-context-menu");
 		if (!ctxMenu) return;
@@ -358,7 +353,7 @@ export const ResourceBrowser = (function () {
 		this._browseCtxMenu = ctxMenu;
 		this._browseCtxItem = null;
 
-		this.tbody.addEventListener("contextmenu", function(e) {
+		this.tbody.addEventListener("contextmenu", (e) => {
 			e.preventDefault();
 			e.stopPropagation();
 			const tr = e.target.closest("tr");
@@ -390,16 +385,16 @@ export const ResourceBrowser = (function () {
 			// Position
 			const x = e.clientX;
 			const y = e.clientY;
-			ctxMenu.style.left = x + "px";
-			ctxMenu.style.top = y + "px";
+			ctxMenu.style.left = `${x}px`;
+			ctxMenu.style.top = `${y}px`;
 			ctxMenu.classList.add("visible");
 
 			const rect = ctxMenu.getBoundingClientRect();
-			if (rect.right > window.innerWidth) ctxMenu.style.left = (x - rect.width) + "px";
-			if (rect.bottom > window.innerHeight) ctxMenu.style.top = (y - rect.height) + "px";
+			if (rect.right > window.innerWidth) ctxMenu.style.left = `${x - rect.width}px`;
+			if (rect.bottom > window.innerHeight) ctxMenu.style.top = `${y - rect.height}px`;
 		});
 
-		ctxMenu.addEventListener("click", function(e) {
+		ctxMenu.addEventListener("click", (e) => {
 			const menuItem = e.target.closest(".ctx-item");
 			if (!menuItem || menuItem.classList.contains("disabled")) return;
 			const action = menuItem.dataset.action;
@@ -409,7 +404,7 @@ export const ResourceBrowser = (function () {
 			switch (action) {
 				case "open":
 					if (item.isCollection) {
-						const coll = item.name === ".." ? self._collection.replace(/\/[^\/]+$/, "") : item.key;
+						const coll = item.name === ".." ? self._collection.replace(/\/[^/]+$/, "") : item.key;
 						self.$triggerEvent("activateCollection", [coll, item.writable]);
 						self.update(coll, false);
 					}
@@ -431,20 +426,20 @@ export const ResourceBrowser = (function () {
 			}
 		});
 
-		document.addEventListener("click", function() { ctxMenu.classList.remove("visible"); });
-		document.addEventListener("keydown", function(e) {
+		document.addEventListener("click", () => { ctxMenu.classList.remove("visible"); });
+		document.addEventListener("keydown", (e) => {
 			if (e.key === "Escape") ctxMenu.classList.remove("visible");
 		});
-	};
+	}
 
-	Constr.prototype._setupDragDrop = function() {
+    _setupDragDrop() {
 		const self = this;
 
-		this.scrollContainer.addEventListener("dragover", function(e) {
+		this.scrollContainer.addEventListener("dragover", (e) => {
 			e.preventDefault();
 			e.stopPropagation();
 			// Highlight collection row if hovering over one
-			self.tbody.querySelectorAll("tr.drag-highlight").forEach(function(el) {
+			self.tbody.querySelectorAll("tr.drag-highlight").forEach((el) => {
 				el.classList.remove("drag-highlight");
 			});
 			const tr = e.target.closest("tr");
@@ -458,18 +453,18 @@ export const ResourceBrowser = (function () {
 			e.dataTransfer.dropEffect = "copy";
 		});
 
-		this.scrollContainer.addEventListener("dragleave", function(e) {
+		this.scrollContainer.addEventListener("dragleave", (e) => {
 			e.preventDefault();
 			e.stopPropagation();
-			self.tbody.querySelectorAll("tr.drag-highlight").forEach(function(el) {
+			self.tbody.querySelectorAll("tr.drag-highlight").forEach((el) => {
 				el.classList.remove("drag-highlight");
 			});
 		});
 
-		this.scrollContainer.addEventListener("drop", function(e) {
+		this.scrollContainer.addEventListener("drop", async (e) => {
 			e.preventDefault();
 			e.stopPropagation();
-			self.tbody.querySelectorAll("tr.drag-highlight").forEach(function(el) {
+			self.tbody.querySelectorAll("tr.drag-highlight").forEach((el) => {
 				el.classList.remove("drag-highlight");
 			});
 
@@ -489,24 +484,24 @@ export const ResourceBrowser = (function () {
 			}
 
 			// Upload files
-			const promises = files.map(function(file) {
-				const filePath = targetKey + "/" + (file.webkitRelativePath || file.name);
-				return fetch(apiPath(filePath), {
+			const promises = files.map(async (file) => {
+				const filePath = `${targetKey}/${file.webkitRelativePath || file.name}`;
+				const response = await fetch(apiPath(filePath), {
 					method: "PUT",
 					headers: { "Content-Type": file.type || "application/octet-stream" },
 					body: file
-				}).then(function(r) { return r.json(); });
+				});
+				return response.json();
 			});
-			Promise.all(promises).then(function() {
-				self.reload();
-				util.message(files.length + " file(s) uploaded to " + targetKey);
-			});
+			await Promise.all(promises);
+			self.reload();
+			util.message(`${files.length} file(s) uploaded to ${targetKey}`);
 		});
-	};
+	}
 
-	Constr.prototype._setupKeyboardNav = function() {
+    _setupKeyboardNav() {
 		const self = this;
-		this.scrollContainer.addEventListener("keydown", function(e) {
+		this.scrollContainer.addEventListener("keydown", (e) => {
 			if (self.inEditor) return;
 
 			if ((e.metaKey && useragent.isMac) || (e.ctrlKey && !useragent.isMac)) {
@@ -558,7 +553,7 @@ export const ResourceBrowser = (function () {
 						if (item.isCollection) {
 							let coll;
 							if (item.name === "..")
-								coll = self._collection.replace(/\/[^\/]+$/, "");
+								coll = self._collection.replace(/\/[^/]+$/, "");
 							else
 								coll = item.key;
 							self.$triggerEvent("activateCollection", [coll, item.writable]);
@@ -608,7 +603,7 @@ export const ResourceBrowser = (function () {
 							clearTimeout(self.searchTimeout);
 							self.searchTimeout = undefined;
 						}
-						const regex = new RegExp("^" + self.search, "i");
+						const regex = new RegExp(`^${self.search}`, "i");
 						for (let i = self._focusedRow; i < self.data.length; i++) {
 							if (self.data[i] && regex.test(self.data[i].name)) {
 								self._focusedRow = i;
@@ -620,25 +615,25 @@ export const ResourceBrowser = (function () {
 								break;
 							}
 						}
-						self.searchTimeout = setTimeout(function() {
+						self.searchTimeout = setTimeout(() => {
 							self.search = "";
 						}, 2000);
 						break;
 				}
 			}
 		});
-	};
+	}
 
-	Constr.prototype._resetAndLoad = function() {
+    _resetAndLoad() {
 		this.data = [];
 		this.totalRows = 0;
 		this._focusedRow = -1;
 		this._selectedIndices.clear();
 		this.tbody.innerHTML = "";
 		this._loadBatch(0);
-	};
+	}
 
-	Constr.prototype._loadBatch = function(startRow) {
+    async _loadBatch(startRow) {
 		const self = this;
 		if (this.loading) return;
 		this.loading = true;
@@ -649,50 +644,50 @@ export const ResourceBrowser = (function () {
 		if (this._filter) {
 			params.set("filter", this._filter);
 		}
-		fetch(apiPath(this._collection) + "?" + params.toString())
-			.then(function(r) {
-				if (!r.ok) {
-					return r.json().then(
-						function(e) { throw new Error(e && e.error ? e.error : "HTTP " + r.status); },
-						function() { throw new Error("HTTP " + r.status); });
+		try {
+			const r = await fetch(`${apiPath(this._collection)}?${params.toString()}`);
+			if (!r.ok) {
+				let e;
+				try {
+					e = await r.json();
+				} catch {
+					throw new Error(`HTTP ${r.status}`);
 				}
-				return r.json();
-			})
-			.then(function(json) {
-				self.loading = false;
-				if (!json || !json.items) return;
+				throw new Error(e && e.error ? e.error : `HTTP ${r.status}`);
+			}
+			const json = await r.json();
+			self.loading = false;
+			if (!json || !json.items) return;
 
-				// Add parent ".." entry at position 0 when at start
-				const items = json.items.map(mapItem);
-				if (startRow === 0 && self._collection !== "/db") {
-					items.unshift({ name: "..", key: "", isCollection: true });
-					self.totalRows = json.total + 1;
-				} else {
-					self.totalRows = json.total + (self._collection !== "/db" ? 1 : 0);
-				}
+			// Add parent ".." entry at position 0 when at start
+			const items = json.items.map(mapItem);
+			if (startRow === 0 && self._collection !== "/db") {
+				items.unshift({ name: "..", key: "", isCollection: true });
+				self.totalRows = json.total + 1;
+			} else {
+				self.totalRows = json.total + (self._collection !== "/db" ? 1 : 0);
+			}
 
-				for (let i = 0; i < items.length; i++) {
-					const rowIdx = startRow + i;
-					self.data[rowIdx] = items[i];
-					self._renderRow(items[i], rowIdx);
-				}
+			for (let i = 0; i < items.length; i++) {
+				const rowIdx = startRow + i;
+				self.data[rowIdx] = items[i];
+				self._renderRow(items[i], rowIdx);
+			}
 
-				if (startRow === 0 && items.length > 0) {
-					self._focusedRow = 0;
-					self._selectedIndices.clear();
-					self._selectedIndices.add(0);
-					self._updateSelectionDisplay();
-					self._fireSelectionChanged();
-				}
-			})
-			.catch(function(err) {
-				self.loading = false;
-				util.error("Could not list collection: " +
-					(err && err.message ? err.message : err));
-			});
-	};
+			if (startRow === 0 && items.length > 0) {
+				self._focusedRow = 0;
+				self._selectedIndices.clear();
+				self._selectedIndices.add(0);
+				self._updateSelectionDisplay();
+				self._fireSelectionChanged();
+			}
+		} catch (err) {
+			self.loading = false;
+			util.error(`Could not list collection: ${err && err.message ? err.message : err}`);
+		}
+	}
 
-	Constr.prototype._renderRow = function(item, index) {
+    _renderRow(item, index) {
 		const tr = document.createElement("tr");
 		tr.dataset.index = index;
 		tr.dataset.key = item.key || "";
@@ -703,7 +698,7 @@ export const ResourceBrowser = (function () {
 		const icon = document.createElement("i");
 		icon.className = item.isCollection
 			? "fa fa-folder browse-icon"
-			: "fa " + fileIcon(item) + " browse-icon";
+			: `fa ${fileIcon(item)} browse-icon`;
 		tdName.appendChild(icon);
 		tdName.appendChild(document.createTextNode(item.name));
 
@@ -729,9 +724,9 @@ export const ResourceBrowser = (function () {
 		tr.appendChild(tdGroup);
 		tr.appendChild(tdMod);
 		this.tbody.appendChild(tr);
-	};
+	}
 
-	Constr.prototype._updateSelectionDisplay = function() {
+    _updateSelectionDisplay() {
 		const rows = this.tbody.querySelectorAll("tr");
 		for (let i = 0; i < rows.length; i++) {
 			const idx = parseInt(rows[i].dataset.index, 10);
@@ -748,16 +743,16 @@ export const ResourceBrowser = (function () {
 				rows[i].classList.remove("focused");
 			}
 		}
-	};
+	}
 
-	Constr.prototype._scrollRowIntoView = function(index) {
-		const row = this.tbody.querySelector("tr[data-index=\"" + index + "\"]");
+    _scrollRowIntoView(index) {
+		const row = this.tbody.querySelector(`tr[data-index="${index}"]`);
 		if (row) {
 			row.scrollIntoView({ block: "nearest" });
 		}
-	};
+	}
 
-	Constr.prototype._fireSelectionChanged = function() {
+    _fireSelectionChanged() {
 		const rows = this.getSelectedRows();
 		let enableWrite = true;
 		for (let i = 0; i < rows.length; i++) {
@@ -768,26 +763,26 @@ export const ResourceBrowser = (function () {
 		}
 		const doc = (rows.length === 1 && !rows[0].isCollection) ? rows[0] : null;
 		this.$triggerEvent("activate", [doc, enableWrite]);
-	};
+	}
 
-	Constr.prototype.getSelectedRows = function() {
+    getSelectedRows() {
 		const result = [];
 		const self = this;
-		this._selectedIndices.forEach(function(idx) {
+		this._selectedIndices.forEach((idx) => {
 			if (self.data[idx]) result.push(self.data[idx]);
 		});
 		return result;
-	};
+	}
 
-    Constr.prototype.setCollection = function(collection) {
+    setCollection(collection) {
         this._collection = collection;
 		this._filter = "";
 		this.filterInput.value = "";
         this._resetAndLoad();
         this.updateBreadcrumbs();
-    };
+    }
 
-    Constr.prototype.updateBreadcrumbs = function() {
+    updateBreadcrumbs() {
         this.breadcrumbs.innerHTML = "";
         const self = this;
         let parts = this._collection.split("/");
@@ -798,7 +793,7 @@ export const ResourceBrowser = (function () {
         for (let i = 0; i < parts.length; i++) {
             const part = parts[i];
             if (part && part.length > 0) {
-                path += part + "/";
+                path += `${part}/`;
                 const a = document.createElement("a");
                 a.href = "#";
                 a.textContent = part;
@@ -812,45 +807,45 @@ export const ResourceBrowser = (function () {
             }
         }
         this.breadcrumbs.appendChild(span);
-    };
+    }
 
-	Constr.prototype.setMode = function(value) {
+    setMode(value) {
         this.mode = value;
 		this._rowSelection = (value === "manage") ? "multiple" : "single";
-	};
+	}
 
-	Constr.prototype.resize = function () {
+    resize() {
 		this.reload(true);
-	};
+	}
 
-	Constr.prototype.update = function(collection, reload) {
+    update(collection, reload) {
         if (!reload && collection === this._collection)
             return;
 		console.log("Opening resources for %s", collection);
         this.setCollection(collection);
-        document.querySelectorAll('input[name="collection"]').forEach(function(el) {
+        document.querySelectorAll('input[name="collection"]').forEach((el) => {
             el.value = collection;
         });
         this.search = "";
-	};
+	}
 
-	Constr.prototype.hasSelection = function () {
+    hasSelection() {
 		return this._selectedIndices.size > 0;
-	};
+	}
 
-    Constr.prototype.getSelected = function() {
+    getSelected() {
 		const rows = this.getSelectedRows();
 		return rows.length > 0 ? rows : null;
-    };
+    }
 
-	Constr.prototype.startEditing = function() {
+    startEditing() {
 		if (this._focusedRow < 0) return;
 		const item = this.data[this._focusedRow];
 		if (!item) return;
 
 		const self = this;
 		this.inEditor = true;
-		const row = this.tbody.querySelector("tr[data-index=\"" + this._focusedRow + "\"]");
+		const row = this.tbody.querySelector(`tr[data-index="${this._focusedRow}"]`);
 		if (!row) return;
 		const cell = row.querySelector(".col-name");
 		if (!cell) return;
@@ -871,15 +866,15 @@ export const ResourceBrowser = (function () {
 			finished = true;
 			const newValue = input.value;
 			cell.textContent = commit && newValue ? newValue : oldValue;
-			setTimeout(function() { self.inEditor = false; }, 200);
+			setTimeout(() => { self.inEditor = false; }, 200);
 			if (commit && newValue && newValue !== oldValue) {
-				const renamePath = self._collection + "/" + oldValue;
+				const renamePath = `${self._collection}/${oldValue}`;
 				fetch(apiPath(renamePath), {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({ action: "rename", target: newValue })
-				}).then(function(r) { return r.json(); })
-				.then(function(data) {
+				}).then((r) => { return r.json(); })
+				.then((data) => {
 					if (data.error) {
 						Dialog.warning("Rename Error", data.error);
 					}
@@ -889,66 +884,63 @@ export const ResourceBrowser = (function () {
 			self.scrollContainer.focus();
 		}
 
-		input.addEventListener("keydown", function(e) {
+		input.addEventListener("keydown", (e) => {
 			if (e.which === 13) { e.preventDefault(); finish(true); }
 			if (e.which === 27) { e.preventDefault(); finish(false); }
 		});
-		input.addEventListener("blur", function() {
+		input.addEventListener("blur", () => {
 			finish(true);
 		});
-	};
+	}
 
-    Constr.prototype.createCollection = function () {
+    createCollection() {
     	const self = this;
 		if (!eXide.app.$checkLogin())
 			return;
 		Dialog.input("Create Collection",
 			"<label for=\"collection\">Name: </label>" +
 			"<input type=\"text\" name=\"collection\" id=\"eXide-browse-collection-name\"/>",
-			function () {
+			async () => {
 			    const spinner = document.getElementById("eXide-browse-spinner");
 			    spinner.style.display = "";
-				fetch(apiPath(self._collection), {
+				const response = await fetch(apiPath(self._collection), {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
 						action: "create",
 						name: document.getElementById("eXide-browse-collection-name").value
 					})
-				}).then(function(r) { return r.json(); })
-				.then(function (data) {
-					spinner.style.display = "none";
-					if (data.error) {
-						Dialog.warning("Create Collection Error", data.error);
-					} else {
-						self.reload();
-					}
 				});
+				const data = await response.json();
+				spinner.style.display = "none";
+				if (data.error) {
+					Dialog.warning("Create Collection Error", data.error);
+				} else {
+					self.reload();
+				}
 			},
 			{ action: "Create" }
 		);
-	};
+	}
 
-	Constr.prototype.deleteCollection = function () {
+    deleteCollection() {
 		const self = this;
-		Dialog.input("Confirm Deletion", "Are you sure you want to delete collection " + self.selected + "?",
-			function () {
+		Dialog.input("Confirm Deletion", `Are you sure you want to delete collection ${self.selected}?`,
+			async () => {
 			    const spinner = document.getElementById("eXide-browse-spinner");
 			    spinner.style.display = "";
-				fetch(apiPath(self._collection), { method: "DELETE" })
-				.then(function(r) { return r.json(); })
-				.then(function (data) {
-					spinner.style.display = "none";
-					if (data.error) {
-						Dialog.warning("Delete Collection Error", data.error);
-					} else {
-						self.reload();
-					}
-				});
+				const response = await fetch(apiPath(self._collection), { method: "DELETE" });
+				const data = await response.json();
+				spinner.style.display = "none";
+				if (data.error) {
+					Dialog.warning("Delete Collection Error", data.error);
+				} else {
+					self.reload();
+				}
 		}, { action: "Delete", destructive: true });
-	};
+	}
 
-	Constr.prototype.deleteResource = function(row) {
+    deleteResource(row) {
 		const selected = row ? [row] : this.getSelectedRows();
 		if (selected.length === 0) {
 			return;
@@ -960,25 +952,24 @@ export const ResourceBrowser = (function () {
 		console.log('resources to delete: %o', selected);
 		const self = this;
 		Dialog.input("Confirm Deletion", "Are you sure you want to delete the selected resources?",
-				function () {
+				async () => {
 				    const spinner = document.getElementById("eXide-browse-spinner");
 				    spinner.style.display = "";
-					const promises = resources.map(function(r) {
-						return fetch(apiPath(r), { method: "DELETE" })
-							.then(function(resp) { return resp.json(); });
+					const promises = resources.map(async (r) => {
+						const resp = await fetch(apiPath(r), { method: "DELETE" });
+						return resp.json();
 					});
-					Promise.all(promises).then(function (results) {
-						spinner.style.display = "none";
-						self.reload();
-						const err = results.find(function(d) { return d.error; });
-						if (err) {
-							Dialog.warning("Delete Resource Error", err.error);
-						}
-					});
+					const results = await Promise.all(promises);
+					spinner.style.display = "none";
+					self.reload();
+					const err = results.find((d) => { return d.error; });
+					if (err) {
+						Dialog.warning("Delete Resource Error", err.error);
+					}
 		}, { action: "Delete", destructive: true });
-	};
+	}
 
-    Constr.prototype.properties = function() {
+    properties() {
 		if (!eXide.app.$checkLogin())
 			return;
 		const selected = this.getSelectedRows();
@@ -993,28 +984,28 @@ export const ResourceBrowser = (function () {
 		}
         if (resources.length > 0) {
             const contentEl = document.getElementById("resource-properties-content");
-            const propsPromise = fetch(apiPath(resources[0])).then(function(r) { return r.json(); });
-            const accountsPromise = fetch("api/admin/accounts").then(function(r) { return r.ok ? r.json() : { users: [], groups: [] }; }).catch(function() { return { users: [], groups: [] }; });
-            Promise.all([propsPromise, accountsPromise]).then(function(results) {
+            const propsPromise = fetch(apiPath(resources[0])).then((r) => { return r.json(); });
+            const accountsPromise = fetch("api/admin/accounts").then((r) => { return r.ok ? r.json() : { users: [], groups: [] }; }).catch(() => { return { users: [], groups: [] }; });
+            Promise.all([propsPromise, accountsPromise]).then((results) => {
                 const data = results[0];
                 const accounts = results[1];
                 contentEl.innerHTML = buildPropertiesForm(data, accounts);
             });
             this.propertiesDialog.open();
         }
-    };
+    }
 
-    Constr.prototype.cut = function() {
+    cut() {
         this.clipboardMode = "move";
         this.copy0();
-    };
+    }
 
-    Constr.prototype.copy = function() {
+    copy() {
       this.clipboardMode = "copy";
       this.copy0();
-    };
+    }
 
-    Constr.prototype.copy0 = function() {
+    copy0() {
 		const selected = this.getSelectedRows();
 		if (selected.length === 0) {
 			return;
@@ -1024,29 +1015,28 @@ export const ResourceBrowser = (function () {
             this.clipboard.push(selected[i].key);
 		}
         console.log("Clipboard: %o", this.clipboard);
-    };
+    }
 
-    Constr.prototype.paste = function() {
+    async paste() {
         const self = this;
         console.log("Pasting resources %o to %s in mode %s", this.clipboard, this._collection, this.clipboardMode);
-        fetch(apiPath(this._collection), {
+        const response = await fetch(apiPath(this._collection), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 action: this.clipboardMode,
                 sources: this.clipboard
             })
-        }).then(function(r) { return r.json(); })
-        .then(function (data) {
-            if (data.error) {
-                Dialog.warning("Paste Error", data.error);
-            } else {
-                self.reload();
-            }
         });
-    };
+        const data = await response.json();
+        if (data.error) {
+            Dialog.warning("Paste Error", data.error);
+        } else {
+            self.reload();
+        }
+    }
 
-    Constr.prototype.goto = function(row) {
+    goto(row) {
 		if (row < 0 || row >= this.data.length) return;
 		this._focusedRow = row;
 		this._selectedIndices.clear();
@@ -1054,168 +1044,166 @@ export const ResourceBrowser = (function () {
 		this._updateSelectionDisplay();
 		this._scrollRowIntoView(row);
 		this._fireSelectionChanged();
-    };
+    }
 
-    Constr.prototype.focus = function() {
+    focus() {
         this.scrollContainer.focus();
-    };
+    }
 
-	Constr.prototype.reload = function(skipSync) {
+    reload(skipSync) {
 		this.update(this._collection, true);
 		if (!skipSync) {
 			eXide.app.syncDirectory(this._collection);
 		}
-	};
-
-	return Constr;
-}());
+	}
+}
 
 /**
  * File upload widget
  */
-export const Upload = (function () {
+function isDirUploadSupported() {
+    const tmpInput = document.createElement("input");
+    return ("webkitdirectory" in tmpInput
+        || "mozdirectory" in tmpInput
+        || "odirectory" in tmpInput
+        || "msdirectory" in tmpInput
+        || "directory" in tmpInput);
+}
 
-	function isDirUploadSupported() {
-	    const tmpInput = document.createElement("input");
-	    return ("webkitdirectory" in tmpInput
-	        || "mozdirectory" in tmpInput
-	        || "odirectory" in tmpInput
-	        || "msdirectory" in tmpInput
-	        || "directory" in tmpInput);
-	}
+function uploadFiles(fileInput, collectionInput, deployInput, filesTable, thead, progressAll, spinner) {
+    fileInput.addEventListener("change", () => {
+        const files = Array.from(fileInput.files);
+        if (files.length === 0) return;
 
-	function uploadFiles(fileInput, collectionInput, deployInput, filesTable, thead, progressAll, spinner) {
-	    fileInput.addEventListener("change", function() {
-	        const files = Array.from(fileInput.files);
-	        if (files.length === 0) return;
+        thead.style.display = "";
+        spinner.style.display = "";
 
-	        thead.style.display = "";
-	        spinner.style.display = "";
+        let totalSize = 0;
+        let loadedSize = 0;
+        files.forEach((f) => { totalSize += f.size; });
 
-	        let totalSize = 0;
-	        let loadedSize = 0;
-	        files.forEach(function(f) { totalSize += f.size; });
+        const rows = filesTable.querySelectorAll("tr");
+        let count = rows.length;
 
-	        const rows = filesTable.querySelectorAll("tr");
-	        let count = rows.length;
+        const promises = [];
+        files.forEach((file) => {
+            if (file.name === ".") return;
 
-	        const promises = [];
-	        files.forEach(function(file) {
-	            if (file.name === ".") return;
+            let path = file.name;
+            if (file.webkitRelativePath) {
+                path = file.webkitRelativePath;
+            }
 
-	            let path = file.name;
-	            if (file.webkitRelativePath) {
-	                path = file.webkitRelativePath;
-	            }
+            let node = null;
+            if (count === 200) {
+                const tr = document.createElement("tr");
+                const td = document.createElement("td");
+                td.colSpan = 3;
+                td.textContent = "Only 200 files are shown. More follow...";
+                tr.appendChild(td);
+                filesTable.appendChild(tr);
+                count++;
+            } else if (count < 200) {
+                node = document.createElement("tr");
+                node.dataset.name = path;
+                const tdName = document.createElement("td");
+                tdName.textContent = file.name;
+                const tdSize = document.createElement("td");
+                tdSize.textContent = file.size;
+                const tdProg = document.createElement("td");
+                tdProg.className = "file_upload_progress";
+                const progBar = document.createElement("div");
+                progBar.className = "ui-progressbar-value";
+                progBar.style.width = "0%";
+                tdProg.appendChild(progBar);
+                node.appendChild(tdName);
+                node.appendChild(tdSize);
+                node.appendChild(tdProg);
+                filesTable.appendChild(node);
+                count++;
+            }
 
-	            let node = null;
-	            if (count === 200) {
-	                const tr = document.createElement("tr");
-	                const td = document.createElement("td");
-	                td.colSpan = 3;
-	                td.textContent = "Only 200 files are shown. More follow...";
-	                tr.appendChild(td);
-	                filesTable.appendChild(tr);
-	                count++;
-	            } else if (count < 200) {
-	                node = document.createElement("tr");
-	                node.dataset.name = path;
-	                const tdName = document.createElement("td");
-	                tdName.textContent = file.name;
-	                const tdSize = document.createElement("td");
-	                tdSize.textContent = file.size;
-	                const tdProg = document.createElement("td");
-	                tdProg.className = "file_upload_progress";
-	                const progBar = document.createElement("div");
-	                progBar.className = "ui-progressbar-value";
-	                progBar.style.width = "0%";
-	                tdProg.appendChild(progBar);
-	                node.appendChild(tdName);
-	                node.appendChild(tdSize);
-	                node.appendChild(tdProg);
-	                filesTable.appendChild(node);
-	                count++;
-	            }
+            const uploadPath = `${collectionInput.value}/${path}`;
 
-	            const uploadPath = collectionInput.value + "/" + path;
+            const p = new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open("PUT", apiPath(uploadPath));
+                xhr.upload.addEventListener("progress", (evt) => {
+                    if (evt.lengthComputable) {
+                        const pct = Math.round(evt.loaded / evt.total * 100);
+                        const row = filesTable.querySelector(`tr[data-name="${CSS.escape(path)}"]`);
+                        if (row) {
+                            const bar = row.querySelector(".ui-progressbar-value");
+                            if (bar) bar.style.width = `${pct}%`;
+                        }
+                    }
+                });
+                xhr.onload = function() {
+                    loadedSize += file.size;
+                    const overallPct = Math.round(loadedSize / totalSize * 100);
+                    progressAll.style.width = `${overallPct}%`;
+                    progressAll.textContent = `${overallPct}%`;
+                    if (node) node.remove();
+                    if (overallPct >= 100) {
+                        filesTable.innerHTML = "";
+                        spinner.style.display = "none";
+                    }
+                    resolve();
+                };
+                xhr.onerror = function() {
+                    console.log("Upload error for file: ", file.name);
+                    reject();
+                };
+                xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+                xhr.send(file);
+            });
+            promises.push(p);
+        });
 
-	            const p = new Promise(function(resolve, reject) {
-	                const xhr = new XMLHttpRequest();
-	                xhr.open("PUT", apiPath(uploadPath));
-	                xhr.upload.addEventListener("progress", function(evt) {
-	                    if (evt.lengthComputable) {
-	                        const pct = Math.round(evt.loaded / evt.total * 100);
-	                        const row = filesTable.querySelector('tr[data-name="' + CSS.escape(path) + '"]');
-	                        if (row) {
-	                            const bar = row.querySelector(".ui-progressbar-value");
-	                            if (bar) bar.style.width = pct + "%";
-	                        }
-	                    }
-	                });
-	                xhr.onload = function() {
-	                    loadedSize += file.size;
-	                    const overallPct = Math.round(loadedSize / totalSize * 100);
-	                    progressAll.style.width = overallPct + "%";
-	                    progressAll.textContent = overallPct + "%";
-	                    if (node) node.remove();
-	                    if (overallPct >= 100) {
-	                        filesTable.innerHTML = "";
-	                        spinner.style.display = "none";
-	                    }
-	                    resolve();
-	                };
-	                xhr.onerror = function() {
-	                    console.log("Upload error for file: ", file.name);
-	                    reject();
-	                };
-	                xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
-	                xhr.send(file);
-	            });
-	            promises.push(p);
-	        });
+        Promise.all(promises).then(() => {
+            progressAll.textContent = "";
+            progressAll.style.width = "0%";
+            // If deploy checkbox is checked, install .xar files as packages
+            if (deployInput.checked) {
+                const xarFiles = files.filter((f) => { return /\.xar$/i.test(f.name); });
+                xarFiles.forEach((f) => {
+                    fetch("api/packages", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/octet-stream" },
+                        body: f
+                    });
+                });
+            }
+        });
 
-	        Promise.all(promises).then(function() {
-	            progressAll.textContent = "";
-	            progressAll.style.width = "0%";
-	            // If deploy checkbox is checked, install .xar files as packages
-	            if (deployInput.checked) {
-	                const xarFiles = files.filter(function(f) { return /\.xar$/i.test(f.name); });
-	                xarFiles.forEach(function(f) {
-	                    fetch("api/packages", {
-	                        method: "POST",
-	                        headers: { "Content-Type": "application/octet-stream" },
-	                        body: f
-	                    });
-	                });
-	            }
-	        });
+        fileInput.value = "";
+    });
+}
 
-	        fileInput.value = "";
-	    });
-	}
+function initDragDrop(dropzone, fileInput) {
+    if (!dropzone) return;
+    dropzone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add("drag-over");
+    });
+    dropzone.addEventListener("dragleave", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove("drag-over");
+    });
+    dropzone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove("drag-over");
+        fileInput.files = e.dataTransfer.files;
+        fileInput.dispatchEvent(new Event("change"));
+    });
+}
 
-	function initDragDrop(dropzone, fileInput) {
-	    if (!dropzone) return;
-	    dropzone.addEventListener("dragover", function(e) {
-	        e.preventDefault();
-	        e.stopPropagation();
-	        dropzone.classList.add("drag-over");
-	    });
-	    dropzone.addEventListener("dragleave", function(e) {
-	        e.preventDefault();
-	        e.stopPropagation();
-	        dropzone.classList.remove("drag-over");
-	    });
-	    dropzone.addEventListener("drop", function(e) {
-	        e.preventDefault();
-	        e.stopPropagation();
-	        dropzone.classList.remove("drag-over");
-	        fileInput.files = e.dataTransfer.files;
-	        fileInput.dispatchEvent(new Event("change"));
-	    });
-	}
-
-	const Constr = function () {
+export class Upload extends Sender {
+    constructor() {
+		super();
 		const self = this;
 		this.container = document.getElementById("upload-dialog");
 
@@ -1259,7 +1247,7 @@ export const Upload = (function () {
 			modal: true,
 			width: 500,
 			buttons: {
-				"Close": function() {
+				"Close"() {
 					this.close();
 					filesTable.innerHTML = "";
 					self.$triggerEvent("done", []);
@@ -1268,51 +1256,46 @@ export const Upload = (function () {
 		});
 	}
 
-    // Extend eXide.events.Sender for event support
-    oop.inherit(Constr, Sender);
-
-	Constr.prototype.open = function() {
+    open() {
 		this._dialog.open();
-	};
+	}
 
-	Constr.prototype.update = function(collection) {
+    update(collection) {
         const filesTable = document.getElementById("files");
         if (filesTable) filesTable.innerHTML = "";
         const thead = this.container.querySelector("#file_upload_table thead");
         if (thead) thead.style.display = "none";
 		const collectionInput = this.container.querySelector('input[name="collection"]');
 		if (collectionInput) collectionInput.value = collection;
-	};
-
-	return Constr;
-}());
+	}
+}
 
 /**
  * Main interface for the open and save dialogs. Uses
  * a ResourceBrowser within a panel.
  */
-export const Browser = (function () {
+function createButton(toolbar, title, id, index, imgPath) {
+    const button = document.createElement("button");
+	button.title = title;
+	button.id = `eXide-browse-toolbar-${id}`;
+	button.tabindex = index;
+	const img = document.createElement("span");
+	img.className = `fa fa-lg fa-${imgPath}`;
+	button.appendChild(img);
+	toolbar.appendChild(button);
+    return button;
+}
 
-    function createButton(toolbar, title, id, index, imgPath) {
-        const button = document.createElement("button");
-    	button.title = title;
-		button.id = "eXide-browse-toolbar-" + id;
-		button.tabindex = index;
-		const img = document.createElement("span");
-		img.className = "fa fa-lg fa-" + imgPath;
-		button.appendChild(img);
-		toolbar.appendChild(button);
-        return button;
-    }
-
-	const Constr = function (container) {
+export class Browser extends Sender {
+    constructor(container) {
+		super();
 		const self = this;
         this.mode = "open";
 
 		const toolbar = container.querySelector(".eXide-browse-toolbar");
 
 		let button = createButton(toolbar, "Reload", "reload", 1, "refresh");
-		button.addEventListener("click", function (ev) {
+		button.addEventListener("click", (ev) => {
             self.resources.reload(true);
 		});
 
@@ -1322,36 +1305,36 @@ export const Browser = (function () {
 		});
 
         this.btnCreateCollection = createButton(toolbar, "Create Collection", "create", 3, "folder-o");
-		this.btnCreateCollection.addEventListener("click", function (ev) {
+		this.btnCreateCollection.addEventListener("click", (ev) => {
 			ev.preventDefault();
 			self.resources.createCollection();
 		});
 
 		this.btnUpload = createButton(toolbar, "Upload Files", "upload", 4, "cloud-upload");
-		this.btnUpload.addEventListener("click", function (ev) {
+		this.btnUpload.addEventListener("click", (ev) => {
 			ev.preventDefault();
 			self.upload.open();
 		});
 
 		this.btnDeleteResource = createButton(toolbar, "Delete", "delete-resource", 5, "trash-o");
-		this.btnDeleteResource.addEventListener("click", function (ev) {
+		this.btnDeleteResource.addEventListener("click", (ev) => {
 			ev.preventDefault();
 			self.deleteSelected();
 		});
 
         this.btnProperties = createButton(toolbar, "Properties", "properties", 10, "info");
-        this.btnProperties.addEventListener("click", function(ev) {
+        this.btnProperties.addEventListener("click", (ev) => {
             ev.preventDefault();
             self.resources.properties();
         });
 
 		button = createButton(toolbar, "Open Selected", "open", 6, "folder-open-o");
-		button.addEventListener("click", function (ev) {
+		button.addEventListener("click", (ev) => {
 			ev.preventDefault();
 			const rows = self.resources.getSelectedRows();
 			if (rows.length === 1 && rows[0].isCollection) {
 				const coll = rows[0].name === ".." ?
-					self.resources._collection.replace(/\/[^\/]+$/, "") :
+					self.resources._collection.replace(/\/[^/]+$/, "") :
 					rows[0].key;
 				self.resources.update(coll, false);
 			} else {
@@ -1360,7 +1343,7 @@ export const Browser = (function () {
 		});
 
 		button = createButton(toolbar, "Download Selected", "download", 11, "download");
-		button.addEventListener("click", function (ev) {
+		button.addEventListener("click", (ev) => {
 			ev.preventDefault();
 			const selected = self.resources.getSelected();
 			eXide.app.downloadSelectedResources(selected, false);
@@ -1387,37 +1370,34 @@ export const Browser = (function () {
 			this.reload();
 		});
 
-        this.btnCopy.addEventListener("click", function (ev) {
+        this.btnCopy.addEventListener("click", (ev) => {
     		ev.preventDefault();
 			self.resources.copy();
 		});
-        this.btnCut.addEventListener("click", function (ev) {
+        this.btnCut.addEventListener("click", (ev) => {
         	ev.preventDefault();
 			self.resources.cut();
 		});
-        this.btnPaste.addEventListener("click", function (ev) {
+        this.btnPaste.addEventListener("click", (ev) => {
         	ev.preventDefault();
 			self.resources.paste();
 		});
 		const spinner = document.getElementById("eXide-browse-spinner");
 		if (spinner) spinner.style.display = "none";
-	};
+	}
 
-	// Extend eXide.events.Sender for event support
-    oop.inherit(Constr, Sender);
-
-	Constr.prototype.init = function() {
+    init() {
 		this.resources.resize();
 		this.resources.reload();
-	};
+	}
 
-	Constr.prototype.reload = function(buttons, mode) {
+    reload(buttons, mode) {
 		if (buttons) {
-			this.container.querySelectorAll(".eXide-browse-toolbar button").forEach(function(btn) {
+			this.container.querySelectorAll(".eXide-browse-toolbar button").forEach((btn) => {
 				btn.style.display = "none";
 			});
 			for (let i = 0; i < buttons.length; i++) {
-				const btn = document.getElementById("eXide-browse-toolbar-" + buttons[i]);
+				const btn = document.getElementById(`eXide-browse-toolbar-${buttons[i]}`);
 				if (btn) btn.style.display = "";
 			}
 		}
@@ -1436,31 +1416,31 @@ export const Browser = (function () {
 
 		this.resize();
 		this.selection.value = "";
-	};
+	}
 
-	Constr.prototype.resize = function() {
-	};
+    resize() {
+	}
 
-    Constr.prototype.deleteSelected = function () {
+    deleteSelected() {
         this.resources.deleteResource();
-    };
+    }
 
-	Constr.prototype.getSelection = function () {
+    getSelection() {
 		const name = this.selection.value;
 		if (name == null || name === '')
 			return null;
 		return {
-			name: name,
-			path: this.resources._collection + "/" + name,
+			name,
+			path: `${this.resources._collection}/${name}`,
 			writable: true
 		};
-	};
+	}
 
-    Constr.prototype.changeToCollection = function (collection) {
+    changeToCollection(collection) {
         this.resources.update(collection, true);
-    };
+    }
 
-	Constr.prototype.onActivateResource = function (doc, writable) {
+    onActivateResource(doc, writable) {
 		if (doc) {
 			this.selection.value = doc.name;
 		} else {
@@ -1474,14 +1454,14 @@ export const Browser = (function () {
 			this.btnDeleteResource.style.display = "none";
             this.btnProperties.style.display = "none";
 		}
-	};
+	}
 
-	Constr.prototype.onActivateCollection = function (key, writable) {
+    onActivateCollection(key, writable) {
         console.log("Activate collection: %s %s", key, this.mode);
         switch (this.mode) {
             case "open":
             case "save":
-                this.container.querySelectorAll(".eXide-browse-toolbar button").forEach(function(btn) {
+                this.container.querySelectorAll(".eXide-browse-toolbar button").forEach((btn) => {
                     btn.style.display = "none";
                 });
                 this.btnCreateCollection.style.display = "";
@@ -1503,10 +1483,8 @@ export const Browser = (function () {
                 }
         }
 		this.upload.update(key, writable);
-	};
-
-	return Constr;
-}());
+	}
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.browse").ResourceBrowser = ResourceBrowser;

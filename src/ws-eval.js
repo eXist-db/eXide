@@ -112,9 +112,9 @@ export const wsEval = (function () {
             connected = false;
             console.log("[ws-eval] Disconnected (code:", event.code, ")");
             // Notify any pending queries that the connection dropped
-            Object.keys(handlers).forEach(function (id) {
+            Object.keys(handlers).forEach((id) => {
                 if (handlers[id].onError) {
-                    handlers[id].onError({ type: "error", id: id, message: "WebSocket disconnected" });
+                    handlers[id].onError({ type: "error", id, message: "WebSocket disconnected" });
                 }
             });
             handlers = {};
@@ -134,7 +134,7 @@ export const wsEval = (function () {
         const loc = window.location;
         const rootContext = loc.pathname.replace(/^(.*?)\/apps\/.*$/, "$1");
         const wsProtocol = loc.protocol === "https:" ? "wss:" : "ws:";
-        const wsUrl = wsProtocol + "//" + loc.host + rootContext + "/ws/eval";
+        const wsUrl = `${wsProtocol}//${loc.host}${rootContext}/ws/eval`;
         connect(wsUrl);
     }
 
@@ -154,7 +154,7 @@ export const wsEval = (function () {
     function execute(opts) {
         if (!connected || !socket) return null;
 
-        const id = "q-" + Date.now() + "-" + Math.random().toString(36).substr(2, 6);
+        const id = `q-${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
         activeQueryId = id;
 
         handlers[id] = {
@@ -166,7 +166,7 @@ export const wsEval = (function () {
 
         const msg = {
             action: "eval",
-            id: id,
+            id,
             query: opts.query,
             "module-load-path": opts.moduleLoadPath,
             serialization: { method: opts.serialization || "adaptive" },
@@ -195,17 +195,16 @@ export const wsEval = (function () {
         if (reconnectTimer) return;
         if (!url) return;
         if (reconnectAttempts >= maxReconnectAttempts) {
-            console.warn("[ws-eval] Giving up after " + reconnectAttempts +
-                " reconnect attempts — server endpoint appears unavailable. " +
-                "Call wsEval.connect(url) explicitly to retry.");
+            console.warn(`[ws-eval] Giving up after ${reconnectAttempts} reconnect attempts — server endpoint appears unavailable. ` +
+                `Call wsEval.connect(url) explicitly to retry.`);
             url = null;  // prevent further reconnects until someone re-arms
             return;
         }
 
         reconnectAttempts++;
-        reconnectTimer = setTimeout(function () {
+        reconnectTimer = setTimeout(() => {
             reconnectTimer = null;
-            console.log("[ws-eval] Reconnecting (attempt " + reconnectAttempts + "/" + maxReconnectAttempts + ")...");
+            console.log(`[ws-eval] Reconnecting (attempt ${reconnectAttempts}/${maxReconnectAttempts})...`);
             connect(url);
         }, reconnectDelay);
 
@@ -231,13 +230,13 @@ export const wsEval = (function () {
     }
 
     return {
-        autoConnect: autoConnect,
-        connect: connect,
-        disconnect: disconnect,
-        execute: execute,
-        cancel: cancel,
-        isConnected: function () { return connected; },
-        getActiveQueryId: function () { return activeQueryId; }
+        autoConnect,
+        connect,
+        disconnect,
+        execute,
+        cancel,
+        isConnected () { return connected; },
+        getActiveQueryId () { return activeQueryId; }
     };
 }());
 

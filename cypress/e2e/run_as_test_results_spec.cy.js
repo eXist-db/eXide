@@ -19,8 +19,8 @@
  */
 describe('Run as test — results rendering', () => {
   const testCollection = '/db'
-  const testFile = 'cypress-test-results-' + Date.now() + '.xqm'
-  const testPath = testCollection + '/' + testFile
+  const testFile = `cypress-test-results-${Date.now()}.xqm`
+  const testPath = `${testCollection}/${testFile}`
 
   before(() => {
     cy.cleanupTestFiles()
@@ -54,8 +54,8 @@ describe('Run as test — results rendering', () => {
     cy.window().then((win) => {
       const ed = win.eXide.app.getEditor()
       return new Cypress.Promise((resolve, reject) => {
-        ed.saveDocument(null, resolve, function (msg) {
-          reject(new Error('save failed: ' + msg))
+        ed.saveDocument(null, resolve, (msg) => {
+          reject(new Error(`save failed: ${msg}`))
         })
       })
     })

@@ -22,28 +22,16 @@ import { Document } from "./document.js";
 import { editorUtils } from "./editor-utils.js";
 import { ModeHelper } from "./mode-helper.js";
 import { QuickPicker } from "./quick-picker.js";
-import { oop } from "./oop.js";
 
 /**
  * CSS specific helper methods.
  */
-export const CssModeHelper = (function () {
-
-    const Constr = function(editor) {
-        this.parent = editor;
-        this.editor = this.parent.editor;
-        this.addCommand("locate", this.locate);
-        this.addCommand("gotoSymbol", this.gotoSymbol);
-        this.addCommand("format", this.format);
-    };
-
-    oop.inherit(Constr, ModeHelper);
-
-    Constr.prototype.createOutline = function(doc, onComplete) {
+export class CssModeHelper extends ModeHelper {
+    createOutline(doc, onComplete) {
         const state = this.editor.state;
         const tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
         tree.iterate({
-            enter: function(node) {
+            enter(node) {
                 if (node.name === "RuleSet") {
                     let blockStart = node.to;
                     let child = node.node.firstChild;
@@ -71,7 +59,7 @@ export const CssModeHelper = (function () {
                     let text = state.sliceDoc(node.from, node.to);
                     const braceIdx = text.indexOf("{");
                     if (braceIdx >= 0) text = text.substring(0, braceIdx).trim();
-                    if (text.length > 60) text = text.substring(0, 60) + "…";
+                    if (text.length > 60) text = `${text.substring(0, 60)}…`;
                     const line = state.doc.lineAt(node.from);
                     doc.functions.push({
                         type: Document.TYPE_FUNCTION,
@@ -88,9 +76,9 @@ export const CssModeHelper = (function () {
         });
         this.collectErrors(doc);
         if (onComplete) onComplete(doc);
-    };
+    }
 
-    Constr.prototype.gotoSymbol = function(doc) {
+    gotoSymbol(doc) {
         const self = this;
         const items = [];
         for (let i = 0; i < doc.functions.length; i++) {
@@ -104,17 +92,15 @@ export const CssModeHelper = (function () {
             }
         }
         if (items.length > 0) {
-            QuickPicker.show(items, function (selected) {
+            QuickPicker.show(items, (selected) => {
                 if (selected) {
                     self.parent.history.push(doc.getPath(), doc.getCurrentLine());
                     editorUtils.gotoLine(self.editor, selected.row + 1);
                 }
             }, { placeholder: "Go to symbol\u2026", parentEditor: self.editor });
         }
-    };
-
-    return Constr;
-}());
+    }
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").CssModeHelper = CssModeHelper;

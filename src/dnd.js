@@ -4,28 +4,27 @@
 
 import { namespace } from "./namespace.js";
 import { Sender } from "./events.js";
-import { oop } from "./oop.js";
 
-export const DnD = (function(util) {
-
-    const Constr = function(container) {
+export class DnD extends Sender {
+    constructor(container) {
+        super();
         const self = this;
         const el = typeof container === "string" ? document.querySelector(container) : container;
-        el.addEventListener("dragenter", function(ev) {
+        el.addEventListener("dragenter", (ev) => {
             ev.stopPropagation();
             ev.preventDefault();
             el.classList.add("dropping");
         });
-        el.addEventListener("dragover", function(ev) {
+        el.addEventListener("dragover", (ev) => {
             ev.stopPropagation();
             ev.preventDefault();
         });
-        el.addEventListener("dragleave", function(ev) {
+        el.addEventListener("dragleave", (ev) => {
             ev.stopPropagation();
             ev.preventDefault();
             el.classList.remove("dropping");
         });
-        el.addEventListener("drop", function(ev) {
+        el.addEventListener("drop", (ev) => {
             ev.stopPropagation();
             ev.preventDefault();
             el.classList.remove("dropping");
@@ -33,13 +32,8 @@ export const DnD = (function(util) {
                 self.$triggerEvent("drop", [ev.dataTransfer.files]);
             }
         });
-    };
-
-    // Extend eXide.events.Sender for event support
-    oop.inherit(Constr, Sender);
-
-    return Constr;
-}());
+    }
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.util").DnD = DnD;

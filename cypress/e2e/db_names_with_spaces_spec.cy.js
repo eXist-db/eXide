@@ -28,18 +28,18 @@ describe('Names containing spaces (eXide#820)', () => {
 
   function removeTestCollections() {
     cy.execXQuery(
-      'xquery version "3.1"; ' +
-      'for $c in ("' + base + '", "/db/' + uiColl.replace(/ /g, '%20') + '") ' +
-      'where xmldb:collection-available($c) return xmldb:remove($c)'
+      `xquery version "3.1"; ` +
+      `for $c in ("${base}", "/db/${uiColl.replace(/ /g, '%20')}") ` +
+      `where xmldb:collection-available($c) return xmldb:remove($c)`
     )
   }
 
   function storagePost(path, body) {
     return cy.request({
       method: 'POST',
-      url: '/eXide' + '/api/storage' + path,
+      url: `/eXide` + `/api/storage${path}`,
       headers: { 'Content-Type': 'application/json' },
-      body: body,
+      body,
       failOnStatusCode: false
     })
   }
@@ -47,7 +47,7 @@ describe('Names containing spaces (eXide#820)', () => {
   function listing(path) {
     return cy.request({
       method: 'GET',
-      url: '/eXide/api/storage' + path,
+      url: `/eXide/api/storage${path}`,
       failOnStatusCode: false
     })
   }
@@ -89,7 +89,7 @@ describe('Names containing spaces (eXide#820)', () => {
   })
 
   it('renames a collection to a name containing a space', () => {
-    storagePost(base + '/My%20Folder', { action: 'rename', target: renamedColl })
+    storagePost(`${base}/My%20Folder`, { action: 'rename', target: renamedColl })
       .then((response) => {
         expect(JSON.stringify(response.body)).to.not.contain('Illegal character in path')
         expect(response.status).to.eq(200)
@@ -107,12 +107,12 @@ describe('Names containing spaces (eXide#820)', () => {
     // thing under test.
     cy.request({
       method: 'PUT',
-      url: '/eXide/api/storage' + base + '/' + resource,
+      url: `/eXide/api/storage${base}/${resource}`,
       headers: { 'Content-Type': 'application/xml' },
       body: '<test/>'
     }).its('status').should('eq', 200)
 
-    storagePost(base + '/' + resource, { action: 'rename', target: renamedResource })
+    storagePost(`${base}/${resource}`, { action: 'rename', target: renamedResource })
       .then((response) => {
         expect(JSON.stringify(response.body)).to.not.contain('Illegal character in path')
         expect(response.status).to.eq(200)

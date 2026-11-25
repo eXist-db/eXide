@@ -35,7 +35,6 @@ describe('Tag matching, scope breadcrumb, and selection match', () => {
   }
 
   describe('Tag matching (XML/HTML)', () => {
-    const xml = '<root>\n  <child>text</child>\n  <other/>\n</root>'
 
     it('has tag matching CSS styles defined', () => {
       // Verify the cm-matchingTag CSS class is defined in the stylesheet
@@ -54,7 +53,7 @@ describe('Tag matching, scope breadcrumb, and selection match', () => {
                 break
               }
             }
-          } catch (e) { /* cross-origin stylesheet */ }
+          } catch { /* cross-origin stylesheet */ }
           if (found) break
         }
         expect(found).to.be.true

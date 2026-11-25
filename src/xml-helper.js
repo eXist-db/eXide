@@ -22,71 +22,49 @@ import { Document } from "./document.js";
 import { editorUtils } from "./editor-utils.js";
 import { ModeHelper } from "./mode-helper.js";
 import { Dialog, util } from "./util.js";
-import { oop } from "./oop.js";
 
 /**
  * XML specific helper methods.
  */
-export const XMLModeHelper = (function () {
-
-    const Constr = function(editor, menubar) {
+export class XMLModeHelper extends ModeHelper {
+    constructor(editor, menubar) {
+        super(editor);
         const self = this;
-        this.parent = editor;
-        this.editor = this.parent.editor;
 
         this.menu = document.getElementById("menu-xml");
         this.menu.style.display = "none";
-        menubar.click("#menu-xml-rename", function() {
+        menubar.click("#menu-xml-rename", () => {
             self.rename(editor.getActiveDocument());
         });
-        menubar.click("#menu-xml-select-element", function() {
+        menubar.click("#menu-xml-select-element", () => {
             self.selectElement(editor.getActiveDocument());
         });
-        menubar.click("#menu-xml-remove-tag", function() {
+        menubar.click("#menu-xml-remove-tag", () => {
             self.deleteTags(editor.getActiveDocument());
         });
-        this.addCommand("locate", this.locate);
         this.addCommand("closeTag", this.closeTag);
         this.addCommand("removeTags", this.deleteTags);
         this.addCommand("suggest", this.suggest);
         this.addCommand("rename", this.rename);
         this.addCommand("expandSelection", this.selectElement);
-        this.addCommand("format", this.format);
-        this.addCommand("gotoSymbol", this.gotoSymbol);
     }
 
-    oop.inherit(Constr, ModeHelper);
-
-    Constr.prototype.activate = function(doc) {
+    activate(doc) {
         this.menu.style.display = "";
-    };
-
-    Constr.prototype.deactivate = function(doc) {
-        this.menu.style.display = "none";
-    };
-
-    const ATTR_PRIORITY = { "xml:id": 0, "id": 1, "n": 2, "class": 3 };
-
-    function pickAttr(attrs) {
-        if (attrs.length === 0) return null;
-        if (attrs.length === 1) return attrs[0];
-        let best = attrs[0];
-        let bestRank = ATTR_PRIORITY[best.name] !== undefined ? ATTR_PRIORITY[best.name] : 99;
-        for (let i = 1; i < attrs.length; i++) {
-            const rank = ATTR_PRIORITY[attrs[i].name] !== undefined ? ATTR_PRIORITY[attrs[i].name] : 99;
-            if (rank < bestRank) { best = attrs[i]; bestRank = rank; }
-        }
-        return best;
     }
 
-    Constr.prototype.createOutline = function(doc, onComplete) {
+    deactivate(doc) {
+        this.menu.style.display = "none";
+    }
+
+    createOutline(doc, onComplete) {
         const state = this.editor.state;
         const tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
         let depth = 0;
         const pathStack = [];    // track XPath steps with positional predicates
         const siblingStack = [{}]; // stack of { tagName: count } maps per depth
         tree.iterate({
-            enter: function(node) {
+            enter(node) {
                 // Skip SelfClosingTag when it's a child of Element (already handled)
                 if (node.name === "SelfClosingTag" && node.node.parent && node.node.parent.name === "Element") {
                     return false;
@@ -126,22 +104,22 @@ export const XMLModeHelper = (function () {
                         // Track sibling position at current depth
                         const siblings = siblingStack[siblingStack.length - 1];
                         siblings[tagName] = (siblings[tagName] || 0) + 1;
-                        const step = tagName + "[" + siblings[tagName] + "]";
+                        const step = `${tagName}[${siblings[tagName]}]`;
                         pathStack.push(step);
                         siblingStack.push({}); // new sibling scope for children
                         let hint = "";
                         const chosen = pickAttr(attrs);
                         if (chosen) {
                             hint = chosen.value;
-                            if (hint.length > 30) hint = hint.substring(0, 30) + "…";
+                            if (hint.length > 30) hint = `${hint.substring(0, 30)}…`;
                         }
-                        const xpath = "/" + pathStack.join("/");
+                        const xpath = `/${pathStack.join("/")}`;
                         const line = state.doc.lineAt(node.from);
                         doc.functions.push({
                             type: Document.TYPE_FUNCTION,
                             name: tagName,
                             indent: depth,
-                            hint: hint,
+                            hint,
                             outlineClass: "outline-element",
                             source: doc.getPath(),
                             signature: xpath,
@@ -158,7 +136,7 @@ export const XMLModeHelper = (function () {
                 } else if (node.name === "Comment") {
                     let text = state.sliceDoc(node.from, node.to);
                     text = text.replace(/^<!--\s*/, "").replace(/\s*-->$/, "");
-                    if (text.length > 40) text = text.substring(0, 40) + "…";
+                    if (text.length > 40) text = `${text.substring(0, 40)}…`;
                     if (text) {
                         const line = state.doc.lineAt(node.from);
                         doc.functions.push({
@@ -177,7 +155,7 @@ export const XMLModeHelper = (function () {
                     return false;
                 }
             },
-            leave: function(node) {
+            leave(node) {
                 if (node.name === "Element" || node.name === "SelfClosingTag") {
                     depth--;
                     pathStack.pop();
@@ -187,25 +165,24 @@ export const XMLModeHelper = (function () {
         });
         this.collectErrors(doc);
         if (onComplete) onComplete(doc);
-    };
+    }
 
-    Constr.prototype.closeTag = function (doc, text, row) {
-        const basePath = "xmldb:exist://" + doc.getBasePath();
+    async closeTag(doc, text, row) {
         const $this = this;
-        fetch("check/", {
-            method: "PUT",
-            headers: { "Content-Type": "application/octet-stream" },
-            body: text
-        })
-        .then(function(response) { return response.json(); })
-        .then(function(data) {
+        try {
+            const response = await fetch("check/", {
+                method: "PUT",
+                headers: { "Content-Type": "application/octet-stream" },
+                body: text
+            });
+            const data = await response.json();
             if (data.status && data.status === "invalid") {
                 const line = parseInt(data.message.line) - 1;
                 if (line <= row) {
                     const tag = /element type "([^"]+)"/.exec(data.message["#text"]);
                     if (tag && tag.length > 0) {
                         const pos = $this.editor.state.selection.main.head;
-                        const text = tag[1] + ">";
+                        const text = `${tag[1]}>`;
                         $this.editor.dispatch({
                             changes: { from: pos, insert: text },
                             selection: { anchor: pos + text.length }
@@ -213,100 +190,43 @@ export const XMLModeHelper = (function () {
                     }
                 }
             }
-        })
-        .catch(function() {});
-    }
-
-    /**
-     * Locate a well-formedness error in the document itself.
-     *
-     * The server cannot help with the position: Roaster rejects an unparseable
-     * body before the handler runs, and the line it reports belongs to its own
-     * module. The browser's parser knows where the document broke, so take the
-     * line from there — but not the wording, which is written for rendering a
-     * page ("This page contains the following errors ... Below is a rendering
-     * of the page up to the first error") and reads oddly in an editor.
-     *
-     * Returns { line, message }, falling back to line 1 and the server's own
-     * message when no position can be recovered.
-     */
-    function wellFormednessError(code, serverMessage) {
-        let line = 1;
-        let browserDetail = null;
-        try {
-            const parsed = new DOMParser().parseFromString(code, "application/xml");
-            const failure = parsed.querySelector("parsererror");
-            if (failure) {
-                const text = (failure.textContent || "").replace(/\s+/g, " ").trim();
-                const at = text.match(/line\s+(\d+)/i);
-                if (at) { line = parseInt(at[1], 10); }
-                // Keep the diagnosis, drop the page-rendering boilerplate.
-                const detail = text
-                    .replace(/^.*?following errors:\s*/i, "")
-                    .replace(/\s*Below is a rendering of the page.*$/i, "")
-                    .trim();
-                if (detail) { browserDetail = detail; }
-            }
-        } catch (e) {
-            // Fall through to the server's message at line 1.
+        } catch {
+            // ignore
         }
-        return {
-            line: line,
-            message: cleanParseMessage(serverMessage) || browserDetail || "Document is not well-formed."
-        };
     }
 
-    /**
-     * Strip the fn:parse-xml wrapper from the server's message, keeping the
-     * parser's actual diagnosis.
-     */
-    function cleanParseMessage(message) {
-        if (!message) { return null; }
-        const cleaned = String(message)
-            .replace(/^String passed to fn:parse-xml is not a well-formed XML document\.\s*/i, "")
-            .replace(/^parse-xml failed with:?\s*/i, "")
-            .replace(/\s+/g, " ")
-            .trim();
-        return cleaned || null;
-    }
-
-    Constr.prototype.validate = function(doc, code, onComplete) {
+    async validate(doc, code, onComplete) {
         const $this = this;
-        fetch("api/editor/validate", {
-            method: "POST",
-            headers: { "Content-Type": "application/xml" },
-            body: code
-        })
-        .then(function(response) {
-            return response.json().then(function(data) {
-                // A body that isn't well-formed never reaches the handler:
-                // Roaster fails to parse it and answers with its own error
-                // envelope, which carries no `status`. Treated as a normal
-                // response that just wasn't "invalid", the editor would clear
-                // the error list and report the document as clean.
-                if (!response.ok || !data.status) {
-                    const reported = data.value || data.description;
-                    const located = wellFormednessError(code, reported);
-                    return {
-                        status: "invalid",
-                        grammar: "none",
-                        errors: [{ line: located.line, message: located.message }]
-                    };
-                }
-                return data;
+        try {
+            const response = await fetch("api/editor/validate", {
+                method: "POST",
+                headers: { "Content-Type": "application/xml" },
+                body: code
             });
-        })
-        .then(function(data) {
+            let data = await response.json();
+            // A body that isn't well-formed never reaches the handler:
+            // Roaster fails to parse it and answers with its own error
+            // envelope, which carries no `status`. Treated as a normal
+            // response that just wasn't "invalid", the editor would clear
+            // the error list and report the document as clean.
+            if (!response.ok || !data.status) {
+                const reported = data.value || data.description;
+                const located = wellFormednessError(code, reported);
+                data = {
+                    status: "invalid",
+                    grammar: "none",
+                    errors: [{ line: located.line, message: located.message }]
+                };
+            }
             $this.compileError(data, doc);
             onComplete.call(null, true);
-        })
-        .catch(function(err) {
+        } catch (err) {
             onComplete.call(null, true);
             console.log("Compile error: %s", err);
-        });
+        }
     }
 
-    Constr.prototype.compileError = function(data, doc) {
+    compileError(data, doc) {
         console.log("Validation returned %o", data);
         if (data.status && data.status === "invalid") {
             const errors = data.errors || [];
@@ -320,52 +240,51 @@ export const XMLModeHelper = (function () {
             }
             if (errors.length > 0) {
                 this.parent.clearValidationStatus();
-                this.parent.updateStatus(errors[0].message, doc.getPath() + "#" + errors[0].line);
+                this.parent.updateStatus(errors[0].message, `${doc.getPath()}#${errors[0].line}`);
             }
             editorUtils.setAnnotations(this.editor, annotations);
         } else {
             this.parent.clearErrors();
             this.parent.setValidationStatus(
-                data.schema ? "Validated against " + data.schema : "Well-formed only"
+                data.schema ? `Validated against ${data.schema}` : "Well-formed only"
             );
         }
-    };
+    }
 
-    Constr.prototype.documentSaved = function(doc) {
+    documentSaved(doc) {
         if (/.*\.xconf$/.test(doc.getName())) {
             const collection = doc.getBasePath();
-            Dialog.input("Apply Configuration?", "You have saved a collection configuration file. Would you like to " +
-                "apply it to collection " + collection.replace(/^\/db\/system\/config/, "") + " now?", function() {
+            Dialog.input("Apply Configuration?", `You have saved a collection configuration file. Would you like to ` +
+                `apply it to collection ${collection.replace(/^\/db\/system\/config/, "")} now?`, async () => {
                     util.message("Apply configuration and reindex...");
                     const basePath = doc.getBasePath();
                     // Extract app abbrev from /db/system/config/db/apps/{abbrev}/...
                     const pathParts = basePath.replace(/^\/db\/system\/config/, "").split("/").filter(Boolean);
                     const abbrev = pathParts.length >= 2 ? pathParts[1] : pathParts[0] || "unknown";
-                    fetch("api/packages/" + encodeURIComponent(abbrev) + "/config", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ collection: basePath, config: doc.getName() })
-                    })
-                    .then(function(response) { return response.json(); })
-                    .then(function(data) {
+                    try {
+                        const response = await fetch(`api/packages/${encodeURIComponent(abbrev)}/config`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ collection: basePath, config: doc.getName() })
+                        });
+                        const data = await response.json();
                         if (data.error) {
-                            util.error("Failed to apply configuration: " + data.error);
+                            util.error(`Failed to apply configuration: ${data.error}`);
                         } else {
                             util.success("Configuration applied.");
                         }
-                    })
-                    .catch(function(err) {
-                        util.error("Failed to apply configuration: " + err);
-                    });
+                    } catch (err) {
+                        util.error(`Failed to apply configuration: ${err}`);
+                    }
             }, { action: "Apply" });
         }
-    };
+    }
 
     /**
      * Find matching start/end tags using text-based search.
      * Replaces the TokenIterator-based approach.
      */
-    Constr.prototype.findStartEndTags = function(doc) {
+    findStartEndTags(doc) {
         const text = doc.getText();
         const cursorOffset = this.editor.state.selection.main.head;
 
@@ -428,9 +347,9 @@ export const XMLModeHelper = (function () {
             }
         }
         return { start: startTag, end: endTag };
-    };
+    }
 
-    Constr.prototype.selectElement = function(doc) {
+    selectElement(doc) {
         const tags = this.findStartEndTags(doc, false);
         if (!tags.start || !tags.end) return;
 
@@ -443,9 +362,9 @@ export const XMLModeHelper = (function () {
         this.editor.dispatch({
             selection: { anchor: startOffset, head: endOffset }
         });
-    };
+    }
 
-    Constr.prototype.rename = function(doc) {
+    rename(doc) {
         const tags = this.findStartEndTags(doc);
         if (!tags.start) {
             util.message("Place cursor inside an element tag first.");
@@ -463,7 +382,7 @@ export const XMLModeHelper = (function () {
                 CM6.EditorSelection.range(startFrom, startTo),
                 CM6.EditorSelection.range(endFrom, endTo)
             ];
-            ranges.sort(function(a, b) { return a.from - b.from; });
+            ranges.sort((a, b) => { return a.from - b.from; });
             this.editor.dispatch({
                 selection: CM6.EditorSelection.create(ranges)
             });
@@ -479,9 +398,9 @@ export const XMLModeHelper = (function () {
             editorUtils.flashLine(this.editor, startFrom);
         }
         this.editor.focus();
-    };
+    }
 
-    Constr.prototype.deleteTags = function(doc) {
+    deleteTags(doc) {
         const tags = this.findStartEndTags(doc, false);
         if (!tags.start || !tags.end) return;
 
@@ -504,10 +423,75 @@ export const XMLModeHelper = (function () {
                 changes: { from: startStart, to: startEnd + 1 }
             });
         }
-    };
+    }
+}
 
-    return Constr;
-}());
+const ATTR_PRIORITY = { "xml:id": 0, "id": 1, "n": 2, "class": 3 };
+
+function pickAttr(attrs) {
+    if (attrs.length === 0) return null;
+    if (attrs.length === 1) return attrs[0];
+    let best = attrs[0];
+    let bestRank = ATTR_PRIORITY[best.name] !== undefined ? ATTR_PRIORITY[best.name] : 99;
+    for (let i = 1; i < attrs.length; i++) {
+        const rank = ATTR_PRIORITY[attrs[i].name] !== undefined ? ATTR_PRIORITY[attrs[i].name] : 99;
+        if (rank < bestRank) { best = attrs[i]; bestRank = rank; }
+    }
+    return best;
+}
+
+/**
+ * Locate a well-formedness error in the document itself.
+ *
+ * The server cannot help with the position: Roaster rejects an unparseable
+ * body before the handler runs, and the line it reports belongs to its own
+ * module. The browser's parser knows where the document broke, so take the
+ * line from there — but not the wording, which is written for rendering a
+ * page ("This page contains the following errors ... Below is a rendering
+ * of the page up to the first error") and reads oddly in an editor.
+ *
+ * Returns { line, message }, falling back to line 1 and the server's own
+ * message when no position can be recovered.
+ */
+function wellFormednessError(code, serverMessage) {
+    let line = 1;
+    let browserDetail = null;
+    try {
+        const parsed = new DOMParser().parseFromString(code, "application/xml");
+        const failure = parsed.querySelector("parsererror");
+        if (failure) {
+            const text = (failure.textContent || "").replace(/\s+/g, " ").trim();
+            const at = text.match(/line\s+(\d+)/i);
+            if (at) { line = parseInt(at[1], 10); }
+            // Keep the diagnosis, drop the page-rendering boilerplate.
+            const detail = text
+                .replace(/^.*?following errors:\s*/i, "")
+                .replace(/\s*Below is a rendering of the page.*$/i, "")
+                .trim();
+            if (detail) { browserDetail = detail; }
+        }
+    } catch {
+        // Fall through to the server's message at line 1.
+    }
+    return {
+        line,
+        message: cleanParseMessage(serverMessage) || browserDetail || "Document is not well-formed."
+    };
+}
+
+/**
+ * Strip the fn:parse-xml wrapper from the server's message, keeping the
+ * parser's actual diagnosis.
+ */
+function cleanParseMessage(message) {
+    if (!message) { return null; }
+    const cleaned = String(message)
+        .replace(/^String passed to fn:parse-xml is not a well-formed XML document\.\s*/i, "")
+        .replace(/^parse-xml failed with:?\s*/i, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    return cleaned || null;
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.edit").XMLModeHelper = XMLModeHelper;

@@ -13,7 +13,7 @@
  */
 describe('Run as test — dirty editor buffer', () => {
   const testCollection = '/db'
-  const testFile = 'cypress-test-run-' + Date.now() + '.xq'
+  const testFile = `cypress-test-run-${Date.now()}.xq`
 
   before(() => {
     cy.cleanupTestFiles()
@@ -67,7 +67,7 @@ describe('Run as test — dirty editor buffer', () => {
 
     // Save the initial suite to /db/<testFile>.
     cy.window().then((win) => {
-      win.eXide.app.getEditor().activeDoc.setPath(testCollection + '/' + testFile, testFile)
+      win.eXide.app.getEditor().activeDoc.setPath(`${testCollection}/${testFile}`, testFile)
       win.eXide.app.getEditor().activeDoc.editable = true
       win.eXide.app.getEditor().activeDoc.syntax = 'xquery'
       win.eXide.app.getEditor().activeDoc.mime = 'application/xquery'
@@ -76,8 +76,8 @@ describe('Run as test — dirty editor buffer', () => {
     cy.window().then((win) => {
       const ed = win.eXide.app.getEditor()
       return new Cypress.Promise((resolve) => {
-        ed.saveDocument(null, resolve, function (msg) {
-          throw new Error('initial save failed: ' + msg)
+        ed.saveDocument(null, resolve, (msg) => {
+          throw new Error(`initial save failed: ${msg}`)
         })
       })
     })

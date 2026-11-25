@@ -34,7 +34,7 @@ describe('CDATA sections survive a save', () => {
 
   function openFileDirectly(path) {
     cy.window().then((win) => {
-      win.eXide.app.$doOpenDocument({ path: path, name: path.split('/').pop() })
+      win.eXide.app.$doOpenDocument({ path, name: path.split('/').pop() })
     })
   }
 

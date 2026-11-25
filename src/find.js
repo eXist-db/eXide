@@ -2,33 +2,32 @@ import { namespace } from "./namespace.js";
 import { DialogManager } from "./dialog-utils.js";
 import { editorUtils } from "./editor-utils.js";
 
-export const IncrementalSearch = (function () {
+const searchOptions = {
+    backwards: false,
+    wrap: true,
+    caseSensitive: false,
+    wholeWord: false,
+    regExp: false
+};
 
-    const searchOptions = {
-        backwards: false,
-        wrap: true,
-        caseSensitive: false,
-        wholeWord: false,
-        regExp: false
-    };
+function setSearch(view, needle, options) {
+    if (!needle) return;
+    const query = new CM6.SearchQuery({
+        search: needle,
+        caseSensitive: options && options.caseSensitive,
+        regexp: options && options.regExp,
+        wholeWord: options && options.wholeWord
+    });
+    view.dispatch({ effects: CM6.setSearchQuery.of(query) });
+    CM6.findNext(view);
+}
 
-    function setSearch(view, needle, options) {
-        if (!needle) return;
-        const query = new CM6.SearchQuery({
-            search: needle,
-            caseSensitive: options && options.caseSensitive,
-            regexp: options && options.regExp,
-            wholeWord: options && options.wholeWord
-        });
-        view.dispatch({ effects: CM6.setSearchQuery.of(query) });
-        CM6.findNext(view);
-    }
-
-    const Constr = function (input, editor) {
+export class IncrementalSearch {
+    constructor(input, editor) {
         const $this = this;
         $this.inputEl = typeof input === "string" ? document.querySelector(input) : input;
         $this.inputEl.style.display = "none";
-        $this.inputEl.addEventListener("keyup", function (ev) {
+        $this.inputEl.addEventListener("keyup", (ev) => {
             switch (ev.which) {
                 case 27:
                 case 13:
@@ -50,31 +49,30 @@ export const IncrementalSearch = (function () {
                         CM6.findNext($this.editor);
                         break;
                     }
+                    // falls through: a plain "g" is search input
                 default:
                     $this.onChange();
                     break;
             }
         });
         $this.editor = editor;
-    };
+    }
 
-    Constr.prototype.start = function () {
+    start() {
         const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
         this.currentLine = lead.row;
         this.inputEl.value = "";
         this.inputEl.style.display = "";
         this.inputEl.focus();
-    };
+    }
 
-    Constr.prototype.onChange = function () {
+    onChange() {
         editorUtils.gotoLine(this.editor, this.currentLine + 1);
         const search = this.inputEl.value;
         setSearch(this.editor, search, searchOptions);
         this.inputEl.focus();
-    };
-
-    return Constr;
-}());
+    }
+}
 
 export const Files = (function() {
     let dlg = null;
@@ -92,7 +90,7 @@ export const Files = (function() {
     }
 
     return {
-        open: function(doc, project, callback) {
+        open(doc, project, callback) {
             ensureDialog();
             const projectInput = dialogEl.querySelector("input.project");
             if (project) {
@@ -104,8 +102,8 @@ export const Files = (function() {
             }
             dialogEl.querySelector("input[name='collection']").value = doc.getBasePath();
             dlg.setButtons({
-                "Close": function() { dlg.close(); },
-                "Search": function() {
+                "Close"() { dlg.close(); },
+                "Search"() {
                     const form = dialogEl.querySelector("form");
                     const params = new URLSearchParams(new FormData(form)).toString();
                     callback(params);

@@ -24,11 +24,11 @@ const lines = []
 
 for (const [pkg, name] of Object.entries(WANTED)) {
     const tag = xml.match(
-        new RegExp('<dependency\\b[^>]*package="' + pkg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '"[^>]*>')
+        new RegExp(`<dependency\\b[^>]*package="${pkg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^>]*>`)
     )
     const min = tag && tag[0].match(/semver-min="([^"]+)"/)
     if (min) {
-        lines.push(name + '=' + min[1])
+        lines.push(`${name}=${min[1]}`)
     } else {
         missing.push(pkg + (tag ? ' (declared, but with no semver-min)' : ' (not declared at all)'))
     }
@@ -36,7 +36,7 @@ for (const [pkg, name] of Object.entries(WANTED)) {
 
 if (missing.length) {
     console.error('expath-pkg.xml must declare a semver-min for every package dependency.')
-    console.error('Missing:\n  ' + missing.join('\n  '))
+    console.error(`Missing:\n  ${missing.join('\n  ')}`)
     process.exit(1)
 }
 

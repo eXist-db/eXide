@@ -44,18 +44,18 @@ export const LspHover = (function () {
         const column = pos - line.from;      // 0-based column
 
         const code = view.state.doc.toString();
-        const basePath = "xmldb:exist://" + (doc.getBasePath ? doc.getBasePath() : "/db");
+        const basePath = `xmldb:exist://${doc.getBasePath ? doc.getBasePath() : "/db"}`;
 
         // Use WebSocket if available, otherwise HTTP
         let dataPromise;
         if (typeof ws !== "undefined" && ws.isConnected()) {
-            dataPromise = new Promise(function (resolve) {
+            dataPromise = new Promise((resolve) => {
                 ws.send("textDocument/hover", {
                     textDocument: { uri: doc.getPath() || "untitled" },
                     position: { line: lineNumber, character: column },
                     // eXist-specific: send full query for stateless hover
                     query: code, base: basePath
-                }, function (result, err) {
+                }, (result, err) => {
                     resolve(err ? null : result);
                 });
             });
@@ -64,17 +64,17 @@ export const LspHover = (function () {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    query: code, line: lineNumber, column: column, base: basePath
+                    query: code, line: lineNumber, column, base: basePath
                 })
             })
-            .then(function (response) {
+            .then((response) => {
                 if (!response.ok) return null;
                 return response.json();
             });
         }
 
         return dataPromise
-        .then(function (data) {
+        .then((data) => {
             if (!data || !data.contents) {
                 // Fallback: look up local function signature from AST
                 return localHoverFallback(view, pos, line, column);
@@ -91,7 +91,7 @@ export const LspHover = (function () {
                 wordStart--;
             }
             col = column;
-            while (col < text.length && /[\w:\-]/.test(text[col])) {
+            while (col < text.length && /[\w:-]/.test(text[col])) {
                 col++;
                 wordEnd++;
             }
@@ -100,7 +100,7 @@ export const LspHover = (function () {
                 pos: wordStart,
                 end: wordEnd,
                 above: true,
-                create: function () {
+                create () {
                     const dom = document.createElement("div");
                     dom.className = "cm-lang-hover";
 
@@ -118,11 +118,11 @@ export const LspHover = (function () {
                         dom.appendChild(desc);
                     }
 
-                    return { dom: dom };
+                    return { dom };
                 }
             };
         })
-        .catch(function () {
+        .catch(() => {
             return null;
         });
     }
@@ -153,7 +153,7 @@ export const LspHover = (function () {
                 for (let i = 0; i < doc.functions.length; i++) {
                     const f = doc.functions[i];
                     if (f.type === "function" && f.name === funcName) {
-                        signature = f.signature || funcName + "#" + arity;
+                        signature = f.signature || `${funcName}#${arity}`;
                         break;
                     }
                 }
@@ -168,7 +168,7 @@ export const LspHover = (function () {
                     varRef.name === "VarRef" ? varRef : varRef, "EQName"
                 );
                 if (varEQName) {
-                    signature = "$" + XQueryUtils.getValue(varEQName);
+                    signature = `$${XQueryUtils.getValue(varEQName)}`;
                 }
             }
         }
@@ -182,21 +182,21 @@ export const LspHover = (function () {
         let col = column;
         while (col > 0 && /[\w:\-$]/.test(text[col - 1])) { col--; wordStart--; }
         col = column;
-        while (col < text.length && /[\w:\-]/.test(text[col])) { col++; wordEnd++; }
+        while (col < text.length && /[\w:-]/.test(text[col])) { col++; wordEnd++; }
 
         // For prefixed function calls, fetch full docs from the server
         if (funcName && funcName.indexOf(":") !== -1) {
-            return fetch("api/editor/completions?" + new URLSearchParams({
+            return fetch(`api/editor/completions?${new URLSearchParams({
                 prefix: funcName,
-                signature: funcName + "#" + arity
-            }))
-            .then(function (r) { return r.json(); })
-            .then(function (items) {
+                signature: `${funcName}#${arity}`
+            })}`)
+            .then((r) => { return r.json(); })
+            .then((items) => {
                 let match = null;
                 if (items && items.length > 0) {
                     // Prefer exact arity match
                     for (let j = 0; j < items.length; j++) {
-                        if (items[j].name === funcName + "#" + arity) {
+                        if (items[j].name === `${funcName}#${arity}`) {
                             match = items[j];
                             break;
                         }
@@ -209,7 +209,7 @@ export const LspHover = (function () {
                     pos: wordStart,
                     end: wordEnd,
                     above: true,
-                    create: function () {
+                    create () {
                         const dom = document.createElement("div");
                         dom.className = "cm-lang-hover";
                         const sig = document.createElement("code");
@@ -222,25 +222,25 @@ export const LspHover = (function () {
                             desc.textContent = match.description;
                             dom.appendChild(desc);
                         }
-                        return { dom: dom };
+                        return { dom };
                     }
                 };
             })
-            .catch(function () { return null; });
+            .catch(() => { return null; });
         }
 
         return {
             pos: wordStart,
             end: wordEnd,
             above: true,
-            create: function () {
+            create () {
                 const dom = document.createElement("div");
                 dom.className = "cm-lang-hover";
                 const sig = document.createElement("code");
                 sig.className = "cm-lang-hover-signature";
                 sig.textContent = signature || funcName;
                 dom.appendChild(sig);
-                return { dom: dom };
+                return { dom };
             }
         };
     }
@@ -250,7 +250,7 @@ export const LspHover = (function () {
     }
 
     return {
-        extension: extension
+        extension
     };
 }());
 

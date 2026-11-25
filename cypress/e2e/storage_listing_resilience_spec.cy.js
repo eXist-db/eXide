@@ -33,7 +33,7 @@ context('Storage listing resilience — unreadable child does not 500', () => {
       expect(r.status).to.eq(200)
       // admin can read everything under /db — every entry carries accessible:true
       r.body.items.forEach((it) => {
-        expect(it.accessible, it.name + ' accessible').to.eq(true)
+        expect(it.accessible, `${it.name} accessible`).to.eq(true)
       })
     })
   })

@@ -37,8 +37,6 @@ import { InScopeVariables, XQueryUtils } from "./xquery-utils.js";
  */
 export const CompletionSource = (function () {
 
-    const RE_FUNC_NAME = /^[\$\w:\-_\.]+/;
-
     // Reference to the eXide Editor instance, set during init
     let _editor = null;
 
@@ -100,8 +98,8 @@ export const CompletionSource = (function () {
                 const end = lead.column;
                 while (start >= 0) {
                     const ch = line.substring(start, end);
-                    if (ch.match(/^\$[\w:\-_\.]+$/)) break;
-                    if (!ch.match(/^[\w:\-_\.]+$/)) { start++; break; }
+                    if (ch.match(/^\$[\w:\-_.]+$/)) break;
+                    if (!ch.match(/^[\w:\-_.]+$/)) { start++; break; }
                     start--;
                 }
                 if (start < 0) start = 0;
@@ -165,7 +163,7 @@ export const CompletionSource = (function () {
                         const lineNum2 = lead.row + 1;
                         const line2 = (lineNum2 >= 1 && lineNum2 <= state.doc.lines) ? state.doc.line(lineNum2).text : "";
                         let start2 = lead.column - 1;
-                        while (start2 >= 0 && /[\w:\-_\.]/.test(line2.charAt(start2))) start2--;
+                        while (start2 >= 0 && /[\w:\-_.]/.test(line2.charAt(start2))) start2--;
                         start2++;
                         from = editorUtils.rowColToOffset(state, lead.row, start2);
                         to = editorUtils.rowColToOffset(state, lead.row, lead.column);
@@ -198,82 +196,84 @@ export const CompletionSource = (function () {
     // Function completions (async — server fetch)
     // -------------------------------------------------------------------
 
-    function fetchFunctionCompletions(doc, helper, prefix, from, to) {
+    async function fetchFunctionCompletions(doc, helper, prefix, from, to) {
         const code = doc.getText();
-        const basePath = "xmldb:exist://" + doc.getBasePath();
+        const basePath = `xmldb:exist://${doc.getBasePath()}`;
 
         // When prefix has no ":", also search default function namespace (fn:)
         const prefixes = [prefix];
         if (prefix && prefix.indexOf(":") === -1) {
-            prefixes.push("fn:" + prefix);
+            prefixes.push(`fn:${prefix}`);
         }
 
-        return Promise.all(prefixes.map(function (p) {
-            return fetch("api/query/completions", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ query: code, prefix: p, base: basePath })
-            }).then(function (response) { return response.json(); });
-        }))
-            .then(function (results) {
-                let serverFuncs = [];
-                for (let r = 0; r < results.length; r++) {
-                    if (Array.isArray(results[r])) {
-                        serverFuncs = serverFuncs.concat(results[r]);
-                    }
+        try {
+            const results = await Promise.all(prefixes.map(async (p) => {
+                const response = await fetch("api/query/completions", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ query: code, prefix: p, base: basePath })
+                });
+                return response.json();
+            }));
+            let serverFuncs = [];
+            for (let r = 0; r < results.length; r++) {
+                if (Array.isArray(results[r])) {
+                    serverFuncs = serverFuncs.concat(results[r]);
                 }
-                const options = [];
+            }
+            const options = [];
 
-                // Server functions (from /api/query/completions via lang:completions())
-                // Includes both built-in/imported functions AND user-defined local functions
-                if (serverFuncs) {
-                    // Determine if we need to add a namespace prefix to server results.
-                    // The server returns unprefixed names; if the user typed "fn:conc"
-                    // we need to prefix the label, snippet, and filterText with "fn:".
-                    let nsPart = "";
-                    if (prefix.indexOf(":") !== -1) {
-                        nsPart = prefix.substring(0, prefix.indexOf(":") + 1);
-                    }
-                    for (let i = 0; i < serverFuncs.length; i++) {
-                        const f = serverFuncs[i];
-                        // Only add nsPart when the server result doesn't already
-                        // start with it (e.g. fn: fallback for unprefixed input)
-                        const needsPrefix = nsPart && f.text && !f.text.startsWith(nsPart);
-                        const label = needsPrefix ? nsPart + f.text : f.text;
-                        const snip = f.snippet && needsPrefix ? nsPart + f.snippet : f.snippet;
-                        const opt = makeFunctionOption(
-                            label, snip, null, f.description, null, null);
-                        const funcName = f.text ? f.text.replace(/\(.*$/, "") : "";
-                        opt.filterText = needsPrefix ? nsPart + funcName : funcName;
-                        options.push(opt);
-                    }
+            // Server functions (from /api/query/completions via lang:completions())
+            // Includes both built-in/imported functions AND user-defined local functions
+            if (serverFuncs) {
+                // Determine if we need to add a namespace prefix to server results.
+                // The server returns unprefixed names; if the user typed "fn:conc"
+                // we need to prefix the label, snippet, and filterText with "fn:".
+                let nsPart = "";
+                if (prefix.indexOf(":") !== -1) {
+                    nsPart = prefix.substring(0, prefix.indexOf(":") + 1);
                 }
-
-                // Template snippets
-                const templates = Snippets.getTemplates(doc, prefix);
-                for (let j = 0; j < templates.length; j++) {
-                    options.push({
-                        label: "[S] " + templates[j].name,
-                        type: "text",
-                        boost: -10,
-                        apply: makeSnippetApply(templates[j].template, from, to)
-                    });
+                for (let i = 0; i < serverFuncs.length; i++) {
+                    const f = serverFuncs[i];
+                    // Only add nsPart when the server result doesn't already
+                    // start with it (e.g. fn: fallback for unprefixed input)
+                    const needsPrefix = nsPart && f.text && !f.text.startsWith(nsPart);
+                    const label = needsPrefix ? nsPart + f.text : f.text;
+                    const snip = f.snippet && needsPrefix ? nsPart + f.snippet : f.snippet;
+                    const opt = makeFunctionOption(
+                        label, snip, null, f.description, null, null);
+                    const funcName = f.text ? f.text.replace(/\(.*$/, "") : "";
+                    opt.filterText = needsPrefix ? nsPart + funcName : funcName;
+                    options.push(opt);
                 }
+            }
 
-                if (options.length === 0) return null;
-                return { from: from, to: to, options: options, filter: false };
-            })
-            .catch(function () { return null; });
+            // Template snippets
+            const templates = Snippets.getTemplates(doc, prefix);
+            for (let j = 0; j < templates.length; j++) {
+                options.push({
+                    label: `[S] ${templates[j].name}`,
+                    type: "text",
+                    boost: -10,
+                    apply: makeSnippetApply(templates[j].template, from, to)
+                });
+            }
+
+            if (options.length === 0) return null;
+            return { from, to, options, filter: false };
+        } catch {
+            return null;
+        }
     }
 
     function makeFunctionOption(signature, snippet, helpHtml, description, args, path) {
         const option = {
             label: signature,
             type: "function",
-            apply: function (view, completion, from, to) {
+            apply (view, completion, from, to) {
                 // Use the snippet template if available, otherwise parse from signature
                 const template = snippet || util.parseSignature(signature);
-                view.dispatch({ changes: { from: from, to: to } });
+                view.dispatch({ changes: { from, to } });
                 editorUtils.insertSnippet(view, template);
             }
         };
@@ -305,7 +305,7 @@ export const CompletionSource = (function () {
                 const dl = document.createElement("dl");
                 for (let i = 0; i < args.length; i++) {
                     const dt = document.createElement("dt");
-                    dt.textContent = "$" + args[i].name + " as " + args[i].type;
+                    dt.textContent = `$${args[i].name} as ${args[i].type}`;
                     dl.appendChild(dt);
                     if (args[i].description) {
                         const dd = document.createElement("dd");
@@ -335,7 +335,7 @@ export const CompletionSource = (function () {
 
     function getVariableCompletions(doc, helper, prefix, from, to, astNode) {
         const options = [];
-        const prefixRegex = prefix ? new RegExp("^\\$?" + prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) : null;
+        const prefixRegex = prefix ? new RegExp(`^\\$?${prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`) : null;
 
         // In-scope variables from AST visitor
         if (astNode) {
@@ -345,9 +345,9 @@ export const CompletionSource = (function () {
                 for (let i = 0; i < variables.length; i++) {
                     if (!prefix || prefixRegex.test(variables[i])) {
                         options.push({
-                            label: "$" + variables[i],
+                            label: `$${variables[i]}`,
                             type: "variable",
-                            apply: function (view, completion, f, t) {
+                            apply (view, completion, f, t) {
                                 view.dispatch({
                                     changes: { from: f, to: t, insert: completion.label },
                                     selection: { anchor: f + completion.label.length }
@@ -363,72 +363,73 @@ export const CompletionSource = (function () {
         for (let j = 0; j < doc.functions.length; j++) {
             if (doc.functions[j].type === "variable" && (!prefix || prefixRegex.test(doc.functions[j].name))) {
                 options.push({
-                    label: "$" + doc.functions[j].name,
+                    label: `$${doc.functions[j].name}`,
                     type: "variable"
                 });
             }
         }
 
         if (options.length === 0) return null;
-        return { from: from, to: to, options: options, filter: true, validFor: /^[\w:.\-$]*$/ };
+        return { from, to, options, filter: true, validFor: /^[\w:.\-$]*$/ };
     }
 
     // -------------------------------------------------------------------
     // Module import completions (async — server fetch)
     // -------------------------------------------------------------------
 
-    function fetchModuleCompletions(doc, prefix, from, to) {
-        return fetch("api/editor/modules?" + new URLSearchParams({ prefix: prefix }))
-            .then(function (response) { return response.json(); })
-            .then(function (data) {
-                if (!data) return null;
-                const options = [];
-                for (let i = 0; i < data.length; i++) {
-                    let template;
-                    if (data[i].at) {
-                        template = "import module namespace " + data[i].prefix + "=\"" + data[i].uri +
-                            "\" at \"" + data[i].at + "\";";
-                    } else {
-                        template = "import module namespace " + data[i].prefix + "=\"" + data[i].uri + "\";";
-                    }
-                    options.push({
-                        label: data[i].prefix + " — " + data[i].uri,
-                        detail: data[i].at || "",
-                        type: "keyword",
-                        apply: makeReplaceApply(template, from, to)
-                    });
+    async function fetchModuleCompletions(doc, prefix, from, to) {
+        try {
+            const response = await fetch(`api/editor/modules?${new URLSearchParams({ prefix })}`);
+            const data = await response.json();
+            if (!data) return null;
+            const options = [];
+            for (let i = 0; i < data.length; i++) {
+                let template;
+                if (data[i].at) {
+                    template = `import module namespace ${data[i].prefix}="${data[i].uri}" at "${data[i].at}";`;
+                } else {
+                    template = `import module namespace ${data[i].prefix}="${data[i].uri}";`;
                 }
-                if (options.length === 0) return null;
-                // Module completions replace the entire import statement — don't filter
-                return { from: from, to: to, options: options, filter: false };
-            })
-            .catch(function () { return null; });
+                options.push({
+                    label: `${data[i].prefix} — ${data[i].uri}`,
+                    detail: data[i].at || "",
+                    type: "keyword",
+                    apply: makeReplaceApply(template, from, to)
+                });
+            }
+            if (options.length === 0) return null;
+            // Module completions replace the entire import statement — don't filter
+            return { from, to, options, filter: false };
+        } catch {
+            return null;
+        }
     }
 
     // -------------------------------------------------------------------
     // Namespace completions (async — fetch JSON)
     // -------------------------------------------------------------------
 
-    function fetchNamespaceCompletions(doc, prefix, from, to) {
-        return fetch("templates/namespaces.json")
-            .then(function (response) { return response.json(); })
-            .then(function (data) {
-                if (!data) return null;
-                const options = [];
-                for (const key in data) {
-                    if (!key || key === prefix) {
-                        const template = "declare namespace " + key + "=\"" + data[key] + "\";";
-                        options.push({
-                            label: key + " — " + data[key],
-                            type: "keyword",
-                            apply: makeReplaceApply(template, from, to)
-                        });
-                    }
+    async function fetchNamespaceCompletions(doc, prefix, from, to) {
+        try {
+            const response = await fetch("templates/namespaces.json");
+            const data = await response.json();
+            if (!data) return null;
+            const options = [];
+            for (const key in data) {
+                if (!key || key === prefix) {
+                    const template = `declare namespace ${key}="${data[key]}";`;
+                    options.push({
+                        label: `${key} — ${data[key]}`,
+                        type: "keyword",
+                        apply: makeReplaceApply(template, from, to)
+                    });
                 }
-                if (options.length === 0) return null;
-                return { from: from, to: to, options: options, filter: false };
-            })
-            .catch(function () { return null; });
+            }
+            if (options.length === 0) return null;
+            return { from, to, options, filter: false };
+        } catch {
+            return null;
+        }
     }
 
     // -------------------------------------------------------------------
@@ -441,12 +442,12 @@ export const CompletionSource = (function () {
         const options = [];
         for (let i = 0; i < templates.length; i++) {
             options.push({
-                label: "[S] " + templates[i].name,
+                label: `[S] ${templates[i].name}`,
                 type: "text",
                 apply: makeSnippetApply(templates[i].template, from, to)
             });
         }
-        return { from: from, to: to, options: options, filter: true, validFor: /^[\w:.\-$]*$/ };
+        return { from, to, options, filter: true, validFor: /^[\w:.\-$]*$/ };
     }
 
     // -------------------------------------------------------------------
@@ -459,7 +460,6 @@ export const CompletionSource = (function () {
         const state = context.state;
         const pos = context.pos;
         const lead = editorUtils.offsetToRowCol(state, pos);
-        let from = pos, to = pos;
 
         if (state.selection.main.empty) {
             const lineNum = lead.row + 1;
@@ -468,26 +468,26 @@ export const CompletionSource = (function () {
             const end = lead.column;
             while (start >= 0) {
                 const ch = line.substring(start, end);
-                if (ch.match(/^\$[\w:\-_\.]+$/)) break;
-                if (!ch.match(/^[\w:\-_\.]+$/)) { start++; break; }
+                if (ch.match(/^\$[\w:\-_.]+$/)) break;
+                if (!ch.match(/^[\w:\-_.]+$/)) { start++; break; }
                 start--;
             }
             if (start < 0) start = 0;
             const token = line.substring(start, end);
-            from = editorUtils.rowColToOffset(state, lead.row, start);
-            to = editorUtils.rowColToOffset(state, lead.row, end);
+            const from = editorUtils.rowColToOffset(state, lead.row, start);
+            const to = editorUtils.rowColToOffset(state, lead.row, end);
 
             const templates = Snippets.getTemplates(doc, token);
             if (templates.length === 0) return null;
             const options = [];
             for (let i = 0; i < templates.length; i++) {
                 options.push({
-                    label: "[S] " + templates[i].name,
+                    label: `[S] ${templates[i].name}`,
                     type: "text",
                     apply: makeSnippetApply(templates[i].template, from, to)
                 });
             }
-            return { from: from, to: to, options: options, filter: true, validFor: /^[\w:.\-$]*$/ };
+            return { from, to, options, filter: true, validFor: /^[\w:.\-$]*$/ };
         }
 
         return null;
@@ -503,7 +503,7 @@ export const CompletionSource = (function () {
     function makeSnippetApply(template, origFrom, origTo) {
         return function (view, completion, from, to) {
             // CM6 passes the matched range; use it for replacement
-            view.dispatch({ changes: { from: from, to: to } });
+            view.dispatch({ changes: { from, to } });
             editorUtils.insertSnippet(view, template);
         };
     }
@@ -522,8 +522,8 @@ export const CompletionSource = (function () {
     }
 
     return {
-        init: init,
-        completionSource: completionSource
+        init,
+        completionSource
     };
 }());
 

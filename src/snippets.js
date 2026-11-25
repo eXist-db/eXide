@@ -47,17 +47,18 @@ export const Snippets = (function () {
         return snippets;
     }
 
-    function load(mode) {
+    async function load(mode) {
         if (snippetsForMode[mode]) {
             return;
         }
         snippetsForMode[mode] = [];
-        fetch("templates/" + mode + ".snippets")
-        .then(function(response) { return response.text(); })
-        .then(function(data) {
+        try {
+            const response = await fetch(`templates/${mode}.snippets`);
+            const data = await response.text();
             snippetsForMode[mode] = parseSnippetFile(data);
-        })
-        .catch(function() {});
+        } catch {
+            // ignore
+        }
     }
 
     function reload(mode, data) {
@@ -83,8 +84,8 @@ export const Snippets = (function () {
     
     return {
         init: load,
-        getTemplates: getTemplates,
-        reload: reload
+        getTemplates,
+        reload
     };
 }());
 

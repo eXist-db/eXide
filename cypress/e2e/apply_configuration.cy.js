@@ -39,7 +39,7 @@ describe('Apply configuration', () => {
   function cleanTestCollection(path) {
     cy.request({
       method: 'DELETE',
-      url: '/existdb-openapi/api/db/collection?path=' + path + '&force=true'
+      url: `/existdb-openapi/api/db/collection?path=${path}&force=true`
     })
   }
 
@@ -73,10 +73,6 @@ describe('Apply configuration', () => {
 
     // cy.get('[open=""] > .eXide-dialog-buttons > :nth-child(2)').click()
   }
-  function applyConfigDialogShouldBeClosed() {
-    // all dialogs have the same class, so just check that no dialog is open
-    cy.get('.eXide-dialog[open]').should('not.exist')
-  }
 
   function clickDialogButton(label) {
     cy.get('#open-dialog').closest('.eXide-dialog')
@@ -86,7 +82,7 @@ describe('Apply configuration', () => {
   function openFileDirectly(path) {
     const name = path.split('/').pop()
     cy.window().then((win) => {
-      win.eXide.app.$doOpenDocument({ path: path, name: name })
+      win.eXide.app.$doOpenDocument({ path, name })
     })
   }
 
@@ -120,7 +116,7 @@ describe('Apply configuration', () => {
     waitForSaveDialog()
 
     // select the test collection
-    cy.get('tr[data-key="' + testCollection + '"]',{ timeout: 5000 }).dblclick()
+    cy.get(`tr[data-key="${testCollection}"]`,{ timeout: 5000 }).dblclick()
 
     // The dialog starts in /db, type filename and save
     cy.get('#open-dialog input[name="resource"]').clear().type(testFile)
@@ -140,7 +136,7 @@ describe('Apply configuration', () => {
     waitForSaveDialog()
 
     // select the test collection
-    cy.get('tr[data-key="' + testCollection + '"]',{ timeout: 5000 }).dblclick()
+    cy.get(`tr[data-key="${testCollection}"]`,{ timeout: 5000 }).dblclick()
 
     // The dialog starts in /db, type filename and save
     cy.get('#open-dialog input[name="resource"]').clear().type(testConfigFile)
@@ -156,7 +152,7 @@ describe('Apply configuration', () => {
     // the previous test having saved one.
     seedResource(testCollection, testConfigFile, `document {${testConfig}}`)
 
-    openFileDirectly(testCollection + '/' + testConfigFile)
+    openFileDirectly(`${testCollection}/${testConfigFile}`)
     cy.get('.path', { timeout: 10000 }).should('contain', testConfigFile)
 
     // Save unedited

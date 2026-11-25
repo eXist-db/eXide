@@ -22,58 +22,50 @@ import { namespace } from "./namespace.js";
 /**
  * Interface for sending events, registering listeners.
  */
-export const Sender = (function() {
+export class Sender {
+    addEventListener(name, obj, callback) {
+        if (typeof obj === "function") {
+            callback = obj;
+            obj = null;
+        }
+        this.events = this.events || {};
+		let event = this.events[name];
+        if (!event) {
+            event = new Array();
+            this.events[name] = event;
+        }
+		event.push({
+			obj,
+			callback
+		});
+	}
 
-    const Constr = function() {
-    };
-    
-    Constr.prototype = {
-        
-        addEventListener: function (name, obj, callback) {
-            if (typeof obj === "function") {
-                callback = obj;
-                obj = null;
-            }
-            this.events = this.events || {};
-    		let event = this.events[name];
-            if (!event) {
-                event = new Array();
-                this.events[name] = event;
-            }
-			event.push({
-				obj: obj,
-				callback: callback
-			});
-		},
-        
-		$triggerEvent: function (name, args) {
-            this.events = this.events || {};
-			const event = this.events[name];
-			if (event) {
-				for (let i = 0; i < event.length; i++) {
-					event[i].callback.apply(event[i].obj, args);
-				}
-			}
-		},
-	removeEventListener:function(name, obj, callback){
-		if (typeof obj === "function") {
-	            callback = obj;
-	            obj = null;
-	        }
-		const events = this.events || {};
-		const event = events[name];
+    $triggerEvent(name, args) {
+        this.events = this.events || {};
+		const event = this.events[name];
 		if (event) {
-			let i = 0;
-			for (; i < event.length; i++) {
-				if(event[i].obj===obj && event[i].callback===callback) break;
+			for (let i = 0; i < event.length; i++) {
+				event[i].callback.apply(event[i].obj, args);
 			}
-			if(i<event.length) this.events[name].splice(i,1);
 		}
 	}
-    };
-    
-    return Constr;
-}());
+
+    removeEventListener(name, obj, callback) {
+	if (typeof obj === "function") {
+            callback = obj;
+            obj = null;
+        }
+	const events = this.events || {};
+	const event = events[name];
+	if (event) {
+		let i = 0;
+		for (; i < event.length; i++) {
+			if(event[i].obj===obj && event[i].callback===callback) break;
+		}
+		if(i<event.length) this.events[name].splice(i,1);
+	}
+}
+}
 
 // Register on the global `eXide` object (see namespace.js)
 namespace("eXide.events").Sender = Sender;

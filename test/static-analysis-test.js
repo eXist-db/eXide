@@ -9,15 +9,15 @@ function analyze(code) {
 }
 
 function findMarker(markers, pattern) {
-    return markers.find(function (m) { return m.message.indexOf(pattern) !== -1; });
+    return markers.find((m) => { return m.message.indexOf(pattern) !== -1; });
 }
 
 function findMarkers(markers, pattern) {
-    return markers.filter(function (m) { return m.message.indexOf(pattern) !== -1; });
+    return markers.filter((m) => { return m.message.indexOf(pattern) !== -1; });
 }
 
-describe("Static analysis: namespace checks", function () {
-    it("warns on unused namespace prefix", function () {
+describe("Static analysis: namespace checks", () => {
+    it("warns on unused namespace prefix", () => {
         const result = analyze('declare namespace foo = "http://example.com";\n1');
         const m = findMarker(result.markers, "unused namespace prefix");
         assert.ok(m, "expected unused namespace warning");
@@ -27,7 +27,7 @@ describe("Static analysis: namespace checks", function () {
         assert.equal(m.nsType, "decl");
     });
 
-    it("does not warn when namespace prefix is used", function () {
+    it("does not warn when namespace prefix is used", () => {
         const result = analyze('declare namespace foo = "http://example.com";\nfoo:bar()');
         const m = findMarker(result.markers, "unused namespace prefix");
         // Should not have a warning for "foo" — it's used
@@ -36,7 +36,7 @@ describe("Static analysis: namespace checks", function () {
         }
     });
 
-    it("errors on duplicate namespace binding (XQST0033)", function () {
+    it("errors on duplicate namespace binding (XQST0033)", () => {
         const result = analyze(
             'declare namespace foo = "http://example.com";\n' +
             'declare namespace foo = "http://other.com";\n1'
@@ -46,7 +46,7 @@ describe("Static analysis: namespace checks", function () {
         assert.equal(m.type, "error");
     });
 
-    it("errors on duplicate module import prefix (XQST0033)", function () {
+    it("errors on duplicate module import prefix (XQST0033)", () => {
         const result = analyze(
             'import module namespace foo = "http://example.com";\n' +
             'import module namespace foo = "http://other.com";\n1'
@@ -55,7 +55,7 @@ describe("Static analysis: namespace checks", function () {
         assert.ok(m, "expected XQST0033 error");
     });
 
-    it("errors on undeclared namespace prefix (XPST0081)", function () {
+    it("errors on undeclared namespace prefix (XPST0081)", () => {
         const result = analyze("bogus:func()");
         const m = findMarker(result.markers, "XPST0081");
         assert.ok(m, "expected XPST0081 error");
@@ -63,7 +63,7 @@ describe("Static analysis: namespace checks", function () {
         assert.equal(m.prefix, "bogus");
     });
 
-    it("errors on undeclared prefix in FLWOR expression (XPST0081)", function () {
+    it("errors on undeclared prefix in FLWOR expression (XPST0081)", () => {
         const result = analyze("let $x := foo:bar()\nreturn $x");
         const m = findMarker(result.markers, "XPST0081");
         assert.ok(m, "expected XPST0081 error for undeclared prefix foo");
@@ -71,15 +71,15 @@ describe("Static analysis: namespace checks", function () {
         assert.equal(m.prefix, "foo");
     });
 
-    it("does not error on built-in prefixes (fn, xs, local, err)", function () {
+    it("does not error on built-in prefixes (fn, xs, local, err)", () => {
         const result = analyze("fn:count(xs:integer(1))");
         const m = findMarker(result.markers, "XPST0081");
         assert.ok(!m, "should not error on built-in prefixes");
     });
 });
 
-describe("Static analysis: variable scoping", function () {
-    it("errors on undeclared variable (XPST0008)", function () {
+describe("Static analysis: variable scoping", () => {
+    it("errors on undeclared variable (XPST0008)", () => {
         const result = analyze("$undeclared");
         const m = findMarker(result.markers, "XPST0008");
         assert.ok(m, "expected XPST0008 error");
@@ -87,7 +87,7 @@ describe("Static analysis: variable scoping", function () {
         assert.ok(m.message.indexOf("undeclared") !== -1);
     });
 
-    it("warns on unused variable", function () {
+    it("warns on unused variable", () => {
         const result = analyze("let $x := 1\nreturn 2");
         const m = findMarker(result.markers, "unused variable");
         assert.ok(m, "expected unused variable warning");
@@ -95,19 +95,19 @@ describe("Static analysis: variable scoping", function () {
         assert.equal(m.hasResolution, true);
     });
 
-    it("does not warn on used variable", function () {
+    it("does not warn on used variable", () => {
         const result = analyze("let $x := 1\nreturn $x");
         const m = findMarker(result.markers, "unused variable");
         assert.ok(!m, "should not warn on used variable");
     });
 
-    it("does not warn on unused public VarDecl", function () {
+    it("does not warn on unused public VarDecl", () => {
         const result = analyze('declare variable $unused := 1;\n1');
         const m = findMarker(result.markers, "unused variable");
         assert.ok(!m, "should not warn on public VarDecl");
     });
 
-    it("handles nested FLWOR scoping", function () {
+    it("handles nested FLWOR scoping", () => {
         const result = analyze(
             "let $x := 1\n" +
             "return\n" +
@@ -120,7 +120,7 @@ describe("Static analysis: variable scoping", function () {
         assert.equal(unused.length, 0, "all variables should be used");
     });
 
-    it("handles for binding scoping", function () {
+    it("handles for binding scoping", () => {
         const result = analyze(
             "for $x in (1, 2, 3)\n" +
             "return $x"
@@ -130,8 +130,8 @@ describe("Static analysis: variable scoping", function () {
     });
 });
 
-describe("Static analysis: duplicate declarations", function () {
-    it("errors on duplicate variable declaration (XQST0049)", function () {
+describe("Static analysis: duplicate declarations", () => {
+    it("errors on duplicate variable declaration (XQST0049)", () => {
         const result = analyze(
             'declare variable $x := 1;\n' +
             'declare variable $x := 2;\n1'
@@ -141,7 +141,7 @@ describe("Static analysis: duplicate declarations", function () {
         assert.equal(m.type, "error");
     });
 
-    it("errors on duplicate parameter name (XQST0039)", function () {
+    it("errors on duplicate parameter name (XQST0039)", () => {
         const result = analyze(
             'declare function local:test($a, $a) { $a };\n' +
             'local:test(1, 2)'
@@ -151,7 +151,7 @@ describe("Static analysis: duplicate declarations", function () {
         assert.equal(m.type, "error");
     });
 
-    it("errors on duplicate function declaration (XQST0034)", function () {
+    it("errors on duplicate function declaration (XQST0034)", () => {
         const result = analyze(
             'declare function local:test($a) { $a };\n' +
             'declare function local:test($b) { $b };\n' +
@@ -162,7 +162,7 @@ describe("Static analysis: duplicate declarations", function () {
         assert.equal(m.type, "error");
     });
 
-    it("allows same function name with different arity", function () {
+    it("allows same function name with different arity", () => {
         const result = analyze(
             'declare function local:test($a) { $a };\n' +
             'declare function local:test($a, $b) { $a };\n' +
@@ -173,8 +173,8 @@ describe("Static analysis: duplicate declarations", function () {
     });
 });
 
-describe("Static analysis: function params in scope", function () {
-    it("function params are in scope within body", function () {
+describe("Static analysis: function params in scope", () => {
+    it("function params are in scope within body", () => {
         const result = analyze(
             'declare function local:add($a, $b) { $a + $b };\n' +
             'local:add(1, 2)'
@@ -184,8 +184,8 @@ describe("Static analysis: function params in scope", function () {
     });
 });
 
-describe("Static analysis: marker shape", function () {
-    it("markers have correct shape", function () {
+describe("Static analysis: marker shape", () => {
+    it("markers have correct shape", () => {
         const result = analyze("$undeclared");
         assert.ok(result.markers.length > 0);
         const m = result.markers[0];
