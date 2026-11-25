@@ -16,12 +16,19 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-eXide.namespace("eXide.edit.JavascriptModeHelper");
+
+import { namespace } from "./namespace.js";
+import { Document } from "./document.js";
+import { editorUtils } from "./editor-utils.js";
+import { ModeHelper } from "./mode-helper.js";
+import { QuickPicker } from "./quick-picker.js";
+import { util } from "./util.js";
+import { oop } from "./oop.js";
 
 /**
  * JavaScript specific helper methods.
  */
-eXide.edit.JavascriptModeHelper = (function () {
+export const JavascriptModeHelper = (function () {
 
     const RE_FUNC_NAME = /^[\$\w\-_]+/;
 
@@ -34,14 +41,14 @@ eXide.edit.JavascriptModeHelper = (function () {
         this.addCommand("format", this.format);
     }
 
-    eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
+    oop.inherit(Constr, ModeHelper);
 
     Constr.prototype.createOutline = function(doc, onComplete) {
         const state = this.editor.state;
         const tree = CM6.ensureSyntaxTree(state, state.doc.length, 5000) || CM6.syntaxTree(state);
         tree.iterate({
             enter: function(node) {
-                const type = eXide.edit.Document.TYPE_FUNCTION;
+                const type = Document.TYPE_FUNCTION;
                 let name = null, sig = null;
                 if (node.name === "FunctionDeclaration") {
                     const vn = node.node.getChild("VariableDefinition");
@@ -107,7 +114,7 @@ eXide.edit.JavascriptModeHelper = (function () {
     Constr.prototype._showSymbolPicker = function(doc) {
         const self = this;
         if (!doc.functions || doc.functions.length === 0) {
-            eXide.util.message("No symbols found.");
+            util.message("No symbols found.");
             return;
         }
         const items = doc.functions.map(function(f) {
@@ -118,7 +125,7 @@ eXide.edit.JavascriptModeHelper = (function () {
                 from: f.from
             };
         });
-        eXide.util.QuickPicker.show(items, function (selected) {
+        QuickPicker.show(items, function (selected) {
             if (selected) {
                 self.parent.history.push(doc.getPath(), doc.getCurrentLine());
                 if (selected.from !== undefined) {
@@ -173,3 +180,6 @@ eXide.edit.JavascriptModeHelper = (function () {
 
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").JavascriptModeHelper = JavascriptModeHelper;

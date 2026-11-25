@@ -17,13 +17,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-eXide.namespace("eXide.edit.Outline");
+import { eXide, namespace } from "./namespace.js";
+import { Document } from "./document.js";
+import { editorUtils } from "./editor-utils.js";
 
 /**
  * Outline view for functions, variables, elements, etc.
  * Supports three display modes: nested/document, flat/document, flat/alpha.
  */
-eXide.edit.Outline = (function () {
+export const Outline = (function () {
 
     // View modes
     const MODE_NESTED_DOC = "nested-doc";
@@ -80,7 +82,7 @@ eXide.edit.Outline = (function () {
         if (d.signature) a.title = d.signature;
         a.href = "#" + (d.source ? d.source : "");
 
-        const text = d.type === eXide.edit.Document.TYPE_VARIABLE ? "$" + d.name : d.name;
+        const text = d.type === Document.TYPE_VARIABLE ? "$" + d.name : d.name;
         const nameSpan = document.createElement("span");
         nameSpan.className = "outline-name";
         nameSpan.textContent = text;
@@ -113,7 +115,7 @@ eXide.edit.Outline = (function () {
                 if (ed && ed.editor) {
                     editorUtils.gotoLine(ed.editor, d.row + 1, d.column || 0, true);
                 }
-            } else if(d.type === eXide.edit.Document.TYPE_FUNCTION) {
+            } else if(d.type === Document.TYPE_FUNCTION) {
                 eXide.app.locate("function", path === '' ? null: path, d.name);
             } else {
                 eXide.app.locate("variable", path === '' ? null: path, d.name);
@@ -134,7 +136,7 @@ eXide.edit.Outline = (function () {
      */
     function makeLi(d) {
         const li = document.createElement("li");
-        let cl = d.type === eXide.edit.Document.TYPE_FUNCTION ? "t_function" : "t_variable";
+        let cl = d.type === Document.TYPE_FUNCTION ? "t_function" : "t_variable";
         if (d.visibility === "private") cl += " private";
         else if (d.visibility === "public") cl += " public";
         if (d.outlineClass) cl += " " + d.outlineClass;
@@ -311,3 +313,6 @@ eXide.edit.Outline = (function () {
 
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").Outline = Outline;

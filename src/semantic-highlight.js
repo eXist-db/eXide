@@ -9,9 +9,10 @@
  *    - Add semanticHighlightField to the editor extensions
  *    - After parsing, dispatch setSemanticTokens effect with the AST
  */
-eXide.namespace("eXide.edit.SemanticHighlight");
 
-eXide.edit.SemanticHighlight = (function () {
+import { namespace } from "./namespace.js";
+
+export const SemanticHighlight = (function () {
 
     const StateField = CM6.StateField;
     const StateEffect = CM6.StateEffect;
@@ -182,3 +183,6 @@ eXide.edit.SemanticHighlight = (function () {
         }
     };
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").SemanticHighlight = SemanticHighlight;

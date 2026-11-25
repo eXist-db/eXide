@@ -16,12 +16,13 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-eXide.namespace("eXide.edit.Visitor");
+
+import { namespace } from "./namespace.js";
 
 /**
  * XQuery specific helper methods.
  */
-eXide.edit.Visitor = (function () {
+export const Visitor = (function () {
 
     const Constr = function() {
     };
@@ -54,3 +55,6 @@ eXide.edit.Visitor = (function () {
     
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").Visitor = Visitor;

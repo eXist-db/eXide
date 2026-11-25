@@ -16,20 +16,23 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-eXide.namespace("eXide.edit.XQueryUtils");
+
+import { namespace } from "./namespace.js";
+import { oop } from "./oop.js";
+import { Visitor } from "./visitor.js";
 
 /**
  * XQuery specific helper methods.
  */
-eXide.edit.XQueryUtils = (function () {
+export const XQueryUtils = (function () {
     
     return {
         findNode: function(ast, pos) {
             const p = ast.pos;
-            if(eXide.edit.XQueryUtils.inRange(p, pos, false) === true) {
+            if(XQueryUtils.inRange(p, pos, false) === true) {
                 for(const i in ast.children) {
                     const child = ast.children[i];
-                    const n = eXide.edit.XQueryUtils.findNode(child, pos);
+                    const n = XQueryUtils.findNode(child, pos);
                     if(n !== null)
                     return n;
                 }
@@ -41,10 +44,10 @@ eXide.edit.XQueryUtils = (function () {
     
         findNodeForRange: function(ast, start, end) {
             const p = ast.pos;
-            if(eXide.edit.XQueryUtils.inRange(p, start) === true && eXide.edit.XQueryUtils.inRange(p, end) === true) {
+            if(XQueryUtils.inRange(p, start) === true && XQueryUtils.inRange(p, end) === true) {
                 for(const i in ast.children) {
                     const child = ast.children[i];
-                    const n = eXide.edit.XQueryUtils.findNode(child, start, end);
+                    const n = XQueryUtils.findNode(child, start, end);
                     if(n !== null) return n;
                 }
                 return ast;
@@ -141,7 +144,7 @@ eXide.edit.XQueryUtils = (function () {
             let parent = node.getParent;
             while (parent !== null) {
                 if ((parent.name === "FLWORExpr" || parent.name === "FunctionDecl") &&
-                    eXide.edit.XQueryUtils.findVarDecl(parent, varName) !== null) {
+                    XQueryUtils.findVarDecl(parent, varName) !== null) {
                     return parent;
                 }
                 if (parent.name === "FunctionDecl") {
@@ -158,14 +161,14 @@ eXide.edit.XQueryUtils = (function () {
                 val = node.value;
             } else {
                 for (let i = 0; i < node.children.length; i++) {
-                    val += eXide.edit.XQueryUtils.getValue(node.children[i]);
+                    val += XQueryUtils.getValue(node.children[i]);
                 }
             }
             return val;
         },
         
         findVarDecl: function(node, name) {
-            const refs = new eXide.edit.VariableReferences(name, node).getReferences();
+            const refs = new VariableReferences(name, node).getReferences();
             for (let i = 0; i < refs.length; i++) {
                 if (refs[i].getParent && (refs[i].getParent.name === "LetBinding") || 
                     refs[i].getParent.name === "ForBinding" || refs[i].getParent.name === "Param") {
@@ -187,12 +190,10 @@ eXide.edit.XQueryUtils = (function () {
     };
 }());
 
-eXide.namespace("eXide.edit.VariableReferences");
-
 /**
  * XQuery specific helper methods.
  */
-eXide.edit.VariableReferences = (function () {
+export const VariableReferences = (function () {
     
     const Constr = function(variable, ast) {
         this.variable = variable;
@@ -200,10 +201,10 @@ eXide.edit.VariableReferences = (function () {
         this.visit(ast);
     };
     
-    eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
+    oop.inherit(Constr, Visitor);
     
     Constr.prototype.VarName = function(node) {
-        const name = eXide.edit.XQueryUtils.getValue(node);
+        const name = XQueryUtils.getValue(node);
         if (name === this.variable) {
             this.references.push(node);
         }
@@ -224,12 +225,10 @@ eXide.edit.VariableReferences = (function () {
     return Constr;
 }());
 
-eXide.namespace("eXide.edit.InScopeVariables");
-
 /**
  * XQuery specific helper methods.
  */
-eXide.edit.InScopeVariables = (function () {
+export const InScopeVariables = (function () {
     
     const Constr = function(root, node) {
         this.node = node;
@@ -238,7 +237,7 @@ eXide.edit.InScopeVariables = (function () {
         this.visit(root);
     };
     
-    eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
+    oop.inherit(Constr, Visitor);
     
     Constr.prototype.FLWORExpr = function(node) {
         const pos = this.stack.length;
@@ -253,7 +252,7 @@ eXide.edit.InScopeVariables = (function () {
             return true;
         }
         if (node.getParent.name === "ForBinding" || node.getParent.name === "LetBinding") {
-            const name = eXide.edit.XQueryUtils.getValue(node);
+            const name = XQueryUtils.getValue(node);
             this.stack.push(name);
         }
     };
@@ -270,7 +269,7 @@ eXide.edit.InScopeVariables = (function () {
         const self = this;
         this.visitChildren(node, {
             VarName: function(node) {
-                const value = eXide.edit.XQueryUtils.getValue(node);
+                const value = XQueryUtils.getValue(node);
                 self.stack.push(value);
                 return true;
             },
@@ -313,25 +312,23 @@ eXide.edit.InScopeVariables = (function () {
     return Constr;
 }());
 
-eXide.namespace("eXide.edit.FunctionParameters");
-
 /**
  * XQuery specific helper methods.
  */
-eXide.edit.FunctionParameters = (function () {
+export const FunctionParameters = (function () {
     
     const Constr = function(root) {
         this.parameters = [];
         this.visit(root);
     };
     
-    eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
+    oop.inherit(Constr, Visitor);
     
     Constr.prototype.Argument = function(node) {
         let name;
         this.visitChildren(node, {
             VarName: function(node) {
-                name = eXide.edit.XQueryUtils.getValue(node);
+                name = XQueryUtils.getValue(node);
                 return false;
             }
         });
@@ -350,12 +347,10 @@ eXide.edit.FunctionParameters = (function () {
     return Constr;
 }());
 
-eXide.namespace("eXide.edit.FunctionCalls");
-
 /**
  * XQuery specific helper methods.
  */
-eXide.edit.FunctionCalls = (function () {
+export const FunctionCalls = (function () {
     
     const Constr = function(funcName, arity, ast) {
         this.name = funcName;
@@ -365,7 +360,7 @@ eXide.edit.FunctionCalls = (function () {
         this.visit(ast);
     };
     
-    eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
+    oop.inherit(Constr, Visitor);
     
     Constr.prototype.FunctionCall = function(node) {
         if (node.arity !== this.arity) {
@@ -400,7 +395,7 @@ eXide.edit.FunctionCalls = (function () {
     return Constr;
 }());
 
-eXide.edit.ModuleInfo = (function () {
+export const ModuleInfo = (function () {
     
     const Constr = function(ast) {
         this.modulePrefix = null;
@@ -411,7 +406,7 @@ eXide.edit.ModuleInfo = (function () {
         this.visit(ast);
     };
 
-    eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
+    oop.inherit(Constr, Visitor);
 
     Constr.prototype.isModule = function() {
         return this.moduleNamespace !== null;
@@ -438,7 +433,7 @@ eXide.edit.ModuleInfo = (function () {
         const self = this;
         this.visitChildren(node, {
             NCName: function(node) {
-                self.modulePrefix = eXide.edit.XQueryUtils.getValue(node);
+                self.modulePrefix = XQueryUtils.getValue(node);
                 return false;
             },
 
@@ -463,3 +458,11 @@ eXide.edit.ModuleInfo = (function () {
     
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").XQueryUtils = XQueryUtils;
+namespace("eXide.edit").VariableReferences = VariableReferences;
+namespace("eXide.edit").InScopeVariables = InScopeVariables;
+namespace("eXide.edit").FunctionParameters = FunctionParameters;
+namespace("eXide.edit").FunctionCalls = FunctionCalls;
+namespace("eXide.edit").ModuleInfo = ModuleInfo;

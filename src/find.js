@@ -1,6 +1,8 @@
-eXide.namespace("eXide.find.IncrementalSearch");
+import { namespace } from "./namespace.js";
+import { DialogManager } from "./dialog-utils.js";
+import { editorUtils } from "./editor-utils.js";
 
-eXide.find.IncrementalSearch = (function () {
+export const IncrementalSearch = (function () {
 
     const searchOptions = {
         backwards: false,
@@ -74,16 +76,14 @@ eXide.find.IncrementalSearch = (function () {
     return Constr;
 }());
 
-eXide.namespace("eXide.find.Files");
-
-eXide.find.Files = (function() {
+export const Files = (function() {
     let dlg = null;
     let dialogEl = null;
 
     function ensureDialog() {
         if (dlg) return;
         dialogEl = document.getElementById("find-dialog");
-        dlg = eXide.util.DialogManager.create(dialogEl, {
+        dlg = DialogManager.create(dialogEl, {
             title: "Find in Files",
             modal: false,
             height: 400,
@@ -116,3 +116,7 @@ eXide.find.Files = (function() {
         }
     };
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.find").IncrementalSearch = IncrementalSearch;
+namespace("eXide.find").Files = Files;

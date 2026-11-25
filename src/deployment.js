@@ -16,9 +16,14 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-eXide.namespace("eXide.edit.Projects");
 
-eXide.edit.Projects = (function () {
+import { eXide, namespace } from "./namespace.js";
+import { DialogManager } from "./dialog-utils.js";
+import { Sender } from "./events.js";
+import { util } from "./util.js";
+import { oop } from "./oop.js";
+
+export const Projects = (function () {
 
     // localStorage["eXide.projects"] is shared between eXide versions running
     // against the same browser. eXide 3.x stores it as a flat map of
@@ -128,14 +133,12 @@ eXide.edit.Projects = (function () {
     };
 
     return Constr;
-}(eXide.util.oop));
-
-eXide.namespace("eXide.edit.PackageEditor");
+}(oop));
 
 /**
  * Edit deployment descriptors.
  */
-eXide.edit.PackageEditor = (function () {
+export const PackageEditor = (function () {
 
     const Constr = function (projects) {
         const $this = this;
@@ -143,7 +146,7 @@ eXide.edit.PackageEditor = (function () {
         this.currentProject = null;
 
         const runDialogEl = document.getElementById("dialog-run-app");
-        this.runDialog = eXide.util.DialogManager.create(runDialogEl, {
+        this.runDialog = DialogManager.create(runDialogEl, {
             appendTo: "#layout-container",
             title: "Run Application",
             modal: false,
@@ -159,7 +162,7 @@ eXide.edit.PackageEditor = (function () {
         });
 
         const syncDialogEl = document.getElementById("synchronize-dialog");
-        this.syncDialog = eXide.util.DialogManager.create(syncDialogEl, {
+        this.syncDialog = DialogManager.create(syncDialogEl, {
             appendTo: "#layout-container",
             title: "Synchronize to Directory",
             modal: false,
@@ -213,7 +216,7 @@ eXide.edit.PackageEditor = (function () {
         this.syncDialogEl = syncDialogEl;
 
         const gitCheckoutEl = document.getElementById("dialog-git-checkout");
-        this.gitCheckoutDialog = eXide.util.DialogManager.create(gitCheckoutEl, {
+        this.gitCheckoutDialog = DialogManager.create(gitCheckoutEl, {
             appendTo: "#layout-container",
             title: "Git Checkout",
             modal: false,
@@ -233,7 +236,7 @@ eXide.edit.PackageEditor = (function () {
         });
 
         const gitCommitEl = document.getElementById("dialog-git-commit");
-        this.gitCommitDialog = eXide.util.DialogManager.create(gitCommitEl, {
+        this.gitCommitDialog = DialogManager.create(gitCommitEl, {
             appendTo: "#layout-container",
             title: "Synchronize and Commit",
             modal: false,
@@ -277,13 +280,13 @@ eXide.edit.PackageEditor = (function () {
     };
 
     // Extend eXide.events.Sender for event support
-    eXide.util.oop.inherit(Constr, eXide.events.Sender);
+    oop.inherit(Constr, Sender);
 
     Constr.prototype.download = function (collection) {
         const $this = this;
         this.projects.findProject(collection, function (project) {
             if (!project) {
-                eXide.util.error("Application not found.");
+                util.error("Application not found.");
                 return;
             }
             // POST triggers XAR build + download via Roaster
@@ -303,7 +306,7 @@ eXide.edit.PackageEditor = (function () {
                     URL.revokeObjectURL(url);
                 })
                 .catch(function (err) {
-                    eXide.util.error("Download failed: " + err.message);
+                    util.error("Download failed: " + err.message);
                 });
         });
     };
@@ -315,12 +318,12 @@ eXide.edit.PackageEditor = (function () {
         const $this = this;
         $this.projects.findProject(collection, function (project) {
             if (!project) {
-                eXide.util.error("Application not found: The document currently opened in the editor " +
+                util.error("Application not found: The document currently opened in the editor " +
                     "should belong to an application package.");
                 return;
             }
             if (!eXide.app.login.isAdmin) {
-                eXide.util.error("You need to be logged in as an admin user with dba role " +
+                util.error("You need to be logged in as an admin user with dba role " +
                     "to use this feature.");
                 return;
             }
@@ -354,7 +357,7 @@ eXide.edit.PackageEditor = (function () {
                 })
             }).then(function (response) {
                 if (response.ok) {
-                    eXide.util.message("Synchronized directory");
+                    util.message("Synchronized directory");
                 }
             });
         }
@@ -364,7 +367,7 @@ eXide.edit.PackageEditor = (function () {
         const $this = this;
         $this.projects.findProject(collection, function (project) {
             if (!project) {
-                eXide.util.error("Application not found: The document currently opened in the editor " +
+                util.error("Application not found: The document currently opened in the editor " +
                     "should belong to an application package.");
                 return;
             }
@@ -407,12 +410,12 @@ eXide.edit.PackageEditor = (function () {
         const $this = this;
         $this.projects.findProject(collection, function (project) {
             if (!project) {
-                eXide.util.error("Application not found: The document currently opened in the editor " +
+                util.error("Application not found: The document currently opened in the editor " +
                     "should belong to an application package.");
                 return;
             }
             if (!eXide.app.login.isAdmin) {
-                eXide.util.error("You need to be logged in as an admin user with dba role " +
+                util.error("You need to be logged in as an admin user with dba role " +
                     "to use this feature.");
                 return;
             }
@@ -439,12 +442,12 @@ eXide.edit.PackageEditor = (function () {
         const $this = this;
         $this.projects.findProject(collection, function (project) {
             if (!project) {
-                eXide.util.error("Application not found: The document currently opened in the editor " +
+                util.error("Application not found: The document currently opened in the editor " +
                     "should belong to an application package.");
                 return;
             }
             if (!eXide.app.login.isAdmin) {
-                eXide.util.error("You need to be logged in as an admin user with dba role " +
+                util.error("You need to be logged in as an admin user with dba role " +
                     "to use this feature.");
                 return;
             }
@@ -457,9 +460,6 @@ eXide.edit.PackageEditor = (function () {
     return Constr;
 }());
 
-if (typeof module !== "undefined" && module.exports) {
-    module.exports = {
-        Projects: eXide.edit.Projects,
-        PackageEditor: eXide.edit.PackageEditor
-    };
-}
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").Projects = Projects;
+namespace("eXide.edit").PackageEditor = PackageEditor;

@@ -17,11 +17,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import { eXide, namespace } from "./namespace.js";
+
 /**
  * Thin wrapper around Prettier for use by eXide mode helpers.
  * Requires prettierBundle global (loaded from prettier-bundle.js).
  */
-const prettierFormat = (function () {
+export const prettierFormat = (function () {
 
     const MODE_CONFIG = {
         "xquery":     { parser: "xquery" },
@@ -89,5 +91,5 @@ const prettierFormat = (function () {
     };
 }());
 
-// Browser global (needed when bundled by esbuild)
-globalThis.prettierFormat = prettierFormat;
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").prettierFormat = prettierFormat;

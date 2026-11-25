@@ -16,12 +16,18 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-eXide.namespace("eXide.edit.XMLModeHelper");
+
+import { namespace } from "./namespace.js";
+import { Document } from "./document.js";
+import { editorUtils } from "./editor-utils.js";
+import { ModeHelper } from "./mode-helper.js";
+import { Dialog, util } from "./util.js";
+import { oop } from "./oop.js";
 
 /**
  * XML specific helper methods.
  */
-eXide.edit.XMLModeHelper = (function () {
+export const XMLModeHelper = (function () {
 
     const Constr = function(editor, menubar) {
         const self = this;
@@ -49,7 +55,7 @@ eXide.edit.XMLModeHelper = (function () {
         this.addCommand("gotoSymbol", this.gotoSymbol);
     }
 
-    eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
+    oop.inherit(Constr, ModeHelper);
 
     Constr.prototype.activate = function(doc) {
         this.menu.style.display = "";
@@ -132,7 +138,7 @@ eXide.edit.XMLModeHelper = (function () {
                         const xpath = "/" + pathStack.join("/");
                         const line = state.doc.lineAt(node.from);
                         doc.functions.push({
-                            type: eXide.edit.Document.TYPE_FUNCTION,
+                            type: Document.TYPE_FUNCTION,
                             name: tagName,
                             indent: depth,
                             hint: hint,
@@ -156,7 +162,7 @@ eXide.edit.XMLModeHelper = (function () {
                     if (text) {
                         const line = state.doc.lineAt(node.from);
                         doc.functions.push({
-                            type: eXide.edit.Document.TYPE_FUNCTION,
+                            type: Document.TYPE_FUNCTION,
                             name: text,
                             indent: depth,
                             outlineClass: "outline-comment",
@@ -328,9 +334,9 @@ eXide.edit.XMLModeHelper = (function () {
     Constr.prototype.documentSaved = function(doc) {
         if (/.*\.xconf$/.test(doc.getName())) {
             const collection = doc.getBasePath();
-            eXide.util.Dialog.input("Apply Configuration?", "You have saved a collection configuration file. Would you like to " +
+            Dialog.input("Apply Configuration?", "You have saved a collection configuration file. Would you like to " +
                 "apply it to collection " + collection.replace(/^\/db\/system\/config/, "") + " now?", function() {
-                    eXide.util.message("Apply configuration and reindex...");
+                    util.message("Apply configuration and reindex...");
                     const basePath = doc.getBasePath();
                     // Extract app abbrev from /db/system/config/db/apps/{abbrev}/...
                     const pathParts = basePath.replace(/^\/db\/system\/config/, "").split("/").filter(Boolean);
@@ -343,13 +349,13 @@ eXide.edit.XMLModeHelper = (function () {
                     .then(function(response) { return response.json(); })
                     .then(function(data) {
                         if (data.error) {
-                            eXide.util.error("Failed to apply configuration: " + data.error);
+                            util.error("Failed to apply configuration: " + data.error);
                         } else {
-                            eXide.util.success("Configuration applied.");
+                            util.success("Configuration applied.");
                         }
                     })
                     .catch(function(err) {
-                        eXide.util.error("Failed to apply configuration: " + err);
+                        util.error("Failed to apply configuration: " + err);
                     });
             }, { action: "Apply" });
         }
@@ -442,7 +448,7 @@ eXide.edit.XMLModeHelper = (function () {
     Constr.prototype.rename = function(doc) {
         const tags = this.findStartEndTags(doc);
         if (!tags.start) {
-            eXide.util.message("Place cursor inside an element tag first.");
+            util.message("Place cursor inside an element tag first.");
             return;
         }
 
@@ -502,3 +508,6 @@ eXide.edit.XMLModeHelper = (function () {
 
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").XMLModeHelper = XMLModeHelper;

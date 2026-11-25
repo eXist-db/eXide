@@ -1,9 +1,12 @@
-eXide.namespace("eXide.edit.CodeValidator");
-
 /**
  * Code validation component. Validates documents on change and displays diagnostics.
  */
-eXide.edit.CodeValidator = (function () {
+
+import { namespace } from "./namespace.js";
+import { Sender } from "./events.js";
+import { oop } from "./oop.js";
+
+export const CodeValidator = (function () {
 
     const VALIDATE_TIMEOUT = 700;
 
@@ -31,7 +34,7 @@ eXide.edit.CodeValidator = (function () {
     };
 
     // Extend eXide.events.Sender for event support
-    eXide.util.oop.inherit(Constr, eXide.events.Sender);
+    oop.inherit(Constr, Sender);
 
     Constr.prototype.triggerDelayed = function(doc) {
         if (!(this.enabled && canValidate(doc))) {
@@ -103,3 +106,6 @@ eXide.edit.CodeValidator = (function () {
 
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").CodeValidator = CodeValidator;

@@ -16,13 +16,17 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-eXide.namespace("eXide.util.Preferences");
+
+import { eXide, namespace } from "./namespace.js";
+import { DialogManager } from "./dialog-utils.js";
+import { parserRegistry } from "./parser/parser-registry.js";
+import { CompletionSource } from "./xquery-completion.js";
 
 /**
  * Singleton object: Preferences dialog.
  *
  */
-eXide.util.Preferences = (function () {
+export const Preferences = (function () {
 
     const defaultPreferences = {
         theme: "light",
@@ -87,7 +91,7 @@ eXide.util.Preferences = (function () {
             }
         });
 
-        this._dialog = eXide.util.DialogManager.create(container, {
+        this._dialog = DialogManager.create(container, {
             appendTo: "#layout-container",
     		title: "Preferences",
 			modal: false,
@@ -324,7 +328,7 @@ eXide.util.Preferences = (function () {
             if (this.editor._autocompletionCompartment) {
                 effects.push(this.editor._autocompletionCompartment.reconfigure(
                     CM6.autocompletion({
-                        override: [eXide.edit.CompletionSource.completionSource],
+                        override: [CompletionSource.completionSource],
                         activateOnTyping: this.preferences.autocompleteOnType === true,
                         maxRenderedOptions: 50,
                         icons: true
@@ -402,3 +406,6 @@ eXide.util.Preferences = (function () {
     
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.util").Preferences = Preferences;

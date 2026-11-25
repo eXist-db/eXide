@@ -16,12 +16,14 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-eXide.namespace("eXide.edit.Template");
+
+import { namespace } from "./namespace.js";
+import { editorUtils } from "./editor-utils.js";
 
 /**
  * Represents the last inserted template. Cycles through parameters.
  */
-eXide.edit.Template = (function () {
+export const Template = (function () {
 	
 	const LINE_REGEX = /\n/;
 	
@@ -124,3 +126,6 @@ eXide.edit.Template = (function () {
 	};
 	return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").Template = Template;

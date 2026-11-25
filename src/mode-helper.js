@@ -17,12 +17,18 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-eXide.namespace("eXide.edit.ModeHelper");
+import { namespace } from "./namespace.js";
+import { Document } from "./document.js";
+import { editorUtils } from "./editor-utils.js";
+import { prettierFormat } from "./prettier-format.js";
+import { QuickPicker } from "./quick-picker.js";
+import { Snippets } from "./snippets.js";
+import { util } from "./util.js";
 
 /**
  * Base class for helper methods needed by specific editing modes (like XQuery, XML...)
  */
-eXide.edit.ModeHelper = (function () {
+export const ModeHelper = (function () {
 
     const Constr = function(editor) {
         this.parent = editor;
@@ -58,7 +64,7 @@ eXide.edit.ModeHelper = (function () {
                 }
                 fn.apply(this, nargs);
             } else {
-                eXide.util.message(command + " not supported in this mode.")
+                util.message(command + " not supported in this mode.")
             }
         },
 
@@ -85,7 +91,7 @@ eXide.edit.ModeHelper = (function () {
                         ).replace(/\n/g, " ").trim();
                         if (context.length > 40) context = context.substring(0, 40) + "…";
                         doc.functions.push({
-                            type: eXide.edit.Document.TYPE_FUNCTION,
+                            type: Document.TYPE_FUNCTION,
                             name: "Error at line " + line.number,
                             outlineClass: "outline-error",
                             source: doc.getPath(),
@@ -114,7 +120,7 @@ eXide.edit.ModeHelper = (function () {
 
         format: function(doc) {
             if (typeof prettierFormat === "undefined") {
-                eXide.util.message("format not supported in this mode.");
+                util.message("format not supported in this mode.");
                 return;
             }
             const self = this;
@@ -140,14 +146,14 @@ eXide.edit.ModeHelper = (function () {
                 }
             }).catch(function (e) {
                 console.log("Error formatting code: %s", e.message);
-                eXide.util.error("Code could not be formatted: " + e.message);
+                util.error("Code could not be formatted: " + e.message);
             });
         },
 
         gotoSymbol: function(doc) {
             const self = this;
             if (!doc.functions || doc.functions.length === 0) {
-                eXide.util.message("No symbols found.");
+                util.message("No symbols found.");
                 return;
             }
             const items = doc.functions.map(function(f) {
@@ -158,7 +164,7 @@ eXide.edit.ModeHelper = (function () {
                     from: f.from
                 };
             });
-            eXide.util.QuickPicker.show(items, function(selected) {
+            QuickPicker.show(items, function(selected) {
                 if (selected) {
                     if (selected.from !== undefined) {
                         self.editor.dispatch({
@@ -177,7 +183,7 @@ eXide.edit.ModeHelper = (function () {
         },
 
         getTemplates: function (doc, prefix, popupItems) {
-            const templates = eXide.util.Snippets.getTemplates(doc, prefix);
+            const templates = Snippets.getTemplates(doc, prefix);
             for (let i = 0; i < templates.length; i++) {
                 const item = {
                     type: "template",
@@ -193,3 +199,6 @@ eXide.edit.ModeHelper = (function () {
 
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").ModeHelper = ModeHelper;

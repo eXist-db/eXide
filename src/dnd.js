@@ -1,9 +1,12 @@
-eXide.namespace("eXide.util.DnD");
-
 /**
  * Drag and drop of files.
  */
-eXide.util.DnD = (function(util) {
+
+import { namespace } from "./namespace.js";
+import { Sender } from "./events.js";
+import { oop } from "./oop.js";
+
+export const DnD = (function(util) {
 
     const Constr = function(container) {
         const self = this;
@@ -33,7 +36,10 @@ eXide.util.DnD = (function(util) {
     };
 
     // Extend eXide.events.Sender for event support
-    eXide.util.oop.inherit(Constr, eXide.events.Sender);
+    oop.inherit(Constr, Sender);
 
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.util").DnD = DnD;

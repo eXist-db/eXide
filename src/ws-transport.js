@@ -12,11 +12,10 @@
  *   eXide.ws.on("exist/metrics", function(data) { ... })
  *   eXide.ws.send("textDocument/hover", { ... }, function(result) { ... })
  */
-eXide.namespace("eXide.ws");
 
-eXide.ws = (function () {
-    "use strict";
+import { eXide } from "./namespace.js";
 
+export const ws = (function () {
     let socket = null;
     let connected = false;
     let reconnectTimer = null;
@@ -226,5 +225,7 @@ eXide.ws = (function () {
     };
 }());
 
-// Browser global
-globalThis.eXideWs = eXide.ws;
+
+
+// Register on the global `eXide` object (see namespace.js)
+eXide.ws = Object.assign(ws, eXide.ws);

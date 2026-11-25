@@ -17,12 +17,13 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-eXide.namespace("eXide.util.Snippets");
+import { namespace } from "./namespace.js";
+import { Document } from "./document.js";
 
 /**
  * Manage and load text snippets for the different modes.
  */
-eXide.util.Snippets = (function () {
+export const Snippets = (function () {
     
     const snippetsForMode = {};
 
@@ -71,7 +72,7 @@ eXide.util.Snippets = (function () {
         for (let i = 0; i < snippets.length; i++) {
             if (!prefix || snippets[i].name.indexOf(prefix) === 0) {
                 templates.push({
-                    TYPE: eXide.edit.Document.TYPE_TEMPLATE,
+                    TYPE: Document.TYPE_TEMPLATE,
                     name: snippets[i].name,
                     template: snippets[i].content
                 });
@@ -86,3 +87,6 @@ eXide.util.Snippets = (function () {
         reload: reload
     };
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.util").Snippets = Snippets;

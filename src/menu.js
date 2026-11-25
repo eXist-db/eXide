@@ -16,12 +16,15 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-eXide.namespace("eXide.util.Menubar");
+
+import { namespace } from "./namespace.js";
+import { commands } from "./commands.js";
+import { QuickPicker } from "./quick-picker.js";
 
 /**
  * Implements the main menubar behaviour
  */
-eXide.util.Menubar = (function() {
+export const Menubar = (function() {
 
     const Constr = function (container) {
         const $this = this;
@@ -80,7 +83,7 @@ eXide.util.Menubar = (function() {
             items.push(self.commands[key]);
         }
         if (items.length > 0) {
-            eXide.util.QuickPicker.show(items, function (selected) {
+            QuickPicker.show(items, function (selected) {
                 if (selected) {
                     selected.callback();
                 }
@@ -98,7 +101,7 @@ eXide.util.Menubar = (function() {
             action = item.getAttribute("data-command");
         }
         if (action) {
-            const shortcut = eXide.edit.commands.getShortcut(action);
+            const shortcut = commands.getShortcut(action);
             if (shortcut) {
                 const span = document.createElement("span");
                 span.className = "shortcut";
@@ -135,7 +138,7 @@ eXide.util.Menubar = (function() {
         const $this = this;
         let shortcut = "";
         if (index < 10) {
-            shortcut = "<span class=\"shortcut\">" + eXide.edit.commands.getShortcut("gotoTab" + index) + "</span>";
+            shortcut = "<span class=\"shortcut\">" + commands.getShortcut("gotoTab" + index) + "</span>";
         }
         const menuEl = this.container.querySelector("ul li[title=\"" + menu + "\"]");
         if (!menuEl) return;
@@ -169,3 +172,6 @@ eXide.util.Menubar = (function() {
 
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.util").Menubar = Menubar;

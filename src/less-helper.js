@@ -16,12 +16,17 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-eXide.namespace("eXide.edit.LessModeHelper");
+
+import { namespace } from "./namespace.js";
+import { Document } from "./document.js";
+import { ModeHelper } from "./mode-helper.js";
+import { util } from "./util.js";
+import { oop } from "./oop.js";
 
 /**
  * Less specific helper methods.
  */
-eXide.edit.LessModeHelper = (function () {
+export const LessModeHelper = (function () {
 
     function saveCSS (path, css) {
         fetch("store/" + path, {
@@ -32,12 +37,12 @@ eXide.edit.LessModeHelper = (function () {
         .then(function(response) { return response.json(); })
         .then(function(data) {
             if (data.status === "error") {
-                return eXide.util.error(data.message);
+                return util.error(data.message);
             }
-            eXide.util.message(path + " stored.");
+            util.message(path + " stored.");
         })
         .catch(function(err) {
-            eXide.util.error(String(err));
+            util.error(String(err));
         });
     }
 
@@ -49,14 +54,14 @@ eXide.edit.LessModeHelper = (function () {
         this.addCommand("gotoSymbol", this.gotoSymbol);
     };
 
-    eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
+    oop.inherit(Constr, ModeHelper);
 
     Constr.prototype.documentSaved = function(doc) {
         const path = doc.getExternalLink();
         const code = doc.getText();
 
         if (/\/_.+\.less$/.test(path)) {
-          return eXide.util.error("CSS not compiled for include : " + path);
+          return util.error("CSS not compiled for include : " + path);
         }
 
         const options = {
@@ -71,9 +76,9 @@ eXide.edit.LessModeHelper = (function () {
 
         const handler = function (err, output) {
             if (err) {
-                return eXide.util.error("Error: " + err.message);
+                return util.error("Error: " + err.message);
             }
-            eXide.util.message("Compiled less file: " + path);
+            util.message("Compiled less file: " + path);
             const cssPath = doc.getPath().replace(/\.less$/, ".css");
             saveCSS(cssPath, header + output.css);
         };
@@ -98,7 +103,7 @@ eXide.edit.LessModeHelper = (function () {
                     if (selector) {
                         const line = state.doc.lineAt(node.from);
                         doc.functions.push({
-                            type: eXide.edit.Document.TYPE_FUNCTION,
+                            type: Document.TYPE_FUNCTION,
                             name: selector,
                             source: doc.getPath(),
                             signature: selector,
@@ -117,7 +122,7 @@ eXide.edit.LessModeHelper = (function () {
                     if (text.length > 60) text = text.substring(0, 60) + "…";
                     const line = state.doc.lineAt(node.from);
                     doc.functions.push({
-                        type: eXide.edit.Document.TYPE_FUNCTION,
+                        type: Document.TYPE_FUNCTION,
                         name: text,
                         source: doc.getPath(),
                         signature: text,
@@ -135,3 +140,6 @@ eXide.edit.LessModeHelper = (function () {
 
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").LessModeHelper = LessModeHelper;

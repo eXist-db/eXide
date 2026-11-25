@@ -196,7 +196,7 @@ describe('Outline navigation', () => {
       // Navigate to a line programmatically
       cy.window().then((win) => {
         const view = win.eXide.app.getEditor().editor
-        win.editorUtils.gotoLine(view, 10, 0, true)
+        win.eXide.edit.editorUtils.gotoLine(view, 10, 0, true)
       })
 
       // Flash decoration should appear briefly

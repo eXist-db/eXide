@@ -16,12 +16,15 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-eXide.namespace("eXide.util.Help");
+
+import { namespace } from "./namespace.js";
+import { DialogManager } from "./dialog-utils.js";
+import { Dialog, util } from "./util.js";
 
 /**
  * Singleton object: Help dialog.
  */
-eXide.util.Help = (function () {
+export const Help = (function () {
 
     let sections = null;
     let currentPage = -1;
@@ -33,7 +36,7 @@ eXide.util.Help = (function () {
         el.id = "eXide-dialog-help";
         el.innerHTML = '<div class="help" id="eXide-dialog-help-body"></div>';
         document.body.appendChild(el);
-        helpDlg = eXide.util.DialogManager.create(el, {
+        helpDlg = DialogManager.create(el, {
             appendTo: "#layout-container",
             modal: false,
             title: "Quick Start",
@@ -41,12 +44,12 @@ eXide.util.Help = (function () {
             height: 400,
             buttons: {
                 "Close": function() { this.close(); },
-                "Previous": function() { eXide.util.Help.previous(); },
+                "Previous": function() { Help.previous(); },
                 "Next": function() {
                     if (sections && currentPage + 1 >= sections.length) {
                         this.close();
                     } else {
-                        eXide.util.Help.next();
+                        Help.next();
                     }
                 }
             }
@@ -68,9 +71,9 @@ eXide.util.Help = (function () {
             ensureDialog();
             helpDlg.open();
             if (!sections) {
-                eXide.util.Help.load();
+                Help.load();
             } else {
-                eXide.util.Help.next();
+                Help.next();
             }
         },
 
@@ -91,11 +94,11 @@ eXide.util.Help = (function () {
         },
 
         showFirstTime: function() {
-            if (!eXide.util.supportsHtml5Storage)
+            if (!util.supportsHtml5Storage)
                 return;
             const showHints = localStorage.getItem("eXide.hints");
             if (!showHints || showHints === "1") {
-                eXide.util.Help.show();
+                Help.show();
             }
         },
 
@@ -113,13 +116,13 @@ eXide.util.Help = (function () {
                 for (let i = 0; i < sectionEls.length; i++) {
                     sections.push(sectionEls[i].innerHTML);
                 }
-                eXide.util.Help.show();
+                Help.show();
             })
             .catch(function(err) {
                 if (err.status === 404) {
-                    eXide.util.error("Failed to open help texts.");
+                    util.error("Failed to open help texts.");
                 } else {
-                    eXide.util.Dialog.warning("Deployment Error",
+                    Dialog.warning("Deployment Error",
                         "<p>An error has been reported by the database.</p>");
                 }
                 if (helpDlg) helpDlg.close();
@@ -127,3 +130,6 @@ eXide.util.Help = (function () {
         }
     };
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.util").Help = Help;

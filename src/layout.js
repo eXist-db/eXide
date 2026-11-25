@@ -1,6 +1,8 @@
-eXide.namespace("eXide.app.FlexboxSplitter");
+import { eXide, namespace } from "./namespace.js";
+import { Sender } from "./events.js";
+import { oop } from "./oop.js";
 
-eXide.app.FlexboxSplitter = (function () {
+export const FlexboxSplitter = (function () {
 
     const Constr = function(layout, resizable, region, min, preferred) {
         const self = this;
@@ -70,7 +72,7 @@ eXide.app.FlexboxSplitter = (function () {
     };
 
     // Extend eXide.events.Sender for event support
-    eXide.util.oop.inherit(Constr, eXide.events.Sender);
+    oop.inherit(Constr, Sender);
 
     function isHidden(el) {
         return el.style.display === "none" || el.offsetParent === null;
@@ -152,9 +154,7 @@ eXide.app.FlexboxSplitter = (function () {
     return Constr;
 }());
 
-eXide.namespace("eXide.app.Layout");
-
-eXide.app.Layout = (function () {
+export const Layout = (function () {
 
     const PANEL_DEFAULTS = {
         "west": { size: 200, preferred: 200 },
@@ -165,9 +165,9 @@ eXide.app.Layout = (function () {
     const Constr = function(editor) {
         this.editor = editor;
         this.regions = {
-            "west": new eXide.app.FlexboxSplitter(this, ".panel-west", "west", 100, 200),
-            "south": new eXide.app.FlexboxSplitter(this, ".panel-south", "south", 100, 200),
-            "east": new eXide.app.FlexboxSplitter(this, ".panel-east", "east", 180, 220)
+            "west": new FlexboxSplitter(this, ".panel-west", "west", 100, 200),
+            "south": new FlexboxSplitter(this, ".panel-south", "south", 100, 200),
+            "east": new FlexboxSplitter(this, ".panel-east", "east", 180, 220)
         };
         this.regions["east"].addEventListener("beforeResize", eXide.app.beforeResize);
         this.regions["east"].addEventListener("afterResize", eXide.app.afterResize);
@@ -221,3 +221,7 @@ eXide.app.Layout = (function () {
 
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.app").FlexboxSplitter = FlexboxSplitter;
+namespace("eXide.app").Layout = Layout;

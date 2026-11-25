@@ -1,7 +1,7 @@
 const { describe, it } = require("node:test");
 const assert = require("node:assert/strict");
 const { parse } = require("./harness");
-const staticAnalysis = require("../src/static-analysis.js");
+const { staticAnalysis } = require("../src/static-analysis.js");
 
 function analyze(code) {
     const result = parse(code);

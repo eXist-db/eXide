@@ -16,25 +16,32 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-eXide.namespace("eXide.edit.SnippetModeHelper");
+
+import { namespace } from "./namespace.js";
+import { ModeHelper } from "./mode-helper.js";
+import { Snippets } from "./snippets.js";
+import { oop } from "./oop.js";
 
 /**
  * XML specific helper methods.
  */
-eXide.edit.SnippetModeHelper = (function () {
+export const SnippetModeHelper = (function () {
     
     const Constr = function(editor) {
 		this.parent = editor;
 		this.editor = this.parent.editor;
 	};
 	
-	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
+	oop.inherit(Constr, ModeHelper);
 
     Constr.prototype.documentSaved = function(doc) {
         const code = doc.getText();
         const mode = doc.getName().replace(/\.snippets/, "");
-        eXide.util.Snippets.reload(mode, code);
+        Snippets.reload(mode, code);
     };
     
 	return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").SnippetModeHelper = SnippetModeHelper;

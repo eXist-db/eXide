@@ -9,9 +9,11 @@
  *  (at your option) any later version.
  */
 
-eXide.namespace("eXide.app.Monitor");
+import { eXide, namespace } from "./namespace.js";
+import { util } from "./util.js";
+import { ws } from "./ws-transport.js";
 
-eXide.app.Monitor = (function () {
+export const Monitor = (function () {
 
     const JMX_NS = "http://exist-db.org/jmx";
     const CATEGORIES = "c=instances&c=processes&c=memory";
@@ -128,7 +130,7 @@ eXide.app.Monitor = (function () {
                     const id = killBtn.getAttribute("data-id");
                     if (id) {
                         self.killQuery(id);
-                        eXide.util.message("Killing query " + id + "...");
+                        util.message("Killing query " + id + "...");
                     }
                 }
             });
@@ -144,12 +146,12 @@ eXide.app.Monitor = (function () {
         this._tokenRetries = 0;
 
         // Register WebSocket listener regardless of current connection state
-        if (typeof eXide.ws !== "undefined") {
-            eXide.ws.on("exist/metrics", function (data) {
+        if (typeof ws !== "undefined") {
+            ws.on("exist/metrics", function (data) {
                 if (data && self.polling) self.updateFromWs(data);
             });
 
-            if (eXide.ws.isConnected()) {
+            if (ws.isConnected()) {
                 console.log("[monitor] Using WebSocket for real-time updates");
                 this._useWs = true;
                 this.pollWs();
@@ -157,7 +159,7 @@ eXide.app.Monitor = (function () {
             }
 
             // WebSocket not yet connected — listen for connection and switch
-            eXide.ws.on("connected", function () {
+            ws.on("connected", function () {
                 if (self.polling && !self._useWs) {
                     console.log("[monitor] Switching to WebSocket");
                     self._useWs = true;
@@ -486,3 +488,6 @@ eXide.app.Monitor = (function () {
 
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.app").Monitor = Monitor;

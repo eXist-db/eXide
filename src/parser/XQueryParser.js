@@ -16094,12 +16094,6 @@ XQueryParser.TOKEN =
 ];
 
 
-// Browser global (needed when bundled by esbuild)
-globalThis.XQueryParser = XQueryParser;
-
-// CommonJS export
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = XQueryParser;
-}
+export default XQueryParser;
 
 // End

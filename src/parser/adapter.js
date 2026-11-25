@@ -14,6 +14,8 @@
  * 9. XQ4.0 normalization: ParamWithDefault→Param, VarNameAndType→VarName, LetValueBinding unwrap
  */
 
+import { namespace } from "../namespace.js";
+
 // Nonterminals eligible for single-child collapse (from JSONParseTreeHandler)
 const COLLAPSE_LIST = [
     "OrExpr", "AndExpr", "ComparisonExpr", "StringConcatExpr", "RangeExpr",
@@ -365,16 +367,9 @@ function parseXQuery(input, ParserConstructor) {
     return { ast: ast, error: error };
 }
 
-// Browser global for eXide
-const rexParserAdapter = { parseXQuery: parseXQuery };
-globalThis.rexParserAdapter = rexParserAdapter;
+export const rexParserAdapter = { parseXQuery };
 
-// Export for CommonJS (Node.js testing)
-if (typeof module !== "undefined" && module.exports) {
-    module.exports = {
-        parseXQuery: parseXQuery,
-        convertNode: convertNode,
-        buildLineOffsets: buildLineOffsets,
-        offsetToLineCol: offsetToLineCol
-    };
-}
+export { parseXQuery, convertNode, buildLineOffsets, offsetToLineCol };
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").rexParserAdapter = rexParserAdapter;

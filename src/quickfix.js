@@ -16,12 +16,19 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-eXide.namespace("eXide.edit.XQueryQuickFix");
+
+import { eXide, namespace } from "./namespace.js";
+import { editorUtils } from "./editor-utils.js";
+import { staticAnalysis } from "./static-analysis.js";
+import { util } from "./util.js";
+import { oop } from "./oop.js";
+import { Visitor } from "./visitor.js";
+import { FunctionParameters, XQueryUtils } from "./xquery-utils.js";
 
 /**
  * XQuery specific helper methods.
  */
-eXide.edit.XQueryQuickFix = (function () {
+export const XQueryQuickFix = (function () {
 
     const quickFixes = [
         {
@@ -34,15 +41,15 @@ eXide.edit.XQueryQuickFix = (function () {
                         {
                             action: "Create function \"" + matches[1] + "\"",
                             resolve: function(helper, editor, doc, annotation) {
-                                const adder = new eXide.edit.PrologAdder(editor, doc);
-                                const params = new eXide.edit.FunctionParameters(ast.getParent).getParameters();
+                                const adder = new PrologAdder(editor, doc);
+                                const params = new FunctionParameters(ast.getParent).getParameters();
                                 adder.addFunction(matches[1], params);
                             }
                         },
                         {
                             action: "Import module \"" + prefix + "\"",
                             resolve: function(helper, editor, doc, annotation) {
-                                const adder = new eXide.edit.PrologAdder(editor, doc);
+                                const adder = new PrologAdder(editor, doc);
                                 adder.importModule(prefix);
                             }
                         }
@@ -55,7 +62,7 @@ eXide.edit.XQueryQuickFix = (function () {
             regex: /unused namespace prefix/,
             getResolutions: function(helper, editor, doc, annotation, ast) {
                 let action = "Remove namespace declaration";
-                if (eXide.edit.XQueryUtils.findAncestor(ast, "ModuleImport")) {
+                if (XQueryUtils.findAncestor(ast, "ModuleImport")) {
                     action = "Remove module import";
                 }
                 return [
@@ -79,7 +86,7 @@ eXide.edit.XQueryQuickFix = (function () {
                                 helper.parent.validator.setEnabled(false);
 
                                 function doImport(mod) {
-                                    const adder = new eXide.edit.PrologAdder(editor, doc);
+                                    const adder = new PrologAdder(editor, doc);
                                     if (mod) {
                                         let at = mod.at;
                                         if (at && at.indexOf("java:") === 0) at = null;
@@ -107,7 +114,7 @@ eXide.edit.XQueryQuickFix = (function () {
                         return [{
                             resolve: function(helper, editor, doc, annotation) {
                                 helper.parent.validator.setEnabled(false);
-                                const adder = new eXide.edit.PrologAdder(editor, doc);
+                                const adder = new PrologAdder(editor, doc);
                                 adder.declareNamespace(matches[1]);
                                 helper.parseXQuery(doc);
                                 helper.parent.validator.setEnabled(true);
@@ -125,7 +132,7 @@ eXide.edit.XQueryQuickFix = (function () {
                     return [
                         {
                             resolve: function(helper, editor, doc, annotation) {
-                                const adder = new eXide.edit.PrologAdder(editor, doc);
+                                const adder = new PrologAdder(editor, doc);
                                 adder.declareVariable(ast.value);
                             },
                             action: "Declare global variable \"" + ast.value + "\""
@@ -133,14 +140,14 @@ eXide.edit.XQueryQuickFix = (function () {
                         {
                             resolve: function(helper, editor, doc, annotation) {
                                 let template;
-                                let contextNode = eXide.edit.XQueryUtils.findAncestor(ast, ["IntermediateClause", "InitialClause", "ReturnClause"]);
+                                let contextNode = XQueryUtils.findAncestor(ast, ["IntermediateClause", "InitialClause", "ReturnClause"]);
                                 if (contextNode) {
                                     template = "let \\$" + ast.value + " := ${1:()}";
                                 } else {
-                                    contextNode = eXide.edit.XQueryUtils.findAncestor(ast, "StatementsAndOptionalExpr");
-                                    contextNode = eXide.edit.XQueryUtils.findChild(contextNode, "Expr");
+                                    contextNode = XQueryUtils.findAncestor(ast, "StatementsAndOptionalExpr");
+                                    contextNode = XQueryUtils.findChild(contextNode, "Expr");
                                     if (!contextNode) {
-                                        eXide.util.error("Extract variable: unable to determine context. Giving up.")
+                                        util.error("Extract variable: unable to determine context. Giving up.")
                                         return;
                                     }
                                     template = "let \\$" + ast.value + " := ${1:()}" + "\nreturn";
@@ -166,9 +173,9 @@ eXide.edit.XQueryQuickFix = (function () {
 
 
     function unusedNamespaceFix(helper, editor, doc, annotation) {
-        const nsNode = eXide.edit.XQueryUtils.findNode(doc.ast, {line: annotation.row, col: annotation.column + 1});
+        const nsNode = XQueryUtils.findNode(doc.ast, {line: annotation.row, col: annotation.column + 1});
         const nsDecl = nsNode.getParent;
-        const separator = eXide.edit.XQueryUtils.findNext(nsDecl, "Separator");
+        const separator = XQueryUtils.findNext(nsDecl, "Separator");
 
         const pos = {
             sl: annotation.pos.sl,
@@ -195,7 +202,7 @@ eXide.edit.XQueryQuickFix = (function () {
         const resolutions = [];
         for (let i = 0; i < quickFixes.length; i++) {
             if (quickFixes[i].regex.test(annotation.text)) {
-                const ast = eXide.edit.XQueryUtils.findNode(doc.ast, {line: annotation.row, col: annotation.column + 1});
+                const ast = XQueryUtils.findNode(doc.ast, {line: annotation.row, col: annotation.column + 1});
                 const fixes = quickFixes[i].getResolutions(helper, editor, doc, annotation, ast);
                 if (fixes != null) {
                     for (let j = 0; j < fixes.length; j++) {
@@ -212,12 +219,10 @@ eXide.edit.XQueryQuickFix = (function () {
     };
 }());
 
-eXide.namespace("eXide.edit.PrologAdder");
-
 /**
  * XQuery specific helper methods.
  */
-eXide.edit.PrologAdder = (function () {
+export const PrologAdder = (function () {
 
     /**
      * Navigate to end of a row, insert two newlines, then position cursor
@@ -249,7 +254,7 @@ eXide.edit.PrologAdder = (function () {
         this.visit(doc.ast);
     };
 
-    eXide.util.oop.inherit(Constr, eXide.edit.Visitor);
+    oop.inherit(Constr, Visitor);
 
     Constr.prototype.Prolog = function(prolog) {
         this.prolog = prolog;
@@ -262,7 +267,7 @@ eXide.edit.PrologAdder = (function () {
     Constr.prototype.getInsertionPoint = function(func) {
         let row = 0;
         if (func) {
-            func = eXide.edit.XQueryUtils.findAncestor(func, "FunctionDecl");
+            func = XQueryUtils.findAncestor(func, "FunctionDecl");
             if (func) {
                 row = func.pos.el;
             }
@@ -393,3 +398,7 @@ eXide.edit.PrologAdder = (function () {
 
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").XQueryQuickFix = XQueryQuickFix;
+namespace("eXide.edit").PrologAdder = PrologAdder;

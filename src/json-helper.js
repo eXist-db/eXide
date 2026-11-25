@@ -16,12 +16,16 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-eXide.namespace("eXide.edit.JsonModeHelper");
+
+import { namespace } from "./namespace.js";
+import { Document } from "./document.js";
+import { ModeHelper } from "./mode-helper.js";
+import { oop } from "./oop.js";
 
 /**
  * JSON specific helper methods.
  */
-eXide.edit.JsonModeHelper = (function () {
+export const JsonModeHelper = (function () {
 
     const Constr = function(editor) {
         this.parent = editor;
@@ -31,7 +35,7 @@ eXide.edit.JsonModeHelper = (function () {
         this.addCommand("gotoSymbol", this.gotoSymbol);
     };
 
-    eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
+    oop.inherit(Constr, ModeHelper);
 
     Constr.prototype.createOutline = function(doc, onComplete) {
         const state = this.editor.state;
@@ -48,7 +52,7 @@ eXide.edit.JsonModeHelper = (function () {
                         const valNode = nameNode.nextSibling;
                         const valType = valNode ? valNode.name : "";
                         doc.functions.push({
-                            type: eXide.edit.Document.TYPE_FUNCTION,
+                            type: Document.TYPE_FUNCTION,
                             name: name,
                             indent: depth,
                             source: doc.getPath(),
@@ -75,3 +79,6 @@ eXide.edit.JsonModeHelper = (function () {
 
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").JsonModeHelper = JsonModeHelper;

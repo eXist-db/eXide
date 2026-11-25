@@ -140,13 +140,7 @@ for (const patch of patches) {
 
 const exportBoilerplate = [
     '',
-    '// Browser global (needed when bundled by esbuild)',
-    `globalThis.${parserName} = ${parserName};`,
-    '',
-    '// CommonJS export',
-    'if (typeof module !== "undefined" && module.exports) {',
-    `  module.exports = ${parserName};`,
-    '}',
+    `export default ${parserName};`,
 ].join('\n');
 
 source = source.replace(/\/\/ End\s*$/, exportBoilerplate + '\n\n// End\n');

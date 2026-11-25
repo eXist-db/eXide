@@ -3,10 +3,14 @@
  * version declaration in source code or user preference override.
  *
  * - XQuery 1.0, 3.0, 3.1 (or no declaration) → XQueryParser (3.1, bundled)
- * - XQuery 4.0 → XQueryParser40 (lazy-loaded on first use)
+ * - XQuery 4.0 → XQueryParser40 (lazy-loaded on first use, as a separate chunk)
  */
 
+import { namespace } from "../namespace.js";
+import XQueryParser from "./XQueryParser.js";
+
 const VERSION_RE = /xquery\s+version\s+["'](\d+\.\d+)["']/;
+let XQueryParser40 = null;
 let parser40Promise = null;
 
 /**
@@ -32,46 +36,35 @@ function getParser(code, versionPref) {
     const version = (versionPref && versionPref !== "auto") ? versionPref : detectVersion(code);
 
     if (version === "4.0") {
-        if (globalThis.XQueryParser40) {
-            return { parser: globalThis.XQueryParser40, version: "4.0", pending: false };
+        if (XQueryParser40) {
+            return { parser: XQueryParser40, version: "4.0", pending: false };
         }
         // Kick off async load, return 3.1 as fallback
         loadParser40();
-        return { parser: globalThis.XQueryParser, version: "3.1", pending: true };
+        return { parser: XQueryParser, version: "3.1", pending: true };
     }
 
-    return { parser: globalThis.XQueryParser, version: "3.1", pending: false };
+    return { parser: XQueryParser, version: "3.1", pending: false };
 }
 
 /**
- * Load the XQuery 4.0 parser asynchronously via script tag injection.
+ * Load the XQuery 4.0 parser on first use. esbuild splits the dynamic import
+ * into its own chunk, so the large parser is only downloaded when needed.
  * Returns a promise that resolves to the parser constructor.
  */
 function loadParser40() {
-    if (globalThis.XQueryParser40) {
-        return Promise.resolve(globalThis.XQueryParser40);
+    if (XQueryParser40) {
+        return Promise.resolve(XQueryParser40);
     }
-    if (!parser40Promise) {
-        parser40Promise = new Promise(function (resolve, reject) {
-            const script = document.createElement("script");
-            // Resolve path relative to eXide's base URL
-            const base = document.querySelector('base');
-            const baseHref = base ? base.getAttribute('href') : '';
-            script.src = baseHref + "resources/scripts/xquery-parser-40.js";
-            script.onload = function () {
-                if (globalThis.XQueryParser40) {
-                    resolve(globalThis.XQueryParser40);
-                } else {
-                    reject(new Error("XQueryParser40 not found after script load"));
-                }
-            };
-            script.onerror = function () {
-                parser40Promise = null; // allow retry
-                reject(new Error("Failed to load XQuery 4.0 parser"));
-            };
-            document.head.appendChild(script);
+    parser40Promise ??= import("./XQueryParser40.js")
+        .then(function (module) {
+            XQueryParser40 = module.default;
+            return XQueryParser40;
+        })
+        .catch(function (err) {
+            parser40Promise = null; // allow retry
+            throw new Error("Failed to load XQuery 4.0 parser: " + err.message);
         });
-    }
     return parser40Promise;
 }
 
@@ -82,16 +75,12 @@ function preload40() {
     return loadParser40();
 }
 
-// Browser global
-const parserRegistry = {
+export const parserRegistry = {
     detectVersion: detectVersion,
     getParser: getParser,
     loadParser40: loadParser40,
     preload40: preload40
 };
-globalThis.parserRegistry = parserRegistry;
 
-// CommonJS export
-if (typeof module !== "undefined" && module.exports) {
-    module.exports = parserRegistry;
-}
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").parserRegistry = parserRegistry;
