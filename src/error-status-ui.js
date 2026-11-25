@@ -9,106 +9,103 @@
  *
  * We never write to #error-status, so there is no observer feedback loop.
  */
-(function () {
-    'use strict';
-
-    // ── Helpers ──────────────────────────────────────────────────────────────
-    /**
-     * Produce a short human-readable label from eXide's raw error string.
-     * Strips the boilerplate prefix and location suffix, leaving just the
-     * meaningful clause (e.g. "Call to undeclared function: local:foo").
-     */
-    function makeShortLabel(raw) {
-        if (!raw) return '';
-        let s = raw;
-        // Strip "Cannot compile xquery: " prefix (present on server-side errors)
-        s = s.replace(/^Cannot compile xquery:\s*/i, '');
-        // Strip error code like "err:XPST0017 "
-        s = s.replace(/^err:[A-Z0-9]+\s+/i, '');
-        // Strip location suffix "[at line N, column N, source: ...]"
-        s = s.replace(/\s*\[at line[\s\S]*$/, '');
-        return s.length > 55 ? s.substring(0, 53) + '\u2026' : s;
-    }
-    function escapeHtml(s) {
-        return String(s)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-    }
-    /**
-     * Format the raw error string as HTML for the detail panel.
-     * Highlights the error code and location clause.
-     */
-    function formatPanelHtml(raw) {
-        if (!raw) return '';
-        let s = escapeHtml(raw);
-        // Highlight error code (e.g. err:XPST0017)
-        s = s.replace(/(err:[A-Z0-9]+)/g, '<span class="ep-code">$1</span>');
-        // Highlight location clause
-        s = s.replace(
-            /(\[at line \d+, column \d+[^\]]*\])/g,
-            '<span class="ep-loc">$1</span>'
+// ── Helpers ──────────────────────────────────────────────────────────────
+/**
+ * Produce a short human-readable label from eXide's raw error string.
+ * Strips the boilerplate prefix and location suffix, leaving just the
+ * meaningful clause (e.g. "Call to undeclared function: local:foo").
+ */
+function makeShortLabel(raw) {
+    if (!raw) return '';
+    let s = raw;
+    // Strip "Cannot compile xquery: " prefix (present on server-side errors)
+    s = s.replace(/^Cannot compile xquery:\s*/i, '');
+    // Strip error code like "err:XPST0017 "
+    s = s.replace(/^err:[A-Z0-9]+\s+/i, '');
+    // Strip location suffix "[at line N, column N, source: ...]"
+    s = s.replace(/\s*\[at line[\s\S]*$/, '');
+    return s.length > 55 ? s.substring(0, 53) + '\u2026' : s;
+}
+function escapeHtml(s) {
+    return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+/**
+ * Format the raw error string as HTML for the detail panel.
+ * Highlights the error code and location clause.
+ */
+function formatPanelHtml(raw) {
+    if (!raw) return '';
+    let s = escapeHtml(raw);
+    // Highlight error code (e.g. err:XPST0017)
+    s = s.replace(/(err:[A-Z0-9]+)/g, '<span class="ep-code">$1</span>');
+    // Highlight location clause
+    s = s.replace(
+        /(\[at line \d+, column \d+[^\]]*\])/g,
+        '<span class="ep-loc">$1</span>'
+    );
+    return s;
+}
+/**
+ * Format a structured error object as a multi-field panel body. The query
+ * error envelope is existdb-openapi#71's { code, message, line, column, raw }
+ * (the `QueryError` schema in its api.json). Current existdb-openapi releases
+ * (\u2264 v0.9.7) instead return a generic { error: "..." }; for that \u2014 or any
+ * payload without recognizable structured fields \u2014 fall back to the
+ * plain-text formatter so the panel is never blank.
+ */
+function formatStructuredPanelHtml(errObj, raw) {
+    if (!errObj) return formatPanelHtml(raw);
+    const rows = [];
+    function row(label, value, cssClass) {
+        if (value === null || value === undefined || value === '') return;
+        rows.push(
+            '<div class="ep-field ep-field-' + cssClass + '">' +
+              '<span class="ep-field-label">' + label + '</span>' +
+              '<span class="ep-field-value">' + escapeHtml(value) + '</span>' +
+            '</div>'
         );
-        return s;
     }
-    /**
-     * Format a structured error object as a multi-field panel body. The query
-     * error envelope is existdb-openapi#71's { code, message, line, column, raw }
-     * (the `QueryError` schema in its api.json). Current existdb-openapi releases
-     * (\u2264 v0.9.7) instead return a generic { error: "..." }; for that \u2014 or any
-     * payload without recognizable structured fields \u2014 fall back to the
-     * plain-text formatter so the panel is never blank.
-     */
-    function formatStructuredPanelHtml(errObj, raw) {
-        if (!errObj) return formatPanelHtml(raw);
-        const rows = [];
-        function row(label, value, cssClass) {
-            if (value === null || value === undefined || value === '') return;
-            rows.push(
-                '<div class="ep-field ep-field-' + cssClass + '">' +
-                  '<span class="ep-field-label">' + label + '</span>' +
-                  '<span class="ep-field-value">' + escapeHtml(value) + '</span>' +
-                '</div>'
-            );
-        }
-        row('Code', errObj.code, 'code');
-        let loc = '';
-        if (errObj.line) {
-            loc = 'line ' + errObj.line;
-            if (errObj.column) loc += ', column ' + errObj.column;
-        }
-        if (loc) row('Location', loc, 'loc');
-        row('Description', errObj.message, 'desc');
-        // Generic { error } (or anything without structured fields): show the
-        // plain text rather than an empty panel.
-        if (!rows.length) return formatPanelHtml(errObj.error || raw);
-        return rows.join('');
+    row('Code', errObj.code, 'code');
+    let loc = '';
+    if (errObj.line) {
+        loc = 'line ' + errObj.line;
+        if (errObj.column) loc += ', column ' + errObj.column;
     }
-    /**
-     * Format the structured error as a plain-text dump for the pill's
-     * `title` attribute, so hovering the pill exposes the full info
-     * (request from @line-o on PR #794: "put the dump in a title
-     * attribute where we can still access it").
-     */
-    function formatTitleDump(errObj, raw) {
-        if (!errObj) return raw;
-        const lines = [];
-        if (errObj.code) lines.push('Code:        ' + errObj.code);
-        if (errObj.line) {
-            let l = 'Location:    line ' + errObj.line;
-            if (errObj.column) l += ', column ' + errObj.column;
-            lines.push(l);
-        }
-        if (errObj.message) lines.push('Description: ' + errObj.message);
-        // #71's `raw` is the full boilerplate behind the concise message; expose
-        // it in the hover dump when it adds detail beyond the message shown.
-        if (errObj.raw && errObj.raw !== errObj.message) {
-            lines.push('Raw:         ' + errObj.raw);
-        }
-        return lines.length ? lines.join('\n') : (errObj.error || raw);
+    if (loc) row('Location', loc, 'loc');
+    row('Description', errObj.message, 'desc');
+    // Generic { error } (or anything without structured fields): show the
+    // plain text rather than an empty panel.
+    if (!rows.length) return formatPanelHtml(errObj.error || raw);
+    return rows.join('');
+}
+/**
+ * Format the structured error as a plain-text dump for the pill's
+ * `title` attribute, so hovering the pill exposes the full info
+ * (request from @line-o on PR #794: "put the dump in a title
+ * attribute where we can still access it").
+ */
+function formatTitleDump(errObj, raw) {
+    if (!errObj) return raw;
+    const lines = [];
+    if (errObj.code) lines.push('Code:        ' + errObj.code);
+    if (errObj.line) {
+        let l = 'Location:    line ' + errObj.line;
+        if (errObj.column) l += ', column ' + errObj.column;
+        lines.push(l);
     }
+    if (errObj.message) lines.push('Description: ' + errObj.message);
+    // #71's `raw` is the full boilerplate behind the concise message; expose
+    // it in the hover dump when it adds detail beyond the message shown.
+    if (errObj.raw && errObj.raw !== errObj.message) {
+        lines.push('Raw:         ' + errObj.raw);
+    }
+    return lines.length ? lines.join('\n') : (errObj.error || raw);
+}
 
-    function init() {
+function init() {
     // ── Element references ───────────────────────────────────────────────────
     const errSource  = document.getElementById('error-status');       // eXide writes here
     const pill       = document.getElementById('exide-err-pill');
@@ -260,24 +257,16 @@
     if (initial) {
         onErrorChange(initial);
     }
-    } // end init()
+} // end init()
 
-    // Script loads in <head>, so defer until DOM is ready. Guarded so the
-    // module can be required in Node (no document) to unit-test the pure
-    // formatters exported below.
-    if (typeof document !== 'undefined') {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', init);
-        } else {
-            init();
-        }
+// Defer until the DOM is ready. Guarded so Node can import this module
+// (no document) to unit-test the pure formatters exported below.
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
     }
+}
 
-    if (typeof module !== 'undefined' && module.exports) {
-        module.exports = {
-            formatStructuredPanelHtml: formatStructuredPanelHtml,
-            formatTitleDump: formatTitleDump,
-            makeShortLabel: makeShortLabel
-        };
-    }
-})();
+export { formatStructuredPanelHtml, formatTitleDump, makeShortLabel };

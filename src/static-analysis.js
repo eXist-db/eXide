@@ -4,10 +4,11 @@
  * Replaces xqlint's Translator — produces the same { markers: [] } result
  * containing namespace, variable-scoping, and function-declaration diagnostics.
  *
- * Browser global: staticAnalysis  (loaded via build.xml concat before xquery-helper.js)
- * Node/CommonJS:  module.exports = staticAnalysis
+ * Exported as `staticAnalysis`.
  */
-const staticAnalysis = (function () {
+
+import { namespace } from "./namespace.js";
+export const staticAnalysis = (function () {
 
     // ---- Marker constructors (same shape as xqlint Errors.js) ----
 
@@ -728,9 +729,5 @@ const staticAnalysis = (function () {
     };
 })();
 
-// Browser global (needed when bundled by esbuild)
-globalThis.staticAnalysis = staticAnalysis;
-
-if (typeof module !== "undefined" && module.exports) {
-    module.exports = staticAnalysis;
-}
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").staticAnalysis = staticAnalysis;

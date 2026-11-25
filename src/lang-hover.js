@@ -17,6 +17,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import { eXide, namespace } from "./namespace.js";
+import { ws } from "./ws-transport.js";
+import { XQueryUtils } from "./xquery-utils.js";
+
 /**
  * LSP hover tooltip for XQuery mode.
  *
@@ -24,9 +28,7 @@
  * when the user hovers over symbols. Fetches data from the server-side
  * lang:hover() function via /api/query/hover.
  */
-eXide.namespace("eXide.edit.LspHover");
-
-eXide.edit.LspHover = (function () {
+export const LspHover = (function () {
 
     const hoverTooltip = CM6.hoverTooltip;
 
@@ -46,9 +48,9 @@ eXide.edit.LspHover = (function () {
 
         // Use WebSocket if available, otherwise HTTP
         let dataPromise;
-        if (typeof eXide.ws !== "undefined" && eXide.ws.isConnected()) {
+        if (typeof ws !== "undefined" && ws.isConnected()) {
             dataPromise = new Promise(function (resolve) {
-                eXide.ws.send("textDocument/hover", {
+                ws.send("textDocument/hover", {
                     textDocument: { uri: doc.getPath() || "untitled" },
                     position: { line: lineNumber, character: column },
                     // eXist-specific: send full query for stateless hover
@@ -134,18 +136,18 @@ eXide.edit.LspHover = (function () {
         if (!doc || !doc.ast) return null;
 
         const lead = { line: line.number - 1, col: column };
-        const astNode = eXide.edit.XQueryUtils.findNode(doc.ast, lead);
+        const astNode = XQueryUtils.findNode(doc.ast, lead);
         if (!astNode) return null;
 
         // Check if we're on a FunctionCall
-        const fcall = eXide.edit.XQueryUtils.findAncestor(astNode, "FunctionCall");
+        const fcall = XQueryUtils.findAncestor(astNode, "FunctionCall");
         let funcName = null;
         let arity = 0;
         let signature = null;
         if (fcall) {
-            const nameNode = eXide.edit.XQueryUtils.findChild(fcall, "EQName");
+            const nameNode = XQueryUtils.findChild(fcall, "EQName");
             if (nameNode) {
-                funcName = eXide.edit.XQueryUtils.getValue(nameNode);
+                funcName = XQueryUtils.getValue(nameNode);
                 arity = fcall.arity || 0;
                 // Search outline for matching function
                 for (let i = 0; i < doc.functions.length; i++) {
@@ -160,13 +162,13 @@ eXide.edit.LspHover = (function () {
 
         // Check if we're on a VarRef
         if (!funcName && !signature) {
-            const varRef = eXide.edit.XQueryUtils.findAncestor(astNode, ["VarRef", "VarName"]);
+            const varRef = XQueryUtils.findAncestor(astNode, ["VarRef", "VarName"]);
             if (varRef) {
-                const varEQName = eXide.edit.XQueryUtils.findChild(
+                const varEQName = XQueryUtils.findChild(
                     varRef.name === "VarRef" ? varRef : varRef, "EQName"
                 );
                 if (varEQName) {
-                    signature = "$" + eXide.edit.XQueryUtils.getValue(varEQName);
+                    signature = "$" + XQueryUtils.getValue(varEQName);
                 }
             }
         }
@@ -251,3 +253,6 @@ eXide.edit.LspHover = (function () {
         extension: extension
     };
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").LspHover = LspHover;

@@ -20,7 +20,7 @@ describe('Rename (multi-cursor)', () => {
     cy.window().then((win) => {
       const editor = win.eXide.app.getEditor()
       const view = editor.editor
-      const editorUtils = win.editorUtils
+      const editorUtils = win.eXide.edit.editorUtils
       const offset = editorUtils.rowColToOffset(view.state, line, col)
       view.dispatch({ selection: { anchor: offset } })
       view.focus()

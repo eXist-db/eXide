@@ -17,12 +17,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-eXide.namespace("eXide.events.Sender");
+import { namespace } from "./namespace.js";
 
 /**
  * Interface for sending events, registering listeners.
  */
-eXide.events.Sender = (function() {
+export const Sender = (function() {
 
     const Constr = function() {
     };
@@ -74,3 +74,6 @@ eXide.events.Sender = (function() {
     
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.events").Sender = Sender;

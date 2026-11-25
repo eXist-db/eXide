@@ -7,8 +7,8 @@ const assert = require("node:assert/strict");
 const path = require("path");
 const { adapter } = require("./harness");
 
-const XQueryParser31 = require("../src/parser/XQueryParser.js");
-const XQueryParser40 = require("../src/parser/XQueryParser40.js");
+const XQueryParser31 = require("../src/parser/XQueryParser.js").default;
+const XQueryParser40 = require("../src/parser/XQueryParser40.js").default;
 
 function parse40(code) {
     return adapter.parseXQuery(code, XQueryParser40);

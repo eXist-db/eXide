@@ -17,6 +17,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import { eXide, namespace } from "./namespace.js";
+import { DialogManager } from "./dialog-utils.js";
+import { Sender } from "./events.js";
+import { Dialog, util } from "./util.js";
+import { oop } from "./oop.js";
+
 function apiPath(dbPath) {
 	return "api/storage/" + dbPath.replace(/^\//, "").split("/").map(encodeURIComponent).join("/");
 }
@@ -109,13 +115,11 @@ function mapItem(item) {
 	};
 }
 
-eXide.namespace("eXide.browse.ResourceBrowser");
-
 /**
  * Manages a table view of resources within a collection.
  * Replaces AG Grid with a vanilla HTML table and scroll-based lazy loading.
  */
-eXide.browse.ResourceBrowser = (function () {
+export const ResourceBrowser = (function () {
 
     const useragent = { isMac: /Mac/.test(navigator.platform) };
 	const BATCH_SIZE = 50;
@@ -237,7 +241,7 @@ eXide.browse.ResourceBrowser = (function () {
 
         const propsContentEl = document.getElementById("resource-properties-content");
         const propsDialogEl = document.getElementById("resource-properties-dialog");
-        this.propertiesDialog = eXide.util.DialogManager.create(propsDialogEl, {
+        this.propertiesDialog = DialogManager.create(propsDialogEl, {
             title: "Properties",
             modal: true,
             height: 380,
@@ -282,7 +286,7 @@ eXide.browse.ResourceBrowser = (function () {
 	};
 
     // Extend eXide.events.Sender for event support
-    eXide.util.oop.inherit(Constr, eXide.events.Sender);
+    oop.inherit(Constr, Sender);
 
 	Constr.prototype._setupIntersectionObserver = function() {
 		const self = this;
@@ -495,7 +499,7 @@ eXide.browse.ResourceBrowser = (function () {
 			});
 			Promise.all(promises).then(function() {
 				self.reload();
-				eXide.util.message(files.length + " file(s) uploaded to " + targetKey);
+				util.message(files.length + " file(s) uploaded to " + targetKey);
 			});
 		});
 	};
@@ -683,7 +687,7 @@ eXide.browse.ResourceBrowser = (function () {
 			})
 			.catch(function(err) {
 				self.loading = false;
-				eXide.util.error("Could not list collection: " +
+				util.error("Could not list collection: " +
 					(err && err.message ? err.message : err));
 			});
 	};
@@ -877,7 +881,7 @@ eXide.browse.ResourceBrowser = (function () {
 				}).then(function(r) { return r.json(); })
 				.then(function(data) {
 					if (data.error) {
-						eXide.util.Dialog.warning("Rename Error", data.error);
+						Dialog.warning("Rename Error", data.error);
 					}
 					self.reload();
 				});
@@ -898,7 +902,7 @@ eXide.browse.ResourceBrowser = (function () {
     	const self = this;
 		if (!eXide.app.$checkLogin())
 			return;
-		eXide.util.Dialog.input("Create Collection",
+		Dialog.input("Create Collection",
 			"<label for=\"collection\">Name: </label>" +
 			"<input type=\"text\" name=\"collection\" id=\"eXide-browse-collection-name\"/>",
 			function () {
@@ -915,7 +919,7 @@ eXide.browse.ResourceBrowser = (function () {
 				.then(function (data) {
 					spinner.style.display = "none";
 					if (data.error) {
-						eXide.util.Dialog.warning("Create Collection Error", data.error);
+						Dialog.warning("Create Collection Error", data.error);
 					} else {
 						self.reload();
 					}
@@ -927,7 +931,7 @@ eXide.browse.ResourceBrowser = (function () {
 
 	Constr.prototype.deleteCollection = function () {
 		const self = this;
-		eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete collection " + self.selected + "?",
+		Dialog.input("Confirm Deletion", "Are you sure you want to delete collection " + self.selected + "?",
 			function () {
 			    const spinner = document.getElementById("eXide-browse-spinner");
 			    spinner.style.display = "";
@@ -936,7 +940,7 @@ eXide.browse.ResourceBrowser = (function () {
 				.then(function (data) {
 					spinner.style.display = "none";
 					if (data.error) {
-						eXide.util.Dialog.warning("Delete Collection Error", data.error);
+						Dialog.warning("Delete Collection Error", data.error);
 					} else {
 						self.reload();
 					}
@@ -955,7 +959,7 @@ eXide.browse.ResourceBrowser = (function () {
 		}
 		console.log('resources to delete: %o', selected);
 		const self = this;
-		eXide.util.Dialog.input("Confirm Deletion", "Are you sure you want to delete the selected resources?",
+		Dialog.input("Confirm Deletion", "Are you sure you want to delete the selected resources?",
 				function () {
 				    const spinner = document.getElementById("eXide-browse-spinner");
 				    spinner.style.display = "";
@@ -968,7 +972,7 @@ eXide.browse.ResourceBrowser = (function () {
 						self.reload();
 						const err = results.find(function(d) { return d.error; });
 						if (err) {
-							eXide.util.Dialog.warning("Delete Resource Error", err.error);
+							Dialog.warning("Delete Resource Error", err.error);
 						}
 					});
 		}, { action: "Delete", destructive: true });
@@ -1035,7 +1039,7 @@ eXide.browse.ResourceBrowser = (function () {
         }).then(function(r) { return r.json(); })
         .then(function (data) {
             if (data.error) {
-                eXide.util.Dialog.warning("Paste Error", data.error);
+                Dialog.warning("Paste Error", data.error);
             } else {
                 self.reload();
             }
@@ -1066,12 +1070,10 @@ eXide.browse.ResourceBrowser = (function () {
 	return Constr;
 }());
 
-eXide.namespace("eXide.browse.Upload");
-
 /**
  * File upload widget
  */
-eXide.browse.Upload = (function () {
+export const Upload = (function () {
 
 	function isDirUploadSupported() {
 	    const tmpInput = document.createElement("input");
@@ -1252,7 +1254,7 @@ eXide.browse.Upload = (function () {
 		    }
 		}
 
-		this._dialog = eXide.util.DialogManager.create(this.container, {
+		this._dialog = DialogManager.create(this.container, {
 			title: "Upload Files",
 			modal: true,
 			width: 500,
@@ -1267,7 +1269,7 @@ eXide.browse.Upload = (function () {
 	}
 
     // Extend eXide.events.Sender for event support
-    eXide.util.oop.inherit(Constr, eXide.events.Sender);
+    oop.inherit(Constr, Sender);
 
 	Constr.prototype.open = function() {
 		this._dialog.open();
@@ -1285,13 +1287,11 @@ eXide.browse.Upload = (function () {
 	return Constr;
 }());
 
-eXide.namespace("eXide.browse.Browser");
-
 /**
  * Main interface for the open and save dialogs. Uses
  * a ResourceBrowser within a panel.
  */
-eXide.browse.Browser = (function () {
+export const Browser = (function () {
 
     function createButton(toolbar, title, id, index, imgPath) {
         const button = document.createElement("button");
@@ -1372,8 +1372,8 @@ eXide.browse.Browser = (function () {
 
 		this.selection = container.querySelector(".eXide-browse-form input");
 		this.container = container;
-		this.resources = new eXide.browse.ResourceBrowser(container, container);
-		this.upload = new eXide.browse.Upload();
+		this.resources = new ResourceBrowser(container, container);
+		this.upload = new Upload();
 
 		this.resources.addEventListener("activate", this, this.onActivateResource);
 		this.resources.addEventListener("activateCollection", this, this.onActivateCollection);
@@ -1404,7 +1404,7 @@ eXide.browse.Browser = (function () {
 	};
 
 	// Extend eXide.events.Sender for event support
-    eXide.util.oop.inherit(Constr, eXide.events.Sender);
+    oop.inherit(Constr, Sender);
 
 	Constr.prototype.init = function() {
 		this.resources.resize();
@@ -1507,3 +1507,8 @@ eXide.browse.Browser = (function () {
 
 	return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.browse").ResourceBrowser = ResourceBrowser;
+namespace("eXide.browse").Upload = Upload;
+namespace("eXide.browse").Browser = Browser;

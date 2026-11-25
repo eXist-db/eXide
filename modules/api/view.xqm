@@ -52,10 +52,14 @@ declare %private function view:render($html as element(html)) as xs:string {
             <head>
                 { $html/head/* }
                 <script type="text/javascript">
-                    eXide.namespace("eXide.configuration");
-                    eXide.configuration.allowExecution = { $execAllowed };
-                    eXide.configuration.allowGuest = { $guestAllowed };
-                    eXide.configuration.context = "{ request:get-context-path() }";
+                    // Runs before the eXide module bundle (modules are deferred);
+                    // the bundle picks up this object (see src/namespace.js).
+                    window.eXide = window.eXide || {{}};
+                    eXide.configuration = {{
+                        allowExecution: { $execAllowed },
+                        allowGuest: { $guestAllowed },
+                        context: "{ request:get-context-path() }"
+                    }};
                 </script>
             </head>
             { $html/body }

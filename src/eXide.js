@@ -17,6 +17,22 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import { eXide } from "./namespace.js";
+import { commands } from "./commands.js";
+import { PackageEditor, Projects } from "./deployment.js";
+import { DialogManager } from "./dialog-utils.js";
+import { DnD } from "./dnd.js";
+import { editorUtils } from "./editor-utils.js";
+import { Editor } from "./editor.js";
+import { Files } from "./find.js";
+import { Menubar } from "./menu.js";
+import { Monitor } from "./monitor.js";
+import { Preferences } from "./preferences.js";
+import { Browser } from "./resources.js";
+import { staticAnalysis } from "./static-analysis.js";
+import { Dialog, mimeTypes, util } from "./util.js";
+import { ws } from "./ws-transport.js";
+
 function apiPath(dbPath) {
 	return "api/storage/" + dbPath.replace(/^\//, "").split("/").map(encodeURIComponent).join("/");
 }
@@ -53,12 +69,10 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-eXide.namespace("eXide.app");
-
 /**
  * Static class for the main application. Controls the GUI.
  */
-eXide.app = (function(util) {
+export const app = (function(util) {
 
 	let editor;
 
@@ -165,21 +179,21 @@ eXide.app = (function(util) {
 		        return;
             }
 
-            projects = new eXide.edit.Projects();
-            menu = new util.Menubar(document.querySelector(".menu"));
-			editor = new eXide.edit.Editor(document.getElementById("editor"), menu);
-			deploymentEditor = new eXide.edit.PackageEditor(projects);
+            projects = new Projects();
+            menu = new Menubar(document.querySelector(".menu"));
+			editor = new Editor(document.getElementById("editor"), menu);
+			deploymentEditor = new PackageEditor(projects);
 
-			dbBrowser = new eXide.browse.Browser(document.getElementById("open-dialog"));
+			dbBrowser = new Browser(document.getElementById("open-dialog"));
 
 
-			preferences = new util.Preferences(editor);
+			preferences = new Preferences(editor);
 
             editor.addEventListener("setTheme", app.setTheme);
 
             app.initGUI(menu);
 
-			const dnd = new eXide.util.DnD("body");
+			const dnd = new DnD("body");
 			dnd.addEventListener("drop", app.dropFile);
 
             // save restored paths for later
@@ -190,11 +204,11 @@ eXide.app = (function(util) {
                     editor.init();
 
                     // Connect WebSocket for real-time LSP and monitoring
-                    if (typeof eXide.ws !== "undefined" && eXide.ws.autoConnect) {
-                        eXide.ws.autoConnect();
+                    if (typeof ws !== "undefined" && ws.autoConnect) {
+                        ws.autoConnect();
 
                         // Listen for pushed diagnostics from the server
-                        eXide.ws.on("textDocument/publishDiagnostics", function (data) {
+                        ws.on("textDocument/publishDiagnostics", function (data) {
                             if (!data || !data.uri) return;
                             const doc = editor.getDocument(data.uri);
                             if (!doc) return;
@@ -309,7 +323,7 @@ eXide.app = (function(util) {
 		    const eastVisible = eastEl && eastEl.style.display !== "none";
 		    if (app.login && app.login.isAdmin && eastVisible) {
 		        if (!monitor) {
-		            monitor = new eXide.app.Monitor();
+		            monitor = new Monitor();
 		            monitor.init();
 		        }
 		        monitor.start();
@@ -320,7 +334,7 @@ eXide.app = (function(util) {
 
 		toggleMonitor: function() {
 		    if (!monitor) {
-		        monitor = new eXide.app.Monitor();
+		        monitor = new Monitor();
 		        monitor.init();
 		    }
 		    layout.toggle("east");
@@ -391,7 +405,7 @@ eXide.app = (function(util) {
             if (typeof FileReader !== "undefined") {
                 const reader = new FileReader();
                 for (let i = 0; i < files.length; i++) {
-                    const mime = eXide.util.mimeTypes.getLangFromMime(files[i].type) || "xquery";
+                    const mime = mimeTypes.getLangFromMime(files[i].type) || "xquery";
                     reader.onloadend = function(e) {
                         app.newDocument(this.result, mime);
                     };
@@ -469,7 +483,7 @@ eXide.app = (function(util) {
                     app.download(resource.key);
                 })
 			}else {
-                util.Dialog.warning("Invalid selection","The Download Selected command requires that resources be selected. Please select resources for download.")
+                Dialog.warning("Invalid selection","The Download Selected command requires that resources be selected. Please select resources for download.")
             }
 			if (close ?? true)
 				dialogs["open-dialog"].close();
@@ -516,7 +530,7 @@ eXide.app = (function(util) {
 			        if (reload) {
 			            editor.reload(content);
 			        } else {
-			            const mime = forceText ? "text/text" : util.mimeTypes.getMime(baseMime);
+			            const mime = forceText ? "text/text" : mimeTypes.getMime(baseMime);
 			            editor.openDocument(content, mime, resource, externalPath);
 			        }
 			        if (callback) {
@@ -651,7 +665,7 @@ eXide.app = (function(util) {
             if (doc.isSaved()) {
                 app.$reloadDocument(doc);
             } else {
-                util.Dialog.input("Reload Document", "Do you really want to reload the document?", function() {
+                Dialog.input("Reload Document", "Do you really want to reload the document?", function() {
                     app.$reloadDocument(doc);
                 }, { action: "Reload" });
             }
@@ -668,7 +682,7 @@ eXide.app = (function(util) {
 		closeDocument: function() {
 			if (!editor.getActiveDocument().isSaved()) {
 				if (!dialogs["dialog-confirm-close"]) {
-				    dialogs["dialog-confirm-close"] = eXide.util.DialogManager.create(
+				    dialogs["dialog-confirm-close"] = DialogManager.create(
 				        document.getElementById("dialog-confirm-close"), {
 				            appendTo: "#layout-container",
 				            title: "Close Document",
@@ -728,7 +742,7 @@ eXide.app = (function(util) {
         				},
     					"Save": function() {
                             if(editor.getActiveDocument().isXQuery() && !/([^\s\\])*\.xq.?/.test(dbBrowser.getSelection().name)) {
-                                util.Dialog.warning("Failed to Save Document", "Your current file is an XQuery file, but you are trying to save it with a non-XQuery file extension (.xq, .xqm etc).  If you intended this to be another file type such as XML, copy and paste the content into a New file created using the \u201cNew\u201d button.");
+                                Dialog.warning("Failed to Save Document", "Your current file is an XQuery file, but you are trying to save it with a non-XQuery file extension (.xq, .xqm etc).  If you intended this to be another file type such as XML, copy and paste the content into a New file created using the \u201cNew\u201d button.");
                                 return;
                             }
 
@@ -740,7 +754,7 @@ eXide.app = (function(util) {
                                 app.liveReload();
                                 afterSave();
     						}, function (msg) {
-    							util.Dialog.warning("Failed to Save Document", msg);
+    							Dialog.warning("Failed to Save Document", msg);
     						});
     					}
     				});
@@ -754,7 +768,7 @@ eXide.app = (function(util) {
                         app.liveReload();
                         afterSave();
     				}, function (msg) {
-    					util.Dialog.warning("Failed to Save Document", msg);
+    					Dialog.warning("Failed to Save Document", msg);
     				});
     			}
             });
@@ -775,7 +789,7 @@ eXide.app = (function(util) {
     				},
     				"Save": function() {
                          if(editor.getActiveDocument().isXQuery() && !/([^\s\\])*\.xq.?/.test(dbBrowser.getSelection().name)) {
-                            util.Dialog.warning("Failed to Save Document", "Your current file is an XQuery file, but you are trying to save it with a non-XQuery file extension (.xq, .xqm etc).  If you intended this to be another file type such as XML, copy and paste the content into a New file created using the \u201cNew\u201d button.");
+                            Dialog.warning("Failed to Save Document", "Your current file is an XQuery file, but you are trying to save it with a non-XQuery file extension (.xq, .xqm etc).  If you intended this to be another file type such as XML, copy and paste the content into a New file created using the \u201cNew\u201d button.");
                             return;
                         }
 
@@ -786,7 +800,7 @@ eXide.app = (function(util) {
 							app.syncDirectory(this.getBasePath())
                             app.liveReload();
     					}, function (msg) {
-    						util.Dialog.warning("Failed to Save Document", msg);
+    						Dialog.warning("Failed to Save Document", msg);
     					});
     				}
     			});
@@ -883,7 +897,7 @@ eXide.app = (function(util) {
                     } else {
                         lastQuery = editor.getActiveDocument().getPath();
                     }
-        			eXide.util.message("Running query ...");
+        			util.message("Running query ...");
 
                     document.getElementById("serialization-mode").removeAttribute("disabled");
                     const serializationMode = document.getElementById("serialization-mode").value;
@@ -1391,12 +1405,12 @@ eXide.app = (function(util) {
         ensureSaved: function(callback) {
             if (!editor.getActiveDocument().isSaved()) {
                 app.requireLogin(function () {
-                    eXide.util.Dialog.input("Save document?", "The current document has not been saved. Save now?", function() {
+                    Dialog.input("Save document?", "The current document has not been saved. Save now?", function() {
                             editor.saveDocument(null, function () {
                 				util.message(editor.getActiveDocument().getName() + " stored.");
                                 callback();
                 			}, function (msg) {
-                				util.Dialog.warning("Failed to Save Document", msg);
+                				Dialog.warning("Failed to Save Document", msg);
                 			});
                     }, { action: "Save" });
                 });
@@ -1411,7 +1425,7 @@ eXide.app = (function(util) {
 			const sameVersion = preferences.read();
 			app.updateDarkModeIcon(preferences.get("theme"));
 			if (!sameVersion) {
-			    util.Dialog.message("Version Note", "It seems another version of eXide has been " +
+			    Dialog.message("Version Note", "It seems another version of eXide has been " +
 			        "used from this browser before. If you experience any display issues, please clear your browser's cache " +
                     "(holding shift while clicking on the reload icon should usually be sufficient).");
 			}
@@ -1678,7 +1692,7 @@ eXide.app = (function(util) {
             if (visible && !isVisible) {
                 layout.show("east");
                 if (!monitor) {
-                    monitor = new eXide.app.Monitor();
+                    monitor = new Monitor();
                     monitor.init();
                 }
                 if (app.login && app.login.isAdmin) {
@@ -1743,7 +1757,7 @@ eXide.app = (function(util) {
         findFiles: function() {
             const doc = editor.getActiveDocument();
             projects.findProject(doc.getBasePath(), function(app) {
-                eXide.find.Files.open(doc, app, function(searchParams) {
+                Files.open(doc, app, function(searchParams) {
                     editor.updateStatus("");
 				    editor.clearErrors();
 				    startOffset = 1;
@@ -1853,7 +1867,7 @@ eXide.app = (function(util) {
             layout = new app.Layout(editor);
             layout.hide("east");
 
-			dialogs["open-dialog"] = eXide.util.DialogManager.create(
+			dialogs["open-dialog"] = DialogManager.create(
 			    document.getElementById("open-dialog"), {
                     appendTo: "#layout-container",
     				title: "Open file",
@@ -1870,7 +1884,7 @@ eXide.app = (function(util) {
 			    dbBrowser.init();
 			};
 
-			dialogs["login-dialog"] = eXide.util.DialogManager.create(
+			dialogs["login-dialog"] = DialogManager.create(
 			    document.getElementById("login-dialog"), {
                     appendTo: "#layout-container",
     				title: "Login",
@@ -1953,7 +1967,7 @@ eXide.app = (function(util) {
 			    });
 			};
 
-			dialogs["keyboard-help"] = eXide.util.DialogManager.create(
+			dialogs["keyboard-help"] = DialogManager.create(
 			    document.getElementById("keyboard-help"), {
                     appendTo: "#layout-container",
     				title: "Keyboard Shortcuts",
@@ -1968,10 +1982,10 @@ eXide.app = (function(util) {
 			const origKbHelpOpen = dialogs["keyboard-help"].open;
 			dialogs["keyboard-help"].open = function() {
 			    origKbHelpOpen.call(dialogs["keyboard-help"]);
-			    eXide.edit.commands.help(document.getElementById("keyboard-help"), editor);
+			    commands.help(document.getElementById("keyboard-help"), editor);
 			};
 
-            dialogs["about-dialog"] = eXide.util.DialogManager.create(
+            dialogs["about-dialog"] = DialogManager.create(
                 document.getElementById("about-dialog"), {
                     appendTo: "#layout-container",
                     title: "About",
@@ -1983,7 +1997,7 @@ eXide.app = (function(util) {
 				    }
                 }
             );
-            dialogs["dialog-templates"] = eXide.util.DialogManager.create(
+            dialogs["dialog-templates"] = DialogManager.create(
                 document.getElementById("dialog-templates"), {
                     appendTo: "#layout-container",
     			    title: "New Document",
@@ -2412,7 +2426,7 @@ eXide.app = (function(util) {
                         icon.classList.remove('fa-clipboard');
                         icon.classList.add('fa-check');
                         btnEl.classList.add('copied');
-                        eXide.util.message("Copied results to clipboard");
+                        util.message("Copied results to clipboard");
                         setTimeout(function () {
                             icon.classList.remove('fa-check');
                             icon.classList.add('fa-clipboard');
@@ -2505,7 +2519,7 @@ eXide.app = (function(util) {
                 }
             });
 
-            dialogs["dialog-startup"] = eXide.util.DialogManager.create(
+            dialogs["dialog-startup"] = DialogManager.create(
                 document.getElementById("dialog-startup"), {
                     appendTo: "#layout-container",
         		    modal: false,
@@ -2527,4 +2541,7 @@ eXide.app = (function(util) {
 	};
 
 	return app;
-}(eXide.util));
+}(util));
+
+// Register on the global `eXide` object (see namespace.js)
+eXide.app = Object.assign(app, eXide.app);

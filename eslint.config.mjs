@@ -9,20 +9,6 @@ const pageLibraries = {
     prettierBundle: "readonly",
 };
 
-// Helpers that one src/ file publishes on globalThis for the others.
-// Stage 2 of the ESM migration replaces these with import/export.
-const crossFileGlobals = {
-    editorUtils: "readonly",
-    staticAnalysis: "readonly",
-    prettierFormat: "readonly",
-    parserRegistry: "readonly",
-    rexParserAdapter: "readonly",
-    XQueryParser: "readonly",
-    XQueryParser40: "readonly",
-    eXideWs: "readonly",
-    eXideWsEval: "readonly",
-};
-
 // Recommended rules the code base does not meet yet; cleaned up in a later stage.
 const pendingCleanup = {
     "no-unused-vars": "warn",
@@ -61,19 +47,14 @@ export default [
     },
     js.configs.recommended,
     {
-        // eXide's browser code, bundled by esbuild into resources/scripts/eXide.min.js
+        // eXide's browser code: ES modules, bundled by esbuild into resources/scripts/eXide.min.js
         files: ["src/**/*.js"],
         languageOptions: {
             ecmaVersion: 2022,
-            // esbuild gives every bundled file its own scope, so top-level declarations
-            // are file-local, as in CommonJS. (`module` is only touched behind
-            // `typeof module` guards that let the Node unit tests require() a file.)
-            sourceType: "commonjs",
+            sourceType: "module",
             globals: {
                 ...globals.browser,
                 ...pageLibraries,
-                ...crossFileGlobals,
-                eXide: "writable",
             },
         },
         rules: { ...pendingCleanup, ...modernRules },

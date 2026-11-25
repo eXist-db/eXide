@@ -16,12 +16,26 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-eXide.namespace("eXide.edit.XQueryModeHelper");
+
+import { eXide, namespace } from "./namespace.js";
+import { Document } from "./document.js";
+import { editorUtils } from "./editor-utils.js";
+import { FuncDocTooltip } from "./funcdoc-tooltip.js";
+import { ModeHelper } from "./mode-helper.js";
+import { rexParserAdapter } from "./parser/adapter.js";
+import { parserRegistry } from "./parser/parser-registry.js";
+import { QuickPicker } from "./quick-picker.js";
+import { PrologAdder, XQueryQuickFix } from "./quickfix.js";
+import { SemanticHighlight } from "./semantic-highlight.js";
+import { staticAnalysis } from "./static-analysis.js";
+import { util } from "./util.js";
+import { oop } from "./oop.js";
+import { FunctionCalls, ModuleInfo, VariableReferences, XQueryUtils } from "./xquery-utils.js";
 
 /**
  * XQuery specific helper methods.
  */
-eXide.edit.XQueryModeHelper = (function () {
+export const XQueryModeHelper = (function () {
 	
 	const RE_FUNC_NAME = /^[\$\w:\-_\.]+/;
 	
@@ -50,7 +64,7 @@ eXide.edit.XQueryModeHelper = (function () {
                     helper.parent.validator.setEnabled(false);
 
                     function doImport(mod) {
-                        const adder = new eXide.edit.PrologAdder(ed, doc);
+                        const adder = new PrologAdder(ed, doc);
                         if (mod) {
                             let at = mod.at;
                             if (at && at.indexOf("java:") === 0) at = null;
@@ -180,7 +194,7 @@ eXide.edit.XQueryModeHelper = (function () {
 	};
 	
 	// extends ModeHelper
-	eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
+	oop.inherit(Constr, ModeHelper);
 	
     Constr.prototype.activate = function() {
         this.menu.style.display = "";
@@ -336,7 +350,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 console.log("Static analysis error (non-fatal): %s", te.message);
             }
 
-            eXide.edit.SemanticHighlight.update(this.editor, doc.ast);
+            SemanticHighlight.update(this.editor, doc.ast);
 
             const markers = doc.ast.markers;
             if (markers) {
@@ -394,7 +408,7 @@ eXide.edit.XQueryModeHelper = (function () {
                     column: sym.column
                 };
             });
-            eXide.util.QuickPicker.show(items, function (selected) {
+            QuickPicker.show(items, function (selected) {
                 if (selected) {
                     // lang:symbols() returns 0-based line; gotoLine expects 1-based
                     editorUtils.gotoLine(self.editor, selected.line + 1, selected.column, true);
@@ -412,7 +426,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 };
             });
             if (items.length > 0) {
-                eXide.util.QuickPicker.show(items, function (selected) {
+                QuickPicker.show(items, function (selected) {
                     if (selected) {
                         editorUtils.gotoLine(self.editor, selected.line + 1, 0, true);
                     }
@@ -423,9 +437,9 @@ eXide.edit.XQueryModeHelper = (function () {
 
 	Constr.prototype.getFunctionAtCursor = function (doc, lead) {
         let name;
-        const astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+        const astNode = XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
         if (astNode) {
-            const fcall = eXide.edit.XQueryUtils.findAncestor(astNode, "FunctionCall");
+            const fcall = XQueryUtils.findAncestor(astNode, "FunctionCall");
             if (fcall) {
                 name = fcall.children[0].value
             }
@@ -450,9 +464,9 @@ eXide.edit.XQueryModeHelper = (function () {
 	};
 	
 	Constr.prototype.getVariableAtCursor = function (doc, lead) {
-        const astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+        const astNode = XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
         if (astNode) {
-            const ref = eXide.edit.XQueryUtils.findAncestor(astNode, "VarRef");
+            const ref = XQueryUtils.findAncestor(astNode, "VarRef");
             if (ref && astNode.name === "EQName") {
                 return astNode.value;
             }
@@ -465,7 +479,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
 		const func = this.getFunctionAtCursor(doc, lead);
 		if (!func) {
-			eXide.util.message("Place cursor on a function name first.");
+			util.message("Place cursor on a function name first.");
 			return;
 		}
 
@@ -512,10 +526,10 @@ eXide.edit.XQueryModeHelper = (function () {
 			});
 			if (serverFuncs) items = items.concat(serverFuncs);
 			if (items.length === 0) {
-				eXide.util.message("No documentation found for " + func);
+				util.message("No documentation found for " + func);
 				return;
 			}
-			eXide.edit.FuncDocTooltip.show(self.editor, items, function(selected) {
+			FuncDocTooltip.show(self.editor, items, function(selected) {
 				if (selected) {
 					const template = selected.snippet || selected.template;
 					if (template) {
@@ -526,7 +540,7 @@ eXide.edit.XQueryModeHelper = (function () {
 		})
 		.catch(function(e) {
 			console.log("Error fetching function docs: %s", e.message);
-			eXide.util.error("Could not load function documentation: " + e.message);
+			util.error("Could not load function documentation: " + e.message);
 		});
 	}
 	
@@ -538,7 +552,7 @@ eXide.edit.XQueryModeHelper = (function () {
         const an = editorUtils.getAnnotations(this.editor);
         for (let i = 0; i < an.length; i++) {
             if (an[i].row === row) {
-                const qf = eXide.edit.XQueryQuickFix.getResolutions(this, this.editor, doc, an[i]);
+                const qf = XQueryQuickFix.getResolutions(this, this.editor, doc, an[i]);
                 qf.forEach(function(fix) {
                     resolutions.push({
                         label: fix.action,
@@ -551,7 +565,7 @@ eXide.edit.XQueryModeHelper = (function () {
 
         if (resolutions.length > 0) {
             const self = this;
-            eXide.util.QuickPicker.show(resolutions, function(selected) {
+            QuickPicker.show(resolutions, function(selected) {
                 if (selected) {
                     selected.resolve(self, self.parent, doc, selected.annotation);
                 }
@@ -642,10 +656,10 @@ eXide.edit.XQueryModeHelper = (function () {
                 const funcName = self.getFunctionAtCursor(doc, lead);
                 if (funcName) {
                     // Find arity from the FunctionCall node
-                    const astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
-                    const fcall = astNode ? eXide.edit.XQueryUtils.findAncestor(astNode, "FunctionCall") : null;
+                    const astNode = XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+                    const fcall = astNode ? XQueryUtils.findAncestor(astNode, "FunctionCall") : null;
                     const arity = fcall ? (fcall.arity || 0) : 0;
-                    const visitor = new eXide.edit.FunctionCalls(funcName, arity, doc.ast);
+                    const visitor = new FunctionCalls(funcName, arity, doc.ast);
                     refs = visitor.getReferences().map(function (ref) {
                         return { line: ref.pos.sl, column: ref.pos.sc, name: funcName, kind: "function" };
                     });
@@ -656,7 +670,7 @@ eXide.edit.XQueryModeHelper = (function () {
                     const varName = self.getVariableAtCursor(doc, lead);
                     if (varName) {
                         const name = varName.replace(/^\$/, "");
-                        const varVisitor = new eXide.edit.VariableReferences(name, doc.ast);
+                        const varVisitor = new VariableReferences(name, doc.ast);
                         refs = varVisitor.getReferences().map(function (ref) {
                             return { line: ref.pos.sl, column: ref.pos.sc, name: "$" + name, kind: "variable" };
                         });
@@ -665,7 +679,7 @@ eXide.edit.XQueryModeHelper = (function () {
             }
 
             if (!refs || refs.length === 0) {
-                eXide.util.message("No references found.");
+                util.message("No references found.");
                 return;
             }
 
@@ -678,7 +692,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 };
             });
 
-            eXide.util.QuickPicker.show(items, function (selected) {
+            QuickPicker.show(items, function (selected) {
                 if (selected) {
                     editorUtils.gotoLine(self.editor, selected.line + 1, selected.column, true);
                 }
@@ -686,7 +700,7 @@ eXide.edit.XQueryModeHelper = (function () {
         })
         .catch(function (err) {
             console.error("[findReferences] error:", err);
-            eXide.util.message("Failed to find references.");
+            util.message("Failed to find references.");
         });
     };
 
@@ -709,7 +723,7 @@ eXide.edit.XQueryModeHelper = (function () {
         const rangeTo = editorUtils.rowColToOffset(this.editor.state, range.end.row, range.end.column);
         const value = this.editor.state.sliceDoc(rangeFrom, rangeTo);
         if (value.length === 0) {
-            eXide.util.error("Please select code to extract.");
+            util.error("Please select code to extract.");
             return;
         }
 
@@ -717,16 +731,16 @@ eXide.edit.XQueryModeHelper = (function () {
         this.parent.validationEnabled = false;
 
         let template;
-        const currentNode = eXide.edit.XQueryUtils.findNode(doc.ast,
+        const currentNode = XQueryUtils.findNode(doc.ast,
             {line: range.start.row, col: range.start.column + 1});
-        let contextNode = eXide.edit.XQueryUtils.findAncestor(currentNode, ["IntermediateClause", "InitialClause", "ReturnClause"]);
+        let contextNode = XQueryUtils.findAncestor(currentNode, ["IntermediateClause", "InitialClause", "ReturnClause"]);
         if (contextNode) {
             template = "let $${1} := " + value.replace("$", "\\$");
         } else {
-            contextNode = eXide.edit.XQueryUtils.findAncestor(currentNode, "StatementsAndOptionalExpr");
-            contextNode = eXide.edit.XQueryUtils.findChild(contextNode, "Expr");
+            contextNode = XQueryUtils.findAncestor(currentNode, "StatementsAndOptionalExpr");
+            contextNode = XQueryUtils.findChild(contextNode, "Expr");
             if (!contextNode) {
-                eXide.util.error("Extract variable: unable to determine context. Giving up.")
+                util.error("Extract variable: unable to determine context. Giving up.")
                 return;
             }
             template = "let $${1} := " + value.replace("$", "\\$") + "\nreturn";
@@ -755,14 +769,14 @@ eXide.edit.XQueryModeHelper = (function () {
         const rangeTo = editorUtils.rowColToOffset(this.editor.state, range.end.row, range.end.column);
         const value = this.editor.state.sliceDoc(rangeFrom, rangeTo);
         if (value.length === 0) {
-            eXide.util.error("Please select code to extract.");
+            util.error("Please select code to extract.");
             return;
         }
 
         // disable validation while refactoring
         this.parent.validationEnabled = false;
 
-        const currentNode = eXide.edit.XQueryUtils.findNode(doc.ast,
+        const currentNode = XQueryUtils.findNode(doc.ast,
             {line: range.start.row, col: range.start.column + 1});
 
         // parse selection code to get list of variables which need to be parameters
@@ -772,7 +786,7 @@ eXide.edit.XQueryModeHelper = (function () {
         const selection2 = parserRegistry.getParser(value, versionPref2);
         const result = rexAdapter.parseXQuery(value, selection2.parser);
         if (result.error) {
-            eXide.util.error("Not a valid code block: " + (result.error.message || result.error));
+            util.error("Not a valid code block: " + (result.error.message || result.error));
             return;
         }
         try {
@@ -794,11 +808,11 @@ eXide.edit.XQueryModeHelper = (function () {
                 variables.push(v);
             }
         } catch(e) {
-            eXide.util.error("Not a valid code block: " + e.message);
+            util.error("Not a valid code block: " + e.message);
             return;
         }
 
-        const adder = new eXide.edit.PrologAdder(this.parent, doc);
+        const adder = new PrologAdder(this.parent, doc);
         const insertRow = adder.getInsertionPoint(currentNode);
 
         // remove selected range and replace with parameter list
@@ -897,7 +911,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 location = "xmldb:exist://" + location;
             }
         }
-        const adder = new eXide.edit.PrologAdder(this.parent, doc);
+        const adder = new PrologAdder(this.parent, doc);
         adder.importModule(prefix, uri, location);
     }
     
@@ -909,15 +923,15 @@ eXide.edit.XQueryModeHelper = (function () {
         // try to determine the ast node where the cursor is located
         let astNode;
         if (selRange.start.column === selRange.end.column && selRange.start.row === selRange.end.row) {
-            astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: selRange.start.row, col: selRange.start.column });
+            astNode = XQueryUtils.findNode(doc.ast, { line: selRange.start.row, col: selRange.start.column });
         } else {
-            astNode = eXide.edit.XQueryUtils.findNodeForRange(doc.ast, { line: selRange.start.row, col: selRange.start.column },
+            astNode = XQueryUtils.findNodeForRange(doc.ast, { line: selRange.start.row, col: selRange.start.column },
                 { line: selRange.end.row, col: selRange.end.column });
         }
 
         if (astNode) {
             let parent = astNode.getParent;
-            while (parent && eXide.edit.XQueryUtils.samePosition(astNode.pos, parent.pos)) {
+            while (parent && XQueryUtils.samePosition(astNode.pos, parent.pos)) {
                 astNode = parent;
                 parent = parent.getParent;
                 if (!parent) {
@@ -951,15 +965,15 @@ eXide.edit.XQueryModeHelper = (function () {
             ranges.sort(function(a, b) { return a.from - b.from; });
             self.editor.dispatch({ selection: CM6.EditorSelection.create(ranges) });
             self.editor.focus();
-            eXide.util.message("Editing " + references.length + " occurrence" + (references.length > 1 ? "s" : "") + " — type to rename.");
+            util.message("Editing " + references.length + " occurrence" + (references.length > 1 ? "s" : "") + " — type to rename.");
         }
 
         this.parseXQuery(doc);
         const lead = editorUtils.offsetToRowCol(this.editor.state, this.editor.state.selection.main.head);
-        const ast = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+        const ast = XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
         if (ast) {
             // XML element tag rename: cursor lands on EQName inside QName inside DirElemConstructor
-            const dirElem = eXide.edit.XQueryUtils.findAncestor(ast, "DirElemConstructor");
+            const dirElem = XQueryUtils.findAncestor(ast, "DirElemConstructor");
             if (dirElem && ast.name === "EQName" && ast.getParent.name === "QName" && ast.getParent.getParent.name === "DirElemConstructor") {
                 // Collect the open/close tag QNames (direct children of DirElemConstructor, skip attribute QNames)
                 const tagNames = [];
@@ -974,42 +988,42 @@ eXide.edit.XQueryModeHelper = (function () {
                 // If cursor is on the $ token, navigate to the EQName inside VarName
                 let varNode = ast;
                 if (ast.name === "TOKEN" && ast.getParent.name === "VarRef") {
-                    varNode = eXide.edit.XQueryUtils.findChild(ast.getParent, "VarName");
-                    if (varNode) varNode = eXide.edit.XQueryUtils.findChild(varNode, "EQName") || varNode;
+                    varNode = XQueryUtils.findChild(ast.getParent, "VarName");
+                    if (varNode) varNode = XQueryUtils.findChild(varNode, "EQName") || varNode;
                 }
-                const varName = eXide.edit.XQueryUtils.getValue(varNode);
-                const ancestor = eXide.edit.XQueryUtils.findVariableContext(varNode, varName);
+                const varName = XQueryUtils.getValue(varNode);
+                const ancestor = XQueryUtils.findVariableContext(varNode, varName);
                 if (ancestor) {
-                    const references = new eXide.edit.VariableReferences(varName, ancestor).getReferences();
+                    const references = new VariableReferences(varName, ancestor).getReferences();
                     doRename(references);
                 } else {
-                    eXide.util.message("Rename failed: unable to determine context, sorry.");
+                    util.message("Rename failed: unable to determine context, sorry.");
                 }
             } else if (ast.name === "EQName" && (ast.getParent.name === "FunctionDecl" || ast.getParent.name === "FunctionCall")) {
                 const funName = ast.value;
                 const arity = parseInt(ast.getParent.arity);
                 console.log("searching calls to function: %s#%d", funName, arity);
-                const calls = new eXide.edit.FunctionCalls(funName, arity, doc.ast);
+                const calls = new FunctionCalls(funName, arity, doc.ast);
                 const refs = calls.getReferences();
                 if (calls.declaration) {
                     refs.push(calls.declaration);
                     doRename(refs);
                 } else {
-                    eXide.util.message("Rename failed: function declaration not found.");
+                    util.message("Rename failed: function declaration not found.");
                 }
 
             } else {
-                eXide.util.message("Please position cursor within variable or function name.");
+                util.message("Please position cursor within variable or function name.");
             }
         } else {
-            eXide.util.message("Rename failed: node not found in syntax tree, sorry.");
+            util.message("Rename failed: node not found in syntax tree, sorry.");
         }
     };
     
     Constr.prototype.runTest = function(doc) {
         const self = this;
         this.parseXQuery(doc);
-        const info = new eXide.edit.ModuleInfo(doc.ast);
+        const info = new ModuleInfo(doc.ast);
         if (!(info.isModule() && info.hasTests())) {
             return;
         }
@@ -1027,7 +1041,7 @@ eXide.edit.XQueryModeHelper = (function () {
         //      since the user explicitly invoked Run as test and expects the
         //      test to reflect what's on screen.
         if (doc.isNew()) {
-            eXide.util.error("Save the testsuite to the database before running its tests.");
+            util.error("Save the testsuite to the database before running its tests.");
             return;
         }
 
@@ -1052,7 +1066,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 }
             })
             .catch(function(err) {
-                eXide.util.error(String(err), "Server Error");
+                util.error(String(err), "Server Error");
             });
         }
 
@@ -1062,7 +1076,7 @@ eXide.edit.XQueryModeHelper = (function () {
             self.parent.saveDocument(null, function () {
                 doRun();
             }, function (msg) {
-                eXide.util.error("Could not save testsuite before running: " + msg);
+                util.error("Could not save testsuite before running: " + msg);
             });
             return;
         }
@@ -1270,7 +1284,7 @@ eXide.edit.XQueryModeHelper = (function () {
                     // Strip arity suffix from function names ("local:foo#1" → "local:foo")
                     const name = isFunc ? sym.name.replace(/#\d+$/, "") : sym.name.replace(/^\$/, "");
                     localFuncs.push({
-                        type: isFunc ? eXide.edit.Document.TYPE_FUNCTION : eXide.edit.Document.TYPE_VARIABLE,
+                        type: isFunc ? Document.TYPE_FUNCTION : Document.TYPE_VARIABLE,
                         name: name,
                         signature: sym.detail || name,
                         row: sym.line,
@@ -1326,7 +1340,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 if (status.indexOf("%private") !== -1) {status = "private";}
                 const row = text.substring(0, funcDef.index).split("\n").length - 1;
                 doc.functions.push({
-                    type: eXide.edit.Document.TYPE_FUNCTION,
+                    type: Document.TYPE_FUNCTION,
                     name: name,
                     visibility: status,
                     signature: signature,
@@ -1349,7 +1363,7 @@ eXide.edit.XQueryModeHelper = (function () {
                 }
                 const row = text.substring(0, varDef.index).split("\n").length - 1;
                 doc.functions.push({
-                    type: eXide.edit.Document.TYPE_VARIABLE,
+                    type: Document.TYPE_VARIABLE,
                     name: name,
                     sort: "$$" + sort.join(""),
                     row: row
@@ -1416,7 +1430,7 @@ eXide.edit.XQueryModeHelper = (function () {
 					if (funcs) {
 						for (let j = 0; j < funcs.length; j++) {
 							functions.push({
-								type: eXide.edit.Document.TYPE_FUNCTION,
+								type: Document.TYPE_FUNCTION,
 								name: funcs[j].name,
 								signature: funcs[j].signature,
 								visibility: funcs[j].visibility,
@@ -1431,7 +1445,7 @@ eXide.edit.XQueryModeHelper = (function () {
 							const sort = vars[j].split(":");
 							sort.splice(1, 0, ":$");
 							functions.push({
-								type: eXide.edit.Document.TYPE_VARIABLE,
+								type: Document.TYPE_VARIABLE,
 								name: vars[j],
 								source: modules[i].source,
 								sort: sort.join("")
@@ -1449,7 +1463,7 @@ eXide.edit.XQueryModeHelper = (function () {
 	}
     
     Constr.prototype.initDebugger = function(doc) {
-        eXide.util.message("The debugger is not available in this version of eXide.");
+        util.message("The debugger is not available in this version of eXide.");
         return;
     }
     
@@ -1473,3 +1487,6 @@ eXide.edit.XQueryModeHelper = (function () {
 
 	return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").XQueryModeHelper = XQueryModeHelper;

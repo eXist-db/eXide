@@ -17,6 +17,12 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import { namespace } from "./namespace.js";
+import { editorUtils } from "./editor-utils.js";
+import { Snippets } from "./snippets.js";
+import { util } from "./util.js";
+import { InScopeVariables, XQueryUtils } from "./xquery-utils.js";
+
 /**
  * CM6 autocompletion source for eXide.
  *
@@ -29,9 +35,7 @@
  * Server-side data from /api/editor/completions (functions) and
  * /api/editor/modules (module imports).
  */
-eXide.namespace("eXide.edit.CompletionSource");
-
-eXide.edit.CompletionSource = (function () {
+export const CompletionSource = (function () {
 
     const RE_FUNC_NAME = /^[\$\w:\-_\.]+/;
 
@@ -86,7 +90,7 @@ eXide.edit.CompletionSource = (function () {
         let astNode = null;
 
         if (state.selection.main.empty) {
-            astNode = eXide.edit.XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
+            astNode = XQueryUtils.findNode(doc.ast, { line: lead.row, col: lead.column });
             if (!astNode) {
                 // No AST node: scan preceding text
                 mode = "functions";
@@ -125,19 +129,19 @@ eXide.edit.CompletionSource = (function () {
                     astNode = parent.name === "VarName" && parent.getParent &&
                         parent.getParent.name === "VarRef" ? parent.getParent : parent;
                 } else {
-                    const importStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "Import");
-                    const nsDeclStmt = eXide.edit.XQueryUtils.findAncestor(astNode, "NamespaceDecl");
+                    const importStmt = XQueryUtils.findAncestor(astNode, "Import");
+                    const nsDeclStmt = XQueryUtils.findAncestor(astNode, "NamespaceDecl");
                     if (importStmt) {
                         mode = "modules";
                         if (astNode.name === "NCName") {
                             token = astNode.value;
                         } else if (astNode.name === "URILiteral") {
-                            const prefix = eXide.edit.XQueryUtils.findSibling(astNode, "NCName");
-                            if (prefix) token = eXide.edit.XQueryUtils.getValue(prefix);
+                            const prefix = XQueryUtils.findSibling(astNode, "NCName");
+                            if (prefix) token = XQueryUtils.getValue(prefix);
                         }
                         from = editorUtils.rowColToOffset(state, importStmt.pos.sl, importStmt.pos.sc);
                         let endCol = importStmt.pos.ec;
-                        const separator = eXide.edit.XQueryUtils.findNext(importStmt, "Separator");
+                        const separator = XQueryUtils.findNext(importStmt, "Separator");
                         if (separator) endCol = separator.pos.ec;
                         to = editorUtils.rowColToOffset(state, importStmt.pos.sl, endCol);
                     } else if (nsDeclStmt) {
@@ -145,12 +149,12 @@ eXide.edit.CompletionSource = (function () {
                         if (astNode.name === "NCName") {
                             token = astNode.value;
                         } else if (astNode.name === "URILiteral") {
-                            const nsPrefix = eXide.edit.XQueryUtils.findSibling(astNode, "NCName");
-                            if (nsPrefix) token = eXide.edit.XQueryUtils.getValue(nsPrefix);
+                            const nsPrefix = XQueryUtils.findSibling(astNode, "NCName");
+                            if (nsPrefix) token = XQueryUtils.getValue(nsPrefix);
                         }
                         from = editorUtils.rowColToOffset(state, nsDeclStmt.pos.sl, nsDeclStmt.pos.sc);
                         let nsEndCol = nsDeclStmt.pos.ec;
-                        const nsSep = eXide.edit.XQueryUtils.findNext(nsDeclStmt, "Separator");
+                        const nsSep = XQueryUtils.findNext(nsDeclStmt, "Separator");
                         if (nsSep) nsEndCol = nsSep.pos.ec;
                         to = editorUtils.rowColToOffset(state, nsDeclStmt.pos.sl, nsEndCol);
                     } else if (astNode.name === "EQName") {
@@ -246,7 +250,7 @@ eXide.edit.CompletionSource = (function () {
                 }
 
                 // Template snippets
-                const templates = eXide.util.Snippets.getTemplates(doc, prefix);
+                const templates = Snippets.getTemplates(doc, prefix);
                 for (let j = 0; j < templates.length; j++) {
                     options.push({
                         label: "[S] " + templates[j].name,
@@ -268,7 +272,7 @@ eXide.edit.CompletionSource = (function () {
             type: "function",
             apply: function (view, completion, from, to) {
                 // Use the snippet template if available, otherwise parse from signature
-                const template = snippet || eXide.util.parseSignature(signature);
+                const template = snippet || util.parseSignature(signature);
                 view.dispatch({ changes: { from: from, to: to } });
                 editorUtils.insertSnippet(view, template);
             }
@@ -335,7 +339,7 @@ eXide.edit.CompletionSource = (function () {
 
         // In-scope variables from AST visitor
         if (astNode) {
-            const visitor = new eXide.edit.InScopeVariables(doc.ast, astNode);
+            const visitor = new InScopeVariables(doc.ast, astNode);
             const variables = visitor.getStack();
             if (variables) {
                 for (let i = 0; i < variables.length; i++) {
@@ -432,7 +436,7 @@ eXide.edit.CompletionSource = (function () {
     // -------------------------------------------------------------------
 
     function getTemplateCompletions(doc, helper, prefix, from, to) {
-        const templates = eXide.util.Snippets.getTemplates(doc, prefix);
+        const templates = Snippets.getTemplates(doc, prefix);
         if (templates.length === 0) return null;
         const options = [];
         for (let i = 0; i < templates.length; i++) {
@@ -473,7 +477,7 @@ eXide.edit.CompletionSource = (function () {
             from = editorUtils.rowColToOffset(state, lead.row, start);
             to = editorUtils.rowColToOffset(state, lead.row, end);
 
-            const templates = eXide.util.Snippets.getTemplates(doc, token);
+            const templates = Snippets.getTemplates(doc, token);
             if (templates.length === 0) return null;
             const options = [];
             for (let i = 0; i < templates.length; i++) {
@@ -522,3 +526,6 @@ eXide.edit.CompletionSource = (function () {
         completionSource: completionSource
     };
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").CompletionSource = CompletionSource;

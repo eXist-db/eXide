@@ -5,9 +5,10 @@
  * open/close tag with a subtle background. Uses CM6's syntax tree
  * to find Element nodes and their OpenTag/CloseTag children.
  */
-eXide.namespace("eXide.edit.TagMatching");
 
-eXide.edit.TagMatching = (function () {
+import { eXide, namespace } from "./namespace.js";
+
+export const TagMatching = (function () {
 
     const Decoration = CM6.Decoration;
     const ViewPlugin = CM6.ViewPlugin;
@@ -162,3 +163,6 @@ eXide.edit.TagMatching = (function () {
         extension: extension
     };
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").TagMatching = TagMatching;

@@ -16,12 +16,13 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-eXide.namespace("eXide.edit.commands");
+
+import { eXide, namespace } from "./namespace.js";
 
 /**
  * Register editor commands via CM6 keymap.
  */
-eXide.edit.commands = (function () {
+export const commands = (function () {
 
     const isMac = /Mac/.test(navigator.platform);
     const bindings = {};
@@ -349,3 +350,6 @@ eXide.edit.commands = (function () {
 
     };
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").commands = commands;

@@ -16,35 +16,14 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-window.eXide = window.eXide || {};
 
-/**
- * Namespace function. Required by all other classes.
- */
-eXide.namespace = function (ns_string) {
-	let parts = ns_string.split('.'),
-		parent = eXide,
-		i;
-	if (parts[0] === "eXide") {
-		parts = parts.slice(1);
-	}
-	
-	for (i = 0; i < parts.length; i++) {
-		// create a property if it doesn't exist
-		if (typeof parent[parts[i]] === "undefined") {
-			parent[parts[i]] = {};
-		}
-		parent = parent[parts[i]];
-	}
-	return parent;
-}
-
-eXide.namespace("eXide.util");
+import { eXide, namespace } from "./namespace.js";
+import { DialogManager } from "./dialog-utils.js";
 
 /**
  * Static utility methods.
  */
-eXide.util = (function () {
+export const util = (function () {
 
 	let toastContainer = null;
 
@@ -172,8 +151,6 @@ eXide.util = (function () {
 
 }());
 
-eXide.namespace("eXide.util.Dialog");
-
 /**
  * Singleton object: message, confirm and error dialogs.
  * 
@@ -181,7 +158,7 @@ eXide.namespace("eXide.util.Dialog");
  * @param path
  * @param mimeType
  */
-eXide.util.Dialog = (function () {
+export const Dialog = (function () {
 
 	let msgDlg = null;
 	let inputDlg = null;
@@ -194,7 +171,7 @@ eXide.util.Dialog = (function () {
 		el.innerHTML = '<span id="eXide-dialog-message-icon" class="fa fa-4x fa-info-circle"></span>' +
 			'<div id="eXide-dialog-message-body"></div>';
 		document.body.appendChild(el);
-		msgDlg = eXide.util.DialogManager.create(el, {
+		msgDlg = DialogManager.create(el, {
 			modal: true,
 			width: 420,
 			appendTo: "#layout-container",
@@ -209,7 +186,7 @@ eXide.util.Dialog = (function () {
 		el.innerHTML = '<span class="fa fa-4x fa-info-circle"></span>' +
 			'<div id="eXide-dialog-input-body"></div>';
 		document.body.appendChild(el);
-		inputDlg = eXide.util.DialogManager.create(el, {
+		inputDlg = DialogManager.create(el, {
 			modal: true,
 			width: 420
 		});
@@ -282,8 +259,6 @@ eXide.util.Dialog = (function () {
 	};
 }());
 
-eXide.namespace("eXide.util.mimeTypes");
-
 /**
  * Singleton object: maintains a mapping of mime-types
  * to languages for sytnax highlighting.
@@ -292,7 +267,7 @@ eXide.namespace("eXide.util.mimeTypes");
  * @param path
  * @param mimeType
  */
-eXide.util.mimeTypes = (function () {
+export const mimeTypes = (function () {
 	
     const TYPES = {
         'xml': [/^text\/xml$/, /^application\/.*\+xml$/, /^application\/xml$/],
@@ -330,24 +305,7 @@ eXide.util.mimeTypes = (function () {
     }
 }());
 
-eXide.namespace("eXide.util.oop");
-
-/**
- * Static utility method for class inheritance.
- * 
- * @param name
- * @param path
- * @param mimeType
- */
-eXide.util.oop.inherit = (function() {
-	
-	const F = function() {};
-	return function(C, P) {
-		F.prototype = P.prototype;
-		C.prototype = new F();
-		C.super_ = P.prototype;
-		C.prototype.constructor = C;
-	}
-}());
-
-
+// Register on the global `eXide` object (see namespace.js)
+eXide.util = Object.assign(util, eXide.util);
+namespace("eXide.util").Dialog = Dialog;
+namespace("eXide.util").mimeTypes = mimeTypes;

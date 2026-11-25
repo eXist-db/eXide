@@ -1,3 +1,6 @@
+// Entry point for esbuild. Every module imports what it depends on, so the order
+// below does not matter; listing them here includes the modules that only have
+// side effects (UI wiring, the CM6 XQuery mode) and keeps the full set in one place.
 import '../src/cm6/xquery-language.js';
 import '../src/editor-utils.js';
 import '../src/util.js';
@@ -26,6 +29,7 @@ import '../src/markdown-helper.js';
 import '../src/outline.js';
 import '../src/directory.js';
 import '../src/codevalidator.js';
+import '../src/document.js';
 import '../src/editor.js';
 import '../src/deployment.js';
 import '../src/menu.js';

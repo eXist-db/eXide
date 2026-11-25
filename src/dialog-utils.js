@@ -17,26 +17,34 @@
  * { click: fn, destructive: true } (red primary; Cancel gets focus instead) or
  * { click: fn, separate: true } (pushed to the far left, away from the others).
  */
-eXide.namespace("eXide.util.DialogManager");
 
-eXide.util.DialogManager = (function() {
+import { namespace } from "./namespace.js";
+
+export const DialogManager = (function() {
 
     // Stack of open non-modal dialog controllers (most recent on top)
     const openStack = [];
 
-    // Single document-level Escape handler for all non-modal dialogs.
-    // Skip if a modal <dialog> (e.g. QuickPicker, confirm) is open on top —
-    // those handle Escape themselves via the native cancel event.
-    document.addEventListener("keydown", function(e) {
-        if (e.key === "Escape" && openStack.length > 0) {
-            const topModal = document.querySelector("dialog[open]");
-            if (topModal) return; // let the modal handle it
-            e.preventDefault();
-            openStack[openStack.length - 1].close();
-        }
-    });
+    // Single document-level Escape handler for all non-modal dialogs, installed
+    // with the first dialog (not on import). Skip if a modal <dialog> (e.g.
+    // QuickPicker, confirm) is open on top — those handle Escape themselves via
+    // the native cancel event.
+    let escapeHandlerInstalled = false;
+    function installEscapeHandler() {
+        if (escapeHandlerInstalled) return;
+        escapeHandlerInstalled = true;
+        document.addEventListener("keydown", function(e) {
+            if (e.key === "Escape" && openStack.length > 0) {
+                const topModal = document.querySelector("dialog[open]");
+                if (topModal) return; // let the modal handle it
+                e.preventDefault();
+                openStack[openStack.length - 1].close();
+            }
+        });
+    }
 
     function create(contentEl, options) {
+        installEscapeHandler();
         options = options || {};
         const el = typeof contentEl === "string" ? document.querySelector(contentEl) : contentEl;
         if (!el) {
@@ -242,3 +250,6 @@ eXide.util.DialogManager = (function() {
         create: create
     };
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.util").DialogManager = DialogManager;

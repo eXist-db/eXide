@@ -17,6 +17,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import { namespace } from "./namespace.js";
+
 /**
  * QuickPicker — modal selection dialog replacing eXide.util.Popup.
  *
@@ -36,9 +38,7 @@
  * callback(selected): called with the selected item, or null if cancelled
  * options: { title, placeholder, parentEditor }
  */
-eXide.namespace("eXide.util.QuickPicker");
-
-eXide.util.QuickPicker = (function () {
+export const QuickPicker = (function () {
 
     let dialog = null;
     let filterInput = null;
@@ -275,3 +275,6 @@ eXide.util.QuickPicker = (function () {
         show: show
     };
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.util").QuickPicker = QuickPicker;

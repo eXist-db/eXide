@@ -14,30 +14,8 @@ const { describe, it, beforeEach } = require("node:test");
 const assert = require("node:assert/strict");
 const path = require("path");
 
-// --- Minimal eXide browser-global shims so src/deployment.js loads in Node ---
-const eXide = {};
-eXide.namespace = function (ns) {
-    const parts = ns.split(".").filter(function (p) { return p !== "eXide"; });
-    let parent = eXide;
-    parts.forEach(function (p) {
-        if (typeof parent[p] === "undefined") { parent[p] = {}; }
-        parent = parent[p];
-    });
-    return parent;
-};
-eXide.namespace("eXide.util.oop");
-eXide.util.oop.inherit = function (C, P) {
-    const F = function () {};
-    F.prototype = P.prototype;
-    C.prototype = new F();
-    C.super_ = P.prototype;
-    C.prototype.constructor = C;
-};
-eXide.namespace("eXide.events");
-eXide.events.Sender = function () {};               // parent class referenced at load time
-eXide.util.DialogManager = { create: function () { return {}; } };
-eXide.app = { getPreference: function () { return false; } };
-global.eXide = eXide;
+// Projects reads preferences through the eXide.app singleton at runtime.
+globalThis.eXide = { app: { getPreference: function () { return false; } } };
 global.document = { getElementById: function () { return null; } };
 
 const { Projects } = require(path.join(__dirname, "..", "src", "deployment.js"));

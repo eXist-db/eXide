@@ -131,6 +131,7 @@ async function clean() {
     console.log(chalk.blue('Cleaning files ...'));
     const files = await collectGlobs([
         'resources/scripts/eXide.min.*',
+        'resources/scripts/chunks/**',
         'resources/scripts/prettier-bundle.js',
         'index.html',
         'expath-pkg.xml',
@@ -143,10 +144,16 @@ async function clean() {
 
 async function bundle() {
     console.log(chalk.blue('Bundling eXide source files ...'));
+    // eXide's sources are ES modules. The bundle is loaded with <script type="module">;
+    // code splitting turns dynamic imports (the XQuery 4.0 parser) into lazily
+    // loaded chunks next to it.
     await esbuild
 		.build({
-			entryPoints: ["./scripts/bundle.js"],
-			outfile: "./resources/scripts/eXide.min.js",
+			entryPoints: { "eXide.min": "./scripts/bundle.js" },
+			outdir: "./resources/scripts",
+			chunkNames: "chunks/[name]-[hash]",
+			format: "esm",
+			splitting: true,
 			bundle: true,
 			minify: !args.dev,
 			sourcemap: !args.dev,
@@ -157,26 +164,6 @@ async function bundle() {
 			console.error(err);
 			process.exit(1);
 		});
-
-    // Bundle XQuery 4.0 parser as a separate lazy-loaded file
-    const parser40Path = path.join(__dirname, '..', 'src', 'parser', 'XQueryParser40.js');
-    if (fs.existsSync(parser40Path)) {
-        console.log(chalk.blue('Bundling XQuery 4.0 parser (lazy-loaded) ...'));
-        await esbuild
-            .build({
-                entryPoints: [parser40Path],
-                outfile: "./resources/scripts/xquery-parser-40.js",
-                bundle: true,
-                minify: !args.dev,
-                logLevel: "info",
-                globalName: "XQueryParser40",
-                format: "iife",
-            })
-            .catch((err) => {
-                console.error(err);
-                process.exit(1);
-            });
-    }
 }
 
 
@@ -241,7 +228,7 @@ function replace(path, outPath, data) {
 			"!test/**",
 			"!support/**",
 			"!src/**",
-			"!resources/scripts/*.map",
+			"!resources/scripts/**/*.map",
 			"!resources/images/background.gif",
 			"!resources/images/fullscreen.png",
 			"!resources/images/layouts_split.png",

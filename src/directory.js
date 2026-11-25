@@ -17,13 +17,15 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-eXide.namespace("eXide.edit.Directory");
+import { eXide, namespace } from "./namespace.js";
+import { DialogManager } from "./dialog-utils.js";
+import { Dialog } from "./util.js";
 
 /**
  * XQuery directory view - Sublime style
  *
  */
-eXide.edit.Directory = (function () {
+export const Directory = (function () {
 
 	const Constr = function() {
 		this.currentDoc = null;
@@ -361,7 +363,7 @@ eXide.edit.Directory = (function () {
 
 	function createCollection(d, el) {
 		if (!eXide.app.$checkLogin()) return;
-		eXide.util.Dialog.input("Create Collection",
+		Dialog.input("Create Collection",
 			'<label for="dir-new-collection">Name: </label>' +
 			'<input type="text" name="collection" id="dir-new-collection"/>',
 			function() {
@@ -373,7 +375,7 @@ eXide.edit.Directory = (function () {
 					body: JSON.stringify({ action: "create", name: name })
 				}).then(function(r) { return r.json(); }).then(function(data) {
 					if (data.error) {
-						eXide.util.Dialog.warning("Create Collection Error", data.error);
+						Dialog.warning("Create Collection Error", data.error);
 					} else {
 						reloadNode(d, el);
 						if (flatViewActive) loadFlatView(flatCollection);
@@ -451,7 +453,7 @@ eXide.edit.Directory = (function () {
 					body: JSON.stringify({ action: "rename", target: newName })
 				}).then(function(r) { return r.json(); }).then(function(data) {
 					if (data.error) {
-						eXide.util.Dialog.warning("Rename Error", data.error);
+						Dialog.warning("Rename Error", data.error);
 					} else {
 						// Reload the parent in tree view
 						const parentSel = d3.select("[data-key='" + parentKey + "']");
@@ -476,13 +478,13 @@ eXide.edit.Directory = (function () {
 	function deleteItem(d, el) {
 		if (!eXide.app.$checkLogin()) return;
 		const label = d.isCollection ? "collection" : "resource";
-		eXide.util.Dialog.input("Confirm Deletion",
+		Dialog.input("Confirm Deletion",
 			"Are you sure you want to delete " + label + " <strong>" + d.name + "</strong>?",
 			function() {
 				fetch(apiPath(d.key), { method: "DELETE" })
 				.then(function(r) { return r.json(); }).then(function(data) {
 					if (data.error) {
-						eXide.util.Dialog.warning("Delete Error", data.error);
+						Dialog.warning("Delete Error", data.error);
 					} else {
 						// Reload the parent collection in tree view
 						const parentKey = d.key.substring(0, d.key.lastIndexOf("/"));
@@ -526,7 +528,7 @@ eXide.edit.Directory = (function () {
 		propertiesTarget = d;
 		if (!propertiesDialog) {
 			// Created once and reused; Apply acts on whichever item it was last opened for.
-			propertiesDialog = eXide.util.DialogManager.create(dialog, {
+			propertiesDialog = DialogManager.create(dialog, {
 				title: "Properties",
 				modal: true,
 				width: 500,
@@ -561,7 +563,7 @@ eXide.edit.Directory = (function () {
 		.then(function(r) { return r.json(); })
 		.then(function(data) {
 			if (data.error) {
-				eXide.util.Dialog.warning("Properties Error", data.error);
+				Dialog.warning("Properties Error", data.error);
 			} else {
 				dlg.close();
 			}
@@ -874,3 +876,6 @@ eXide.edit.Directory = (function () {
 
 	return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").Directory = Directory;

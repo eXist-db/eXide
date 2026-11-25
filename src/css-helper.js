@@ -16,12 +16,18 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-eXide.namespace("eXide.edit.CssModeHelper");
+
+import { namespace } from "./namespace.js";
+import { Document } from "./document.js";
+import { editorUtils } from "./editor-utils.js";
+import { ModeHelper } from "./mode-helper.js";
+import { QuickPicker } from "./quick-picker.js";
+import { oop } from "./oop.js";
 
 /**
  * CSS specific helper methods.
  */
-eXide.edit.CssModeHelper = (function () {
+export const CssModeHelper = (function () {
 
     const Constr = function(editor) {
         this.parent = editor;
@@ -31,7 +37,7 @@ eXide.edit.CssModeHelper = (function () {
         this.addCommand("format", this.format);
     };
 
-    eXide.util.oop.inherit(Constr, eXide.edit.ModeHelper);
+    oop.inherit(Constr, ModeHelper);
 
     Constr.prototype.createOutline = function(doc, onComplete) {
         const state = this.editor.state;
@@ -49,7 +55,7 @@ eXide.edit.CssModeHelper = (function () {
                     if (selector) {
                         const line = state.doc.lineAt(node.from);
                         doc.functions.push({
-                            type: eXide.edit.Document.TYPE_FUNCTION,
+                            type: Document.TYPE_FUNCTION,
                             name: selector,
                             source: doc.getPath(),
                             signature: selector,
@@ -68,7 +74,7 @@ eXide.edit.CssModeHelper = (function () {
                     if (text.length > 60) text = text.substring(0, 60) + "…";
                     const line = state.doc.lineAt(node.from);
                     doc.functions.push({
-                        type: eXide.edit.Document.TYPE_FUNCTION,
+                        type: Document.TYPE_FUNCTION,
                         name: text,
                         source: doc.getPath(),
                         signature: text,
@@ -98,7 +104,7 @@ eXide.edit.CssModeHelper = (function () {
             }
         }
         if (items.length > 0) {
-            eXide.util.QuickPicker.show(items, function (selected) {
+            QuickPicker.show(items, function (selected) {
                 if (selected) {
                     self.parent.history.push(doc.getPath(), doc.getCurrentLine());
                     editorUtils.gotoLine(self.editor, selected.row + 1);
@@ -109,3 +115,6 @@ eXide.edit.CssModeHelper = (function () {
 
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").CssModeHelper = CssModeHelper;

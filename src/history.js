@@ -1,9 +1,10 @@
-eXide.namespace("eXide.edit.History");
-
 /**
  * Edit history
  */
-eXide.edit.History = (function () {
+
+import { namespace } from "./namespace.js";
+
+export const History = (function () {
     
     const Constr = function() {
         this.history = [];
@@ -34,3 +35,6 @@ eXide.edit.History = (function () {
     
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").History = History;

@@ -17,160 +17,40 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-eXide.namespace("eXide.edit.Document");
-
-/**
- * Represents an open document.
- */
-eXide.edit.Document = (function() {
-
-    const EditorState = CM6.EditorState;
-
-    const Constr = function(name, path, stateOrText) {
-        this.name = name;
-        this.path = path.replace(/\/{2,}/g, "/");
-        this.mime = null;
-        this.syntax = "xquery";
-        this.saved = false;
-        this.editable = true;
-        this.functions = [];
-        this.helper = null;
-        this.externalLink = null;
-        this.lastChangeEvent = new Date().getTime();
-        this.lastValidation = 0;
-        this.lastParsed = 0;
-        this.ast = null;
-
-        // CM6: store the document text; the EditorState will be created
-        // when the document is activated (switched to) in the editor
-        if (typeof stateOrText === "string") {
-            this._text = stateOrText;
-        } else {
-            this._text = stateOrText || "";
-        }
-        // Cursor position to restore when switching back
-        this._cursorOffset = 0;
-        // Stored annotations for this document
-        this._annotations = [];
-    };
-
-    Constr.TYPE_FUNCTION = "function";
-    Constr.TYPE_VARIABLE = "variable";
-    Constr.TYPE_TEMPLATE = "template";
-
-    Constr.prototype.needsValidation = function() {
-        if (this.isNew() && this.isSaved()) {
-            return false;
-        }
-        return !this.ast || this.lastChangeEvent > this.lastValidation;
-    };
-
-    Constr.prototype.getText = function() {
-        // If the document is active, get text from the view
-        if (this._view) {
-            return this._view.state.doc.toString();
-        }
-        return this._text;
-    };
-
-    Constr.prototype.setText = function(text) {
-        if (this._view) {
-            this._view.dispatch({
-                changes: { from: 0, to: this._view.state.doc.length, insert: text }
-            });
-        } else {
-            this._text = text;
-        }
-    };
-
-    Constr.prototype.getName = function() {
-        return this.name;
-    };
-
-    Constr.prototype.getPath = function() {
-        return this.path;
-    };
-
-    Constr.prototype.setPath = function(path) {
-        this.path = path;
-    };
-
-    Constr.prototype.getBasePath = function() {
-        return this.path.replace(/(^.+)\/[^\/]*$/, "$1");
-    };
-
-    Constr.prototype.getMime = function() {
-        return this.mime;
-    };
-
-    Constr.prototype.setMime = function(mimeType) {
-        this.mime = mimeType;
-    };
-
-    Constr.prototype.getSyntax = function() {
-        return this.syntax;
-    };
-
-    Constr.prototype.setSyntax = function(syntax) {
-        this.syntax = syntax;
-    };
-
-    /**
-     * getSession() returns the EditorView for CM6 compatibility with mode helpers.
-     * Mode helpers that call doc.getSession() will get the view instance.
-     */
-    Constr.prototype.getSession = function() {
-        return this._view;
-    };
-
-    Constr.prototype.isSaved = function() {
-        return this.saved;
-    };
-
-    Constr.prototype.isNew = function() {
-        return /__new__/.test(this.path);
-    };
-
-    Constr.prototype.isEditable = function() {
-        return this.editable;
-    };
-
-    Constr.prototype.isXQuery = function() {
-        return this.mime === "application/xquery";
-    };
-
-    Constr.prototype.setModeHelper = function(mode) {
-        this.helper = mode;
-    };
-
-    Constr.prototype.getModeHelper = function() {
-        return this.helper;
-    };
-
-    Constr.prototype.getCurrentLine = function() {
-        if (this._view) {
-            return editorUtils.offsetToRowCol(this._view.state, this._view.state.selection.main.head).row;
-        }
-        return 0;
-    };
-
-    Constr.prototype.getLastChanged = function() {
-        return this.lastChangeEvent;
-    };
-
-    Constr.prototype.getExternalLink = function() {
-        return this.externalLink;
-    };
-
-    return Constr;
-}());
-
-eXide.namespace("eXide.edit.Editor");
+import { eXide, namespace } from "./namespace.js";
+import { CodeValidator } from "./codevalidator.js";
+import { commands } from "./commands.js";
+import { CssModeHelper } from "./css-helper.js";
+import { DialogManager } from "./dialog-utils.js";
+import { Directory } from "./directory.js";
+import { Document } from "./document.js";
+import { editorUtils } from "./editor-utils.js";
+import { Sender } from "./events.js";
+import { FuncDocTooltip } from "./funcdoc-tooltip.js";
+import { History } from "./history.js";
+import { JavascriptModeHelper } from "./javascript-helper.js";
+import { JsonModeHelper } from "./json-helper.js";
+import { LspHover } from "./lang-hover.js";
+import { LessModeHelper } from "./less-helper.js";
+import { MarkdownModeHelper } from "./markdown-helper.js";
+import { ModeHelper } from "./mode-helper.js";
+import { Outline } from "./outline.js";
+import { QuickPicker } from "./quick-picker.js";
+import { SemanticHighlight } from "./semantic-highlight.js";
+import { SnippetModeHelper } from "./snippet-helper.js";
+import { Snippets } from "./snippets.js";
+import { TagMatching } from "./tag-matching.js";
+import { mimeTypes, util } from "./util.js";
+import { oop } from "./oop.js";
+import { XMLModeHelper } from "./xml-helper.js";
+import { CompletionSource } from "./xquery-completion.js";
+import { XQueryModeHelper } from "./xquery-helper.js";
+import { XQueryUtils } from "./xquery-utils.js";
 
 /**
  * The main editor component. Uses CodeMirror 6.
  */
-eXide.edit.Editor = (function () {
+export const Editor = (function () {
 
     const EditorView = CM6.EditorView;
     const EditorState = CM6.EditorState;
@@ -282,15 +162,15 @@ eXide.edit.Editor = (function () {
             lineWrappingCompartment.of([]),
             showInvisiblesCompartment.of([]),
             rectangularSelectionCompartment.of([CM6.rectangularSelection(), CM6.crosshairCursor()]),
-            eXide.edit.FuncDocTooltip.extension(),
-            eXide.edit.LspHover.extension(),
-            eXide.edit.TagMatching.extension(),
-            eXide.edit.SemanticHighlight.extension(),
+            FuncDocTooltip.extension(),
+            LspHover.extension(),
+            TagMatching.extension(),
+            SemanticHighlight.extension(),
             // Initial config: explicit-trigger only (Ctrl-Space). Preferences
             // upgrades this to as-you-type via the compartment reconfigure
             // in preferences.js if the user opts in.
             autocompletionCompartment.of(CM6.autocompletion({
-                override: [eXide.edit.CompletionSource.completionSource],
+                override: [CompletionSource.completionSource],
                 activateOnTyping: false,
                 maxRenderedOptions: 50,
                 icons: true
@@ -351,9 +231,9 @@ eXide.edit.Editor = (function () {
 
                         if (syntax === "xquery" && $this.activeDoc.ast) {
                             const pos = { line: line.number - 1, col: col - 1 };
-                            const node = eXide.edit.XQueryUtils.findNode($this.activeDoc.ast, pos);
+                            const node = XQueryUtils.findNode($this.activeDoc.ast, pos);
                             if (node) {
-                                scopePath = eXide.edit.XQueryUtils.getPath(node);
+                                scopePath = XQueryUtils.getPath(node);
                             }
                         } else if (syntax === "xml" || syntax === "html") {
                             // Walk CM6 syntax tree to build XPath at cursor
@@ -430,7 +310,7 @@ eXide.edit.Editor = (function () {
         $this.initializing = true;
         $this._switching = false;  // suppress updateListener during doc switches
 
-        $this.history = new eXide.edit.History();
+        $this.history = new History();
 
         $this.tabs = document.getElementById("tabs");
 
@@ -455,14 +335,14 @@ eXide.edit.Editor = (function () {
         this._baseExtensions = buildExtensions;
 
         // register keybindings
-        eXide.edit.commands.init($this);
+        commands.init($this);
 
         // register editor on menubar to allow regaining focus
         menubar.editor = this;
 
-        this.outline = new eXide.edit.Outline();
-        this.directory = new eXide.edit.Directory();
-        this.validator = new eXide.edit.CodeValidator(this);
+        this.outline = new Outline();
+        this.directory = new Directory();
+        this.validator = new CodeValidator(this);
         this.addEventListener("activate", this.outline, this.outline.updateOutline);
         this.validator.addEventListener("validate", this.outline, this.outline.updateOutline);
         this.addEventListener("close", this.outline, this.outline.clearOutline);
@@ -487,24 +367,24 @@ eXide.edit.Editor = (function () {
         this.validationEnabled = true;
 
         // register mode helpers
-        const xmlModeHelper = new eXide.edit.XMLModeHelper($this, menubar);
+        const xmlModeHelper = new XMLModeHelper($this, menubar);
         $this.modes = {
-            "xquery": new eXide.edit.XQueryModeHelper($this, menubar),
+            "xquery": new XQueryModeHelper($this, menubar),
             "xml": xmlModeHelper,
             "html": xmlModeHelper,
-            "less": new eXide.edit.LessModeHelper($this),
-            "javascript": new eXide.edit.JavascriptModeHelper($this),
-            "css": new eXide.edit.CssModeHelper($this),
-            "json": new eXide.edit.JsonModeHelper($this),
-            "markdown": new eXide.edit.MarkdownModeHelper($this),
-            "tmsnippet": new eXide.edit.SnippetModeHelper($this)
+            "less": new LessModeHelper($this),
+            "javascript": new JavascriptModeHelper($this),
+            "css": new CssModeHelper($this),
+            "json": new JsonModeHelper($this),
+            "markdown": new MarkdownModeHelper($this),
+            "tmsnippet": new SnippetModeHelper($this)
         };
 
         // Initialize CM6 completion source with editor reference
-        eXide.edit.CompletionSource.init($this);
+        CompletionSource.init($this);
 
         const gotoLineEl = document.getElementById("dialog-goto-line");
-        this._gotoLineDlg = eXide.util.DialogManager.create(gotoLineEl, {
+        this._gotoLineDlg = DialogManager.create(gotoLineEl, {
             modal: false,
             width: 300,
             height: 200,
@@ -589,7 +469,7 @@ eXide.edit.Editor = (function () {
     };
 
     // Extend eXide.events.Sender for event support
-    eXide.util.oop.inherit(Constr, eXide.events.Sender);
+    oop.inherit(Constr, Sender);
 
     Constr.prototype.init = function() {
         if (this.documents.length === 0)
@@ -610,7 +490,7 @@ eXide.edit.Editor = (function () {
             const args = Array.prototype.slice.call(arguments, 1);
             helper.exec(arguments[0], this.activeDoc, args);
         } else {
-            eXide.util.message("Not supported in this mode.");
+            util.message("Not supported in this mode.");
         }
     };
 
@@ -640,7 +520,7 @@ eXide.edit.Editor = (function () {
         } else {
             text = "";
         }
-        const newDocument = new eXide.edit.Document("untitled-" + newDocId,
+        const newDocument = new Document("untitled-" + newDocId,
                 "__new__" + newDocId, text);
         newDocument.saved = true;
         if (type) {
@@ -652,10 +532,10 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.newDocumentWithText = function(data, mime, resource) {
-        const doc = new eXide.edit.Document(resource.name, resource.path, data);
+        const doc = new Document(resource.name, resource.path, data);
         doc.editable = resource.writable;
         doc.mime = mime;
-        doc.syntax = eXide.util.mimeTypes.getLangFromMime(mime);
+        doc.syntax = mimeTypes.getLangFromMime(mime);
         doc.saved = false;
         this.$initDocument(doc);
         if (resource.line) {
@@ -680,33 +560,33 @@ eXide.edit.Editor = (function () {
                 }
             }
             newDocId++;
-            const newDocument = new eXide.edit.Document("untitled-" + newDocId,
+            const newDocument = new Document("untitled-" + newDocId,
                     "__new__" + newDocId, data);
             newDocument.setSyntax(mode);
             newDocument.template = template;
             self.$initDocument(newDocument, true);
         })
         .catch(function(error) {
-            eXide.util.error("Failed to load template: " + error.message);
+            util.error("Failed to load template: " + error.message);
         });
     };
 
     Constr.prototype.openDocument = function(data, mime, resource, externalPath) {
         const $this = this;
         if (!resource.writable)
-            eXide.util.message("Opening " + encodeURI(resource.path) + " readonly!");
+            util.message("Opening " + encodeURI(resource.path) + " readonly!");
         else
-            eXide.util.message("Opening " + encodeURI(resource.path));
+            util.message("Opening " + encodeURI(resource.path));
         if (/\.snippet/.test(resource.name)) {
             mime = "application/tmsnippet";
         } else if (/\.less/.test(resource.name)) {
             mime = "application/less";
         }
         console.log("mime type: %s", mime);
-        const doc = new eXide.edit.Document(resource.name, resource.path, data);
+        const doc = new Document(resource.name, resource.path, data);
         doc.editable = resource.writable;
         doc.mime = mime;
-        doc.syntax = eXide.util.mimeTypes.getLangFromMime(mime);
+        doc.syntax = mimeTypes.getLangFromMime(mime);
         doc.externalLink = externalPath;
         doc.saved = true;
         if (resource.line) {
@@ -872,10 +752,10 @@ eXide.edit.Editor = (function () {
             if (setMime)
                 doc.mime = "text/x-markdown";
         }
-        eXide.util.Snippets.init(doc.getSyntax());
+        Snippets.init(doc.getSyntax());
         let mode = this.modes[doc.getSyntax()];
         if (!mode) {
-            mode = new eXide.edit.ModeHelper(this);
+            mode = new ModeHelper(this);
         }
         doc.setModeHelper(mode);
     };
@@ -915,7 +795,7 @@ eXide.edit.Editor = (function () {
             $this.activeDoc.name = resource.name
         }
 
-        eXide.util.message("Storing resource " + $this.activeDoc.name + "...");
+        util.message("Storing resource " + $this.activeDoc.name + "...");
 
         const encodedPath = $this.activeDoc.path.replace(/^\//, "").split("/").map(encodeURIComponent).join("/");
         fetch("api/storage/" + encodedPath, {
@@ -956,7 +836,7 @@ eXide.edit.Editor = (function () {
                 if (errorHandler) {
                     errorHandler.apply($this.activeDoc, [data.message]);
                 } else {
-                    eXide.util.error(data.message);
+                    util.error(data.message);
                 }
             } else {
                 $this.activeDoc.saved = true;
@@ -965,7 +845,7 @@ eXide.edit.Editor = (function () {
                 if (successHandler) {
                     successHandler.apply($this.activeDoc);
                 } else {
-                    eXide.util.success($this.activeDoc.name + " stored.");
+                    util.success($this.activeDoc.name + " stored.");
                 }
 
                 const mode = $this.activeDoc.getModeHelper();
@@ -981,7 +861,7 @@ eXide.edit.Editor = (function () {
             if (errorHandler) {
                 errorHandler.apply($this.activeDoc, [error.message]);
             } else {
-                eXide.util.error(error.message);
+                util.error(error.message);
             }
         });
     };
@@ -996,7 +876,7 @@ eXide.edit.Editor = (function () {
     };
 
     Constr.prototype.getDocument = function(path) {
-        path = eXide.util.normalizePath(path);
+        path = util.normalizePath(path);
         for (let i = 0; i < this.documents.length; i++) {
             if (this.documents[i].path === path)
                 return this.documents[i];
@@ -1220,7 +1100,7 @@ eXide.edit.Editor = (function () {
                 });
             }
             if (items.length > 0) {
-                eXide.util.QuickPicker.show(items, function (selected) {
+                QuickPicker.show(items, function (selected) {
                     if (selected) {
                         self.switchTo(self.documents[selected.pos]);
                     }
@@ -1438,3 +1318,6 @@ eXide.edit.Editor = (function () {
 
     return Constr;
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").Editor = Editor;

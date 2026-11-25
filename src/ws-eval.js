@@ -15,11 +15,10 @@
  * When the WebSocket endpoint is unavailable, execute() returns null and the
  * caller falls back to the existdb-openapi /api/query cursor.
  */
-eXide.namespace("eXide.wsEval");
 
-eXide.wsEval = (function () {
-    "use strict";
+import { eXide } from "./namespace.js";
 
+export const wsEval = (function () {
     let socket = null;
     let connected = false;
     let url = null;
@@ -198,7 +197,7 @@ eXide.wsEval = (function () {
         if (reconnectAttempts >= maxReconnectAttempts) {
             console.warn("[ws-eval] Giving up after " + reconnectAttempts +
                 " reconnect attempts — server endpoint appears unavailable. " +
-                "Call eXide.wsEval.connect(url) explicitly to retry.");
+                "Call wsEval.connect(url) explicitly to retry.");
             url = null;  // prevent further reconnects until someone re-arms
             return;
         }
@@ -242,4 +241,6 @@ eXide.wsEval = (function () {
     };
 }());
 
-globalThis.eXideWsEval = eXide.wsEval;
+
+// Register on the global `eXide` object (see namespace.js)
+eXide.wsEval = Object.assign(wsEval, eXide.wsEval);

@@ -17,6 +17,8 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import { namespace } from "./namespace.js";
+
 /**
  * Function documentation tooltip using CM6's showTooltip.
  *
@@ -37,9 +39,7 @@
  * signature + description + per-param details as Markdown for VS Code.
  * We render to HTML since we're in the browser.
  */
-eXide.namespace("eXide.edit.FuncDocTooltip");
-
-eXide.edit.FuncDocTooltip = (function () {
+export const FuncDocTooltip = (function () {
 
     const StateField = CM6.StateField;
     const StateEffect = CM6.StateEffect;
@@ -396,3 +396,6 @@ eXide.edit.FuncDocTooltip = (function () {
         extension: extension
     };
 }());
+
+// Register on the global `eXide` object (see namespace.js)
+namespace("eXide.edit").FuncDocTooltip = FuncDocTooltip;

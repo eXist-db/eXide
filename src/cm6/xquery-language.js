@@ -10,8 +10,6 @@
  * highlighting, diagnostics) asynchronously.
  */
 (function () {
-    "use strict";
-
     const CM6 = globalThis.CM6;
     const StreamLanguage = CM6.StreamLanguage;
     const LanguageSupport = CM6.LanguageSupport;

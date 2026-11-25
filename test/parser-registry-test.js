@@ -4,8 +4,8 @@ const path = require("path");
 const { adapter } = require("./harness");
 
 // Load both parsers
-const XQueryParser = require("../src/parser/XQueryParser.js");
-const XQueryParser40 = require("../src/parser/XQueryParser40.js");
+const XQueryParser = require("../src/parser/XQueryParser.js").default;
+const XQueryParser40 = require("../src/parser/XQueryParser40.js").default;
 
 // Helper: parse with a specific parser and find a node
 function parse(code, Parser) {
@@ -30,7 +30,7 @@ function findAllNodes(n, name, results) {
 
 describe("Version detection regex", function () {
     // Import detectVersion from parser-registry
-    const registry = require("../src/parser/parser-registry.js");
+    const { parserRegistry: registry } = require("../src/parser/parser-registry.js");
 
     it("detects version 4.0", function () {
         assert.equal(registry.detectVersion('xquery version "4.0"; 1'), "4.0");
