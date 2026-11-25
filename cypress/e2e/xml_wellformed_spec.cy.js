@@ -49,13 +49,23 @@ describe('XML well-formedness reporting', () => {
       .and('match', /oops|well-formed|terminated|error/i)
   })
 
-  it('clears the error once the document is well-formed again', () => {
+  it('replaces the error with a well-formed status once the document is fixed', () => {
     openNewXMLFile()
 
     validateNow('<collection>\n  <index>\n    <oops>\n</collection>')
     cy.get('#error-status', { timeout: 10000 }).invoke('text').should('not.be.empty')
+    cy.get('#exide-err-pill').should('have.class', 'has-error')
 
+    // Success uses the calm #validation-status segment, not the error pill.
+    // No matching grammar → "Well-formed only"; schema hits → "Validated against …".
     validateNow('<collection>\n  <index/>\n</collection>')
     cy.get('#error-status', { timeout: 10000 }).invoke('text').should('be.empty')
+    cy.get('#exide-err-pill').should('not.have.class', 'has-error')
+    // Assert text on the element itself — .should('not.have.attr') yields
+    // undefined, so chaining .invoke('text') after it is unsafe.
+    cy.get('#validation-status', { timeout: 10000 }).should('be.visible')
+    cy.get('#validation-status-label')
+      .invoke('text')
+      .should('match', /Well-formed only/i)
   })
 })
