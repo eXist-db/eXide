@@ -47,7 +47,7 @@
 		"chalk": "^6.0.1",
 		"command-line-args": "^6.0.2",
 		"conventional-changelog-conventionalcommits": "^9.3.1",
-		"cypress": "^16.2.1",
+		"cypress": "^16.3.0",
 		"esbuild": "^0.28.2",
 		"glob-stream": "^8.0.4",
 		"husky": "^9.1.7",
